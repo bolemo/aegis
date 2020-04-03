@@ -3,18 +3,17 @@
 SC_NAME="hw_firewall"
 IPSET_NAME="hw_firewall"
 IPSET_TMP="${IPSET_NAME}_tmp"
-BASE_DIR="/mnt/optware"
-ROOT_DIR="$BASE_DIR/$SC_NAME"
+ROOT_DIR="/usr/local/etc"
 SRC_LIST="$ROOT_DIR/$SC_NAME.sources"
 IP_LIST="$ROOT_DIR/$SC_NAME.netset"
 TMP_FILE="$IP_LIST.tmp"
 
 init() {
   ipset -! create $IPSET_NAME hash:net
-  if [ "$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")" = '' ]; then
+  if [ ! "$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")" ]; then
     iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP
   fi
-  if [ "$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")" = '' ]; then
+  if [ ! "$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")" ]; then
     iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP
   fi
 }
@@ -51,6 +50,29 @@ update_iplist() {
   rm "$TMP_FILE"
 }
 
+status() {
+  STAT_IPT_IN=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")
+  STAT_IPT_FW=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")
+  STAT_IPSET=$(ipset list $IPSET_NAME -t)
+  if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "$STAT_IPSET" ]; then echo -e "Firewall is set and active\n"
+  elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPSET" ]; then echo -e "Firewall is not active; Settings are clean\n"
+  else echo -e "Something is not right!\n"; fi
+  if [ "$STAT_IPT_IN" ];
+    then echo -e "- INPUT firewall filter is active:\n     iptables $STAT_IPT_IN"
+    else echo "- INPUT firewall filter is inactive"
+  fi
+  if [ "$STAT_IPT_FW" ];
+    then echo -e "- FORWARD firewall filter is active:\n     iptables $STAT_IPT_FW"
+    else echo "- FORWARD firewall filter inactive"
+  fi
+  if [ "$STAT_IPSET" ]; then
+    echo "- ipset filter is set:"
+    echo "$STAT_IPSET" | sed -e 's/^/     /g'
+  else
+    echo "- ipset filter does not exist"
+  fi
+}
+
 print_help() {
   echo "Valid Parameters (only one):"
   echo " init        - setup ipset and iptables for this script to work"
@@ -58,6 +80,7 @@ print_help() {
   echo " load_set    - populates ipset set from $IP_LIST after performing init"
   echo " update_only - generates $IP_LIST from servers in $SRC_LIST"
   echo " update      - update_only then load_set [probably what you want to use]"
+  echo " status      - display status"
   echo " help        - display this"
 }
 
@@ -73,9 +96,10 @@ fi
 case $2 in
   "init") init ;;
   "clean") clean ;;
-  "reload") init; set_ipset ;;
+  "load_set") init; set_ipset ;;
   "update_only") update_iplist ;;
   "update") init; update_iplist; set_ipset ;;
+  "status") status ;;
   "help") print_help ;;
   *) >&2 echo "Unknown Parameter $2!"; print_help; exit 1 ;;
 esac
