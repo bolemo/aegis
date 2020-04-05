@@ -1,12 +1,12 @@
-# hw_firewall
-Firewall script for Netgear R7800 Router
+# bolemo_firewall
+Firewall blocklist script for Netgear R7800 Router with Voxel firmware
 
 ## Install
-* `hw_firewall.sh` goes in `/usr/local/sbin`
-* `hw_firewall.sources` goes in `/usr/local/etc/`
+* `bolemo_firewall.sh` goes in `/mnt/optware/bolemo/scripts/`
+* `bolemo_firewall.sources` goes in `/mnt/optware/bolemo/etc/`
 
 ## Use
-use: `/usr/local/sbin/hw_firewall parameter`
+use: `/mnt/optware/bolemo/scripts/hw_firewall parameter`
 
 Valid Parameters (only one):
 * init        - setup ipset and iptables for this script to work
