@@ -7,3 +7,4 @@ cd $BASE_DIR
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 wget -O "$BASE_DIR/bolemo/scripts/firewall-blocklist.sh" "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist.sh"
 wget -O "$BASE_DIR/bolemo/etc/firewall-blocklist.sources" "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist.sources"
+chmod -x "$BASE_DIR/bolemo/scripts/firewall-blocklist.sh"
