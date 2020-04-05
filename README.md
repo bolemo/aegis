@@ -10,7 +10,7 @@ should work with R9000 as well.
 Install locations can be different as long as you define them in the script (variables at the beginning).
 
 ## Use
-use: `/mnt/optware/bolemo/scripts/firewall-blocklist parameter`
+use: `/mnt/optware/bolemo/scripts/firewall-blocklist.sh parameter`
 
 Valid Parameters (only one):
 * init        - setup ipset and iptables for this script to work
