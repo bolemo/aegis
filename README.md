@@ -4,8 +4,12 @@ Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 should work with R9000 as well.
 
 ## Install
-* `firewall-blocklist.sh` goes in `/mnt/optware/bolemo/scripts/`
-* `firewall-blocklist.sources` goes in `/mnt/optware/bolemo/etc/`
+* You need to have Voxel's Firmware
+* Connect to router's terminal with ssh or telnet
+* Go to the attached drive (USB): `cd /mnt/optware/`
+* Download install script: `wget -O install-firewall-blocklist.sh "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/install-firewall-blocklist.sh"`
+* Make install script executable: `chmod +x install-firewall-blocklist.sh`
+* Run install script: `./install-firewall-blocklist.sh`
 
 Install locations can be different as long as you define them in the script (variables at the beginning).
 
