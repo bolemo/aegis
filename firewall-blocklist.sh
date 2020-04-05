@@ -5,7 +5,7 @@ IPSET_NAME="blocklist"
 IPSET_TMP="${IPSET_NAME}_tmp"
 ROOT_DIR="/mnt/optware/bolemo"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-IP_LIST="/tmp/$SC_NAME.netset"
+IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 TMP_FILE="$IP_LIST.tmp"
 FWS_FILE="/opt/scripts/firewall-start-blocklist.sh"
 
