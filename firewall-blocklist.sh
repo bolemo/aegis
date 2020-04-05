@@ -1,13 +1,13 @@
 #! /bin/sh
 
-SC_NAME="bolemo_firewall"
-IPSET_NAME="bolemo_firewall"
+SC_NAME="firewall-blocklist"
+IPSET_NAME="blocklist"
 IPSET_TMP="${IPSET_NAME}_tmp"
 ROOT_DIR="/mnt/optware/bolemo"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 IP_LIST="/tmp/$SC_NAME.netset"
 TMP_FILE="$IP_LIST.tmp"
-FWS_FILE="/opt/scripts/firewall-start-bolemo.sh"
+FWS_FILE="/opt/scripts/firewall-start-blocklist.sh"
 
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
@@ -102,7 +102,6 @@ print_help() {
 }
 
 # Main routine
-#[ -w $ROOT_DIR ] || { >&2 echo "$ROOT_DIR not Writable!"; exit 1; }
 [ $# = 0 ] && { >&2 echo "No parameter!"; print_help; exit 1; }
 
 if [ "$1" != "_niced" ]; then
