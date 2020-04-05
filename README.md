@@ -1,14 +1,16 @@
-# bolemo_firewall
-Firewall blocklist script for Netgear R7800 Router with Voxel firmware
+# Firewall Blocklist
+Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
+
+should work with R9000 as well.
 
 ## Install
-* `bolemo_firewall.sh` goes in `/mnt/optware/bolemo/scripts/`
-* `bolemo_firewall.sources` goes in `/mnt/optware/bolemo/etc/`
+* `firewall-blocklist.sh` goes in `/mnt/optware/bolemo/scripts/`
+* `firewall-blocklist.sources` goes in `/mnt/optware/bolemo/etc/`
 
-Install locations can be different as long as you define them in the script (variables at the beginning)
+Install locations can be different as long as you define them in the script (variables at the beginning).
 
 ## Use
-use: `/mnt/optware/bolemo/scripts/bolemo_firewall parameter`
+use: `/mnt/optware/bolemo/scripts/firewall-blocklist parameter`
 
 Valid Parameters (only one):
 * init        - setup ipset and iptables for this script to work
