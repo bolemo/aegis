@@ -137,9 +137,9 @@ VERBOSE=$3
 [ $VERBOSE ] && echo "Verbose mode"
 
 case $2 in
-  "init") init ;;
-  "clean") clean ;;
-  "load_set") init; set_ipset ;;
+  "init") init; [ $VERBOSE ] && status ;;
+  "clean") clean; [ $VERBOSE ] && status ;;
+  "load_set") init; set_ipset; [ $VERBOSE ] && status ;;
   "update_only") update_iplist ;;
   "update") init; update_iplist; set_ipset; [ $VERBOSE ] && status ;;
   "status") status ;;
