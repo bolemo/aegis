@@ -3,7 +3,7 @@
 SC_NAME="firewall-blocklist"
 IPSET_NAME="blocklist"
 IPSET_TMP="${IPSET_NAME}_tmp"
-ROOT_DIR="/mnt/optware/bolemo"
+ROOT_DIR="/opt/bolemo"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 TMP_FILE="$IP_LIST.tmp"
@@ -17,6 +17,7 @@ check_firewall_start() {
 }
 
 init() {
+  ipset -q destroy $IPSET_TMP
   ipset -! create $IPSET_NAME hash:net
   if ! check_firewall_start; then
     { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
@@ -24,14 +25,14 @@ init() {
     } > $FWS_FILE
     chmod +x $FWS_FILE
   fi
-  /usr/sbin/net-wall restart
+  /usr/sbin/net-wall restart > /dev/null
 }
 
 clean() {
   [ -e $FWS_FILE ] && rm $FWS_FILE
 #  iptables -D INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP
 #  iptables -D FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP
-  /usr/sbin/net-wall restart
+  /usr/sbin/net-wall restart > /dev/null
   ipset -q destroy $IPSET_NAME
   ipset -q destroy $IPSET_TMP
   [ -e $TMP_FILE ] && rm $TMP_FILE
@@ -42,9 +43,20 @@ set_ipset() {
 
   ipset -! create $IPSET_TMP hash:net
   ipset flush $IPSET_TMP > /dev/null
-  while read -r IP; do
-    ipset add $IPSET_TMP "$IP"
-  done < $IP_LIST
+  if [ $VERBOSE ]; then
+    COUNT=0
+    MAX="$(wc -l < $IP_LIST)"
+    echo "Building ipset blocklist ($MAX entries)..."
+    while read -r IP; do
+      ipset add $IPSET_TMP "$IP"
+      COUNT=$((COUNT+1))
+      PROG=$((100*COUNT/MAX))
+      [ $((PROG%1)) -eq 0 ] && echo -ne " - Progression: $PROG%  \r"
+    done < $IP_LIST
+    echo -e "\n Completed"
+  else
+    while read -r IP; do ipset add $IPSET_TMP "$IP"; done < $IP_LIST
+  fi
   ipset swap $IPSET_NAME $IPSET_TMP
   ipset destroy $IPSET_TMP
 }
@@ -91,7 +103,7 @@ status() {
 }
 
 print_help() {
-  echo "Valid Parameters (only one):"
+  echo "Valid Commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
   echo " clean       - clean ipset and iptables rules from setup created by this script"
   echo " load_set    - populates ipset set from $IP_LIST after performing init"
@@ -99,15 +111,29 @@ print_help() {
   echo " update      - update_only then load_set [probably what you want to use]"
   echo " status      - display status"
   echo " help        - display this"
+  echo "Options:"
+  echo " -v          - verbose mode"
 }
 
 # Main routine
 [ $# = 0 ] && { >&2 echo "No parameter!"; print_help; exit 1; }
 
 if [ "$1" != "_niced" ]; then
-  nice -n 15 "$0" _niced "$1"
+  if [ "$1" = "-v" ]; then
+    [ $# = 1 ] && { >&2 echo "No parameter!"; print_help; exit 1; }
+    PARAM="$2"; VERB="_verbose"
+  elif [ $# = 2 ] && [ "$2" = "-v" ]; then
+    PARAM="$1"; VERB="_verbose"
+  else
+    PARAM="$1"; VERB=''
+  fi
+  SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+  nice -n 15 "$SC_PATH/$SC_NAME.sh" _niced "$PARAM" "$VERB"
   exit $?
 fi
+
+VERBOSE=$3
+[ $VERBOSE ] && echo "Verbose mode"
 
 case $2 in
   "init") init ;;
