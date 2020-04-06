@@ -3,7 +3,7 @@ BASE_DIR="/mnt/optware"
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 cd $BASE_DIR
 [ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
-ln -s "$BASE_DIR/bolemo" "/opt/bolemo"
+[ -L "/opt/bolemo" ] && [ -d "/opt/bolemo" ] || ln -s "$BASE_DIR/bolemo" "/opt/bolemo"
 [ -d "$BASE_DIR/bolemo/scripts" ] || mkdir "$BASE_DIR/bolemo/scripts"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 wget -O "$BASE_DIR/bolemo/scripts/firewall-blocklist.sh" "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist.sh"
