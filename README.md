@@ -28,8 +28,8 @@ use: `/opt/bolemo/scripts/firewall-blocklist.sh [-v] COMMAND`
 Valid commands (only one):
 * `init` - setup ipset and iptables for this script to work
 * `clean` - clean ipset and iptables rules from setup created by this script
-* `load_set` - populates ipset set from /usr/local/etc/hw_firewall.netset after performing init
-* `update_only` - generates /usr/local/etc/hw_firewall.netset from servers in /usr/local/etc/hw_firewall.sources
+* `load_set` - populates ipset set from `firewall-blocklist.netset` after performing init
+* `update_only` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
 * `update` - update_only then load_set [probably what you want to use]
 * `status` - display status
 * `help` - display this
