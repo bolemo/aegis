@@ -10,13 +10,21 @@ should work with R9000 as well.
 * Download install script: `wget -O install-firewall-blocklist.sh "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/install-firewall-blocklist.sh"`
 * Make install script executable: `chmod +x install-firewall-blocklist.sh`
 * Run install script: `./install-firewall-blocklist.sh`
+* Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist.sh status`
+* Remove the install script: `rm install-firewall-blocklist.sh`
 
-Install locations can be different as long as you define them in the script (variables at the beginning).
+The script will create a symbolic link of the bolemo directory in /opt
+
+Once installed, you will likely want to launch the script. Use `/opt/bolemo/scripts/firewall-blocklist.sh -v update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress as it takes several minutes to process.
+
+Once the process is done, you can use `/opt/bolemo/scripts/firewall-blocklist.sh status` to check everything is up and running.
+
+You will probably want to setup a cron job to update the blocklists once a day. You can use kamoj addon and add as a cron job: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option).
 
 ## Use
-use: `/mnt/optware/bolemo/scripts/firewall-blocklist.sh parameter`
+use: `/opt/bolemo/scripts/firewall-blocklist.sh [options] command`
 
-Valid Parameters (only one):
+Valid commands (only one):
 * init        - setup ipset and iptables for this script to work
 * clean       - clean ipset and iptables rules from setup created by this script
 * load_set    - populates ipset set from /usr/local/etc/hw_firewall.netset after performing init
@@ -24,3 +32,5 @@ Valid Parameters (only one):
 * update      - update_only then load_set [probably what you want to use]
 * status      - display status
 * help        - display this
+Options:
+* -v          - verbose mode
