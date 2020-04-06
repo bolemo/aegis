@@ -66,8 +66,9 @@ update_iplist() {
 
   :>"$TMP_FILE"
   # Process each source url
+  [ $VERBOSE ] && WGET_OPTS='-O-' || WGET_OPTS='-qO-'
   grep -v "^[[:space:]*\#]" "$SRC_LIST" | while read -r URL; do
-    wget -qO- "$URL" | grep '^[0-9]' | sed -e 's/;.*//' >> "$TMP_FILE"
+    wget $WGET_OPTS "$URL" | grep '^[0-9]' | sed -e 's/;.*//' >> "$TMP_FILE"
   done
   sort "$TMP_FILE" | uniq > "$IP_LIST"
   rm "$TMP_FILE"
