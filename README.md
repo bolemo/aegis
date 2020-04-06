@@ -19,7 +19,7 @@ Once installed, you will likely want to launch the script. Use `/opt/bolemo/scri
 
 Once the process is done, you can use `/opt/bolemo/scripts/firewall-blocklist.sh status` to check everything is up and running.
 
-You will probably want to setup a cron job to update the blocklists once a day. You can use kamoj addon and add as a cron job: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option).
+You will probably want to setup a cron job to update the blocklists once a day. You can use Kamoj's addon and add as a cron job: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option).
 
 ## Use
 use: `/opt/bolemo/scripts/firewall-blocklist.sh [options] command`
