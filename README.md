@@ -15,14 +15,15 @@ should work with R9000 as well.
 
 The script will create a symbolic link of the bolemo directory in /opt
 
-Once installed, you will likely want to launch the script. Use `/opt/bolemo/scripts/firewall-blocklist.sh -v update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress as it takes several minutes to process.
+Once installed, you will likely want to launch the script.
+Use `/opt/bolemo/scripts/firewall-blocklist.sh -v update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress as it takes several minutes to process (be patient).
 
-Once the process is done, you can use `/opt/bolemo/scripts/firewall-blocklist.sh status` to check everything is up and running.
+Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist.sh status` to check everything is up and running or not.
 
-You will probably want to setup a cron job to update the blocklists once a day. You can use Kamoj's addon and add as a cron job: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option).
+You will probably want to setup a cron job to update the blocklists once a day (you can use Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning.
 
-## Use
-use: `/opt/bolemo/scripts/firewall-blocklist.sh [options] command`
+## Usage
+use: `/opt/bolemo/scripts/firewall-blocklist.sh [-v] COMMAND`
 
 Valid commands (only one):
 * `init` - setup ipset and iptables for this script to work
@@ -35,3 +36,8 @@ Valid commands (only one):
 
 Options:
 * `-v` - verbose mode
+
+## Blocklists
+The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
+
+You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
