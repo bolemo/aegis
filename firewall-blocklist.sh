@@ -103,7 +103,7 @@ status() {
 }
 
 print_help() {
-  echo "Valid Commands (only one):"
+  echo "Valid commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
   echo " clean       - clean ipset and iptables rules from setup created by this script"
   echo " load_set    - populates ipset set from $IP_LIST after performing init"
@@ -140,7 +140,7 @@ case $2 in
   "clean") clean ;;
   "load_set") init; set_ipset ;;
   "update_only") update_iplist ;;
-  "update") init; update_iplist; set_ipset ;;
+  "update") init; update_iplist; set_ipset; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   *) >&2 echo "Unknown Parameter $2!"; print_help; exit 1 ;;
