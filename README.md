@@ -32,5 +32,6 @@ Valid commands (only one):
 * update      - update_only then load_set [probably what you want to use]
 * status      - display status
 * help        - display this
+
 Options:
 * -v          - verbose mode
