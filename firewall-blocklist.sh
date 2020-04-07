@@ -1,6 +1,7 @@
 #! /bin/sh
 
 SC_NAME="firewall-blocklist"
+SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_NAME="blocklist"
 IPSET_TMP="${IPSET_NAME}_tmp"
 ROOT_DIR="/opt/bolemo"
@@ -16,8 +17,11 @@ check_firewall_start() {
   return 0
 }
 
-check() {
-  [ -r "$SRC_LIST" ] && echo "All seems ok" || echo "$SRC_LIST is missing!"
+test() {
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ] && [ -d $(dirname "$FWS_FILE") ];
+    then echo "All seems ok for this script to be able to work"
+    else echo "Something is wrong!"
+  fi
 }
 
 init() {
@@ -112,6 +116,7 @@ status() {
 }
 
 print_help() {
+  echo "Usage: $SC_PATH/$SC_NAME.sh [-v] COMMAND"
   echo "Valid commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
   echo " clean       - clean ipset and iptables rules from setup created by this script"
@@ -119,6 +124,7 @@ print_help() {
   echo " update_only - generates $IP_LIST from servers in $SRC_LIST"
   echo " update      - update_only then load_set [probably what you want to use]"
   echo " status      - display status"
+  echo " test        - check if this script is installed properly"
   echo " help        - display this"
   echo "Options:"
   echo " -v          - verbose mode"
@@ -136,7 +142,6 @@ if [ "$1" != "_niced" ]; then
   else
     PARAM="$1"; VERB=''
   fi
-  SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
   nice -n 15 "$SC_PATH/$SC_NAME.sh" _niced "$PARAM" "$VERB"
   exit $?
 fi
@@ -152,6 +157,7 @@ case $2 in
   "update") init; update_iplist; set_ipset; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
+  "test") test ;;
   *) >&2 echo "Unknown Parameter $2!"; print_help; exit 1 ;;
 esac
 
