@@ -116,7 +116,7 @@ status() {
 }
 
 print_help() {
-  echo "Usage: $SC_PATH/$SC_NAME.sh [-v] COMMAND"
+  echo "Usage: $ROOT_DIR/scripts/$SC_NAME.sh [-v] COMMAND"
   echo "Valid commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
   echo " clean       - clean ipset and iptables rules from setup created by this script"
