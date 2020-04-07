@@ -20,7 +20,7 @@ Use `/opt/bolemo/scripts/firewall-blocklist.sh -v update` to update blocklists, 
 
 Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist.sh status` to check everything is up and running or not.
 
-You will probably want to setup a cron job to update the blocklists once a day (you can use Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning.
+You will probably want to setup a cron job to update the blocklists once a day (use entware cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist.sh update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning.
 
 ## Usage
 use: `/opt/bolemo/scripts/firewall-blocklist.sh [-v] COMMAND`
