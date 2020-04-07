@@ -19,7 +19,7 @@ check_firewall_start() {
 
 test() {
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ] && [ -d $(dirname "$FWS_FILE") ];
-    then echo "All seems ok for this script to be able to work"
+    then echo "This script seems to be installed and able to work properly"
     else echo "Something is wrong!"
   fi
 }
