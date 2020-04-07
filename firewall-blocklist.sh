@@ -16,6 +16,10 @@ check_firewall_start() {
   return 0
 }
 
+check() {
+  [ -r "$SRC_LIST" ] && echo "All seems ok" || echo "$SRC_LIST is missing!"
+}
+
 init() {
   ipset -q destroy $IPSET_TMP
   ipset -! create $IPSET_NAME hash:net
