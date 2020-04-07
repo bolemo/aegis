@@ -66,12 +66,16 @@ update_iplist() {
 
   :>"$TMP_FILE"
   # Process each source url
-  [ $VERBOSE ] && WGET_OPTS='-O-' || WGET_OPTS='-qO-'
+  [ $VERBOSE ] && echo "Downloading lists defined in $SRC_LIST"
+  [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
   grep -v "^[[:space:]*\#]" "$SRC_LIST" | while read -r URL; do
+    [ $VERBOSE ] && echo "$URL"
     wget $WGET_OPTS "$URL" | grep '^[0-9]' | sed -e 's/;.*//' >> "$TMP_FILE"
   done
+  [ $VERBOSE ] && echo "Removing duplicates..."
   sort "$TMP_FILE" | uniq > "$IP_LIST"
   rm "$TMP_FILE"
+  [ $VERBOSE ] && echo "Done"
 }
 
 status() {
