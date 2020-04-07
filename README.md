@@ -10,7 +10,7 @@ should work with R9000 as well.
 * Download install script: `wget -O install-firewall-blocklist.sh "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/install-firewall-blocklist.sh"`
 * Make install script executable: `chmod +x install-firewall-blocklist.sh`
 * Run install script: `./install-firewall-blocklist.sh`
-* Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist.sh status`
+* Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist.sh test`
 * Remove the install script: `rm install-firewall-blocklist.sh`
 
 The script will create a symbolic link of the bolemo directory in /opt
@@ -32,6 +32,7 @@ Valid commands (only one):
 * `update_only` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
 * `update` - update_only then load_set [probably what you want to use]
 * `status` - display status
+* `test` - check if this script is installed properly
 * `help` - display this
 
 Options:
