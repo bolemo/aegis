@@ -30,7 +30,7 @@ init() {
   ipset -q destroy $IPSET_TMP
   ipset -! create $IPSET_WL_NAME hash:ip
   ipset flush $IPSET_WL_NAME
-  ipset add $IPSET_WL_NAME "$(nvram get wan_gateway)."
+  ipset add $IPSET_WL_NAME "$(nvram get wan_gateway)"
   ipset -! create $IPSET_NAME hash:net
   if ! check_firewall_start; then
     { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
