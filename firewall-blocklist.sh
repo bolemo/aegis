@@ -3,6 +3,7 @@
 SC_NAME="firewall-blocklist"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_NAME="blocklist"
+IPSET_WL_NAME="whitelist"
 IPSET_TMP="${IPSET_NAME}_tmp"
 ROOT_DIR="/opt/bolemo"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -14,6 +15,7 @@ check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")" ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")" ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I INPUT -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")" ] || return 1
   return 0
 }
 
@@ -26,10 +28,14 @@ test() {
 
 init() {
   ipset -q destroy $IPSET_TMP
+  ipset -! create $IPSET_WL_NAME hash:ip
+  ipset flush $IPSET_WL_NAME
+  ipset add $IPSET_WL_NAME "$(nvram get wan_gateway)."
   ipset -! create $IPSET_NAME hash:net
   if ! check_firewall_start; then
     { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
       echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP";
+      echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
     } > $FWS_FILE
     chmod +x $FWS_FILE
   fi
@@ -42,6 +48,7 @@ clean() {
 #  iptables -D FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP
   /usr/sbin/net-wall restart > /dev/null
   ipset -q destroy $IPSET_NAME
+  ipset -q destroy $IPSET_WL_NAME
   ipset -q destroy $IPSET_TMP
   [ -e $TMP_FILE ] && rm $TMP_FILE
 }
@@ -95,9 +102,11 @@ status() {
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT_IN=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")
   STAT_IPT_FW=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")
+  STAT_IPT_WL=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")
   STAT_IPSET=$(ipset list $IPSET_NAME -t)
-  if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "$STAT_IPSET" -a "$STAT_FWS" ]; then echo -e "Firewall is set and active\n"
-  elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPSET$STAT_FWS" ]; then echo -e "Firewall is not active; Settings are clean\n"
+  STAT_IPSET_WL=$(ipset list $IPSET_WL_NAME -t)
+  if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "STAT_IPT_WL" -a "$STAT_IPSET" -a "$STAT_IPSET_WL" -a "$STAT_FWS" ]; then echo -e "Firewall is set and active\n"
+  elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPT_WL$STAT_IPSET$STAT_IPSET_WL$STAT_FWS" ]; then echo -e "Firewall is not active; Settings are clean\n"
   else echo -e "Something is not right!\n"; fi
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings"
@@ -112,11 +121,21 @@ status() {
     then echo -e "- FORWARD firewall filter is active:\n     iptables $STAT_IPT_FW"
     else echo "- FORWARD firewall filter inactive"
   fi
+  if [ "$STAT_IPT_WL" ];
+    then echo -e "- INPUT firewall whitelist is active:\n     iptables $STAT_IPT_WL"
+    else echo "- INPUT firewall whitelist inactive"
+  fi
   if [ "$STAT_IPSET" ]; then
     echo "- ipset filter is set:"
     echo "$STAT_IPSET" | sed -e 's/^/     /g'
   else
     echo "- ipset filter does not exist"
+  fi
+  if [ "$STAT_IPSET_WL" ]; then
+    echo "- ipset whitelist is set:"
+    echo "$STAT_IPSET_WL" | sed -e 's/^/     /g'
+  else
+    echo "- ipset whitelist does not exist"
   fi
 }
 
