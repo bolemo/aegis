@@ -2,6 +2,7 @@
 
 SC_NAME="firewall-blocklist"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+WAN_GATEWAY="$(nvram get wan_gateway)"
 IPSET_NAME="blocklist"
 IPSET_WL_NAME="whitelist"
 IPSET_TMP="${IPSET_NAME}_tmp"
@@ -28,9 +29,9 @@ test() {
 
 init() {
   ipset -q destroy $IPSET_TMP
-  ipset -! create $IPSET_WL_NAME bitmap:ip
+  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY"
   ipset flush $IPSET_WL_NAME
-  ipset add $IPSET_WL_NAME "$(nvram get wan_gateway)"
+  ipset add $IPSET_WL_NAME "$WAN_GATEWAY"
   ipset -! create $IPSET_NAME hash:net
   if ! check_firewall_start; then
     { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
