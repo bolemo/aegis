@@ -29,9 +29,8 @@ test() {
 
 init() {
   ipset -q destroy $IPSET_TMP
-  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/24"
-  ipset flush $IPSET_WL_NAME
-  ipset add $IPSET_WL_NAME "$WAN_GATEWAY"
+  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/31"
+  ipset -q add $IPSET_WL_NAME "$WAN_GATEWAY"
   ipset -! create $IPSET_NAME hash:net
   if ! check_firewall_start; then
     { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
