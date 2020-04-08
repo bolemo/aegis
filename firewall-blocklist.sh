@@ -28,7 +28,7 @@ test() {
 
 init() {
   ipset -q destroy $IPSET_TMP
-  ipset -! create $IPSET_WL_NAME hash:ip
+  ipset -! create $IPSET_WL_NAME bitmap:ip
   ipset flush $IPSET_WL_NAME
   ipset add $IPSET_WL_NAME "$(nvram get wan_gateway)"
   ipset -! create $IPSET_NAME hash:net
