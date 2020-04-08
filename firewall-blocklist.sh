@@ -78,10 +78,10 @@ update_iplist() {
   [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
   _NBOK=0; _TOT=0;
   grep -v "^[[:space:]*\#]" "$SRC_LIST" | while read -r URL; do
-    _TOT=$((_TOT+1))
+    _TOT=$(($_TOT+1))
     [ $VERBOSE ] && echo "$_TOT) $URL"
     wget $WGET_OPTS "$URL" | grep '^[0-9]' | sed -e 's/;.*//' >> "$TMP_FILE"
-    [ $? = 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo "Wget error code ${?}! Could not download $URL"
+    [ $? = 0 ] && _NBOK=$(($_NBOK+1)) || >&2 echo "Wget error code ${?}! Could not download $URL"
   done
   [ $_NBOK = 0 ] && { >&2 echo "Could not get any list!"; rm "$TMP_FILE"; exit 1; }
   [ $_NBOK = $_TOT ] || >&2 echo "Downloaded only $_NBOK / $_TOT list(s)!"
