@@ -40,23 +40,29 @@ test() {
 }
 
 init() {
+  [ $VERBOSE ] && echo "Initializing..."
   ipset -q destroy $IPSET_TMP
   ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/31"
   ipset -q add $IPSET_WL_NAME "$WAN_GATEWAY"
   ipset -! create $IPSET_NAME hash:net
-  [ check_firewall_start ] || create_firewall_start
+  [ check_firewall_start ] && { [ $VERBOSE ] && echo "- firewall-start.sh is in place and ok"; } || { create_firewall_start; [ $VERBOSE ] && echo "- firewall-start.sh not ok; generating it."; }
   /usr/sbin/net-wall restart > /dev/null
+  [ $VERBOSE ] && echo -e "- built-in firewire restarted.\nInitialization done."
 }
 
 clean() {
-  [ -e $FWS_FILE ] && rm $FWS_FILE
+  [ $VERBOSE ] && echo "Cleaning..."
+  [ -e $FWS_FILE ] && { rm $FWS_FILE; [ $VERBOSE ] && echo "- $FWS_FILE removed."; }
 #  iptables -D INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP
 #  iptables -D FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP
   /usr/sbin/net-wall restart > /dev/null
+  [ $VERBOSE ] && echo "- built-in firewall restarted."
   ipset -q destroy $IPSET_NAME
   ipset -q destroy $IPSET_WL_NAME
   ipset -q destroy $IPSET_TMP
+  [ $VERBOSE ] && echo "- cleaned ipsets."
   [ -e $TMP_FILE ] && rm $TMP_FILE
+  [ $VERBOSE ] && echo -e "- removed temporary files.\nCleaning done."
 }
 
 set_ipset() {
