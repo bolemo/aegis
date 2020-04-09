@@ -10,7 +10,8 @@ ROOT_DIR="/opt/bolemo"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 TMP_FILE="$IP_LIST.tmp"
-FWS_FILE="/opt/scripts/firewall-start-blocklist.sh"
+FWS_DIR="/opt/scripts"
+FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
@@ -19,6 +20,16 @@ check_firewall_start() {
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I INPUT -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")" ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")" ] || return 1
   return 0
+}
+
+create_firewall_start() {
+  [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
+  { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
+    echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP";
+    echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
+    echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
+  } > $FWS_FILE
+  chmod +x $FWS_FILE
 }
 
 test() {
@@ -33,14 +44,7 @@ init() {
   ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/31"
   ipset -q add $IPSET_WL_NAME "$WAN_GATEWAY"
   ipset -! create $IPSET_NAME hash:net
-  if ! check_firewall_start; then
-    { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
-      echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP";
-      echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
-      echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
-    } > $FWS_FILE
-    chmod +x $FWS_FILE
-  fi
+  [ check_firewall_start ] || create_firewall_start
   /usr/sbin/net-wall restart > /dev/null
 }
 
