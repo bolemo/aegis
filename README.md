@@ -7,11 +7,12 @@ should work with R9000 as well.
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Download install script: `wget -O install-firewall-blocklist.sh "https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/install-firewall-blocklist.sh"`
-* Make install script executable: `chmod +x install-firewall-blocklist.sh`
-* Run install script: `./install-firewall-blocklist.sh`
+* Download the desired release: `wget -O FWBL.zip "https://github.com/bolemo/firewall-blocklist/archive/LATEST.zip"`
+* Unzip the file: `unzip -jd FWBL FWBL.zip`
+* Make install script executable: `chmod +x FWBL/install.sh`
+* Run install script: `FWBL/install.sh`
 * Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist.sh test`
-* Remove the install script: `rm install-firewall-blocklist.sh`
+* Remove the install files and folder: `rm -r FWBL*` check then confirm each file to delete answering y
 
 The script will create a symbolic link of the bolemo directory in /opt
 
