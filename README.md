@@ -5,6 +5,7 @@ should work with R9000 as well.
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
+* Although it is technically possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you lay have installed Entware).
 * This script will be creating `firewall-start.sh` in `/opt/scripts`, that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, ***it will be erased!*** In future versions, this will be improved.
 
 ## Install
