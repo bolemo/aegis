@@ -1,7 +1,7 @@
 #!/bin/sh
 SELF_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
-echo "Installing on device $USB_DIR"
+echo "Installing on device $BASE_DIR"
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 echo "Creating directory (if not already existing): $BASE_DIR/bolemo"
 [ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
@@ -11,7 +11,7 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/scripts" ] || mkdir "$BASE_DIR/bolemo/scripts"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 echo "Installing firewall-blocklist files"
-mv "$SELF_PATH/firewall-blocklist.sh" "$BASE_DIR/bolemo/scripts/"
-mv "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
+\cp "$SELF_PATH/firewall-blocklist.sh" "$BASE_DIR/bolemo/scripts/"
+\cp "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist.sh"
 echo "Done!"
