@@ -1,34 +1,48 @@
 #! /bin/sh
 
 SC_NAME="firewall-blocklist"
-SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 IPSET_NAME="blocklist"
 IPSET_WL_NAME="whitelist"
-IPSET_TMP="${IPSET_NAME}_tmp"
 ROOT_DIR="/opt/bolemo"
-SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
+
+#we are called from firewall_start.sh
+if [ $1 ] && [ $1 = "_fws" ]; then
+  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/31"
+  ipset -q add $IPSET_WL_NAME "$WAN_GATEWAY"
+  if [ ! "$(ipset list -n | grep "$IPSET_NAME")" ]; then
+    if [ -r $IP_LIST ]; then
+      echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+    else
+      ipset create $IPSET_NAME hash:net family inet
+    fi
+  fi
+  iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP  
+  iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP  
+  iptables -I INPUT   -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT  
+  iptables -I FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT
+
+  exit 0
+fi
+
+SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+IPSET_TMP="${IPSET_NAME}_tmp"
+SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
+SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 TMP_FILE="$IP_LIST.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")" ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")" ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I INPUT -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")" ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "iptables -I FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")" ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" ] || return 1
   return 0
 }
 
 create_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
-  { echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP";
-    echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP";
-    echo "iptables -I INPUT   -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
-    echo "iptables -I FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT";
-  } > $FWS_FILE
+  echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> $FWS_FILE
   chmod +x $FWS_FILE
 }
 
@@ -42,19 +56,22 @@ test() {
 init() {
   [ $VERBOSE ] && echo "Initializing..."
   ipset -q destroy $IPSET_TMP
-  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/31"
-  ipset -q add $IPSET_WL_NAME "$WAN_GATEWAY"
-  ipset -! create $IPSET_NAME hash:net
-  [ check_firewall_start ] && { [ $VERBOSE ] && echo "- firewall-start.sh is in place and ok"; } || { create_firewall_start; [ $VERBOSE ] && echo "- firewall-start.sh not ok; generating it."; }
+  check_firewall_start && { [ $VERBOSE ] && echo "- firewall-start.sh is in place and ok"; } || { create_firewall_start; [ $VERBOSE ] && echo "- firewall-start.sh not ok; generating it."; }
   /usr/sbin/net-wall restart > /dev/null
   [ $VERBOSE ] && echo -e "- built-in firewire restarted.\nInitialization done."
 }
 
 clean() {
   [ $VERBOSE ] && echo "Cleaning..."
-  [ -e $FWS_FILE ] && { rm $FWS_FILE; [ $VERBOSE ] && echo "- $FWS_FILE removed."; }
-#  iptables -D INPUT   -i brwan -m set --match-set $IPSET_NAME src -j DROP
-#  iptables -D FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP
+  if [ -e $FWS_FILE ]; then
+    if [ "$(grep -v "$SC_NAME" $FWS_FILE | sed -e '/^[[:space:]]*$/d')" ]; then
+      sed -i "#$SC_NAME#d" $FWS_FILE
+      [ $VERBOSE ] && echo "- $FWS_FILE has some other rules; just removing ours."
+    else
+      rm $FWS_FILE
+      [ $VERBOSE ] && echo "- $FWS_FILE has no other rules; deleting it."
+    fi
+  fi
   /usr/sbin/net-wall restart > /dev/null
   [ $VERBOSE ] && echo "- built-in firewall restarted."
   ipset -q destroy $IPSET_NAME
@@ -68,22 +85,13 @@ clean() {
 set_ipset() {
   [ -r $IP_LIST ] || { >&2 echo "$IP_LIST not readable!"; exit 1; }
 
-  ipset -! create $IPSET_TMP hash:net
-  ipset flush $IPSET_TMP > /dev/null
   if [ $VERBOSE ]; then
-    COUNT=0
     MAX="$(wc -l < $IP_LIST)"
     echo "Building ipset blocklist ($MAX entries)..."
-    while read -r IP; do
-      ipset add $IPSET_TMP "$IP"
-      COUNT=$((COUNT+1))
-      PROG=$((100*COUNT/MAX))
-      [ $((PROG%1)) -eq 0 ] && echo -ne " - Progression: $PROG%  \r"
-    done < $IP_LIST
-    echo -e "\n Completed"
-  else
-    while read -r IP; do ipset add $IPSET_TMP "$IP"; done < $IP_LIST
   fi
+
+  echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
+
   ipset swap $IPSET_NAME $IPSET_TMP
   ipset destroy $IPSET_TMP
 }
@@ -160,7 +168,7 @@ status() {
 }
 
 print_help() {
-  echo "Usage: $ROOT_DIR/scripts/$SC_NAME.sh [-v] COMMAND"
+  echo "Usage: $SC_NICEPATH [-v] COMMAND"
   echo "Valid commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
   echo " clean       - clean ipset and iptables rules from setup created by this script"
@@ -186,7 +194,7 @@ if [ "$1" != "_niced" ]; then
   else
     PARAM="$1"; VERB=''
   fi
-  nice -n 15 "$SC_PATH/$SC_NAME.sh" _niced "$PARAM" "$VERB"
+  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$VERB"
   exit $?
 fi
 
