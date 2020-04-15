@@ -58,7 +58,7 @@ init() {
   ipset -q destroy $IPSET_TMP
   check_firewall_start && { [ $VERBOSE ] && echo "- firewall-start.sh is in place and ok"; } || { create_firewall_start; [ $VERBOSE ] && echo "- firewall-start.sh not ok; generating it."; }
   /usr/sbin/net-wall restart > /dev/null
-  [ $VERBOSE ] && echo -e "- built-in firewire restarted.\nInitialization done."
+  [ $VERBOSE ] && echo -e "- built-in firewall restarted.\nInitialization done."
 }
 
 clean() {
