@@ -11,11 +11,11 @@ should work with R9000 as well.
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v1.5.tar.gz | tar xzf - --one-top-level=firewall-blocklist --strip-components 1`
-* Make install script executable: `chmod +x firewall-blocklist/install.sh`
-* Run install script: `firewall-blocklist/install.sh`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v1.5.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Make install script executable: `chmod +x fbl/install.sh`
+* Run install script: `fbl/install.sh`
 * Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist test`
-* Remove the install files and folder: `rm -r firewall-blocklist` check then confirm each file to delete answering y
+* Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
 
