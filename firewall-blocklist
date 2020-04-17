@@ -221,7 +221,7 @@ if [ "$1" != "_niced" ]; then
 fi
 
 VERBOSE=$3
-[ $VERBOSE ] && echo -e "$SC_NAME $SC_VERS: Verbose mode"
+[ $VERBOSE ] && echo -e "$SC_NAME $SC_VERS - Verbose mode"
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
