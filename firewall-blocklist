@@ -149,10 +149,11 @@ status() {
   STAT_IPT_WL_FW=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")
   STAT_IPSET=$(ipset list $IPSET_NAME -t)
   STAT_IPSET_WL=$(ipset list $IPSET_WL_NAME -t)
-  if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "$STAT_IPT_WL_IN" -a "$STAT_IPT_WL_FW" -a "$STAT_IPSET" -a "$STAT_IPSET_WL" -a "$STAT_FWS" ]; then echo -e "Firewall is set and active\n"
-  elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPT_WL_IN$STAT_IPT_WL_FW$STAT_IPSET$STAT_IPSET_WL$STAT_FWS" ]; then echo -e "Firewall is not active; Settings are clean\n"
-  else echo -e "Something is not right! Use $SC_NAME -v status for more details\n"; fi
+  if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "$STAT_IPT_WL_IN" -a "$STAT_IPT_WL_FW" -a "$STAT_IPSET" -a "$STAT_IPSET_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active"
+  elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPT_WL_IN$STAT_IPT_WL_FW$STAT_IPSET$STAT_IPSET_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean"
+  else echo "Something is not right! Use $SC_NAME -v status for more details"; fi
   [ $VERBOSE ] || return 0
+  echo -e "Details:\n"
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings"
   else
@@ -220,7 +221,7 @@ if [ "$1" != "_niced" ]; then
 fi
 
 VERBOSE=$3
-[ $VERBOSE ] && echo -e "Verbose mode\n$SC_NAME version $SC_VERS"
+[ $VERBOSE ] && echo -e "$SC_NAME $SC_VERS: Verbose mode"
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
