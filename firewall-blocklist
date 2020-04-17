@@ -43,7 +43,7 @@ check_firewall_start() {
 create_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
   echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> $FWS_FILE
-  chmod +x $FWS_FILE
+  [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
 
 test() {
