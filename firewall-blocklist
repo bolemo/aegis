@@ -153,7 +153,7 @@ status() {
   elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPT_WL_IN$STAT_IPT_WL_FW$STAT_IPSET$STAT_IPSET_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean"
   else echo "Something is not right! Use $SC_NAME -v status for more details"; fi
   [ $VERBOSE ] || return 0
-  echo -e "Details:\n"
+  echo -e "\nDetails:"
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings"
   else
