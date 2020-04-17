@@ -26,7 +26,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="1.5.4"
+SC_VERS="v1.5.5"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -48,10 +48,21 @@ create_firewall_start() {
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
 
+last_avail_version() {
+  echo "$(wget -qO- "https://api.github.com/repos/bolemo/firewall-blocklist/releases/latest" | jq -r .tag_name)"
+}
+
 test() {
+  echo "$SC_NAME $SC_VERS - Test:"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo "$SC_NAME version $SC_VERS: The script should work fine."
-    else echo "$SC_NAME version $SC_VERS: Something is wrong!"
+    then echo "The script is properly installed."
+    else echo "Something is wrong!"
+  fi
+  echo "Checking latest available version..."
+  SC_LAST_VERS="$(last_avail_version)";
+  if [ $SC_LAST_VERS ] && [ $SC_VERS = $SC_LAST_VERS ]
+    then echo "- This is the last known version."
+    else echo "- New version available: $SC_LAST_VERS"
   fi
 }
 
@@ -130,7 +141,7 @@ update_iplist() {
 }
 
 status() {
-  echo "$SC_NAME version $SC_VERS. Status:"
+  echo "$SC_NAME $SC_VERS - Status:"
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT_IN=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")
   STAT_IPT_FW=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")
@@ -140,7 +151,8 @@ status() {
   STAT_IPSET_WL=$(ipset list $IPSET_WL_NAME -t)
   if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "$STAT_IPT_WL_IN" -a "$STAT_IPT_WL_FW" -a "$STAT_IPSET" -a "$STAT_IPSET_WL" -a "$STAT_FWS" ]; then echo -e "Firewall is set and active\n"
   elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPT_WL_IN$STAT_IPT_WL_FW$STAT_IPSET$STAT_IPSET_WL$STAT_FWS" ]; then echo -e "Firewall is not active; Settings are clean\n"
-  else echo -e "Something is not right!\n"; fi
+  else echo -e "Something is not right! Use $SC_NAME -v status for more details\n"; fi
+  [ $VERBOSE ] || return 0
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings"
   else
