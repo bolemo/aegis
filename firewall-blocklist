@@ -26,7 +26,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="1.5.3"
+SC_VERS="1.5.4"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -130,6 +130,7 @@ update_iplist() {
 }
 
 status() {
+  echo "$SC_NAME version $SC_VERS. Status:"
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT_IN=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")
   STAT_IPT_FW=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")
