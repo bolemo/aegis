@@ -176,7 +176,6 @@ status() {
 }
 
 print_help() {
-  echo "$SC_NAME version $SC_VERS"
   echo "Usage: $SC_NICEPATH [-v] COMMAND"
   echo "Valid commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
@@ -208,7 +207,7 @@ if [ "$1" != "_niced" ]; then
 fi
 
 VERBOSE=$3
-[ $VERBOSE ] && echo "Verbose mode"
+[ $VERBOSE ] && echo -e "Verbose mode\n$SC_NAME version $SC_VERS"
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
