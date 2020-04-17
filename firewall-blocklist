@@ -26,6 +26,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
+SC_VERS="1.5.2"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -36,13 +37,13 @@ FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" = 1 ] || return 1
   return 0
 }
 
 create_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
-  [ -e "$FWS_FILE" ] && sed -i "#$SC_NAME#d" "$FWS_FILE"
+  [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
   echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
@@ -57,7 +58,13 @@ test() {
 init() {
   [ $VERBOSE ] && echo "Initializing..."
   ipset -q destroy $IPSET_TMP
-  check_firewall_start && { [ $VERBOSE ] && echo "- firewall-start.sh is in place and ok"; } || { create_firewall_start; [ $VERBOSE ] && echo "- firewall-start.sh not ok; generating it."; }
+  if check_firewall_start; then
+    [ $VERBOSE ] && echo "- $FWS_FILE is in place and ok"
+  else
+    create_firewall_start
+    check_firewall_start || { >&2 echo "Problem with $FWS_FILE!"; exit 1; }
+    [ $VERBOSE ] && echo "- $FWS_FILE was edited and is now ok."
+  fi
   /usr/sbin/net-wall restart > /dev/null
   [ $VERBOSE ] && echo -e "- built-in firewall restarted.\nInitialization done."
 }
@@ -66,7 +73,7 @@ clean() {
   [ $VERBOSE ] && echo "Cleaning..."
   if [ -e $FWS_FILE ]; then
     if [ "$(grep -v "$SC_NAME" $FWS_FILE | sed -e '/^[[:space:]]*$/d')" ]; then
-      sed -i "#$SC_NAME#d" $FWS_FILE
+      sed -i "/$SC_NAME/d" $FWS_FILE
       [ $VERBOSE ] && echo "- $FWS_FILE has some other rules; just removing ours."
     else
       rm $FWS_FILE
@@ -169,6 +176,7 @@ status() {
 }
 
 print_help() {
+  echo "$SC_NAME version $SC_VERS"
   echo "Usage: $SC_NICEPATH [-v] COMMAND"
   echo "Valid commands (only one):"
   echo " init        - setup ipset and iptables for this script to work"
