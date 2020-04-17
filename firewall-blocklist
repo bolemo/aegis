@@ -58,11 +58,11 @@ test() {
     then echo "The script is properly installed."
     else echo "Something is wrong!"
   fi
-  echo "Checking latest available version..."
+  echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
   if [ $SC_LAST_VERS ] && [ $SC_VERS = $SC_LAST_VERS ]
-    then echo "- This is the last known version."
-    else echo "- New version available: $SC_LAST_VERS"
+    then echo "- This is the last known version.       "
+    else echo "- New version available: $SC_LAST_VERS       "
   fi
 }
 
