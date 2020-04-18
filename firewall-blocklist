@@ -53,21 +53,22 @@ last_avail_version() {
 }
 
 test() {
-  echo "$SC_NAME $SC_VERS - Test:"
+  echo -e "\033[1;36mTest:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo "The script is properly installed."
-    else echo "Something is wrong!"
+    then echo "- The script is properly installed."
+    else echo -e "- \033[35mSomething is wrong with installation!\033[0m"
   fi
+  echo "- $SC_NAME version: $SC_VERS"
   echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
   if [ $SC_LAST_VERS ] && [ $SC_VERS = $SC_LAST_VERS ]
     then echo "- This is the last known version.       "
-    else echo "- New version available: $SC_LAST_VERS       "
+    else echo -e "- \033[35mLast version available\033[0m: $SC_LAST_VERS       "
   fi
 }
 
 init() {
-  [ $VERBOSE ] && echo "Initializing..."
+  [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_firewall_start; then
     [ $VERBOSE ] && echo "- $FWS_FILE is in place and ok"
@@ -77,28 +78,28 @@ init() {
     [ $VERBOSE ] && echo "- $FWS_FILE was edited and is now ok."
   fi
   /usr/sbin/net-wall restart > /dev/null
-  [ $VERBOSE ] && echo -e "- built-in firewall restarted.\nInitialization done."
+  [ $VERBOSE ] && echo -e "- Built-in firewall restarted.\n- Initialization done."
 }
 
 clean() {
-  [ $VERBOSE ] && echo "Cleaning..."
+  [ $VERBOSE ] && echo -e "\033[1;36mCleaning...\033[0m"
   if [ -e $FWS_FILE ]; then
     if [ "$(grep -v "$SC_NAME" $FWS_FILE | sed -e '/^[[:space:]]*$/d')" ]; then
       sed -i "/$SC_NAME/d" $FWS_FILE
-      [ $VERBOSE ] && echo "- $FWS_FILE has some other rules; just removing ours."
+      [ $VERBOSE ] && echo "- $FWS_FILE has some other rules; removed only our rules."
     else
       rm $FWS_FILE
-      [ $VERBOSE ] && echo "- $FWS_FILE has no other rules; deleting it."
+      [ $VERBOSE ] && echo "- $FWS_FILE has no other rules; removed it."
     fi
   fi
   /usr/sbin/net-wall restart > /dev/null
-  [ $VERBOSE ] && echo "- built-in firewall restarted."
+  [ $VERBOSE ] && echo "- Built-in firewall restarted."
   ipset -q destroy $IPSET_NAME
   ipset -q destroy $IPSET_WL_NAME
   ipset -q destroy $IPSET_TMP
-  [ $VERBOSE ] && echo "- cleaned ipsets."
+  [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e $TMP_FILE ] && rm $TMP_FILE
-  [ $VERBOSE ] && echo -e "- removed temporary files.\nCleaning done."
+  [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
 set_ipset() {
@@ -106,7 +107,7 @@ set_ipset() {
 
   if [ $VERBOSE ]; then
     MAX="$(wc -l < $IP_LIST)"
-    echo "Building ipset blocklist ($MAX entries)..."
+    echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries)...\033[0m"
   fi
 
   echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
@@ -116,32 +117,34 @@ set_ipset() {
 }
 
 update_iplist() {
+  [ $VERBOSE ] && echo -e "\033[1;36mUpdating blocklist from sources...\033[0m"
   [ -r $SRC_LIST ] || { >&2 echo "$SRC_LIST not readable!"; exit 1; }
 
   :>"$TMP_FILE"
   # Process each source url
-  [ $VERBOSE ] && echo "Downloading lists defined in $SRC_LIST"
+  [ $VERBOSE ] && echo "- Downloading lists defined in $SRC_LIST"
   [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
   _NBOK=0; _TOT=0;
   grep -v "^[[:space:]*\#]" "$SRC_LIST" | \
   { while read -r URL; do
       _TOT=$((_TOT+1))
-      [ $VERBOSE ] && echo "$_TOT) $URL"
+      [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
       { { { { wget $WGET_OPTS "$URL"; echo $? >&3; } | grep '^[0-9]' | sed -e 's/;.*//' >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } } 4>&1
       _EC=$?
+      [ $VERBOSE ] && echo -e "\033[0m"
       [ $_EC = 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo "Wget error code $_EC! Could not download $URL"
     done
     [ $_NBOK = 0 ] && { >&2 echo "Could not get any list!"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo "Downloaded only $_NBOK / $_TOT list(s)!"
   }
-  [ $VERBOSE ] && echo "Removing duplicates..."
+  [ $VERBOSE ] && echo "- Removing duplicates..."
   sort "$TMP_FILE" | uniq > "$IP_LIST"
   rm "$TMP_FILE"
-  [ $VERBOSE ] && echo "Done"
+  [ $VERBOSE ] && echo "- Done."
 }
 
 status() {
-  echo "$SC_NAME $SC_VERS - Status:"
+  echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT_IN=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j DROP")
   STAT_IPT_FW=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j DROP")
@@ -151,57 +154,58 @@ status() {
   STAT_IPSET_WL=$(ipset list $IPSET_WL_NAME -t)
   if   [ "$STAT_IPT_IN" -a "$STAT_IPT_FW" -a "$STAT_IPT_WL_IN" -a "$STAT_IPT_WL_FW" -a "$STAT_IPSET" -a "$STAT_IPSET_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active"
   elif [ -z "$STAT_IPT_IN$STAT_IPT_FW$STAT_IPT_WL_IN$STAT_IPT_WL_FW$STAT_IPSET$STAT_IPSET_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean"
-  else echo "Something is not right! Use $SC_NAME -v status for more details"; fi
+  else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
   [ $VERBOSE ] || return 0
-  echo -e "\nDetails:"
+  echo -e "\033[1;36mDetailed status:\033[0m"
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings"
   else
     echo "- $FWS_FILE does not exist or does not have settings"
   fi
   if [ "$STAT_IPT_IN" ];
-    then echo -e "- INPUT firewall filter is active:\n     iptables $STAT_IPT_IN"
+    then echo -e "- INPUT firewall filter is active:\n\033[35m     iptables $STAT_IPT_IN\033[0m"
     else echo "- INPUT firewall filter is inactive"
   fi
   if [ "$STAT_IPT_FW" ];
-    then echo -e "- FORWARD firewall filter is active:\n     iptables $STAT_IPT_FW"
+    then echo -e "- FORWARD firewall filter is active:\n\033[35m     iptables $STAT_IPT_FW\033[0m"
     else echo "- FORWARD firewall filter inactive"
   fi
   if [ "$STAT_IPT_WL_IN" ];
-    then echo -e "- INPUT firewall whitelist is active:\n     iptables $STAT_IPT_WL_IN"
+    then echo -e "- INPUT firewall whitelist is active:\n\033[35m     iptables $STAT_IPT_WL_IN\033[0m"
     else echo "- INPUT firewall whitelist inactive"
   fi
   if [ "$STAT_IPT_WL_FW" ];
-    then echo -e "- FORWARD firewall whitelist is active:\n     iptables $STAT_IPT_WL_FW"
+    then echo -e "- FORWARD firewall whitelist is active:\n\033[35m     iptables $STAT_IPT_WL_FW\033[0m"
     else echo "- FORWARD firewall whitelist inactive"
   fi
   if [ "$STAT_IPSET" ]; then
     echo "- ipset filter is set:"
-    echo "$STAT_IPSET" | sed -e 's/^/     /g'
+    echo -e "\033[35m$STAT_IPSET\033[0m" | sed -e 's/^/     /g'
   else
     echo "- ipset filter does not exist"
   fi
   if [ "$STAT_IPSET_WL" ]; then
     echo "- ipset whitelist is set:"
-    echo "$STAT_IPSET_WL" | sed -e 's/^/     /g'
+    echo -e "\033[35m$STAT_IPSET_WL\033[0m" | sed -e 's/^/     /g'
   else
     echo "- ipset whitelist does not exist"
   fi
 }
 
 print_help() {
-  echo "Usage: $SC_NICEPATH [-v] COMMAND"
-  echo "Valid commands (only one):"
-  echo " init        - setup ipset and iptables for this script to work"
-  echo " clean       - clean ipset and iptables rules from setup created by this script"
-  echo " load_set    - populates ipset set from $IP_LIST after performing init"
-  echo " update_only - generates $IP_LIST from servers in $SRC_LIST"
-  echo " update      - update_only then load_set [probably what you want to use]"
-  echo " status      - display status"
-  echo " test        - check if this script is installed properly"
-  echo " help        - display this"
-  echo "Options:"
-  echo " -v          - verbose mode"
+  echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
+  echo -e "Usage: \033[1m$SC_NICEPATH \033[36m[-v] \033[35mCOMMAND\033[0m"
+  echo -e "\033[7mValid commands (only one):\033[0m"
+  echo -e " \033[1;35minit\033[0m        - setup ipset and iptables for this script to work"
+  echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
+  echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST after performing init"
+  echo -e " \033[1;35mupdate_only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
+  echo -e " \033[1;35mupdate\033[0m      - update_only then load_set [probably what you want to use]"
+  echo -e " \033[1;35mstatus\033[0m      - display status"
+  echo -e " \033[1;35mtest\033[0m        - check if this script is installed properly"
+  echo -e " \033[1;35mhelp\033[0m        - display this"
+  echo -e "\033[7mOptions:\033[0m"
+  echo -e " \033[1;36m-v\033[0m          - verbose mode"
 }
 
 # Main routine
@@ -221,7 +225,7 @@ if [ "$1" != "_niced" ]; then
 fi
 
 VERBOSE=$3
-[ $VERBOSE ] && echo -e "$SC_NAME $SC_VERS - Verbose mode"
+[ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
