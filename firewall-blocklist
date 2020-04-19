@@ -24,12 +24,13 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   if ipset -q list "$IPSET_WL_NAME"; then
     ipset -q destroy $IPSET_TMP
     ipset create "$IPSET_TMP" hash:ip family inet maxelem 1
+    ipset -q add "$IPSET_TMP" "$WAN_RANGE"
     ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
     ipset destroy "$IPSET_TMP"
   else
     ipset create "$IPSET_WL_NAME" hash:ip family inet maxelem 1
+    ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
   fi
-  ipset -q add "$IPSET_TMP" "$WAN_RANGE"
   if ! ipset -q list "$IPSET_NAME"; then
     if [ -r $IP_LIST ]; then
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
