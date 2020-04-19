@@ -21,8 +21,10 @@ if [ $1 ] && [ $1 = "_fws" ]; then
     let _BITS+=${#_BINBITS}
   done
   WAN_RANGE="$WAN_GATEWAY/$_BITS"
-  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_RANGE"
-  ipset -q add $IPSET_WL_NAME "$WAN_RANGE"
+  ipset -! create $IPSET_TMP hash:ip maxelem 1
+  ipset -q add $IPSET_TMP "$WAN_RANGE"
+  ipset swap $IPSET_WL_NAME $IPSET_TMP
+  ipset destroy $IPSET_TMP
   if [ ! "$(ipset list -n | grep "$IPSET_NAME")" ]; then
     if [ -r $IP_LIST ]; then
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
