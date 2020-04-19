@@ -70,9 +70,10 @@ if [ $1 ] && [ $1 = "upgrade" ]; then
   DL_PATH="/tmp/$SC_NAME.dl"
   if wget -qO "$DL_PATH" --show-progress "$UPGRADE_URL"; then
     \mv "$DL_PATH" "$SC_NICEPATH"
+    chmod +x "$SC_NICEPATH"
     echo "- Script installed."
   else
-    echo "- Could not download the script; wget returned $?"
+    >&2 echo "- Could not download the script; wget returned $?"
     exit 1
   fi
     
