@@ -214,7 +214,7 @@ status() {
       else echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
     echo -ne "\033[35m"
-    echo "$STAT_IPT" | sed -e 's/^/     /g'
+    echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
     echo -ne "\033[0m"
   else
     echo "- iptables rules are not set."
