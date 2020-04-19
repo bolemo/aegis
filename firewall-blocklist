@@ -67,8 +67,9 @@ if [ $1 ] && [ $1 = "upgrade" ]; then
   echo -e "\033[1;36mUpgrading...\033[0m"
   echo "- Downloading latest version:"
   UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
-  if wget -qO $wget -qO- --show-progress "$SC_NICEPATH.dl" "$UPGRADE_URL"; then
-    \mv "$SC_NICEPATH.dl" "$SC_NICEPATH"
+  DL_PATH="/tmp/$SC_NAME.dl"
+  if wget -qO $wget -qO- --show-progress "$DL_PATH" "$UPGRADE_URL"; then
+    \mv "$DL_PATH" "$SC_NICEPATH"
     echo "- Script installed."
   else
     echo "- Could not download the script."
