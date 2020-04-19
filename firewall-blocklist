@@ -1,9 +1,12 @@
 #! /bin/sh
 
 SC_NAME="firewall-blocklist"
-IPTBL_NAME="fwl_bl"
-IPSET_NAME="blocklist"
-IPSET_WL_NAME="whitelist"
+SC_ABR="FwBl"
+IPTBL_NAME="${SC_ABR}_DROP"
+IPSET_NAME="${SC_ABR}_BL"
+IPSET_WL_NAME="${SC_ABR}_WL"
+# IPT_MD5 depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
+IPT_MD5="770406b8f204a584178c61857075443e  -"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 
@@ -18,31 +21,39 @@ if [ $1 ] && [ $1 = "_fws" ]; then
     let _BITS+=${#_BINBITS}
   done
   WAN_RANGE="$WAN_GATEWAY/$_BITS"
-  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_RANGE"
-  ipset -q add $IPSET_WL_NAME "$WAN_RANGE"
-  if [ ! "$(ipset list -n | grep "$IPSET_NAME")" ]; then
+  if ipset -q list "$IPSET_WL_NAME"; then
+    ipset -q destroy "$IPSET_TMP"
+    ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
+    ipset -q add "$IPSET_TMP" "$WAN_RANGE"
+    ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
+    ipset -q destroy "$IPSET_TMP"
+  else
+    ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
+    ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
+  fi
+  if ! ipset -q list "$IPSET_NAME"; then
     if [ -r $IP_LIST ]; then
-      echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+      echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
     else
-      ipset create $IPSET_NAME hash:net family inet
+      ipset -q create "$IPSET_NAME" hash:net family inet
     fi
   fi
-  iptables -N $IPTBL_NAME
-  iptables -A $IPTBL_NAME -j LOG --log-prefix "[$SC_NAME] "
-  iptables -A $IPTBL_NAME -j DROP
-  iptables -I INPUT 1 -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT
-  iptables -I INPUT 2 -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME
-  iptables -I OUTPUT 1 -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT
-  iptables -I OUTPUT 2 -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME
-  iptables -I FORWARD 1 -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT
-  iptables -I FORWARD 2 -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME
-  iptables -I FORWARD 3 -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT
-  iptables -I FORWARD 4 -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME
+  iptables -N "$IPTBL_NAME"
+  iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+  iptables -A "$IPTBL_NAME" -j DROP
+  iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+  iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+  iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+  iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+  iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+  iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+  iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
 
   exit 0
 fi
 
-SC_VERS="v1.6.0"
+SC_VERS="v2.0.0"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -50,6 +61,25 @@ SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 TMP_FILE="$IP_LIST.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
+
+#upgrade
+if [ $1 ] && [ $1 = "upgrade" ]; then
+  echo -e "\033[1;36mUpgrading:\033[0m"
+  echo "- Downloading latest version:"
+  UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
+  DL_PATH="/tmp/$SC_NAME.dl"
+  if wget -qO "$DL_PATH" --show-progress "$UPGRADE_URL"; then
+    \mv "$DL_PATH" "$SC_NICEPATH"
+    chmod +x "$SC_NICEPATH"
+    echo "- Script installed."
+  else
+    >&2 echo "- Could not download the script; wget returned $?"
+    rm -f "$DL_PATH"
+    exit 1
+  fi
+    
+  exit 0
+fi
 
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
@@ -162,20 +192,13 @@ update_iplist() {
 status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
-  STAT_IPT_T=$(iptables -S $IPTBL_NAME | grep -- "-A $IPTBL_NAME -j DROP")
-  STAT_LOG=$(iptables -S $IPTBL_NAME | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")
-  STAT_IPT_I=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME")
-  STAT_IPT_O=$(iptables -S OUTPUT | grep -- "-A OUTPUT -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME")
-  STAT_IPT_F1=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME")
-  STAT_IPT_F2=$(iptables -S FORWARD | grep -- "-A FORWARD -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME")
-  STAT_IPT_WL_I=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")
-  STAT_IPT_WL_O=$(iptables -S OUTPUT | grep -- "-A OUTPUT -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT")
-  STAT_IPT_WL_F1=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT")
-  STAT_IPT_WL_F2=$(iptables -S FORWARD | grep -- "-A FORWARD -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT")
-  STAT_IPS=$(ipset -q list $IPSET_NAME -t)
-  STAT_IPS_WL=$(ipset -q list $IPSET_WL_NAME -t)
-  if   [ "$STAT_IPT_T" -a "$STAT_IPT_I" -a "$STAT_IPT_O" -a "$STAT_IPT_F1" -a "$STAT_IPT_F2" -a "$STAT_IPT_WL_I" -a "$STAT_IPT_WL_O" -a "$STAT_IPT_WL_F1" -a "$STAT_IPT_WL_F2" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active."
-  elif [ -z "$STAT_IPT_T$STAT_IPT_I$STAT_IPT_O$STAT_IPT_F1$STAT_IPT_F2$STAT_IPT_WL_I$STAT_IPT_WL_O$STAT_IPT_WL_F1$STAT_IPT_WL_F2$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
+  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
+  STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+  STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
+  STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
+  if   [ "$STAT_IPT_MATCH" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active."
+  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ $VERBOSE ] || return 0
@@ -185,45 +208,20 @@ status() {
   else
     echo "- $FWS_FILE does not exist or does not have settings."
   fi
-  if [ "$STAT_IPT_T" ];
-    then echo -e "- $IPTBL_NAME table is set:\n\033[35m     iptables $STAT_IPT_T\033[0m"
-    else echo "- $IPTBL_NAME table is not set."
+  if [ "$STAT_IPT" ]; then
+    if [ "$STAT_IPT_MATCH" ]
+      then echo -e "- iptables rules are set:"
+      else echo -e "- \033[31miptables rules are not set properly\033[0m:"
+    fi
+    echo -ne "\033[35m"
+    echo "$STAT_IPT" | sed -e 's/^/     /g'
+    echo -ne "\033[0m"
+  else
+    echo "- iptables rules are not set."
   fi
   if [ "$STAT_LOG" ];
     then echo -e "- Logging is active:\n\033[35m     iptables $STAT_LOG\033[0m"
     else echo "- Logging is inactive."
-  fi
-  if [ "$STAT_IPT_I" ];
-    then echo -e "- INPUT firewall filter is active:\n\033[35m     iptables $STAT_IPT_I\033[0m"
-    else echo "- INPUT firewall filter is inactive."
-  fi
-  if [ "$STAT_IPT_O" ];
-    then echo -e "- OUTPUT firewall filter is active:\n\033[35m     iptables $STAT_IPT_O\033[0m"
-    else echo "- OUTPUT firewall filter is inactive."
-  fi
-  if [ "$STAT_IPT_F1" ];
-    then echo -e "- FORWARD firewall incoming filter is active:\n\033[35m     iptables $STAT_IPT_F1\033[0m"
-    else echo "- FORWARD firewall incoming filter inactive."
-  fi
-  if [ "$STAT_IPT_F2" ];
-    then echo -e "- FORWARD firewall outgoing filter is active:\n\033[35m     iptables $STAT_IPT_F2\033[0m"
-    else echo "- FORWARD firewall outgoing filter inactive."
-  fi
-  if [ "$STAT_IPT_WL_I" ];
-    then echo -e "- INPUT firewall whitelist is active:\n\033[35m     iptables $STAT_IPT_WL_I\033[0m"
-    else echo "- INPUT firewall whitelist inactive."
-  fi
-  if [ "$STAT_IPT_WL_O" ];
-    then echo -e "- OUTPUT firewall whitelist is active:\n\033[35m     iptables $STAT_IPT_WL_O\033[0m"
-    else echo "- OUTPUT firewall whitelist inactive."
-  fi
-  if [ "$STAT_IPT_WL_F1" ];
-    then echo -e "- FORWARD firewall incoming whitelist is active:\n\033[35m     iptables $STAT_IPT_WL_F1\033[0m"
-    else echo "- FORWARD firewall incoming whitelist inactive."
-  fi
-  if [ "$STAT_IPT_WL_F2" ];
-    then echo -e "- FORWARD firewall outgoing whitelist is active:\n\033[35m     iptables $STAT_IPT_WL_F2\033[0m"
-    else echo "- FORWARD firewall outgoing whitelist inactive."
   fi
   if [ "$STAT_IPS" ]; then
     echo "- ipset filter is set:"
