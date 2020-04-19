@@ -1,7 +1,6 @@
 #! /bin/sh
 
 SC_NAME="firewall-blocklist"
-WAN_GATEWAY="$(nvram get wan_gateway)"
 IPTBL_NAME="fwl_bl"
 IPSET_NAME="blocklist"
 IPSET_WL_NAME="whitelist"
@@ -10,8 +9,17 @@ IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 
 #we are called from firewall_start.sh
 if [ $1 ] && [ $1 = "_fws" ]; then
-  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_GATEWAY/31"
-  ipset -q add $IPSET_WL_NAME "$WAN_GATEWAY"
+  WAN_GATEWAY="$(nvram get wan_gateway)"
+  WAN_NETMASK="$(nvram get wan_netmask)"
+  # Calculate WAN_RANGE
+  _BITS=0
+  for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
+    _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
+    let _BITS+=${#_BINBITS}
+  done
+  WAN_RANGE="$WAN_GATEWAY/$_BITS"
+  ipset -! create $IPSET_WL_NAME bitmap:ip range "$WAN_RANGE"
+  ipset -q add $IPSET_WL_NAME "$WAN_RANGE"
   if [ ! "$(ipset list -n | grep "$IPSET_NAME")" ]; then
     if [ -r $IP_LIST ]; then
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
@@ -166,16 +174,16 @@ status() {
   STAT_IPT_WL_F2=$(iptables -S FORWARD | grep -- "-A FORWARD -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT")
   STAT_IPS=$(ipset -q list $IPSET_NAME -t)
   STAT_IPS_WL=$(ipset -q list $IPSET_WL_NAME -t)
-  if   [ "$STAT_IPT_T" -a "$STAT_IPT_I" -a "$STAT_IPT_O" -a "$STAT_IPT_F1" -a "$STAT_IPT_F2" -a "$STAT_IPT_WL_I" -a "$STAT_IPT_WL_O" -a "$STAT_IPT_WL_F1" -a "$STAT_IPT_WL_F2" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active"
-  elif [ -z "$STAT_IPT_T$STAT_IPT_I$STAT_IPT_O$STAT_IPT_F1$STAT_IPT_F2$STAT_IPT_WL_I$STAT_IPT_WL_O$STAT_IPT_WL_F1$STAT_IPT_WL_F2$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean"
+  if   [ "$STAT_IPT_T" -a "$STAT_IPT_I" -a "$STAT_IPT_O" -a "$STAT_IPT_F1" -a "$STAT_IPT_F2" -a "$STAT_IPT_WL_I" -a "$STAT_IPT_WL_O" -a "$STAT_IPT_WL_F1" -a "$STAT_IPT_WL_F2" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active."
+  elif [ -z "$STAT_IPT_T$STAT_IPT_I$STAT_IPT_O$STAT_IPT_F1$STAT_IPT_F2$STAT_IPT_WL_I$STAT_IPT_WL_O$STAT_IPT_WL_F1$STAT_IPT_WL_F2$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ $VERBOSE ] || return 0
   echo -e "\033[1;36mDetailed status:\033[0m"
   if [ "$STAT_FWS" ]; then
-    echo "- $FWS_FILE exists with correct settings"
+    echo "- $FWS_FILE exists with correct settings."
   else
-    echo "- $FWS_FILE does not exist or does not have settings"
+    echo "- $FWS_FILE does not exist or does not have settings."
   fi
   if [ "$STAT_IPT_T" ];
     then echo -e "- $IPTBL_NAME table is set:\n\033[35m     iptables $STAT_IPT_T\033[0m"
