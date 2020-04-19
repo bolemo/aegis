@@ -62,6 +62,22 @@ TMP_FILE="$IP_LIST.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 
+#upgrade
+if [ $1 ] && [ $1 = "upgrade" ]; then
+  echo -e "\033[1;36mUpgrading...\033[0m"
+  echo "- Downloading latest version:"
+  UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
+  if wget -qO $wget -qO- --show-progress "$SC_NICEPATH.dl" "$UPGRADE_URL"; then
+    \mv "$SC_NICEPATH.dl" "$SC_NICEPATH"
+    echo "- Script installed."
+  else
+    echo "- Could not download the script."
+    exit 1
+  fi
+    
+  exit 0
+fi
+
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" = 1 ] || return 1
