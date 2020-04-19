@@ -75,7 +75,7 @@ if [ $1 ] && [ $1 = "upgrade" ]; then
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
     echo -ne "\033[0m"
-    >&2 echo -e "- \033[31mCould not download the script; wget returned $?\033[0m"
+    >&2 echo -e "- \033[31mWget error code $?! Could not download $DL_PATH\033[0m"
     rm -f "$DL_PATH"
     exit 1
   fi
