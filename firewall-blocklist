@@ -1,9 +1,10 @@
 #! /bin/sh
 
 SC_NAME="firewall-blocklist"
-IPTBL_NAME="fwl_bl"
-IPSET_NAME="blocklist"
-IPSET_WL_NAME="whitelist"
+SC_ABR="FwBl"
+IPTBL_NAME="$SC_ABR_DROP"
+IPSET_NAME="$SC_ABR_BL"
+IPSET_WL_NAME="$SC_ABR_WL"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 
@@ -42,7 +43,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v1.6.0"
+SC_VERS="v2.0.0"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
