@@ -155,7 +155,7 @@ status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT_T=$(iptables -S $IPTBL_NAME | grep -- "-A $IPTBL_NAME -j DROP")
-  STAT_LOG=$(iptables -S $IPTBL_NAME | grep -- "-A $IPTBL_NAME -j LOG --log-prefix \"[$SC_NAME] \"")
+  STAT_LOG=$(iptables -S $IPTBL_NAME | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")
   STAT_IPT_I=$(iptables -S INPUT | grep -- "-A INPUT -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME")
   STAT_IPT_O=$(iptables -S OUTPUT | grep -- "-A OUTPUT -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME")
   STAT_IPT_F1=$(iptables -S FORWARD | grep -- "-A FORWARD -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME")
@@ -169,7 +169,7 @@ status() {
   if   [ "$STAT_IPT_T" -a "$STAT_IPT_I" -a "$STAT_IPT_O" -a "$STAT_IPT_F1" -a "$STAT_IPT_F2" -a "$STAT_IPT_WL_I" -a "$STAT_IPT_WL_O" -a "$STAT_IPT_WL_F1" -a "$STAT_IPT_WL_F2" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo "- Firewall is set and active"
   elif [ -z "$STAT_IPT_T$STAT_IPT_I$STAT_IPT_O$STAT_IPT_F1$STAT_IPT_F2$STAT_IPT_WL_I$STAT_IPT_WL_O$STAT_IPT_WL_F1$STAT_IPT_WL_F2$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean"
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
-  [ $STAT_LOG ] && echo "- Logging is on." || echo "- Logging is off."
+  [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ $VERBOSE ] || return 0
   echo -e "\033[1;36mDetailed status:\033[0m"
   if [ "$STAT_FWS" ]; then
