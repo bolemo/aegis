@@ -121,7 +121,7 @@ test() {
     then echo "- This is the last known version.       "
     else echo -e "- \033[35mLast version available\033[0m: $SC_LAST_VERS       "
   fi
-  echo "$(count_ip_in_list "192.168.0.1/24")"
+  echo "$(echo "192.168.0.1/24" | count_ip_in_list)"
 }
 
 init() {
