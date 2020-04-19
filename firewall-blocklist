@@ -100,6 +100,10 @@ last_avail_version() {
   echo "$(wget -qO- "https://api.github.com/repos/bolemo/firewall-blocklist/releases/latest" | jq -r .tag_name)"
 }
 
+count_ip_in_netset() {
+  grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' $IP_LIST | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+}
+
 test() {
   echo -e "\033[1;36mTest:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
