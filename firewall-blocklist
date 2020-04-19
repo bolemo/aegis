@@ -2,9 +2,9 @@
 
 SC_NAME="firewall-blocklist"
 SC_ABR="FwBl"
-IPTBL_NAME="$SC_ABR_DROP"
-IPSET_NAME="$SC_ABR_BL"
-IPSET_WL_NAME="$SC_ABR_WL"
+IPTBL_NAME="${SC_ABR}_DROP"
+IPSET_NAME="${SC_ABR}_BL"
+IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 
