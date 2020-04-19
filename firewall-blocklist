@@ -64,11 +64,11 @@ FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 #upgrade
 if [ $1 ] && [ $1 = "upgrade" ]; then
-  echo -e "\033[1;36mUpgrading...\033[0m"
+  echo -e "\033[1;36mUpgrading:\033[0m"
   echo "- Downloading latest version:"
   UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
   DL_PATH="/tmp/$SC_NAME.dl"
-  if wget -qO --show-progress "$DL_PATH" "$UPGRADE_URL"; then
+  if wget -q --show-progress -O "$DL_PATH" "$UPGRADE_URL"; then
     \mv "$DL_PATH" "$SC_NICEPATH"
     echo "- Script installed."
   else
