@@ -23,27 +23,27 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   WAN_RANGE="$WAN_GATEWAY/$_BITS"
   ipset -q destroy $IPSET_TMP
   ipset create "$IPSET_TMP" hash:ip family inet maxelem 1
-  ipset -q add $IPSET_TMP "$WAN_RANGE"
-  ipset swap $IPSET_WL_NAME $IPSET_TMP
-  ipset destroy $IPSET_TMP
+  ipset -q add "$IPSET_TMP" "$WAN_RANGE"
+  ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
+  ipset destroy "$IPSET_TMP"
   if [ ! "$(ipset list -n | grep "$IPSET_NAME")" ]; then
     if [ -r $IP_LIST ]; then
-      echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+      echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
     else
-      ipset create $IPSET_NAME hash:net family inet
+      ipset create "$IPSET_NAME" hash:net family inet
     fi
   fi
-  iptables -N $IPTBL_NAME
-  iptables -A $IPTBL_NAME -j LOG --log-prefix "[$SC_NAME] "
-  iptables -A $IPTBL_NAME -j DROP
-  iptables -I INPUT 1 -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT
-  iptables -I INPUT 2 -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME
-  iptables -I OUTPUT 1 -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT
-  iptables -I OUTPUT 2 -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME
-  iptables -I FORWARD 1 -i brwan -m set --match-set $IPSET_WL_NAME src -j ACCEPT
-  iptables -I FORWARD 2 -i brwan -m set --match-set $IPSET_NAME src -j $IPTBL_NAME
-  iptables -I FORWARD 3 -o brwan -m set --match-set $IPSET_WL_NAME dst -j ACCEPT
-  iptables -I FORWARD 4 -o brwan -m set --match-set $IPSET_NAME dst -j $IPTBL_NAME
+  iptables -N "$IPTBL_NAME"
+  iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+  iptables -A "$IPTBL_NAME" -j DROP
+  iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+  iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+  iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+  iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+  iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+  iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+  iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
 
   exit 0
 fi
