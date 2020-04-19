@@ -159,7 +159,7 @@ set_ipset() {
 
   if [ $VERBOSE ]; then
     MAX="$(wc -l < $IP_LIST)"
-    NUM_IP="$(count_ip_in_list < $IP_LIST)"
+    NUM_IP="$(cat $IP_LIST | count_ip_in_list)"
     echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries defining $NUM_IP ips)...\033[0m"
   fi
 
