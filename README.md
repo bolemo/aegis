@@ -4,7 +4,7 @@ Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 should work with R9000 as well.
 
 ## Version
-1.5.4
+2.0.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -14,16 +14,16 @@ should work with R9000 as well.
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v1.5.4.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v2.0.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
-* Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist test`
+* Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist info`
 * Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/firewall-blocklist -v update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress. V1.5 is a lot faster in building ipsets (a few seconds vs several minutes with v1.0).
+Use `/opt/bolemo/scripts/firewall-blocklist -v update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist status` to check if everything is up and running or not.
 
@@ -39,7 +39,8 @@ Valid commands (only one):
 * `update_only` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
 * `update` - update_only then load_set [probably what you want to use]
 * `status` - display status
-* `test` - check if this script is installed properly
+* `info` - check if this script is installed properly
+* `upgrade` - download and install latest version
 * `help` - display this
 
 Options:
@@ -49,3 +50,7 @@ Options:
 The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
+
+## Logging
+To log activity of firewall-blocklist and see what is blocked, you can use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router. To watch the log, use `dmesg | grep 'firewall-blocklist'`. If you want logging to be on after a reboot, after `nvram set log_firewall_blocklist=1` do `nvram commit`.
+To stop logging, use `nvram unset log_firewall_blocklist` or `nvram uncommit log_firewall_blocklist` if you used commit, then the next time the firewall-blocklist will be restarted logging will be disabled.
