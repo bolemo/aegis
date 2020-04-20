@@ -69,8 +69,8 @@ upgrade() {
   SC_LAST_VERS="$(last_avail_version)";
   if [ $SC_LAST_VERS ]
     then if [ $SC_VERS = $SC_LAST_VERS ]
-      then [ $VERBOSE ] && { echo "- This is already the last version.        "; exit 0; }
-      else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS       "
+      then [ $VERBOSE ] && { echo "- This is already the last version.         "; exit 0; }
+      else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS            "
     fi
     else
       >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
