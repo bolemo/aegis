@@ -4,7 +4,7 @@ Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 should work with R9000 as well.
 
 ## Version
-2.0.0
+2.0.1
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -14,7 +14,7 @@ should work with R9000 as well.
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v2.0.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v2.0.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
 * Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist info`
