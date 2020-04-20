@@ -52,5 +52,5 @@ The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of serve
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
 ## Logging
-To log activity of firewall-blocklist and see what is blocked, you can use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router. To watch the log, use `dmesg | grep 'firewall-blocklist'`. If you want logging to be on after a reboot, after `nvram set log_firewall_blocklist=1` do `nvram commit`.
+To log activity of firewall-blocklist and see what is blocked, you can use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router. To watch the log, use `dmesg | grep 'firewall-blocklist'`. If you want logging to stay on after a reboot, after `nvram set log_firewall_blocklist=1` do `nvram commit`.
 To stop logging, use `nvram unset log_firewall_blocklist` or `nvram uncommit log_firewall_blocklist` if you used commit, then the next time the firewall-blocklist will be restarted logging will be disabled.
