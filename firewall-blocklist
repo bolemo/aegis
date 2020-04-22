@@ -50,7 +50,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
   iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
   iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-
+  
   exit 0
 fi
 
@@ -97,7 +97,7 @@ upgrade() {
     rm -f "$DL_PATH"
     exit 1
   fi
-    
+  
   exit 0
 }
 
@@ -303,9 +303,9 @@ if [ "$1" != "_niced" ]; then
 fi
 
 [ -z "${3##*devmode*}" ] && DEVMODE='y'
-[ -z "${3##*verbose*}" ] || [ $DEVMODE ] && VERBOSE='y'
+[ -z "${3##*verbose*}" ] && VERBOSE='y'
 [ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
-[ $DEVMODE ] && echo -e "\033[7;31mDeveloper mode\033[0m"
+[ $DEVMODE ] && { echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'; }
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
