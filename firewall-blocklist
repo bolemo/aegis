@@ -65,19 +65,25 @@ FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 upgrade() {
   [ $VERBOSE ] && echo -e "\033[1;36mUpgrading:\033[0m"
-  [ $VERBOSE ] && echo -ne "- Checking latest available version...\r"
-  SC_LAST_VERS="$(last_avail_version)";
-  if [ $SC_LAST_VERS ]
-    then if [ $SC_VERS = $SC_LAST_VERS ]
-      then [ $VERBOSE ] && { echo "- This is already the last version.         "; exit 0; }
-      else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS                 "
+  if [ $DEVMODE ]; then
+    [ $VERBOSE ] && echo -ne "- Devmode on, force downloading dev version..."
+    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
+  else
+    [ $VERBOSE ] && echo -ne "- Checking latest available version...\r"
+    SC_LAST_VERS="$(last_avail_version)";
+    if [ $SC_LAST_VERS ]
+      then if [ $SC_VERS = $SC_LAST_VERS ]
+        then [ $VERBOSE ] && { echo "- This is already the last version.         "; exit 0; }
+        else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS                 "
+      fi
+      else
+        >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+        exit 1
     fi
-    else
-      >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
-      exit 1
+    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
   [ $VERBOSE ] && echo "- Downloading:"
-  UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
+  
   DL_PATH="/tmp/$SC_NAME.dl"
   [ $VERBOSE ] && { _PROG='--show-progress'; echo -ne "\033[35m"; } || _PROG=''
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
@@ -286,20 +292,20 @@ print_help() {
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
 if [ "$1" != "_niced" ]; then
-  if [ "$1" = "-v" ]; then
-    [ $# = 1 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
-    PARAM="$2"; VERB="_verbose"
-  elif [ $# = 2 ] && [ "$2" = "-v" ]; then
-    PARAM="$1"; VERB="_verbose"
-  else
-    PARAM="$1"; VERB=''
-  fi
-  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$VERB"
+  OPTS=''
+  [ -z "${*##* -v*}" ] && OPTS='_verbose'
+  [ -z "${*##* --devmode*}" ] && OPTS="${OPTS}_verbose"
+  PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]]*//g' | sed 's/ //g')"
+  [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+  
+  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
   exit $?
 fi
 
-VERBOSE=$3
+VERBOSE="${3##*_verbose*}${3##*_devmode*}"
+DEVMODE="${3##*_devmode*}"
 [ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
+[ $DEVMODE ] && echo -e "\033[31mDeveloper mode\033[0m"
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
