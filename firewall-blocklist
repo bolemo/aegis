@@ -50,7 +50,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
   iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
   iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-  
+
   exit 0
 fi
 
@@ -84,7 +84,7 @@ upgrade() {
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
   [ $VERBOSE ] && echo "- Downloading:"
-  
+
   DL_PATH="/tmp/$SC_NAME.dl"
   [ $VERBOSE ] && { _PROG='--show-progress'; echo -ne "\033[35m"; } || _PROG=''
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
@@ -97,7 +97,7 @@ upgrade() {
     rm -f "$DL_PATH"
     exit 1
   fi
-  
+
   exit 0
 }
 
@@ -297,13 +297,15 @@ if [ "$1" != "_niced" ]; then
   [ -z "${*##* --devmode*}" ] && OPTS="${OPTS}_devmode"
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]]*//g' | sed 's/ //g')"
   [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
-  
+
   nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
   exit $?
 fi
 
-[ -z "${3##*devmode*}" ] && DEVMODE='y'
-[ -z "${3##*verbose*}" ] && VERBOSE='y'
+if [ "$3" ]; then
+  [ -z "${3##*devmode*}" ] && DEVMODE='y'
+  [ -z "${3##*verbose*}" ] && VERBOSE='y'
+fi
 [ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
 [ $DEVMODE ] && { echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'; }
 
