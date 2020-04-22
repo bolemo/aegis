@@ -221,17 +221,20 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-#  [ $VERBOSE ] && echo "- Removing duplicates..."
-#  sort "$TMP_FILE" | uniq > "$IP_LIST"
-  [ $VERBOSE ] && echo "- Optimizing and reducing netset..."
-  $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
+  if [ -x $IPR_BIN ]; then
+    [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
+    $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
+  else
+    [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
+    sort "$TMP_FILE" | uniq > "$IP_LIST"
+  fi
   rm "$TMP_FILE"
   [ $VERBOSE ] && echo "- Done."
 }
 
 status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
-  [ -x $IPR_BIN ] && echo "- $IPR_BIN is installed: $($IPR_BIN --version | head -n 1)" || echo "- $IPR_BIN is not installed."
+  [ -x $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
   [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
