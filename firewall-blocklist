@@ -56,10 +56,11 @@ fi
 
 SC_VERS="v2.5"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+IPR_BIN="$ROOT_DIR/bin/iprange"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-TMP_FILE="$IP_LIST.tmp"
+TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 
@@ -217,7 +218,6 @@ update_iplist() {
 #  [ $VERBOSE ] && echo "- Removing duplicates..."
 #  sort "$TMP_FILE" | uniq > "$IP_LIST"
   [ $VERBOSE ] && echo "- Optimizing and reducing netset..."
-  IPR_BIN='/opt/bolemo/bin/iprange'
   $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
   rm "$TMP_FILE"
   [ $VERBOSE ] && echo "- Done."
@@ -302,10 +302,10 @@ if [ "$1" != "_niced" ]; then
   exit $?
 fi
 
-VERBOSE="${3##*_verbose*}${3##*_devmode*}"
-DEVMODE="${3##*_devmode*}"
+[ -z "${3##*devmode*}" ] && DEVMODE='y'
+[ -z "${3##*verbose*}" ] || [ $DEVMODE ] && VERBOSE='y'
 [ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
-[ $DEVMODE ] && echo -e "\033[31mDeveloper mode\033[0m"
+[ $DEVMODE ] && echo -e "\033[7;31mDeveloper mode\033[0m"
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
