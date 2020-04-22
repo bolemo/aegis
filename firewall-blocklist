@@ -54,7 +54,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v2.0.1"
+SC_VERS="v2.5"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -77,7 +77,7 @@ upgrade() {
       exit 1
   fi
   [ $VERBOSE ] && echo "- Downloading:"
-  UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
+  UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
   DL_PATH="/tmp/$SC_NAME.dl"
   [ $VERBOSE ] && { _PROG='--show-progress'; echo -ne "\033[35m"; } || _PROG=''
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
@@ -208,8 +208,11 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  [ $VERBOSE ] && echo "- Removing duplicates..."
-  sort "$TMP_FILE" | uniq > "$IP_LIST"
+#  [ $VERBOSE ] && echo "- Removing duplicates..."
+#  sort "$TMP_FILE" | uniq > "$IP_LIST"
+  [ $VERBOSE ] && echo "- Optimizing and reducing netset..."
+  IPR_BIN='/opt/bolemo/bin/iprange'
+  $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
   rm "$TMP_FILE"
   [ $VERBOSE ] && echo "- Done."
 }
