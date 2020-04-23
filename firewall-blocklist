@@ -7,6 +7,7 @@ IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 # IPT_MD5 depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
 IPT_MD5="770406b8f204a584178c61857075443e  -"
+IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 
@@ -239,6 +240,13 @@ status() {
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
   [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
+  
+#  case "$(echo "$STAT_IPT" | md5sum -)" in
+#    "$IPT_MD5") STAT_IPT_MATCH='ok' ;;
+#    "$IPT_MD5_NO_WL") STAT_IPT_MATCH='nowl' ;;
+#    *) STAT_IPT_MATCH='' ;;
+#  esac
+  
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
@@ -320,7 +328,7 @@ fi
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
-case $2 in
+case "$2" in
   "init") init; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
   "load_set") init; set_ipset; [ $VERBOSE ] && status ;;
