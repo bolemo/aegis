@@ -67,7 +67,7 @@ FWS_FILE="$FWS_DIR/firewall-start.sh"
 upgrade() {
   [ $VERBOSE ] && echo -e "\033[1;36mUpgrading:\033[0m"
   if [ $DEVMODE ]; then
-    [ $VERBOSE ] && echo -ne "- Devmode on, force downloading dev version..."
+    [ $VERBOSE ] && echo "- Devmode on, force downloading dev version..."
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
   else
     [ $VERBOSE ] && echo -ne "- Checking latest available version...\r"
