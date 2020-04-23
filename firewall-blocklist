@@ -304,8 +304,8 @@ print_help() {
 
 if [ "$1" != "_niced" ]; then
   OPTS=''
-  [ -z "${*##* -v*}" ] && OPTS='_verbose'
-  [ -z "${*##* --devmode*}" ] && OPTS="${OPTS}_devmode"
+  if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
+  if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]]*//g' | sed 's/ //g')"
   [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
