@@ -148,6 +148,7 @@ info() {
     fi
     else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
   fi
+  [ -x $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
 }
 
 init() {
