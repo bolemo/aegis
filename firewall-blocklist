@@ -317,8 +317,8 @@ if [ "$3" ]; then
   [ -z "${3##*devmode*}" ] && DEVMODE='y'
   [ -z "${3##*verbose*}" ] && VERBOSE='y'
 fi
-[ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
-[ $DEVMODE ] && { echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'; }
+if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
+elif [ $VERBOSE ]; then echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
 case $2 in
   "init") init; [ $VERBOSE ] && status ;;
