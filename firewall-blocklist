@@ -17,7 +17,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   WAN_GATEWAY="$(nvram get wan_gateway)"
   WAN_NETMASK="$(nvram get wan_netmask)"
   [ "$(nvram get log_firewall_blocklist)" = "1" ] && LOGGING='y' || LOGGING=''
-  
+  # create ipset blocklist
   if ! ipset -q list "$IPSET_NAME"; then
     if [ -r $IP_LIST ]; then
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
@@ -25,12 +25,12 @@ if [ $1 ] && [ $1 = "_fws" ]; then
       ipset -q create "$IPSET_NAME" hash:net family inet
     fi
   fi
-  
+  # check if WAN gateway is in ipset blocklist
   if ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
     then WGW_IN_BL='y'
     else WGW_IN_BL=''
   fi
-  
+  # if needed, create ipset whitelist to allow access to WAN gateway and subnet
   if [ $WGW_IN_BL ]; then
     # Calculate WAN_RANGE
     _BITS=0
@@ -52,11 +52,11 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   else
     ipset -q destroy "$IPSET_WL_NAME"
   fi
-  
+  # create the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
   [ $LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
   iptables -A "$IPTBL_NAME" -j DROP
-  
+  # create the required iptables
   if [ $WGW_IN_BL ]; then
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
     iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
@@ -182,8 +182,14 @@ init() {
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ $VERBOSE ] && echo "- $FWS_FILE was edited and is now ok."
   fi
+#  /usr/sbin/net-wall restart > /dev/null
+#  [ $VERBOSE ] && echo -e "- Built-in firewall restarted.\n- Initialization done."
+}
+
+nw_restart() {
+  [ $VERBOSE ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
   /usr/sbin/net-wall restart > /dev/null
-  [ $VERBOSE ] && echo -e "- Built-in firewall restarted.\n- Initialization done."
+  [ $VERBOSE ] && echo "- Built-in firewall restarted."
 }
 
 clean() {
@@ -352,11 +358,11 @@ if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
 case "$2" in
-  "init") init; [ $VERBOSE ] && status ;;
+  "init") init; nw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set") init; set_ipset; [ $VERBOSE ] && status ;;
+  "load_set") init; set_ipset; nw_restart; [ $VERBOSE ] && status ;;
   "update_only") update_iplist ;;
-  "update") init; update_iplist; set_ipset; [ $VERBOSE ] && status ;;
+  "update") init; update_iplist; set_ipset; nw_restart; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
