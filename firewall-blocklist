@@ -10,6 +10,7 @@ IPT_MD5="770406b8f204a584178c61857075443e  -"
 IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
+IPR_BIN="$(command -v iprange)"
 
 #we are called from firewall_start.sh
 if [ $1 ] && [ $1 = "_fws" ]; then
@@ -57,7 +58,6 @@ fi
 
 SC_VERS="v2.5.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
-IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -149,7 +149,7 @@ info() {
     fi
     else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
   fi
-  [ -x $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
 }
 
 init() {
@@ -236,7 +236,7 @@ update_iplist() {
 
 status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
-  [ -x $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
 #  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
