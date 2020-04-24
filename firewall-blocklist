@@ -17,23 +17,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   WAN_GATEWAY="$(nvram get wan_gateway)"
   WAN_NETMASK="$(nvram get wan_netmask)"
   [ "$(nvram get log_firewall_blocklist)" = "1" ] && LOGGING='y' || LOGGING=''
-  # Calculate WAN_RANGE
-  _BITS=0
-  for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
-    _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
-    let _BITS+=${#_BINBITS}
-  done
-  WAN_RANGE="$WAN_GATEWAY/$_BITS"
-  if ipset -q list "$IPSET_WL_NAME"; then
-    ipset -q destroy "$IPSET_TMP"
-    ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
-    ipset -q add "$IPSET_TMP" "$WAN_RANGE"
-    ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
-    ipset -q destroy "$IPSET_TMP"
-  else
-    ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
-    ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
-  fi
+  
   if ! ipset -q list "$IPSET_NAME"; then
     if [ -r $IP_LIST ]; then
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
@@ -41,17 +25,53 @@ if [ $1 ] && [ $1 = "_fws" ]; then
       ipset -q create "$IPSET_NAME" hash:net family inet
     fi
   fi
+  
+  if ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
+    then WGW_IN_BL='y'
+    else WGW_IN_BL=''
+  fi
+  
+  if [WGW_IN_BL]; then
+    # Calculate WAN_RANGE
+    _BITS=0
+    for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
+      _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
+      let _BITS+=${#_BINBITS}
+    done
+    WAN_RANGE="$WAN_GATEWAY/$_BITS"
+    if ipset -q list "$IPSET_WL_NAME"; then
+      ipset -q destroy "$IPSET_TMP"
+      ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
+      ipset -q add "$IPSET_TMP" "$WAN_RANGE"
+      ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
+      ipset -q destroy "$IPSET_TMP"
+    else
+      ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
+      ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
+    fi
+  else
+    ipset -q destroy "$IPSET_WL_NAME"
+  fi
+  
   iptables -N "$IPTBL_NAME"
   [ $LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
   iptables -A "$IPTBL_NAME" -j DROP
-  iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-  iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
-  iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-  iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-  iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-  iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
-  iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-  iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  
+  if [WGW_IN_BL]; then
+    iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  else
+    iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  fi
 
   exit 0
 fi
