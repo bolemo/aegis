@@ -262,16 +262,16 @@ status() {
 #  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
   
   case "$(echo "$STAT_IPT" | md5sum -)" in
-    "$IPT_MD5") STAT_IPT_MATCH='wl' ;;
-    "$IPT_MD5_NO_WL") STAT_IPT_MATCH='nowl' ;;
-    *) STAT_IPT_MATCH='' ;;
+    "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
+    "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
+    *) STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='' ;;
   esac
   
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
-  if   [ "$STAT_IPT_MATCH"='wl' ] && [ "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "wl- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
-  elif [ "$STAT_IPT_MATCH"='nowl' ] && [ "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "nowl- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
@@ -283,10 +283,9 @@ status() {
     echo "- $FWS_FILE does not exist or does not have settings."
   fi
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_MATCH" ]; then
+    if [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ]; then
       echo "- iptables rules are set:"
-      echo "$STAT_IPT_MATCH"
-      if [ "$STAT_IPT_MATCH"='wl' ]; then echo "     wan gateway whitelisted"; fi
+      [ "$STAT_IPT_MATCH_WL" ] && echo "     wan gateway whitelisted"
     else
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
