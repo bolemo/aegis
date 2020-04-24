@@ -285,7 +285,7 @@ status() {
   if [ "$STAT_IPT" ]; then
     if [ "$STAT_IPT_MATCH" ]; then
       echo "- iptables rules are set:"
-      [ "$STAT_IPT_MATCH"='wl' ] && echo "     wan gateway whitelisted"
+      if [ "$STAT_IPT_MATCH"='wl' ]; then echo "     wan gateway whitelisted"; fi
     else
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
