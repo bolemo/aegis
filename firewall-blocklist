@@ -239,19 +239,19 @@ status() {
   [ -x $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
-  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
+#  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
   
-#  case "$(echo "$STAT_IPT" | md5sum -)" in
-#    "$IPT_MD5") STAT_IPT_MATCH='ok' ;;
-#    "$IPT_MD5_NO_WL") STAT_IPT_MATCH='nowl' ;;
-#    *) STAT_IPT_MATCH='' ;;
-#  esac
+  case "$(echo "$STAT_IPT" | md5sum -)" in
+    "$IPT_MD5") STAT_IPT_MATCH='wl' ;;
+    "$IPT_MD5_NO_WL") STAT_IPT_MATCH='nowl' ;;
+    *) STAT_IPT_MATCH='' ;;
+  esac
   
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
-  if   [ "$STAT_IPT_MATCH"='ok' ] && [ "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
-#  elif [ "$STAT_IPT_MATCH"='nowl' ] && [ "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  if   [ "$STAT_IPT_MATCH"='wl' ] && [ "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  elif [ "$STAT_IPT_MATCH"='nowl' ] && [ "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
@@ -263,9 +263,11 @@ status() {
     echo "- $FWS_FILE does not exist or does not have settings."
   fi
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_MATCH" ]
-      then echo -e "- iptables rules are set:"
-      else echo -e "- \033[31miptables rules are not set properly\033[0m:"
+    if [ "$STAT_IPT_MATCH" ]; then
+      echo "- iptables rules are set:"
+      [ "$STAT_IPT_MATCH"='wl' ] && echo "     wan gateway whitelisted"
+    else
+      echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
     echo -ne "\033[35m"
     echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
@@ -284,7 +286,7 @@ status() {
     echo "- ipset filter does not exist."
   fi
   if [ "$STAT_IPS_WL" ]; then
-    echo "- ipset whitelist is set:"
+    [ "$STAT_IPT_MATCH"='wl' ] && echo "- ipset whitelist is set:" || echo "- ipset whitelist is set but not used:"
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
     echo "- ipset whitelist does not exist."
