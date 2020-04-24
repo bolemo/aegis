@@ -270,8 +270,8 @@ status() {
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
-  if   [ "$STAT_IPT_MATCH"='wl' ] && [ "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
-  elif [ "$STAT_IPT_MATCH"='nowl' ] && [ "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  if   [ "$STAT_IPT_MATCH"='wl' ] && [ "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "wl- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  elif [ "$STAT_IPT_MATCH"='nowl' ] && [ "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "nowl- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
