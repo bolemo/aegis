@@ -57,7 +57,7 @@ fi
 
 SC_VERS="v2.5"
 SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-IPR_BIN="$ROOT_DIR/bin/iprange"
+IPR_BIN="$( command -v iprange >/dev/null 2>&1 )"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
