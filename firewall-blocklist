@@ -3,6 +3,7 @@
 SC_NAME="firewall-blocklist"
 SC_ABR="FwBl"
 IPTBL_NAME="${SC_ABR}_DROP"
+[ "$(nvram get log_firewall_blocklist)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
@@ -12,7 +13,6 @@ WAN_NETMASK="$(nvram get wan_netmask)"
 
 #we are called from firewall_start.sh
 if [ $1 ] && [ $1 = "_fws" ]; then
-  [ "$(nvram get log_firewall_blocklist)" = "1" ] && LOGGING='y' || LOGGING=''
   # create ipset blocklist
   if ! ipset -q list "$IPSET_NAME"; then
   # ipset is not here
@@ -56,7 +56,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   fi
   # create the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
-  [ $LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+  [ $IPTBL_LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
   iptables -A "$IPTBL_NAME" -j DROP
   # create the required iptables
   if [ $WGW_IN_BL ]; then
