@@ -105,7 +105,7 @@ upgrade() {
     fi
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
-  echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0
+  [ $DEVMODE ] || { echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0; }
   echo "- Downloading:"
 
   DL_PATH="/tmp/$SC_NAME.dl"
