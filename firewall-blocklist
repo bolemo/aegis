@@ -182,11 +182,9 @@ init() {
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ $VERBOSE ] && echo "- $FWS_FILE was edited and is now ok."
   fi
-#  /usr/sbin/net-wall restart > /dev/null
-#  [ $VERBOSE ] && echo -e "- Built-in firewall restarted.\n- Initialization done."
 }
 
-nw_restart() {
+fw_restart() {
   [ $VERBOSE ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
   /usr/sbin/net-wall restart > /dev/null
   [ $VERBOSE ] && echo "- Built-in firewall restarted."
@@ -265,7 +263,6 @@ status() {
   [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
-#  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
   
   case "$(echo "$STAT_IPT" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
@@ -276,7 +273,7 @@ status() {
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
-  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips.\n- Whitelisting $(count_ip_in_ipset $IPSET_WL_NAME) ips (WAN gateway and its subnet mask)."
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
   else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
@@ -312,7 +309,7 @@ status() {
     echo "- ipset filter does not exist."
   fi
   if [ "$STAT_IPS_WL" ]; then
-    [ "$STAT_IPT_MATCH"='wl' ] && echo "- ipset whitelist is set:" || echo "- ipset whitelist is set but not used:"
+    [ "$STAT_IPT_MATCH_WL" ] && echo "- ipset whitelist is set:" || echo "- ipset whitelist is set but not used:"
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
     echo "- ipset whitelist does not exist."
@@ -323,10 +320,10 @@ print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
   echo -e "Usage: \033[1m$SC_NICEPATH \033[36m[-v] \033[35mCOMMAND\033[0m"
   echo -e "\033[7mValid commands (only one):\033[0m"
-  echo -e " \033[1;35minit\033[0m        - setup ipset and iptables for this script to work"
+  echo -e " \033[1;35mrestart\033[0m     - setup ipset and iptables then restarts internal firewall"
   echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
-  echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST after performing init"
-  echo -e " \033[1;35mupdate_only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
+  echo -e " \033[1;35mload-set\033[0m    - populates ipset set from $IP_LIST then restarts internal firewall"
+  echo -e " \033[1;35mupdate-only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
   echo -e " \033[1;35mupdate\033[0m      - update_only then load_set [probably what you want to use]"
   echo -e " \033[1;35mstatus\033[0m      - display status"
   echo -e " \033[1;35minfo\033[0m        - check if this script is installed properly"
@@ -358,11 +355,11 @@ if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
 case "$2" in
-  "init") init; nw_restart; [ $VERBOSE ] && status ;;
+  "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set") init; set_ipset; nw_restart; [ $VERBOSE ] && status ;;
-  "update_only") update_iplist ;;
-  "update") init; update_iplist; set_ipset; nw_restart; [ $VERBOSE ] && status ;;
+  "load-set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "update-only") update_iplist ;;
+  "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
