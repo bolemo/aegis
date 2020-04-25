@@ -306,7 +306,7 @@ status() {
   if [ "$STAT_IPT" ]; then
     if [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ]; then
       echo "- iptables rules are set:"
-      [ "$STAT_IPT_MATCH_WL" ] && echo -e "     \033[34mwhitelist is set\033[0m"
+      [ "$STAT_IPT_MATCH_WL" ] && echo -e "     \033[34miptables whitelist is set\033[0m"
     else
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
@@ -330,7 +330,7 @@ status() {
     [ "$STAT_IPT_MATCH_WL" ] && echo "- ipset whitelist is set:" || echo "- ipset whitelist is set but not used:"
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset whitelist is  ot set."
+    echo "- ipset whitelist is not set."
   fi
 }
 
