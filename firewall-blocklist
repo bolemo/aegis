@@ -86,17 +86,17 @@ FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 upgrade() {
-  [ $VERBOSE ] && echo -e "\033[1;36mUpgrading:\033[0m"
+  echo -e "\033[1;36mUpgrading:\033[0m"
   if [ $DEVMODE ]; then
-    [ $VERBOSE ] && echo "- Devmode on, force downloading dev version..."
+    echo "- Devmode on, force downloading dev version..."
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
   else
-    [ $VERBOSE ] && echo -ne "- Checking latest available version...\r"
+    echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)";
     if [ $SC_LAST_VERS ]
       then if [ $SC_VERS = $SC_LAST_VERS ]
-        then [ $VERBOSE ] && { echo "- This is already the last version.         "; exit 0; }
-        else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS                 "
+        then echo "- This is already the last version.         "; exit 0
+        else echo "- New version found: $SC_LAST_VERS                 "
       fi
       else
         >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
@@ -105,16 +105,16 @@ upgrade() {
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
   echo -n "? Do you want to upgrade (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0
-  [ $VERBOSE ] && echo "- Downloading:"
+  echo "- Downloading:"
 
   DL_PATH="/tmp/$SC_NAME.dl"
-  [ $VERBOSE ] && { _PROG='--show-progress'; echo -ne "\033[35m"; } || _PROG=''
+  _PROG='--show-progress'; echo -ne "\033[35m"
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
     \mv "$DL_PATH" "$SC_NICEPATH"
     chmod +x "$SC_NICEPATH"
-    [ $VERBOSE ] && echo -e "\033[0m- Script installed to $SC_NICEPATH"
+    echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
-    [ $VERBOSE ] && echo -ne "\033[0m"
+    echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     rm -f "$DL_PATH"
     exit 1
