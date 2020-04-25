@@ -87,6 +87,7 @@ FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
+  echo "- Version installed: $SC_VERS"
   if [ $DEVMODE ]; then
     echo "- Devmode on, force downloading dev version..."
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
@@ -96,7 +97,7 @@ upgrade() {
     if [ $SC_LAST_VERS ]
       then if [ $SC_VERS = $SC_LAST_VERS ]
         then echo "- This is already the last version.         "; exit 0
-        else echo "- New version found: $SC_LAST_VERS                 "
+        else echo "- Version found: $SC_LAST_VERS                    "
       fi
       else
         >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
@@ -104,7 +105,7 @@ upgrade() {
     fi
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
-  echo -n "? Do you want to upgrade (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0
+  echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0
   echo "- Downloading:"
 
   DL_PATH="/tmp/$SC_NAME.dl"
