@@ -104,7 +104,7 @@ upgrade() {
     fi
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
-  echo -n "? Do you want to upgrade (y/n)? "; read _RD; [ "$RD" = "y\n" ] || exit 0
+  echo -n "? Do you want to upgrade (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0
   [ $VERBOSE ] && echo "- Downloading:"
 
   DL_PATH="/tmp/$SC_NAME.dl"
