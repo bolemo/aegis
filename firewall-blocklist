@@ -276,9 +276,9 @@ status() {
   ipset -q test $IPSET_NAME $WAN_GATEWAY && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
   ipset -q test $IPSET_WL_NAME $WAN_GATEWAY && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
-    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips.\n- Whitelisting $(count_ip_in_ipset $IPSET_WL_NAME) ips (WAN gateway and its subnet mask)."
+    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (WAN gateway and its subnet)."
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
-    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
+    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then
     echo "- Firewall blocklist is not active; Settings are clean."
   else
@@ -292,21 +292,10 @@ status() {
   else
     echo "- $FWS_FILE does not exist or does not have settings."
   fi
-  if [ "$STAT_GW_IN_BL" ]; then
-    if [ "$STAT_GW_IN_WL" ]; then
-      echo "- WAN gateway ($WAN_GATEWAY) is in the blocklist, but is whitelisted as it should be."
-    else
-      echo "- WAN gateway ($WAN_GATEWAY) is in the blocklist, but is NOT whitelisted!"
-    fi
-  elif [ "$STAT_GW_IN_WL" ]; then
-    echo "- WAN gateway ($WAN_GATEWAY) is in not in the blocklist, but is whitelisted (useless)!"
-  else
-    echo "- WAN gateway ($WAN_GATEWAY) is in not in the blocklist."
-  fi
   if [ "$STAT_IPT" ]; then
     if [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ]; then
       echo "- iptables rules are set:"
-      [ "$STAT_IPT_MATCH_WL" ] && echo -e "     \033[36miptables whitelist is set\033[0m"
+      [ "$STAT_IPT_MATCH_WL" ] && echo -e "     \033[36miptables bypass rules (whitelist) are set\033[0m"
     else
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
@@ -323,18 +312,23 @@ status() {
   if [ "$STAT_IPS" ]; then
     echo "- ipset filter is set:"
     [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ] || echo -e "     \033[31mblocklist is not used by iptables\033[0m"
-    [ "$STAT_GW_IN_BL" ] && echo -e "     \033[36mWAN gateway ($WAN_GATEWAY) is in blocklist\033[0m"
+    [ "$STAT_GW_IN_WL" ] && _CLR='\033[36m' || _CLR='\033[31m'
+    [ "$STAT_GW_IN_BL" ] && echo -e "     ${_CLR}WAN gateway ($WAN_GATEWAY) is in blocklist\033[0m"
     echo -e "\033[35m$STAT_IPS\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset filter does not exist."
+    echo "- ipset filter (blocklist) does not exist."
   fi
   if [ "$STAT_IPS_WL" ]; then
-    echo "- ipset whitelist is set:"
+    echo "- ipset bypass (whitelist) is set:"
     [ "$STAT_IPT_MATCH_WL" ] || echo -e "     \033[31mwhitelist is not used by iptables\033[0m"
-    [ "$STAT_GW_IN_WL" ] && echo -e "     \033[36mWAN gateway ($WAN_GATEWAY) is in whitelist\033[0m"
+    [ "$STAT_GW_IN_BL" ] && _CLR='\033[36m' || _CLR='\033[31m'
+    if [ "$STAT_GW_IN_WL" ]
+      then echo -e "     ${_CLR}WAN gateway ($WAN_GATEWAY) is in whitelist\033[0m"
+      else echo -e "     \033[31mWAN gateway ($WAN_GATEWAY) is NOT in whitelist!\033[0m"
+    fi
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset whitelist is not set."
+    echo "- ipset bypass (whitelist) is not set."
   fi
 }
 
