@@ -338,8 +338,8 @@ print_help() {
   echo -e "\033[7mValid commands (only one):\033[0m"
   echo -e " \033[1;35mrestart\033[0m     - setup ipset and iptables then restarts internal firewall"
   echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
-  echo -e " \033[1;35mload-set\033[0m    - populates ipset set from $IP_LIST then restarts internal firewall"
-  echo -e " \033[1;35mupdate-only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
+  echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST then restarts internal firewall"
+  echo -e " \033[1;35mupdate_only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
   echo -e " \033[1;35mupdate\033[0m      - update_only then load_set [probably what you want to use]"
   echo -e " \033[1;35mstatus\033[0m      - display status"
   echo -e " \033[1;35minfo\033[0m        - check if this script is installed properly"
@@ -373,8 +373,8 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[
 case "$2" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load-set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
-  "update-only") update_iplist ;;
+  "load_set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "update_only") update_iplist ;;
   "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
