@@ -15,37 +15,43 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   [ "$(nvram get log_firewall_blocklist)" = "1" ] && LOGGING='y' || LOGGING=''
   # create ipset blocklist
   if ! ipset -q list "$IPSET_NAME"; then
+  # ipset is not here
     if [ -r $IP_LIST ]; then
+    # netset file exists, so creating blocklist ipset from it
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
     else
+    # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_NAME" hash:net family inet
     fi
   fi
-  # check if WAN gateway is in ipset blocklist
   if ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
+  # check if WAN gateway is in ipset blocklist
     then WGW_IN_BL='y'
     else WGW_IN_BL=''
   fi
-  # if needed, create ipset whitelist to allow access to WAN gateway and subnet
   if [ $WGW_IN_BL ]; then
-    # Calculate WAN_RANGE
-    _BITS=0
+  # WAN gateway is in blocklist so create ipset whitelist
+    # Calculate WAN_RANGE (IP & CIDR)
+    _CIDR=0
     for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
       _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
-      let _BITS+=${#_BINBITS}
+      let _CIDR+=${#_BINBITS}
     done
-    WAN_RANGE="$WAN_GATEWAY/$_BITS"
+    WAN_RANGE="$WAN_GATEWAY/$_CIDR"
     if ipset -q list "$IPSET_WL_NAME"; then
+    # whitelist ipset is already here, make new one and swap
       ipset -q destroy "$IPSET_TMP"
       ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
       ipset -q add "$IPSET_TMP" "$WAN_RANGE"
       ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
       ipset -q destroy "$IPSET_TMP"
     else
+    # whitelist ipset is not here, just create
       ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
       ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
     fi
   else
+  # no need for whitelist, just destroy if exists
     ipset -q destroy "$IPSET_WL_NAME"
   fi
   # create the filtering (blocking) iptables chain
@@ -54,6 +60,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   iptables -A "$IPTBL_NAME" -j DROP
   # create the required iptables
   if [ $WGW_IN_BL ]; then
+  # creating iptables with whitelist
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
     iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
@@ -63,6 +70,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
     iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
     iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
   else
+  # creating iptables without whitelist
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
     iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
@@ -262,21 +270,40 @@ update_iplist() {
 
 status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
-  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
-  check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
   
+  # check iprang binary
+  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  
+  # check firewall-start.sh script
+  check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
+  
+  # check iptables
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
   case "$(echo "$STAT_IPT" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
+      # iptables are set with whitelist
     "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
+      # iptables are set without whitelist
     *) STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='' ;;
+      # iptables are not set
   esac
   
+  # check log
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+  
+  # check ipset blocklist
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
+  
+  # check ipset whitelist
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
+  
+  # check WAN gateway in ipset blocklist
   ipset -q test $IPSET_NAME $WAN_GATEWAY && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
+  
+  # check WAN gatewan in ipset whitelist
   ipset -q test $IPSET_WL_NAME $WAN_GATEWAY && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
+  
+  # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
     echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (WAN gateway and its subnet)."
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
@@ -288,16 +315,19 @@ status() {
   fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ $VERBOSE ] || return 0
+  
+  # details
   echo -e "\033[1;36mDetailed status:\033[0m"
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings."
   else
-    echo "- $FWS_FILE does not exist or does not have settings."
+    echo "- $FWS_FILE does not exist or does not have firewall-blocklist settings."
   fi
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ]; then
+    if [ "$STAT_IPT_MATCH_WL" ]; then
+      echo "- iptables rules are set with bypass rules (whitelist):"
+    elif [ "$STAT_IPT_MATCH_NOWL" ]; then
       echo "- iptables rules are set:"
-      [ "$STAT_IPT_MATCH_WL" ] && echo -e "     \033[36miptables bypass rules (whitelist) are set\033[0m"
     else
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
@@ -343,7 +373,7 @@ print_help() {
   echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
   echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST then restarts internal firewall"
   echo -e " \033[1;35mupdate_only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
-  echo -e " \033[1;35mupdate\033[0m      - update_only then load_set [probably what you want to use]"
+  echo -e " \033[1;35mupdate\033[0m      - update_only then load_set \033[1;36m[probably what you want to use]\033[0m"
   echo -e " \033[1;35mstatus\033[0m      - display status"
   echo -e " \033[1;35minfo\033[0m        - check if this script is installed properly"
   echo -e " \033[1;35mupgrade\033[0m     - download and install latest version"
