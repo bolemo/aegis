@@ -312,7 +312,7 @@ status() {
     else echo "- Logging is inactive."
   fi
   if [ "$STAT_IPS" ]; then
-    echo "- ipset filter is set:"
+    echo "- ipset filter (blocklist) is set:"
     [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ] || echo -e "     \033[31mblocklist is not used by iptables\033[0m"
     [ "$STAT_GW_IN_WL" ] && _CLR='\033[36m' || _CLR='\033[31m'
     [ "$STAT_GW_IN_BL" ] && echo -e "     ${_CLR}WAN gateway ($WAN_GATEWAY) is in blocklist\033[0m"
@@ -330,7 +330,8 @@ status() {
     fi
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset bypass (whitelist) is not set."
+    [ "$STAT_GW_IN_BL" ] && _CLR='\033[31m' || _CLR='\033[0m'
+    echo -e "_CLR- ipset bypass (whitelist) is not set.\033[0m"
   fi
 }
 
