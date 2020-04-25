@@ -5,12 +5,8 @@ SC_ABR="FwBl"
 IPTBL_NAME="${SC_ABR}_DROP"
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
-# IPT_MD5 depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
-IPT_MD5="770406b8f204a584178c61857075443e  -"
-IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
-IPR_BIN="$(command -v iprange)"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 WAN_NETMASK="$(nvram get wan_netmask)"
 
@@ -78,6 +74,10 @@ fi
 
 SC_VERS="v3.0.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+IPR_BIN="$(command -v iprange)"
+# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
+IPT_MD5="770406b8f204a584178c61857075443e  -"
+IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -95,7 +95,7 @@ upgrade() {
     SC_LAST_VERS="$(last_avail_version)";
     if [ $SC_LAST_VERS ]
       then if [ $SC_VERS = $SC_LAST_VERS ]
-        then [ $VERBOSE ] && { echo "- This is already the last version.         "; exit 0; }
+        then [ $VERBOSE ] && { echo "- This is already the last version.         "; [ $FORCE ] || exit 0; }
         else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS                 "
       fi
       else
@@ -104,7 +104,8 @@ upgrade() {
     fi
     UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
-  [ $VERBOSE ] && echo "- Downloading:"
+  [ $FORCE ] || { echo -n "? Do you want to upgrade (y/n)? "; read _RD; echo ''; [ "$RD" = 'y' ] || exit 0; }
+  [ $VERBOSE ] && { [ $FORCE ] && echo "- Force option on: downloading..." || echo "- Downloading:"; }
 
   DL_PATH="/tmp/$SC_NAME.dl"
   [ $VERBOSE ] && { _PROG='--show-progress'; echo -ne "\033[35m"; } || _PROG=''
@@ -347,6 +348,7 @@ print_help() {
   echo -e " \033[1;35mhelp\033[0m        - display this"
   echo -e "\033[7mOptions:\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
+  echi -e " \033[1;36m-f\033[0m          - force mode, force download with command upgrade even if there is no new version"
 }
 
 # Main routine
