@@ -275,7 +275,7 @@ status() {
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
   [ $STAT_IPS ] && $(ipset -q test $IPSET_NAME $WAN_GATEWAY) && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
   [ $STAT_IPS_WL ] && $(ipset -q test $IPSET_WL_NAME $WAN_GATEWAY) && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
-  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
     echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips.\n- Whitelisting $(count_ip_in_ipset $IPSET_WL_NAME) ips (WAN gateway and its subnet mask)."
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
     echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
