@@ -15,3 +15,10 @@ echo "Installing firewall-blocklist files"
 cp -i "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist"
 echo "Done!"
+if command -v iprange; then exit 0; fi
+echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into internal flash (/usr/bin)? [y/n] -"
+read ANSWER
+[ "$ANSWER" = 'y' ] || { echo 'Skipping installation of iprange'; exit 0; }
+echo "Installing iprange..."
+/bin/opkg install "$SELF_PATH/iprange_1.0.4-1_ipq806x.ipk"
+echo "Done!"

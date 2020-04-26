@@ -3,94 +3,132 @@
 SC_NAME="firewall-blocklist"
 SC_ABR="FwBl"
 IPTBL_NAME="${SC_ABR}_DROP"
+[ "$(nvram get log_firewall_blocklist)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
-# IPT_MD5 depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
-IPT_MD5="770406b8f204a584178c61857075443e  -"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
+WAN_GATEWAY="$(nvram get wan_gateway)"
+WAN_NETMASK="$(nvram get wan_netmask)"
 
 #we are called from firewall_start.sh
 if [ $1 ] && [ $1 = "_fws" ]; then
-  WAN_GATEWAY="$(nvram get wan_gateway)"
-  WAN_NETMASK="$(nvram get wan_netmask)"
-  [ "$(nvram get log_firewall_blocklist)" = "1" ] && LOGGING='y' || LOGGING=''
-  # Calculate WAN_RANGE
-  _BITS=0
-  for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
-    _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
-    let _BITS+=${#_BINBITS}
-  done
-  WAN_RANGE="$WAN_GATEWAY/$_BITS"
-  if ipset -q list "$IPSET_WL_NAME"; then
-    ipset -q destroy "$IPSET_TMP"
-    ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
-    ipset -q add "$IPSET_TMP" "$WAN_RANGE"
-    ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
-    ipset -q destroy "$IPSET_TMP"
-  else
-    ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
-    ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
-  fi
+  # create ipset blocklist
   if ! ipset -q list "$IPSET_NAME"; then
+  # ipset is not here
     if [ -r $IP_LIST ]; then
+    # netset file exists, so creating blocklist ipset from it
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
     else
+    # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_NAME" hash:net family inet
     fi
   fi
+  if ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
+  # check if WAN gateway is in ipset blocklist
+    then WGW_IN_BL='y'
+    else WGW_IN_BL=''
+  fi
+  if [ $WGW_IN_BL ]; then
+  # WAN gateway is in blocklist so create ipset whitelist
+    # Calculate WAN_RANGE (IP & CIDR)
+    _CIDR=0
+    for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
+      _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
+      let _CIDR+=${#_BINBITS}
+    done
+    WAN_RANGE="$WAN_GATEWAY/$_CIDR"
+    if ipset -q list "$IPSET_WL_NAME"; then
+    # whitelist ipset is already here, make new one and swap
+      ipset -q destroy "$IPSET_TMP"
+      ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
+      ipset -q add "$IPSET_TMP" "$WAN_RANGE"
+      ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
+      ipset -q destroy "$IPSET_TMP"
+    else
+    # whitelist ipset is not here, just create
+      ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
+      ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
+    fi
+  else
+  # no need for whitelist, just destroy if exists
+    ipset -q destroy "$IPSET_WL_NAME"
+  fi
+  # create the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
-  [ $LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+  [ $IPTBL_LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
   iptables -A "$IPTBL_NAME" -j DROP
-  iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-  iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
-  iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-  iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-  iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-  iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
-  iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-  iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  # create the required iptables
+  if [ $WGW_IN_BL ]; then
+  # creating iptables with whitelist
+    iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  else
+  # creating iptables without whitelist
+    iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+  fi
 
   exit 0
 fi
 
-SC_VERS="v2.0.1"
-SC_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SC_VERS="v3.0.0"
+SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+IPR_BIN="$(command -v iprange)"
+# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
+IPT_MD5="770406b8f204a584178c61857075443e  -"
+IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-TMP_FILE="$IP_LIST.tmp"
+TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 
 upgrade() {
-  [ $VERBOSE ] && echo -e "\033[1;36mUpgrading:\033[0m"
-  [ $VERBOSE ] && echo -ne "- Checking latest available version...\r"
-  SC_LAST_VERS="$(last_avail_version)";
-  if [ $SC_LAST_VERS ]
-    then if [ $SC_VERS = $SC_LAST_VERS ]
-      then [ $VERBOSE ] && { echo "- This is already the last version.         "; exit 0; }
-      else [ $VERBOSE ] && echo "- New version found: $SC_LAST_VERS                 "
+  echo -e "\033[1;36mUpgrading:\033[0m"
+  echo "- Version installed: $SC_VERS"
+  if [ $DEVMODE ]; then
+    echo "- Devmode on, force downloading dev version..."
+    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
+  else
+    echo -ne "- Checking latest available version...\r"
+    SC_LAST_VERS="$(last_avail_version)";
+    if [ $SC_LAST_VERS ]
+      then if [ $SC_VERS = $SC_LAST_VERS ]
+        then echo "- This is already the last version.         "; exit 0
+        else echo "- Version found: $SC_LAST_VERS                    "
+      fi
+      else
+        >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+        exit 1
     fi
-    else
-      >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
-      exit 1
+    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
   fi
-  [ $VERBOSE ] && echo "- Downloading:"
-  UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
+  [ $DEVMODE ] || { echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "; read _ASWR; [ "$_ASWR" = 'y' ] || exit 0; }
+  echo "- Downloading:"
+
   DL_PATH="/tmp/$SC_NAME.dl"
-  [ $VERBOSE ] && { _PROG='--show-progress'; echo -ne "\033[35m"; } || _PROG=''
+  _PROG='--show-progress'; echo -ne "\033[35m"
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
     \mv "$DL_PATH" "$SC_NICEPATH"
     chmod +x "$SC_NICEPATH"
-    [ $VERBOSE ] && echo -e "\033[0m- Script installed to $SC_NICEPATH"
+    echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
-    [ $VERBOSE ] && echo -ne "\033[0m"
+    echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     rm -f "$DL_PATH"
     exit 1
   fi
-    
+
   exit 0
 }
 
@@ -112,15 +150,21 @@ last_avail_version() {
 }
 
 count_ip_in_file() {
-  grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$1" | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+  if [ -x $IPR_BIN ]
+    then $IPR_BIN -C "$1" | sed -n 's/.*,//p'
+    else grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$1" | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+  fi
 }
 
 count_ip_in_ipset() {
-  ipset list $1 | sed -n '/Members:/,$p' | tail -n +2 | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+  if [ -x $IPR_BIN ]
+    then ipset list $1 | sed -n '/Members:/,$p' | tail -n +2 | $IPR_BIN -C | sed -n 's/.*,//p'
+    else ipset list $1 | sed -n '/Members:/,$p' | tail -n +2 | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+  fi
 }
 
 info() {
-  echo -e "\033[1;36mTest:\033[0m"
+  echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
     then echo "- The script is properly installed."
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
@@ -135,6 +179,7 @@ info() {
     fi
     else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
   fi
+  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
 }
 
 init() {
@@ -147,8 +192,27 @@ init() {
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ $VERBOSE ] && echo "- $FWS_FILE was edited and is now ok."
   fi
+}
+
+fw_restart() {
+  [ $VERBOSE ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
+  if [ $LOG_ACT ]; then
+    if [ "$LOG_ACT" = 'ON' ]; then
+      echo "- Enabling logging."
+      nvram set log_firewall_blocklist=1
+    else
+      echo "- Disabling logging."
+      nvram unset log_firewall_blocklist
+    fi
+  fi
   /usr/sbin/net-wall restart > /dev/null
-  [ $VERBOSE ] && echo -e "- Built-in firewall restarted.\n- Initialization done."
+  [ $VERBOSE ] && echo "- Built-in firewall restarted."
+}
+
+print_log() {
+  echo -e "\033[1;36mLog:\033[0m"
+  echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
+  dmesg | grep -F "$SC_NAME"
 }
 
 clean() {
@@ -169,6 +233,7 @@ clean() {
   ipset -q destroy $IPSET_TMP
   [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e $TMP_FILE ] && rm $TMP_FILE
+  nvram unset log_firewall_blocklist
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
@@ -208,35 +273,79 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  [ $VERBOSE ] && echo "- Removing duplicates..."
-  sort "$TMP_FILE" | uniq > "$IP_LIST"
+  if [ -x $IPR_BIN ]; then
+    [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
+    $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
+  else
+    [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
+    sort "$TMP_FILE" | uniq > "$IP_LIST"
+  fi
   rm "$TMP_FILE"
   [ $VERBOSE ] && echo "- Done."
 }
 
 status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
+  
+  # check iprang binary
+  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  
+  # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
+  
+  # check iptables
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
-  [ "$IPT_MD5" = "$(echo "$STAT_IPT" | md5sum -)" ] && STAT_IPT_MATCH='ok' || STAT_IPT_MATCH=''
+  case "$(echo "$STAT_IPT" | md5sum -)" in
+    "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
+      # iptables are set with whitelist
+    "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
+      # iptables are set without whitelist
+    *) STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='' ;;
+      # iptables are not set
+  esac
+  
+  # check log
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+  
+  # check ipset blocklist
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
+  
+  # check ipset whitelist
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
-  if   [ "$STAT_IPT_MATCH" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then echo -e "- Firewall is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) ips."
-  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then echo "- Firewall is not active; Settings are clean."
-  else echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"; fi
+  
+  # check WAN gateway in ipset blocklist
+  ipset -q test $IPSET_NAME $WAN_GATEWAY && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
+  
+  # check WAN gatewan in ipset whitelist
+  ipset -q test $IPSET_WL_NAME $WAN_GATEWAY && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
+  
+  # master check
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
+    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (WAN gateway and its subnet)."
+  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
+    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
+  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then
+    echo "- Firewall blocklist is not active; Settings are clean."
+  else
+    echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"
+  fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ $VERBOSE ] || return 0
+  
+  # details
   echo -e "\033[1;36mDetailed status:\033[0m"
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings."
   else
-    echo "- $FWS_FILE does not exist or does not have settings."
+    echo "- $FWS_FILE does not exist or does not have firewall-blocklist settings."
   fi
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_MATCH" ]
-      then echo -e "- iptables rules are set:"
-      else echo -e "- \033[31miptables rules are not set properly\033[0m:"
+    if [ "$STAT_IPT_MATCH_WL" ]; then
+      echo "- iptables rules are set with bypass rules (whitelist):"
+    elif [ "$STAT_IPT_MATCH_NOWL" ]; then
+      echo "- iptables rules are set:"
+    else
+      echo -e "- \033[31miptables rules are not set properly\033[0m:"
     fi
     echo -ne "\033[35m"
     echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
@@ -249,64 +358,83 @@ status() {
     else echo "- Logging is inactive."
   fi
   if [ "$STAT_IPS" ]; then
-    echo "- ipset filter is set:"
+    echo "- ipset filter (blocklist) is set:"
+    [ "$STAT_IPT_MATCH_WL$STAT_IPT_MATCH_NOWL" ] || echo -e "     \033[31mblocklist is not used by iptables\033[0m"
+    [ "$STAT_GW_IN_WL" ] && _CLR='\033[36m' || _CLR='\033[31m'
+    [ "$STAT_GW_IN_BL" ] && echo -e "     ${_CLR}WAN gateway ($WAN_GATEWAY) is in blocklist\033[0m"
     echo -e "\033[35m$STAT_IPS\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset filter does not exist."
+    echo "- ipset filter (blocklist) does not exist."
   fi
   if [ "$STAT_IPS_WL" ]; then
-    echo "- ipset whitelist is set:"
+    echo "- ipset bypass (whitelist) is set:"
+    [ "$STAT_IPT_MATCH_WL" ] || echo -e "     \033[31mwhitelist is not used by iptables\033[0m"
+    [ "$STAT_GW_IN_BL" ] && _CLR='\033[36m' || _CLR='\033[31m'
+    if [ "$STAT_GW_IN_WL" ]
+      then echo -e "     ${_CLR}WAN gateway ($WAN_GATEWAY) is in whitelist\033[0m"
+      else echo -e "     \033[31mWAN gateway ($WAN_GATEWAY) is NOT in whitelist!\033[0m"
+    fi
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset whitelist does not exist."
+    [ "$STAT_GW_IN_BL" ] && _CLR='\033[31m' || _CLR='\033[0m'
+    echo -e "_CLR- ipset bypass (whitelist) is not set.\033[0m"
   fi
 }
 
 print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
-  echo -e "Usage: \033[1m$SC_NICEPATH \033[36m[-v] \033[35mCOMMAND\033[0m"
-  echo -e "\033[7mValid commands (only one):\033[0m"
-  echo -e " \033[1;35minit\033[0m        - setup ipset and iptables for this script to work"
-  echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
-  echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST after performing init"
-  echo -e " \033[1;35mupdate_only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
-  echo -e " \033[1;35mupdate\033[0m      - update_only then load_set [probably what you want to use]"
-  echo -e " \033[1;35mstatus\033[0m      - display status"
-  echo -e " \033[1;35minfo\033[0m        - check if this script is installed properly"
-  echo -e " \033[1;35mupgrade\033[0m     - download and install latest version"
-  echo -e " \033[1;35mhelp\033[0m        - display this"
-  echo -e "\033[7mOptions:\033[0m"
+  echo -e "Usage: \033[1m$SC_NICEPATH \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
+  echo -e "\033[7mCOMMANDS (use only one):\033[0m"
+  echo -e " \033[1;35mrestart\033[0m    - setup ipset and iptables then restarts internal firewall"
+  echo -e " \033[1;35mupdate_set\033[0m - generates blocklist set from servers in $SRC_LIST"
+  echo -e " \033[1;35mload_set\033[0m   - loads blocklist set into ipset then restarts internal firewall"
+  echo -e " \033[1;35mupdate\033[0m     - update_set then load_set \033[1;36m[probably what you want to use]\033[0m"
+  echo -e " \033[1;35mclean\033[0m      - clean ipset and iptables rules from setup created by this script"
+  echo -e " \033[1;35mhelp\033[0m       - displays help (this)"
+  echo -e " \033[1;35minfo\033[0m       - displays info on this script"
+  echo -e " \033[1;35mstatus\033[0m     - displays status"
+  echo -e " \033[1;35mlog\033[0m        - displays log"
+  echo -e " \033[1;35mupgrade\033[0m    - download and install latest version"
+  echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
+  echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
 }
 
 # Main routine
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
 if [ "$1" != "_niced" ]; then
-  if [ "$1" = "-v" ]; then
-    [ $# = 1 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
-    PARAM="$2"; VERB="_verbose"
-  elif [ $# = 2 ] && [ "$2" = "-v" ]; then
-    PARAM="$1"; VERB="_verbose"
-  else
-    PARAM="$1"; VERB=''
-  fi
-  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$VERB"
+  OPTS=''
+  if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
+  if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
+  if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
+  PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
+  [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+
+  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
   exit $?
 fi
 
-VERBOSE=$3
-[ $VERBOSE ] && echo -e "\033[31m$SC_NAME $SC_VERS - Verbose mode\033[0m"
+if [ "$3" ]; then
+  [ -z "${3##*devmode*}" ] && DEVMODE='y'
+  [ -z "${3##*verbose*}" ] && VERBOSE='y'
+  [ -z "${3##*logon*}" ] && LOG_ACT='ON'
+  [ -z "${3##*logoff*}" ] && LOG_ACT='OFF'
+fi
+if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
+elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
-case $2 in
-  "init") init; [ $VERBOSE ] && status ;;
+case "$2" in
+  "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set") init; set_ipset; [ $VERBOSE ] && status ;;
-  "update_only") update_iplist ;;
-  "update") init; update_iplist; set_ipset; [ $VERBOSE ] && status ;;
+  "load_set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "update_set") update_iplist ;;
+  "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
+  "log") print_log ;;
   "upgrade") upgrade ;;
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
