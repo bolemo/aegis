@@ -196,8 +196,22 @@ init() {
 
 fw_restart() {
   [ $VERBOSE ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
+  if [ $LOG_ACT ]; then
+    if [ "$LOG_ACT" = 'ON' ]; then
+      echo "- Enabling logging."
+      nvram set log_firewall_blocklist=1
+    else
+      echo "- Disabling logging."
+      nvram unset log_firewall_blocklist
+    fi
+  fi
   /usr/sbin/net-wall restart > /dev/null
   [ $VERBOSE ] && echo "- Built-in firewall restarted."
+}
+
+print_log() {
+  echo -e "\033[1;36mLog:\033[0m"
+  dmesg | grep -F "$SC_NAME"
 }
 
 clean() {
@@ -367,19 +381,22 @@ status() {
 
 print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
-  echo -e "Usage: \033[1m$SC_NICEPATH \033[36m[-v] \033[35mCOMMAND\033[0m"
+  echo -e "Usage: \033[1m$SC_NICEPATH \033[36m[OPTION(S)] \033[35mCOMMAND\033[0m"
   echo -e "\033[7mValid commands (only one):\033[0m"
   echo -e " \033[1;35mrestart\033[0m     - setup ipset and iptables then restarts internal firewall"
   echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
-  echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST then restarts internal firewall"
+  echo -e " \033[1;35mload\033[0m        - populates ipset set from $IP_LIST then restarts internal firewall"
   echo -e " \033[1;35mupdate_only\033[0m - generates $IP_LIST from servers in $SRC_LIST"
-  echo -e " \033[1;35mupdate\033[0m      - update_only then load_set \033[1;36m[probably what you want to use]\033[0m"
+  echo -e " \033[1;35mupdate\033[0m      - update_only then load \033[1;36m[probably what you want to use]\033[0m"
   echo -e " \033[1;35mstatus\033[0m      - display status"
   echo -e " \033[1;35minfo\033[0m        - check if this script is installed properly"
+  echo -e " \033[1;35mlog\033[0m         - display log"
   echo -e " \033[1;35mupgrade\033[0m     - download and install latest version"
   echo -e " \033[1;35mhelp\033[0m        - display this"
   echo -e "\033[7mOptions:\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
+  echo -e " \033[1;36m-log-on\033[0m     - when used with restart, load or update, will enable logging"
+  echo -e " \033[1;36m-log-off\033[0m    - when used with restart, load or update, will disable logging"
 }
 
 # Main routine
@@ -389,6 +406,8 @@ if [ "$1" != "_niced" ]; then
   OPTS=''
   if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
   if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
+  if [ -z "${*##-log-on *}" ] || [ -z "${*##* -log-on *}" ] || [ -z "${*##* -log-on}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${*##-log-off *}" ] || [ -z "${*##* -log-off *}" ] || [ -z "${*##* -log-off}" ]; then OPTS="${OPTS}_logoff"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]]*//g' | sed 's/ //g')"
   [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
@@ -399,6 +418,8 @@ fi
 if [ "$3" ]; then
   [ -z "${3##*devmode*}" ] && DEVMODE='y'
   [ -z "${3##*verbose*}" ] && VERBOSE='y'
+  [ -z "${3##*logon*}" ] && LOG_ACT='ON' || LOG_ACT=''
+  [ -z "${3##*logoff*}" ] && LOG_ACT='OFF' || LOG_ACT=''
 fi
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
@@ -406,12 +427,13 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[
 case "$2" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "load") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
   "update_only") update_iplist ;;
   "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
+  "log") print_log ;;
   "upgrade") upgrade ;;
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
