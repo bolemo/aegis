@@ -396,8 +396,8 @@ print_help() {
   echo -e " \033[1;35mhelp\033[0m        - display this"
   echo -e "\033[7mOptions:\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
-  echo -e " \033[1;36m-logon\033[0m     - when used with restart, load or update, will enable logging"
-  echo -e " \033[1;36m-logoff\033[0m    - when used with restart, load or update, will disable logging"
+  echo -e " \033[1;36m-log=on\033[0m     - when used with restart, load or update, will enable logging"
+  echo -e " \033[1;36m-log=off\033[0m    - when used with restart, load or update, will disable logging"
 }
 
 # Main routine
@@ -407,8 +407,8 @@ if [ "$1" != "_niced" ]; then
   OPTS=''
   if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
   if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${*##-logon *}" ] || [ -z "${*##* -logon *}" ] || [ -z "${*##* -logon}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${*##-logoff *}" ] || [ -z "${*##* -logoff *}" ] || [ -z "${*##* -logoff}" ]; then OPTS="${OPTS}_logoff"; fi
+  if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]]*//g' | sed 's/ //g')"
   [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
@@ -421,7 +421,7 @@ if [ "$3" ]; then
   [ -z "${3##*verbose*}" ] && VERBOSE='y'
   [ -z "${3##*logon*}" ] && LOG_ACT='ON' || LOG_ACT=''
   [ -z "${3##*logoff*}" ] && LOG_ACT='OFF' || LOG_ACT=''
-fi
+fi; echo $LOG_ACT
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
