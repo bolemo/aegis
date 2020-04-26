@@ -66,7 +66,7 @@ To log activity of firewall-blocklist and see what is blocked, you can use the `
 You can also use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router.
 If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set log_firewall_blocklist=1` do `nvram commit`.
 
-### Access the log
+### Accessing the log
 To watch the log, use `/opt/bolemo/scripts/firewall-blocklist log` or `dmesg | grep 'firewall-blocklist'`.
 
 ### Disabling
