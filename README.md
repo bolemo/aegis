@@ -4,20 +4,22 @@ Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 should work with R9000 as well (nor sure about iprange binary that was compiled on R7800)
 
 ## Version
-2.5.0
+3.0.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* Although it is technically possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you lay have installed Entware).
+* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, either installed through Entware [self compiled]. The install script will offer to install iprange on the internal flash. You can decide to install it separately or not at all. iprange allows great optimizations.
+* Although it is possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v2.0.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.0.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
-* Check if it was installed: `/opt/bolemo/scripts/firewall-blocklist info`
+* Answer `y` if you want to install iprange
+* Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
 * Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
