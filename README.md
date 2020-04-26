@@ -1,7 +1,7 @@
 # Firewall Blocklist
 Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 
-should work with R9000 as well (nor sure about iprange binary that was compiled on R7800)
+should work with several other Netgear routers as well.
 
 ## Version
 3.0.0
