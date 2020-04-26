@@ -419,9 +419,9 @@ fi
 if [ "$3" ]; then
   [ -z "${3##*devmode*}" ] && DEVMODE='y'
   [ -z "${3##*verbose*}" ] && VERBOSE='y'
-  [ -z "${3##*logon*}" ] && LOG_ACT='ON' || LOG_ACT=''
-  [ -z "${3##*logoff*}" ] && LOG_ACT='OFF' || LOG_ACT=''
-fi; echo $LOG_ACT
+  [ -z "${3##*logon*}" ] && LOG_ACT='ON'
+  [ -z "${3##*logoff*}" ] && LOG_ACT='OFF'
+fi
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
