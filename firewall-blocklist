@@ -428,8 +428,8 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[
 case "$2" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
-  "update_only") update_iplist ;;
+  "load_set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "update_set") update_iplist ;;
   "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
