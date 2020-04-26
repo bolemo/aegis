@@ -29,16 +29,17 @@ Use `/opt/bolemo/scripts/firewall-blocklist -v update` to update blocklists, gen
 
 Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist status` to check if everything is up and running or not.
 
-You will probably want to setup a cron job to update the blocklists once a day (use entware cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning.
+You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning.
 
 ## Upgrade
-`/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available.
-The `/opt/bolemo/scripts/firewall-blocklist upgrade` command will also show installed and latest version available and ask if you want to upgrade.
+Since version 3, you do not need to go through the whole installation process to install a new version.
+The comand `/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available online.
+The `/opt/bolemo/scripts/firewall-blocklist upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
 ## Usage
 Usage: `/opt/bolemo/scripts/firewall-blocklist COMMAND [OPTION(S)]`
 
-Valid commands (only one):
+### Valid commands (only one):
 * `restart` - setup ipset and iptables then restarts internal firewall
 * `update_set` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
 * `load_set` - loads `firewall-blocklist.netset` into ipset then restarts internal firewall
@@ -50,7 +51,7 @@ Valid commands (only one):
 * `log` - displays log
 * `upgrade` - download and install latest version
 
-Options:
+### Options:
 * `-v` - verbose mode
 * `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
 
@@ -60,12 +61,15 @@ The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of serve
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
 ## Logging
+### Enabling
 To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script.
 You can also use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router.
 If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set log_firewall_blocklist=1` do `nvram commit`.
 
+### Access the log
 To watch the log, use `/opt/bolemo/scripts/firewall-blocklist log` or `dmesg | grep 'firewall-blocklist'`.
 
+### Disabling
 To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
 You can also use `nvram unset log_firewall_blocklist`.
 If you used `nvram commit` after enabling logging, then you need to use `nvram commit` again after using the `-log=off` option or the command `nvram unset log_firewall_blocklist` to stay disabled after router reboot.
