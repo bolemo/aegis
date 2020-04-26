@@ -232,6 +232,7 @@ clean() {
   ipset -q destroy $IPSET_TMP
   [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e $TMP_FILE ] && rm $TMP_FILE
+  nvram unset log_firewall_blocklist
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
