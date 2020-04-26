@@ -383,22 +383,21 @@ status() {
 
 print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
-  echo -e "Usage: \033[1m$SC_NICEPATH \033[36m[OPTION(S)] \033[35mCOMMAND\033[0m"
+  echo -e "Usage: \033[1m$SC_NICEPATH \033[35mCOMMAND \033[36m[OPTION(s)]\033[0m"
   echo -e "\033[7mValid commands (only one):\033[0m"
-  echo -e " \033[1;35mrestart\033[0m     - setup ipset and iptables then restarts internal firewall"
-  echo -e " \033[1;35mupdate_set\033[0m  - generates $IP_LIST from servers in $SRC_LIST"
-  echo -e " \033[1;35mload_set\033[0m    - populates ipset set from $IP_LIST then restarts internal firewall"
-  echo -e " \033[1;35mupdate\033[0m      - update_set then load_set \033[1;36m[probably what you want to use]\033[0m"
-  echo -e " \033[1;35mclean\033[0m       - clean ipset and iptables rules from setup created by this script"
-  echo -e " \033[1;35mhelp\033[0m        - displays help (this)"
-  echo -e " \033[1;35minfo\033[0m        - displays info on this script"
-  echo -e " \033[1;35mstatus\033[0m      - displays status"
-  echo -e " \033[1;35mlog\033[0m         - displays log"
-  echo -e " \033[1;35mupgrade\033[0m     - download and install latest version"
+  echo -e " \033[1;35mrestart\033[0m    - setup ipset and iptables then restarts internal firewall"
+  echo -e " \033[1;35mupdate_set\033[0m - generates $IP_LIST from servers in $SRC_LIST"
+  echo -e " \033[1;35mload_set\033[0m   - populates ipset set from $IP_LIST then restarts internal firewall"
+  echo -e " \033[1;35mupdate\033[0m     - update_set then load_set \033[1;36m[probably what you want to use]\033[0m"
+  echo -e " \033[1;35mclean\033[0m      - clean ipset and iptables rules from setup created by this script"
+  echo -e " \033[1;35mhelp\033[0m       - displays help (this)"
+  echo -e " \033[1;35minfo\033[0m       - displays info on this script"
+  echo -e " \033[1;35mstatus\033[0m     - displays status"
+  echo -e " \033[1;35mlog\033[0m        - displays log"
+  echo -e " \033[1;35mupgrade\033[0m    - download and install latest version"
   echo -e "\033[7mOptions:\033[0m"
-  echo -e " \033[1;36m-v\033[0m          - verbose mode"
-  echo -e " \033[1;36m-log-on\033[0m     - when used with restart, load or update, will enable logging"
-  echo -e " \033[1;36m-log-off\033[0m    - when used with restart, load or update, will disable logging"
+  echo -e " \033[1;36m-v\033[0m           - verbose mode"
+  echo -e " \033[1;36m-log=\033[0m[\033[1;36mon\033[0m/\033[1;36moff\033[0m] - when used with restart, load or update, will enable/disable logging"
 }
 
 # Main routine
@@ -408,9 +407,9 @@ if [ "$1" != "_niced" ]; then
   OPTS=''
   if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
   if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${*##-log-on *}" ] || [ -z "${*##* -log-on *}" ] || [ -z "${*##* -log-on}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${*##-log-off *}" ] || [ -z "${*##* -log-off *}" ] || [ -z "${*##* -log-off}" ]; then OPTS="${OPTS}_logoff"; fi
-  PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]]*//g' | sed 's/ //g')"
+  if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
+  PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
   nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
