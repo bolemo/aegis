@@ -31,22 +31,28 @@ Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist status` to check if
 
 You will probably want to setup a cron job to update the blocklists once a day (use entware cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning.
 
+## Upgrade
+`/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available.
+The `/opt/bolemo/scripts/firewall-blocklist upgrade` command will also show installed and latest version available and ask if you want to upgrade.
+
 ## Usage
-use: `/opt/bolemo/scripts/firewall-blocklist [-v] COMMAND`
+Usage: `/opt/bolemo/scripts/firewall-blocklist COMMAND [OPTION(S)]`
 
 Valid commands (only one):
-* `init` - setup ipset and iptables for this script to work
+* `restart` - setup ipset and iptables then restarts internal firewall
+* `update_set` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
+* `load_set` - loads `firewall-blocklist.netset` into ipset then restarts internal firewall
+* `update` - update_set then load_set [probably what you want to use]
 * `clean` - clean ipset and iptables rules from setup created by this script
-* `load_set` - populates ipset set from `firewall-blocklist.netset` after performing init
-* `update_only` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
-* `update` - update_only then load_set [probably what you want to use]
-* `status` - display status
-* `info` - check if this script is installed properly
+* `help` - displays help
+* `info` - displays info on this script
+* `status` - displays status
+* `log` - displays log
 * `upgrade` - download and install latest version
-* `help` - display this
 
 Options:
 * `-v` - verbose mode
+* `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
 
 ## Blocklists
 The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
@@ -54,5 +60,12 @@ The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of serve
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
 ## Logging
-To log activity of firewall-blocklist and see what is blocked, you can use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router. To watch the log, use `dmesg | grep 'firewall-blocklist'`. If you want logging to stay on after a reboot, after `nvram set log_firewall_blocklist=1` do `nvram commit`.
-To stop logging, use `nvram unset log_firewall_blocklist` or `nvram uncommit log_firewall_blocklist` if you used commit, then the next time the firewall-blocklist will be restarted logging will be disabled.
+To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script.
+You can also use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router.
+If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set log_firewall_blocklist=1` do `nvram commit`.
+
+To watch the log, use `/opt/bolemo/scripts/firewall-blocklist log` or `dmesg | grep 'firewall-blocklist'`.
+
+To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
+You can also use `nvram unset log_firewall_blocklist`.
+If you used `nvram commit` after enabling logging, then you need to use `nvram commit` again after using the `-log=off` option or the command `nvram unset log_firewall_blocklist` to stay disabled after router reboot.
