@@ -164,7 +164,7 @@ count_ip_in_ipset() {
 }
 
 info() {
-  echo -e "\033[1;36mTest:\033[0m"
+  echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
     then echo "- The script is properly installed."
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
