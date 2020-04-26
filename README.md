@@ -69,3 +69,12 @@ To watch the log, use `/opt/bolemo/scripts/firewall-blocklist log` or `dmesg | g
 To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
 You can also use `nvram unset log_firewall_blocklist`.
 If you used `nvram commit` after enabling logging, then you need to use `nvram commit` again after using the `-log=off` option or the command `nvram unset log_firewall_blocklist` to stay disabled after router reboot.
+
+## iprange
+iprange is a great little utility dealing that is now part of the FireHOL project.
+firewall-blocklist works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
+
+The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
+You can also install it separately directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
+
+If you prefer not to install it in the rootfs and are more advanced, you can install it from Entware. It is not available in Voxel's repo, but you can compile it yourself. The source is here: https://github.com/firehol/iprange
