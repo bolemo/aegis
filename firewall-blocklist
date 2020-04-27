@@ -281,7 +281,10 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  [ -r $CUST_IP_LIST ] && { grep '^[0-9]' "$CUST_IP_LIST" | sed -e 's/;.*//' >>"$TMP_FILE"; }
+  if [ -r $CUST_IP_LIST ]; then
+    [ $VERBOSE ] && echo "- Adding netset from custom list ($CUST_IP_LIST)"
+    grep '^[0-9]' "$CUST_IP_LIST" | sed -e 's/;.*//' >>"$TMP_FILE"
+  fi
   if [ -x $IPR_BIN ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
     $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
