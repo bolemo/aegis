@@ -300,7 +300,7 @@ status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
   
   # check iprang binary
-  [ $IPR_BIN ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
   
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
@@ -326,10 +326,10 @@ status() {
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
   
   # check WAN gateway in ipset blocklist
-  ipset -q test $IPSET_NAME $WAN_GATEWAY && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
+  ipset -q test "$IPSET_NAME" "$WAN_GATEWAY" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
   
   # check WAN gatewan in ipset whitelist
-  ipset -q test $IPSET_WL_NAME $WAN_GATEWAY && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
+  ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY" && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
   
   # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
@@ -422,7 +422,7 @@ if [ "$1" != "_niced" ]; then
   if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
   if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
-  [ $PARAM ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+  [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
   nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
   exit $?
