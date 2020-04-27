@@ -87,7 +87,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v3.0.1"
+SC_VERS="v3.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -96,6 +96,7 @@ IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
+CUST_IP_LIST="$ROOT_DIR/etc/$SC_NAME.custom.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
@@ -280,6 +281,7 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
+  [ -r $CUST_IP_LIST ] && { grep '^[0-9]' "$CUST_IP_LIST" | sed -e 's/;.*//' >>"$TMP_FILE"; }
   if [ -x $IPR_BIN ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
     $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$IP_LIST"
