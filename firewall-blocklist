@@ -13,9 +13,9 @@ WAN_NETMASK="$(nvram get wan_netmask)"
 
 #we are called from firewall_start.sh
 if [ $1 ] && [ $1 = "_fws" ]; then
-  # create ipset blocklist
-  if ! ipset -q list "$IPSET_NAME"; then
-  # ipset is not here
+
+  # creating ipset blocklist if needed
+  if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r $IP_LIST ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
@@ -24,13 +24,15 @@ if [ $1 ] && [ $1 = "_fws" ]; then
       ipset -q create "$IPSET_NAME" hash:net family inet
     fi
   fi
+  
+  # checking if WAN gateway is in blocklist
   if ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
-  # check if WAN gateway is in ipset blocklist
     then WGW_IN_BL='y'
     else WGW_IN_BL=''
   fi
+  
+  # creating whitelist if WAN gateway is in blocklist
   if [ $WGW_IN_BL ]; then
-  # WAN gateway is in blocklist so create ipset whitelist
     # Calculate WAN_RANGE (IP & CIDR)
     _CIDR=0
     for _OCTET in $(echo $WAN_NETMASK| sed 's/\./ /g'); do
@@ -38,7 +40,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
       let _CIDR+=${#_BINBITS}
     done
     WAN_RANGE="$WAN_GATEWAY/$_CIDR"
-    if ipset -q list "$IPSET_WL_NAME"; then
+    if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     # whitelist ipset is already here, make new one and swap
       ipset -q destroy "$IPSET_TMP"
       ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
@@ -54,11 +56,16 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   # no need for whitelist, just destroy if exists
     ipset -q destroy "$IPSET_WL_NAME"
   fi
-  # create the filtering (blocking) iptables chain
+  
+  #checking if IPTBL_NAME is already set (should not); if it is, exit
+  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && exit 1
+  
+  # creating the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
   [ $IPTBL_LOGGING ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
   iptables -A "$IPTBL_NAME" -j DROP
-  # create the required iptables
+  
+  # creating the required iptables
   if [ $WGW_IN_BL ]; then
   # creating iptables with whitelist
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
@@ -80,7 +87,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v3.0.0"
+SC_VERS="v3.0.1"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -198,10 +205,10 @@ fw_restart() {
   [ $VERBOSE ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
   if [ $LOG_ACT ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
-      echo "- Enabling logging."
+      [ $VERBOSE ] && echo "- Enabling logging."
       nvram set log_firewall_blocklist=1
     else
-      echo "- Disabling logging."
+      [ $VERBOSE ] && echo "- Disabling logging."
       nvram unset log_firewall_blocklist
     fi
   fi
