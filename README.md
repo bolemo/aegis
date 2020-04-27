@@ -1,15 +1,14 @@
 # Firewall Blocklist
 Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
-
-should work with several other Netgear routers as well.
+Should work with several other Netgear routers as well.
 
 ## Version
 3.0.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, either installed through Entware [self compiled]. The install script will offer to install iprange on the internal flash. You can decide to install it separately or not at all. iprange allows great optimizations.
-* Although it is possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
+* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware [self compiled]). The install script will offer to install iprange on the internal flash. You can decide to install it separately or not at all. iprange allows great optimizations.
+* If it is possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 
 ## Install
@@ -25,15 +24,15 @@ should work with several other Netgear routers as well.
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/firewall-blocklist -v update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
+Use `/opt/bolemo/scripts/firewall-blocklist update -v` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist status` to check if everything is up and running or not.
 
 You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning.
 
 ## Upgrade
-Since version 3, you do not need to go through the whole installation process to install a new version.
-The comand `/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available online.
+Since version 2, you do not need to go through the whole installation process to install a new version.
+The comnand `/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available online.
 The `/opt/bolemo/scripts/firewall-blocklist upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
 ## Usage
@@ -81,4 +80,4 @@ firewall-blocklist works fine without iprange installed, but it is recommanded t
 The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
 You can also install it separately directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
 
-If you prefer not to install it in the rootfs and are more advanced, you can install it from Entware. It is not available in Voxel's repo, but you can compile it yourself. The source is here: https://github.com/firehol/iprange
+If you prefer not to install it in the rootfs and are a poweruser, you can install it from Entware. It is not available in Voxel's repo, and you will have to compile it yourself. The source is here: https://github.com/firehol/iprange
