@@ -15,7 +15,7 @@ WAN_NETMASK="$(nvram get wan_netmask)"
 if [ $1 ] && [ $1 = "_fws" ]; then
 
   # creating ipset blocklist if needed
-  if ! ipset -q -n list "$IPSET_NAME"; then
+  if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r $IP_LIST ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create "$IPSET_NAME" hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
@@ -40,7 +40,7 @@ if [ $1 ] && [ $1 = "_fws" ]; then
       let _CIDR+=${#_BINBITS}
     done
     WAN_RANGE="$WAN_GATEWAY/$_CIDR"
-    if ipset -q -n list "$IPSET_WL_NAME"; then
+    if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     # whitelist ipset is already here, make new one and swap
       ipset -q destroy "$IPSET_TMP"
       ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
