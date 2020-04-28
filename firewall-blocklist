@@ -136,7 +136,7 @@ upgrade() {
   _PROG='--show-progress';
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
-  if wget -qO "$DL_PATH" "$_PROG" "$UPGRADE_URL"; then
+  if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
     \mv "$DL_PATH" "$SC_NICEPATH"
     chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
