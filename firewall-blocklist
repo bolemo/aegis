@@ -8,20 +8,23 @@ IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
+INFO_FILE="/tmp/firewall-blocklist.info"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 WAN_NETMASK="$(nvram get wan_netmask)"
 
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
-
+date > "$INFO_FILE"
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r $IP_LIST ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
+      echo 'ips from netset' > "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_NAME" hash:net family inet
+      echo 'empty ips' > "$INFO_FILE"
     fi
   fi
   
@@ -47,18 +50,21 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
       ipset -q add "$IPSET_TMP" "$WAN_RANGE"
       ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
       ipset -q destroy "$IPSET_TMP"
+      echo 'swap wl ips' > "$INFO_FILE"
     else
     # whitelist ipset is not here, just create
       ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
       ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
+      echo 'new wl ips' > "$INFO_FILE"
     fi
   else
   # no need for whitelist, just destroy if exists
     ipset -q destroy "$IPSET_WL_NAME"
+    echo 'no wl ips' > "$INFO_FILE"
   fi
   
   #checking if IPTBL_NAME is already set (should not); if it is, exit
-  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && exit 1
+  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && { echo "$IPTBL_NAME already set!" > "$INFO_FILE"; exit 1; }
   
   # creating the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
@@ -76,12 +82,14 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
     iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    echo 'ipt w/ wl' > "$INFO_FILE"
   else
   # creating iptables without whitelist
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
     iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    echo 'ipt w/o wl' > "$INFO_FILE"
   fi
 
   exit 0
