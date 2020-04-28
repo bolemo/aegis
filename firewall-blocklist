@@ -389,7 +389,7 @@ status() {
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
     [ "$STAT_GW_IN_BL" ] && _CLR='\033[31m' || _CLR='\033[0m'
-    echo -e "_CLR- ipset bypass (whitelist) is not set.\033[0m"
+    echo -e "${_CLR}- ipset bypass (whitelist) is not set.\033[0m"
   fi
 }
 
