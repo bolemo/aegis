@@ -3,7 +3,7 @@ Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.0.1
+3.1.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -14,7 +14,7 @@ Should work with several other Netgear routers as well.
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.0.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.1.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
 * Answer `y` if you want to install iprange
@@ -58,6 +58,8 @@ Usage: `/opt/bolemo/scripts/firewall-blocklist COMMAND [OPTION(S)]`
 The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
+
+Since version 3.1, you can have your own custom list of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master blocklist.
 
 ## Logging
 ### Enabling
