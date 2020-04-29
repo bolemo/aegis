@@ -68,7 +68,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   
   echo -n 'ipt: ' >> "$INFO_FILE"
   #checking if IPTBL_NAME is already set (should not); if it is, exit
-  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && { echo "already set!" >> "$INFO_FILE"; exit 1; }
+  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && { echo "keep!" >> "$INFO_FILE"; exit 1; }
   
   # creating the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
