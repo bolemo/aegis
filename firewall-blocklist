@@ -26,6 +26,7 @@ date > "$INFO_FILE"
       ipset -q create "$IPSET_NAME" hash:net family inet
       echo 'ipset BL: new' >> "$INFO_FILE"
     fi
+  else echo 'ipset BL: there' >> "$INFO_FILE"
   fi
   
   # checking if WAN gateway is in blocklist
@@ -68,9 +69,8 @@ date > "$INFO_FILE"
   
   # creating the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
-  [ "$IPTBL_LOGGING" ] && iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+  [ "$IPTBL_LOGGING" ] && { iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "; echo 'iptables: log on' >> "$INFO_FILE"; }
   iptables -A "$IPTBL_NAME" -j DROP
-  echo 'iptables: log on' >> "$INFO_FILE"
   
   # creating the required iptables
   if [ "$WGW_IN_BL" ]; then
