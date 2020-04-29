@@ -16,19 +16,19 @@ WAN_NETMASK="$(nvram get wan_netmask)"
 if [ "$1" ] && [ "$1" = "_fws" ]; then
   date > "$INFO_FILE"
   
-  echo -n 'ipsBL: ' >> "$INFO_FILE"
+  echo -n 'ips: ' >> "$INFO_FILE"
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r $IP_LIST ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
-      echo 'load' >> "$INFO_FILE"
+      echo -n 'BL(load)' >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_NAME" hash:net family inet
-      echo 'new' >> "$INFO_FILE"
+      echo -n 'BL(new)' >> "$INFO_FILE"
     fi
-  else echo 'keep' >> "$INFO_FILE"
+  else echo -n 'BL(keep)' >> "$INFO_FILE"
   fi
   
   # checking if WAN gateway is in blocklist
@@ -37,7 +37,6 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     else WGW_IN_BL=''
   fi
   
-  echo -n 'ipsWL: ' >> "$INFO_FILE"
   # creating whitelist if WAN gateway is in blocklist
   if [ "$WGW_IN_BL" ]; then
     # Calculate WAN_RANGE (IP & CIDR)
@@ -54,17 +53,17 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
       ipset -q add "$IPSET_TMP" "$WAN_RANGE"
       ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
       ipset -q destroy "$IPSET_TMP"
-      echo 'swap' >> "$INFO_FILE"
+      echo '+WL(swap)' >> "$INFO_FILE"
     else
     # whitelist ipset is not here, just create
       ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
       ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
-      echo 'new' >> "$INFO_FILE"
+      echo '+WL(new)' >> "$INFO_FILE"
     fi
   else
   # no need for whitelist, just destroy if exists
     ipset -q destroy "$IPSET_WL_NAME"
-    echo 'none' >> "$INFO_FILE"
+    echo '' >> "$INFO_FILE"
   fi
   
   echo -n 'ipt: ' >> "$INFO_FILE"
