@@ -28,7 +28,7 @@ Use `/opt/bolemo/scripts/firewall-blocklist update -v` to update blocklists, gen
 
 Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist status` to check if everything is up and running or not.
 
-You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning.
+You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning (or local time if using Kamoj's addon).
 
 ## Upgrade
 Since version 2, you do not need to go through the whole installation process to install a new version.
