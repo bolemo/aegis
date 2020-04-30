@@ -361,11 +361,11 @@ update_iplist() {
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
-        [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-        $IPR_BIN --common "$IP_LIST" "$TMP_FILE" --ipset-reduce 20  > "$WL_FILE"
-        if [ ! -s "WL_FILE" ]; then
+        if [ "$($IPR_BIN --common $IP_LIST $TMP_FILE)" ]; then
+          [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
+          $IPR_BIN "$TMP_FILE" --ipset-reduce 20  > "$WL_FILE"
+        else
           echo '- No IP in common with blocklist, skipping whitelist.'
-          rm "$WL_FILE"
         fi
       else
         [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
