@@ -284,6 +284,23 @@ set_ipset() {
   ipset swap $IPSET_NAME $IPSET_TMP
   ipset destroy $IPSET_TMP
   [ "$VERBOSE" ] && echo "- Done."
+  
+  # whitelist
+  if [ -r $WL_FILE ]; then
+    if [ "$VERBOSE" ]; then
+      MAX="$(wc -l < $WL_FILE)"
+      NUM_IP="$(count_ip_in_file $WL_FILE)"
+      echo -e "\033[1;36mBuilding ipset whitelist ($MAX entries bypassing $NUM_IP ips)...\033[0m"
+    fi
+
+    echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
+    [ "$VERBOSE" ] && echo "- Created whitelist, swapping it."
+    ipset swap $IPSET_WL_NAME $IPSET_TMP
+    ipset destroy $IPSET_TMP
+    [ "$VERBOSE" ] && echo "- Done."
+  else
+    ipset -q destroy $IPSET_WL_NAME
+  fi
 }
 
 update_iplist() {
