@@ -468,7 +468,7 @@ status() {
     [ "$STAT_GW_IN_BL" ] && _CLR='\033[36m' || _CLR='\033[31m'
     if [ "$STAT_GW_IN_WL" ]
       then echo -e "     ${_CLR}WAN gateway ($WAN_GATEWAY) is in whitelist\033[0m"
-      elif [ "$STAT_GW_IN_BL" ] echo -e "     \033[31mWAN gateway ($WAN_GATEWAY) is NOT in whitelist!\033[0m"
+      elif [ "$STAT_GW_IN_BL" ]; then echo -e "     \033[31mWAN gateway ($WAN_GATEWAY) is NOT in whitelist!\033[0m"
     fi
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
