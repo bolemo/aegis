@@ -84,6 +84,8 @@ iprange is a great little utility dealing that is now part of the FireHOL projec
 firewall-blocklist works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
 
 The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
-You can also install it separately directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
+You can also install it separately:
+* directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
+* using Entware: `/opt/bin/opkg install iprange`.
 
-If you prefer not to install it in the rootfs and are a poweruser, you can install it from Entware. It is not available in Voxel's repo, and you will have to compile it yourself. The source is here: https://github.com/firehol/iprange
+The source is here: https://github.com/firehol/iprange
