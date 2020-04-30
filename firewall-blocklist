@@ -294,7 +294,7 @@ set_ipset() {
   [ "$VERBOSE" ] && echo "- Done."
   
   # whitelist
-  if [ -r $WL_FILE ]; then
+  if [ -s $WL_FILE ]; then
     if [ "$VERBOSE" ]; then
       MAX="$(wc -l < $WL_FILE)"
       NUM_IP="$(count_ip_in_file $WL_FILE)"
@@ -356,12 +356,15 @@ update_iplist() {
     [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list...\033[0m"
     grep '^[0-9]' "$CUST_WL_FILE" | sed -e 's/;.*//' >"$TMP_FILE"
     
-    if [ -x "$IPR_BIN" ]; then
-      [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-      $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$WL_FILE"
-    else
-      [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
-      sort "$TMP_FILE" | uniq > "$WL_FILE"
+    if [ -s "$TMP_FILE" ]; then
+      if [ -x "$IPR_BIN" ]; then
+        [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
+        $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$WL_FILE"
+      else
+        [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
+        sort "$TMP_FILE" | uniq > "$WL_FILE"
+      fi
+      else echo '- No IP set found.'
     fi
     rm "$TMP_FILE"
     [ "$VERBOSE" ] && echo "- Done."
