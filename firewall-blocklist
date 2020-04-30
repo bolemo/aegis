@@ -11,7 +11,7 @@ IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 WAN_NETMASK="$(nvram get wan_netmask)"
-WAN_GATEWAY='0.0.0.0'
+
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
   date > "$INFO_FILE"
