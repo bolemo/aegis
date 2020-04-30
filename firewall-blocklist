@@ -109,7 +109,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v3.2.0"
+SC_VERS="v3.2.1"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -259,6 +259,7 @@ clean() {
       [ "$VERBOSE" ] && echo "- $FWS_FILE has no other rules; removed it."
     fi
   fi
+  rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
   ipset -q destroy "$IPSET_NAME"
@@ -299,7 +300,7 @@ set_ipset() {
     ipset destroy $IPSET_TMP
     [ "$VERBOSE" ] && echo "- Done."
   else
-    ipset -q destroy "$IPSET_WL_NAME" 2>/dev/null
+    ipset -q destroy "$IPSET_WL_NAME" >/dev/null
   fi
 }
 
