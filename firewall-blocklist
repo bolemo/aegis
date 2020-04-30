@@ -23,11 +23,11 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     if [ -r "$IP_LIST" ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
-      echo -n 'BL(load)' >> "$INFO_FILE"
+      echo -n 'BL(+load)' >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_NAME" hash:net family inet
-      echo -n 'BL(new)' >> "$INFO_FILE"
+      echo -n 'BL(+new)' >> "$INFO_FILE"
     fi
   else echo -n 'BL(keep)' >> "$INFO_FILE"
   fi
@@ -36,6 +36,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   if [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
     then
       WGW_IN_BL='y'
+      echo -n '(gw)' >> "$INFO_FILE"
       if ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY"
         then WGW_IN_WL='y'
         else WGW_IN_WL=''
@@ -64,7 +65,9 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   fi
   
   # if needed, adding WAN gateway to whitelist
-  if [ "$WGW_IN_BL" ] && [ ! "$WGW_IN_WL" ]; then
+  [ "$WGW_IN_BL" ] && if [ "$WGW_IN_WL" ]; then
+    echo -n '(gw)' >> "$INFO_FILE"
+  else
     # Calculate WAN_RANGE (IP & CIDR)
     _CIDR=0
     for _OCTET in $(echo "$WAN_NETMASK"| sed 's/\./ /g'); do
