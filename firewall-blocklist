@@ -261,17 +261,17 @@ clean() {
   fi
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
-  ipset -q destroy $IPSET_NAME
-  ipset -q destroy $IPSET_WL_NAME
-  ipset -q destroy $IPSET_TMP
+  ipset -q destroy "$IPSET_NAME"
+  ipset -q destroy "$IPSET_WL_NAME"
+  ipset -q destroy "$IPSET_TMP"
   [ "$VERBOSE" ] && echo "- Cleaned ipsets."
-  [ -e $TMP_FILE ] && rm $TMP_FILE
+  [ -e "$TMP_FILE" ] && rm "$TMP_FILE"
   nvram unset log_firewall_blocklist
   [ "$VERBOSE" ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
 set_ipset() {
-  [ -r $IP_LIST ] || { >&2 echo -e "\033[31m! $IP_LIST not readable!\033[0m"; exit 1; }
+  [ -r "$IP_LIST" ] || { >&2 echo -e "\033[31m! $IP_LIST not readable!\033[0m"; exit 1; }
 
   if [ "$VERBOSE" ]; then
     MAX="$(wc -l < $IP_LIST)"
@@ -299,7 +299,7 @@ set_ipset() {
     ipset destroy $IPSET_TMP
     [ "$VERBOSE" ] && echo "- Done."
   else
-    ipset -q destroy "$IPSET_WL_NAME"
+    ipset -q destroy "$IPSET_WL_NAME" 2>/dev/null
   fi
 }
 
