@@ -36,9 +36,9 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   if [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
     then
       WGW_IN_BL='y'
-      if ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY";
-        then WGW_IN_WL='y';
-        else WGW_IN_WL='';
+      if ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY"
+        then WGW_IN_WL='y'
+        else WGW_IN_WL=''
       fi
     else
       WGW_IN_BL=''
