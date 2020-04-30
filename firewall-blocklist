@@ -114,7 +114,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v3.2.0"
+SC_VERS="v3.2.1"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -196,8 +196,8 @@ count_ip_in_file() {
 
 count_ip_in_ipset() {
   if [ -x "$IPR_BIN" ]
-    then ipset list "$1" | sed -n '/Members:/,$p' | tail -n +2 | $IPR_BIN -C | sed -n 's/.*,//p'
-    else ipset list "$1" | sed -n '/Members:/,$p' | tail -n +2 | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+    then ipset list "$1" | tail -n +8 | $IPR_BIN -C | sed -n 's/.*,//p'
+    else ipset list "$1" | tail -n +8 | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
   fi
 }
 
@@ -362,12 +362,16 @@ update_iplist() {
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
         [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-        $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$WL_FILE"
+        $IPR_BIN --common "$IP_LIST" "$TMP_FILE" --ipset-reduce 20  > "$WL_FILE"
+        if [ ! -s "WL_FILE" ]; then
+          echo '- No IP in common with blocklist, skipping whitelist.'
+          rm "$WL_FILE"
+        fi
       else
         [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
         sort "$TMP_FILE" | uniq > "$WL_FILE"
       fi
-      else echo '- No IP set found.'
+      else echo '- No IP set found, custom whitelist is empty.'
     fi
     rm "$TMP_FILE"
     [ "$VERBOSE" ] && echo "- Done."
