@@ -51,17 +51,17 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     if [ -r "$WL_FILE" ]; then
     # netset file exists, so creating whitelist ipset from it
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
-      echo -n '+WL(load)' >> "$INFO_FILE"
+      echo -n '/WL(+load)' >> "$INFO_FILE"
     elif [ "$WGW_IN_BL" ]; then
     # no netset file, creating empty whitelist ipset because needed for WAN gateway
       ipset -q create "$IPSET_WL_NAME" hash:net family inet
-      echo -n '+WL(new)' >> "$INFO_FILE"
+      echo -n '/WL(+new)' >> "$INFO_FILE"
     else
       # no need for whitelist, just destroy if exists
       ipset -q destroy "$IPSET_WL_NAME"
       NO_WL='y'
     fi
-  else echo -n '+WL(keep)' >> "$INFO_FILE"
+  else echo -n '/WL(keep)' >> "$INFO_FILE"
   fi
   
   # if needed, adding WAN gateway to whitelist
@@ -108,7 +108,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
     iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-    echo 'BL+WL' >> "$INFO_FILE"
+    echo 'BL/WL' >> "$INFO_FILE"
   fi
 
   exit 0
