@@ -11,7 +11,7 @@ IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 WAN_NETMASK="$(nvram get wan_netmask)"
-
+WAN_GATEWAY='0.0.0.0'
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
   date > "$INFO_FILE"
@@ -340,11 +340,15 @@ status() {
   # check ipset whitelist
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
   
-  # check WAN gateway in ipset blocklist
-  ipset -q test "$IPSET_NAME" "$WAN_GATEWAY" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
-  
-  # check WAN gatewan in ipset whitelist
-  ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY" && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
+  if [ "$WAN_GATEWAY" = '0.0.0.0' ]; then
+    STAT_GW_IN_BL=''; STAT_GW_IN_WL=''
+  else
+    # check WAN gateway in ipset blocklist
+    ipset -q test "$IPSET_NAME" "$WAN_GATEWAY" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
+
+    # check WAN gatewan in ipset whitelist
+    ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY" && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
+  fi
   
   # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
