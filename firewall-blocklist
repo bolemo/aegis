@@ -34,8 +34,14 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
-    then WGW_IN_BL='y'
-    else WGW_IN_BL=''
+    then
+      WGW_IN_BL='y'
+      if ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY";
+        then WGW_IN_WL='y';
+        else WGW_IN_WL='';
+      fi
+    else
+      WGW_IN_BL=''
   fi
   
   # creating ipset whitelist if needed
@@ -57,7 +63,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   fi
   
   # if needed, adding WAN gateway to whitelist
-  if [ "$WGW_IN_BL" ]; then
+  if [ "$WGW_IN_BL" ] && [ ! "$WGW_IN_WL" ]; then
     # Calculate WAN_RANGE (IP & CIDR)
     _CIDR=0
     for _OCTET in $(echo "$WAN_NETMASK"| sed 's/\./ /g'); do
