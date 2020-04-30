@@ -299,7 +299,7 @@ set_ipset() {
     ipset destroy $IPSET_TMP
     [ "$VERBOSE" ] && echo "- Done."
   else
-    ipset -q destroy $IPSET_WL_NAME
+    ipset -q destroy "$IPSET_WL_NAME"
   fi
 }
 
