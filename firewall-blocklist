@@ -32,7 +32,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   fi
   
   # checking if WAN gateway is in blocklist
-  if ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
+  if [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
     then WGW_IN_BL='y'
     else WGW_IN_BL=''
   fi
