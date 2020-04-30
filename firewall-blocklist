@@ -8,6 +8,7 @@ IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
 IP_LIST="$ROOT_DIR/etc/$SC_NAME.netset"
+WL_FILE="$ROOT_DIR/etc/${SC_NAME}_wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 WAN_NETMASK="$(nvram get wan_netmask)"
@@ -19,7 +20,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   echo -n 'ips: ' >> "$INFO_FILE"
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
-    if [ -r $IP_LIST ]; then
+    if [ -r "$IP_LIST" ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
       echo -n 'BL(load)' >> "$INFO_FILE"
@@ -37,7 +38,25 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     else WGW_IN_BL=''
   fi
   
-  # creating whitelist if WAN gateway is in blocklist
+  # creating ipset whitelist if needed
+  if ! ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
+    if [ -r "$WL_FILE" ]; then
+    # netset file exists, so creating whitelist ipset from it
+      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
+      echo -n '+WL(load)' >> "$INFO_FILE"
+    elif [ "$WGW_IN_BL" ]; then
+    # no netset file, creating empty whitelist ipset because needed for WAN gateway
+      ipset -q create "$IPSET_WL_NAME" hash:net family inet
+      echo -n '+WL(new)' >> "$INFO_FILE"
+    else
+      # no need for whitelist, just destroy if exists
+      ipset -q destroy "$IPSET_WL_NAME"
+      echo '' >> "$INFO_FILE"
+    fi
+  else echo -n '+WL(keep)' >> "$INFO_FILE"
+  fi
+  
+  # if needed, adding WAN gateway to whitelist
   if [ "$WGW_IN_BL" ]; then
     # Calculate WAN_RANGE (IP & CIDR)
     _CIDR=0
@@ -46,24 +65,8 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
       let _CIDR+=${#_BINBITS}
     done
     WAN_RANGE="$WAN_GATEWAY/$_CIDR"
-    if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
-    # whitelist ipset is already here, make new one and swap
-      ipset -q destroy "$IPSET_TMP"
-      ipset -q create "$IPSET_TMP" hash:net family inet maxelem 1
-      ipset -q add "$IPSET_TMP" "$WAN_RANGE"
-      ipset -q swap "$IPSET_WL_NAME" "$IPSET_TMP"
-      ipset -q destroy "$IPSET_TMP"
-      echo '+WL(swap)' >> "$INFO_FILE"
-    else
-    # whitelist ipset is not here, just create
-      ipset -q create "$IPSET_WL_NAME" hash:net family inet maxelem 1
-      ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
-      echo '+WL(new)' >> "$INFO_FILE"
-    fi
-  else
-  # no need for whitelist, just destroy if exists
-    ipset -q destroy "$IPSET_WL_NAME"
-    echo '' >> "$INFO_FILE"
+    ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
+    echo '(+gw)' >> "$INFO_FILE"
   fi
   
   echo -n 'ipt: ' >> "$INFO_FILE"
@@ -99,7 +102,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   exit 0
 fi
 
-SC_VERS="v3.1.1"
+SC_VERS="v3.2.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -108,7 +111,8 @@ IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-CUST_IP_LIST="$ROOT_DIR/etc/$SC_NAME.custom.netset"
+CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom_bl.netset"
+CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom_wl.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
@@ -296,9 +300,9 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  if [ -r $CUST_IP_LIST ]; then
-    [ "$VERBOSE" ] && echo "- Adding netset from custom list ($CUST_IP_LIST)"
-    grep '^[0-9]' "$CUST_IP_LIST" | sed -e 's/;.*//' >>"$TMP_FILE"
+  if [ -r $CUST_BL_FILE ]; then
+    [ "$VERBOSE" ] && echo "- Adding netset from custom list ($CUST_BL_FILE)"
+    grep '^[0-9]' "$CUST_BL_FILE" | sed -e 's/;.*//' >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
     [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
@@ -309,6 +313,24 @@ update_iplist() {
   fi
   rm "$TMP_FILE"
   [ "$VERBOSE" ] && echo "- Done."
+
+  # processing whitelist if any
+  if [ -r $CUST_WL_FILE ]; then
+    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list...\033[0m"
+    grep '^[0-9]' "$CUST_WL_FILE" | sed -e 's/;.*//' >"$TMP_FILE"
+    
+    if [ -x "$IPR_BIN" ]; then
+      [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
+      $IPR_BIN "$TMP_FILE" --ipset-reduce 20 > "$WL_FILE"
+    else
+      [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
+      sort "$TMP_FILE" | uniq > "$WL_FILE"
+    fi
+    rm "$TMP_FILE"
+    [ "$VERBOSE" ] && echo "- Done."
+  else
+    rm "$WL_FILE" 2>/dev/null
+  fi
 }
 
 status() {
@@ -351,8 +373,14 @@ status() {
   fi
   
   # master check
-  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" -a "$STAT_FWS" ]; then
-    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (WAN gateway and its subnet)."
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then
+    if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
+      echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
+    elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
+      echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+    else
+      echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use $SC_NAME -v status for more details"
+    fi
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
     echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then
