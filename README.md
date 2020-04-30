@@ -3,7 +3,7 @@ Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.1.0
+3.2.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -14,7 +14,7 @@ Should work with several other Netgear routers as well.
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.1.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
 * Answer `y` if you want to install iprange
@@ -35,13 +35,15 @@ Since version 2, you do not need to go through the whole installation process to
 The comnand `/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available online.
 The `/opt/bolemo/scripts/firewall-blocklist upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
+After an upgrade, it is strongly advised to perform `/opt/bolemo/scripts/firewall-blocklist clean` then `/opt/bolemo/scripts/firewall-blocklist update`
+
 ## Usage
 Usage: `/opt/bolemo/scripts/firewall-blocklist COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
 * `restart` - setup ipset and iptables then restarts internal firewall
-* `update_set` - generates `firewall-blocklist.netset` from servers in `firewall-blocklist.sources`
-* `load_set` - loads `firewall-blocklist.netset` into ipset then restarts internal firewall
+* `update_set` - generates `firewall-blocklist-bl.netset` from servers in `firewall-blocklist.sources`
+* `load_set` - loads `firewall-blocklist-bl.netset` into ipset then restarts internal firewall
 * `update` - update_set then load_set [probably what you want to use]
 * `clean` - clean ipset and iptables rules from setup created by this script
 * `help` - displays help
@@ -59,7 +61,9 @@ The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of serve
 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
-Since version 3.1, you can have your own custom list of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master blocklist.
+Since version 3.1, you can have your own custom blacklist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-bl.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master blocklist.
+
+Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-wl.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master whitelist.
 
 ## Logging
 ### Enabling
