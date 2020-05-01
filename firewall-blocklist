@@ -382,14 +382,15 @@ update_iplist() {
 
 status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
-
+  
+  # check iprange binary
+  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  
+  # dates
   echo "- Actual router time: $(/bin/date)"
-  [ -e "$INFO_FILE" ] && echo "- Last firewall start: $(/bin/date -r $INFO_FILE)"
+  [ -e "$INFO_FILE" ] && echo "- Firewall start time: $(/bin/date -r $INFO_FILE)"
   [ -e "$IP_LIST" ] && echo "- Blocklist generation time: $(/bin/date -r $IP_LIST)"
   [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date -r $WL_FILE)"
-  
-  # check iprang binary
-  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
   
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
