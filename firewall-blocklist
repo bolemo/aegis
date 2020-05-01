@@ -15,7 +15,7 @@ WAN_NETMASK="$(nvram get wan_netmask)"
 
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
-  /bin/date > "$INFO_FILE"
+  :> "$INFO_FILE"
   
   echo -n 'ips: ' >> "$INFO_FILE"
   # creating ipset blocklist if needed
@@ -384,7 +384,9 @@ status() {
   echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
 
   echo "- Actual router time: $(/bin/date)"
-  [ -s "$INFO_FILE" ] && echo "- Last time $SC_NAME was loaded in firewall: $(cat $INFO_FILE | head -n 1)"
+  [ -e "$INFO_FILE" ] && echo "- Last $SC_NAME start: $(/bin/date -r $INFO_FILE)"
+  [ -e "$IP_LIST" ] && echo "- Last blocklist generation: $(/bin/date -r $IP_LIST)"
+  [ -e "$WL_FILE" ] && echo "- Last whitelist generation: $(/bin/date -r $WL_FILE)"
   
   # check iprang binary
   [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
