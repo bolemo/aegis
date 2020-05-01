@@ -462,7 +462,7 @@ status() {
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
-    echo "- Router firewall was last started $(/bin/date -r $INFO_FILE):"
+    echo "- Router firewall was last started $(/bin/date -r $INFO_FILE):\033[35m"
     /bin/grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     * ipset blocklist was loaded from blocklist file.'
     /bin/grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     * ipset blocklist was created empty.'
     /bin/grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     * ipset blocklist was already loaded and was kept.'
@@ -473,9 +473,10 @@ status() {
     /bin/grep -qF "$INFO_IPS_WL_WGW_ADD" "$INFO_FILE" && echo '     * WAN gateway was added into ipset whitelist.'
     /bin/grep -qF "$INFO_IPS_WL_WGW_KEEP" "$INFO_FILE" && echo '     * WAN gateway was already in ipset whitelist.'
     /bin/grep -qF "$INFO_IPT_KEEP" "$INFO_FILE" && echo '     * iptables rules were already set!'
-    /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     * added logging rules to iptables.'
-    /bin/grep -qF "$INFO_IPT_BL" "$INFO_FILE" && echo '     * added blocklist rules to iptables.'
-    /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     * added whitelist rules to iptables.'
+    /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     * logging rules were added to iptables.'
+    /bin/grep -qF "$INFO_IPT_BL" "$INFO_FILE" && echo '     * blocklist rules were added to iptables.'
+    /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     * whitelist rules were added to iptables.'
+    echo -n "\033[0m"
   else
     echo '- No status file found.'
   fi
