@@ -475,7 +475,7 @@ status() {
     /bin/grep -qF "$INFO_IPT_KEEP" "$INFO_FILE" && echo '     * iptables rules were already set!'
     /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     * added logging rules to iptables.'
     /bin/grep -qF "$INFO_IPT_BL" "$INFO_FILE" && echo '     * added blocklist rules to iptables.'
-    /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     * added whitelist rules to iptables.
+    /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     * added whitelist rules to iptables.'
   else
     echo '- No status file found.'
   fi
