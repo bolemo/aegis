@@ -17,26 +17,26 @@ WAN_NETMASK="$(nvram get wan_netmask)"
 if [ "$1" ] && [ "$1" = "_fws" ]; then
   :> "$INFO_FILE"
   
-  echo -n 'ips: ' >> "$INFO_FILE"
+#  echo -n 'ips: ' >> "$INFO_FILE"
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r "$IP_LIST" ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
-      echo -n 'BL(+load)' >> "$INFO_FILE"
+      echo 'SBL' >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_NAME" hash:net family inet
-      echo -n 'BL(+new)' >> "$INFO_FILE"
+      echo 'SBC' >> "$INFO_FILE"
     fi
-  else echo -n 'BL(keep)' >> "$INFO_FILE"
+  else echo 'SBK' >> "$INFO_FILE"
   fi
   
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
     then
       WGW_IN_BL='y'
-      echo -n '(gw)' >> "$INFO_FILE"
+      echo 'SBG' >> "$INFO_FILE"
       if ipset -q test "$IPSET_WL_NAME" "$WAN_GATEWAY"
         then WGW_IN_WL='y'
         else WGW_IN_WL=''
@@ -51,22 +51,22 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     if [ -r "$WL_FILE" ]; then
     # netset file exists, so creating whitelist ipset from it
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
-      echo -n '/WL(+load)' >> "$INFO_FILE"
+      echo 'SWL' >> "$INFO_FILE"
     elif [ "$WGW_IN_BL" ]; then
     # no netset file, creating empty whitelist ipset because needed for WAN gateway
       ipset -q create "$IPSET_WL_NAME" hash:net family inet
-      echo -n '/WL(+new)' >> "$INFO_FILE"
+      echo 'SWC' >> "$INFO_FILE"
     else
       # no need for whitelist, just destroy if exists
       ipset -q destroy "$IPSET_WL_NAME"
       NO_WL='y'
     fi
-  else echo -n '/WL(keep)' >> "$INFO_FILE"
+  else echo 'SWK' >> "$INFO_FILE"
   fi
   
   # if needed, adding WAN gateway to whitelist
   [ "$WGW_IN_BL" ] && if [ "$WGW_IN_WL" ]; then
-    echo -n '(gw)' >> "$INFO_FILE"
+    echo 'SWGK' >> "$INFO_FILE"
   else
     # Calculate WAN_RANGE (IP & CIDR)
     _CIDR=0
@@ -76,18 +76,16 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     done
     WAN_RANGE="$WAN_GATEWAY/$_CIDR"
     ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
-    echo -n '(+gw)' >> "$INFO_FILE"
+    echo 'SWGA' >> "$INFO_FILE"
   fi
-  
-  echo '' >> "$INFO_FILE"
-  
-  echo -n 'ipt: ' >> "$INFO_FILE"
+
+#  echo -n 'ipt: ' >> "$INFO_FILE"
   #checking if IPTBL_NAME is already set (should not); if it is, exit
-  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && { echo "keep!" >> "$INFO_FILE"; exit 1; }
+  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && { echo 'TK' >> "$INFO_FILE"; exit 1; }
   
   # creating the filtering (blocking) iptables chain
   iptables -N "$IPTBL_NAME"
-  [ "$IPTBL_LOGGING" ] && { iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "; echo -n 'log+' >> "$INFO_FILE"; }
+  [ "$IPTBL_LOGGING" ] && { iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "; echo 'TLOG' >> "$INFO_FILE"; }
   iptables -A "$IPTBL_NAME" -j DROP
   
   # creating the required iptables
@@ -97,7 +95,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
     iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-    echo 'BL' >> "$INFO_FILE"
+    echo 'TB' >> "$INFO_FILE"
   else
   # creating iptables with whitelist
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
@@ -108,7 +106,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
     iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
     iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-    echo 'BL/WL' >> "$INFO_FILE"
+    echo -e 'TB\nTW' >> "$INFO_FILE"
   fi
 
   exit 0
