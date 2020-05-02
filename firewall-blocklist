@@ -127,8 +127,8 @@ SC_VERS="v3.2.1"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
-IPT_MD5="770406b8f204a584178c61857075443e  -"
-IPT_MD5_NO_WL="c0b6a9d32801426ed8daf3d936c1eefb  -"
+IPT_MD5="2ad1475a410bd55d4afac0b7a36e65e1  -"
+IPT_MD5_NO_WL="9b7ed183ae8e4d418c957c16fca26939  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -399,7 +399,7 @@ status() {
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   
   # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv "LOG")"
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
   case "$(echo "$STAT_IPT" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
       # iptables are set with whitelist
