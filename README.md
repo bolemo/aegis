@@ -69,7 +69,7 @@ Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs
 
 ## Logging
 ### Enabling
-To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script.
+To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `/opt/bolemo/scripts/firewall-blocklist restart -log=on`).
 You can also use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router.
 If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set log_firewall_blocklist=1` do `nvram commit`.
 
