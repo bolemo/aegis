@@ -85,9 +85,9 @@ If you used `nvram commit` after enabling logging, then you need to use `nvram c
 iprange is a great little utility dealing that is now part of the FireHOL project.
 firewall-blocklist works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
 
-The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
+The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled (R7800 only at this time) by Voxel and does not require Entware or an external drive.
 You can also install it separately:
-* directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
-* using Entware: `/opt/bin/opkg install iprange`.
+* [R7800 only] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
+* using Entware: `/opt/bin/opkg install iprange` (ok with R9000 and others).
 
 The source is here: https://github.com/firehol/iprange
