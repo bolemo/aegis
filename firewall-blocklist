@@ -264,12 +264,12 @@ print_log() {
 
 clean() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mCleaning...\033[0m"
-  if [ -e $FWS_FILE ]; then
-    if [ "$(grep -v "$SC_NAME" $FWS_FILE | sed -e '/^[[:space:]]*$/d')" ]; then
-      sed -i "/$SC_NAME/d" $FWS_FILE
+  if [ -e "$FWS_FILE" ]; then
+    if [ "$(grep -Fv "$SC_NAME" "$FWS_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$FWS_FILE"
       [ "$VERBOSE" ] && echo "- $FWS_FILE has some other rules; removed only our rules."
     else
-      rm $FWS_FILE
+      rm "$FWS_FILE" 2>/dev/null
       [ "$VERBOSE" ] && echo "- $FWS_FILE has no other rules; removed it."
     fi
   fi
@@ -306,18 +306,18 @@ set_ipset() {
   [ "$VERBOSE" ] && echo "- Done."
   
   # whitelist
-  if [ -s $WL_FILE ]; then
+  if [ -s "$WL_FILE" ]; then
     if [ "$VERBOSE" ]; then
       MAX="$(wc -l < $WL_FILE)"
-      NUM_IP="$(count_ip_in_file $WL_FILE)"
+      NUM_IP="$(count_ip_in_file "$WL_FILE")"
       echo -e "\033[1;36mBuilding ipset whitelist ($MAX entries bypassing $NUM_IP ips)...\033[0m"
     fi
 
     if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then
       echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
       [ "$VERBOSE" ] && echo "- Created whitelist, swapping it."
-      ipset swap $IPSET_WL_NAME $IPSET_TMP
-      ipset destroy $IPSET_TMP
+      ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
+      ipset destroy "$IPSET_TMP"
     else
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" $WL_FILE)" | ipset restore
       [ "$VERBOSE" ] && echo "- Created whitelist."
@@ -330,7 +330,7 @@ set_ipset() {
 
 update_iplist() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating blocklist from sources...\033[0m"
-  [ -r $SRC_LIST ] || { >&2 echo -e "\033[31m! $SRC_LIST not readable!\033[0m"; exit 1; }
+  [ -r "$SRC_LIST" ] || { >&2 echo -e "\033[31m! $SRC_LIST not readable!\033[0m"; exit 1; }
 
   :>"$TMP_FILE"
   # Process each source url
@@ -349,7 +349,7 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  if [ -r $CUST_BL_FILE ]; then
+  if [ -r "$CUST_BL_FILE" ]; then
     [ "$VERBOSE" ] && echo "- Adding netset from custom list ($CUST_BL_FILE)"
     grep '^[0-9]' "$CUST_BL_FILE" | sed -e 's/;.*//' >>"$TMP_FILE"
   fi
@@ -360,17 +360,17 @@ update_iplist() {
     [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
     sort "$TMP_FILE" | uniq > "$IP_LIST"
   fi
-  rm "$TMP_FILE"
+  rm "$TMP_FILE" 2>/dev/null
   [ "$VERBOSE" ] && echo "- Done."
 
   # processing whitelist if any
-  if [ -r $CUST_WL_FILE ]; then
+  if [ -r "$CUST_WL_FILE" ]; then
     [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list...\033[0m"
     grep '^[0-9]' "$CUST_WL_FILE" | sed -e 's/;.*//' >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
-        if [ "$($IPR_BIN --common $IP_LIST $TMP_FILE)" ]; then
+        if [ "$($IPR_BIN --common "$IP_LIST" "$TMP_FILE")" ]; then
           [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
           $IPR_BIN --ipset-reduce 20 "$TMP_FILE"  > "$WL_FILE"
         else
@@ -410,7 +410,7 @@ status() {
   esac
   
   # check log
-  STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+  STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -F -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   
   # check ipset blocklist
   STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
