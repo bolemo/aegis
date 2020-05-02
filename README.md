@@ -1,23 +1,23 @@
 # Firewall Blocklist
-Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
+Firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.2.0
+3.2.1
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware [self compiled]). The install script will offer to install iprange on the internal flash. You can decide to install it separately or not at all. iprange allows great optimizations.
-* If it is possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
+* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 only for now, but Entware version works on R9000). You can decide to install it separately or not at all. iprange allows great optimizations and recommended.
+* If it is possible to install the script on the system partition, this is not recommended and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
-* Answer `y` if you want to install iprange
+* Answer `y` if you want to install iprange (will only be asked on R7800)
 * Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
 * Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
@@ -61,13 +61,15 @@ The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of serve
 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
+### Custom blocklist
 Since version 3.1, you can have your own custom blacklist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-bl.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master blocklist.
 
-Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-wl.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master whitelist.
+### Custom whitelist
+Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-wl.netset` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `firewall-blocklist update`, it will integrate your custom list to the master whitelist.
 
 ## Logging
 ### Enabling
-To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script.
+To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `/opt/bolemo/scripts/firewall-blocklist restart -log=on`).
 You can also use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router.
 If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set log_firewall_blocklist=1` do `nvram commit`.
 
@@ -83,9 +85,9 @@ If you used `nvram commit` after enabling logging, then you need to use `nvram c
 iprange is a great little utility dealing that is now part of the FireHOL project.
 firewall-blocklist works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
 
-The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
+The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled (R7800 only at this time) by Voxel and does not require Entware or an external drive.
 You can also install it separately:
-* directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
-* using Entware: `/opt/bin/opkg install iprange`.
+* [R7800 only] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
+* using Entware: `/opt/bin/opkg install iprange` (ok with R9000 and others).
 
 The source is here: https://github.com/firehol/iprange

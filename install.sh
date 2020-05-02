@@ -15,7 +15,8 @@ echo "Installing firewall-blocklist files"
 cp -i "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist"
 echo "Done!"
-if command -v iprange; then exit 0; fi
+if command -v iprange; then echo 'iprange is installed.'; exit 0; fi
+[ "$(/bin/uname -p)" = 'IPQ8065' ] || { echo 'This is not a R7800, if you want to install iprange, you need to do it through Entware.'; exit 0; }
 echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into internal flash (/usr/bin)? [y/n] -"
 read ANSWER
 [ "$ANSWER" = 'y' ] || { echo 'Skipping installation of iprange'; exit 0; }
