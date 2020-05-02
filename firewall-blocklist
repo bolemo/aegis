@@ -102,21 +102,21 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   # creating the required iptables
   if [ "$NO_WL" ]; then
   # creating iptables without whitelist
-    iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
-    iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
-    iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
-    iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     echo "$INFO_IPT_BL" >> "$INFO_FILE"
   else
   # creating iptables with whitelist
     iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
     iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j $IPTBL_NAME
+    iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
     iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j $IPTBL_NAME
+    iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     echo -e "$INFO_IPT_BL\n$INFO_IPT_WL" >> "$INFO_FILE"
   fi
 
