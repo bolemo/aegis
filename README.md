@@ -1,14 +1,14 @@
 # Firewall Blocklist
-Firewall blocklist script for Netgear R7800 Router with Voxel firmware.
+Firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.2.0
+3.2.1
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware [self compiled]). The install script will offer to install iprange on the internal flash. You can decide to install it separately or not at all. iprange allows great optimizations.
-* If it is possible to install the script on the system partition, this is not recommanded and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
+* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 only for now, but Entware version works on R9000). You can decide to install it separately or not at all. iprange allows great optimizations and recommended.
+* If it is possible to install the script on the system partition, this is not recommended and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 
 ## Install
@@ -17,7 +17,7 @@ Should work with several other Netgear routers as well.
 * Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
-* Answer `y` if you want to install iprange
+* Answer `y` if you want to install iprange (will only be asked on R7800)
 * Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
 * Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
@@ -61,9 +61,11 @@ The file `/opt/bolemo/etc/firewall-blocklist.sources` contains the list of serve
 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
+### Custom blocklist
 Since version 3.1, you can have your own custom blacklist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-bl.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master blocklist.
 
-Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-wl.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `firewall-blocklist update`, it will integrate your custom list to the master whitelist.
+### Custom whitelist
+Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-wl.netset` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `firewall-blocklist update`, it will integrate your custom list to the master whitelist.
 
 ## Logging
 ### Enabling
