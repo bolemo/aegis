@@ -20,6 +20,11 @@ if command -v iprange; then echo 'iprange is installed.'; exit 0; fi
 echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into internal flash (/usr/bin)? [y/n] "
 case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
   Y|y|yes|Yes|YES) echo "Installing iprange..."; /bin/opkg install "$SELF_PATH/iprange_1.0.4-1_ipq806x.ipk" ;;
-  *) echo 'Skipping installation of iprange'; exit 0 ;;
+  *) echo 'Skipping installation of iprange' ;;
+esac
+echo -ne "Remove install files? [y/n] "
+case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
+  Y|y|yes|Yes|YES) echo "Removing install files..."; rm -rf "$SELF_PATH" ;;
+  *) echo 'Keeping installation files'  ;;
 esac
 echo "Done!"
