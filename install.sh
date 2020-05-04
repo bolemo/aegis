@@ -30,7 +30,7 @@ else
       *) echo 'Skipping installation of iprange' ;;
     esac
   else
-    echo 'The iprange version offered by this installer are not supported pn this device, if you want to install iprange, you need to do it through Entware.'
+    echo 'The iprange version offered by this installer are not supported on this device, if you want to install iprange, you need to do it through Entware.'
   fi
 fi
 echo -ne "Remove install files? [y/n] "
