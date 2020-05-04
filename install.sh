@@ -20,7 +20,14 @@ if command -v iprange; then
 else
   case "$(/bin/uname -p)" in
     'IPQ8065') IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_ipq806x.ipk" ;;
-    'R9000') IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk" ;;
+    'unknown') if [ "$(/bin/uname -n)" = 'R9000' ]; then IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk"
+               else
+                 echo "Can you confirm you have a R9000 router? [y/n] "
+                 case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
+                   Y|y|yes|Yes|YES) IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk" ;;
+                   *) IPRANGE_IPK='' ;;
+                 esac
+               fi ;;
     *) IPRANGE_IPK='' ;; 
   esac
   if [ -x "$IPRANGE_IPK" ]; then
