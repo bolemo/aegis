@@ -3,7 +3,7 @@ Firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.2.2
+3.2.3
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -14,12 +14,12 @@ Should work with several other Netgear routers as well.
 ## Install
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.2.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.3.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
-* Answer `y` if you want to install iprange (will only be asked on R7800)
+* Answer `y` if you want to install iprange (will only be asked on R7800) (`y` advised)
+* The install script will now ask to remove install files, say `y` unless you want to keep them (`y` advised)
 * Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
-* Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
 
