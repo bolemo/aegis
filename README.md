@@ -17,10 +17,9 @@ Should work with several other Netgear routers as well.
 * Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.3.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
-* Answer `y` if you want to install iprange (will only be asked on R7800) [`y` recommanded]
+* Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
 * You will now be asked to confirm to remove install files [`y` recommanded]
 * Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
-* Remove the install files and folder: `rm -r fbl` check then confirm each file to delete answering y
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
 
@@ -86,9 +85,10 @@ If you used `nvram commit` after enabling logging, then you need to use `nvram c
 iprange is a great little utility dealing that is now part of the FireHOL project.
 firewall-blocklist works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
 
-The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled (R7800 only at this time) by Voxel and does not require Entware or an external drive.
+The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
 You can also install it separately:
-* [R7800 only] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
-* using Entware: `/opt/bin/opkg install iprange` (ok with R9000 and others).
+* [firmware Addon for R7800] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
+* [firmware Addon for R9000] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_r9000.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_r9000.ipk`.
+* using Entware: `/opt/bin/opkg install iprange`.
 
 The source is here: https://github.com/firehol/iprange
