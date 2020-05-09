@@ -261,9 +261,9 @@ fw_restart() {
 
 fw_needs_restart() {
   case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g' | md5sum -)" in
-    "$IPT_MD5") return 0 ;;
-    "$IPT_MD5_NO_WL") return 0 ;;
-    *) return 1 ;;
+    "$IPT_MD5") return 1 ;;
+    "$IPT_MD5_NO_WL") return 1 ;;
+    *) return 0 ;;
   esac
 }
 
