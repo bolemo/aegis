@@ -299,12 +299,12 @@ set_ipset() {
   fi
 
   if ipset -q list -n "$IPSET_NAME">/dev/null; then
-    echo -e "create $IPSET_TMP hash:net family inet maxelem $(wc -l $MAX)\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist, swapping it."
     ipset swap "$IPSET_NAME" "$IPSET_TMP"
     ipset destroy $IPSET_TMP
   else
-    echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l $MAX)\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist."
   fi
   [ "$VERBOSE" ] && echo "- Done."
@@ -318,12 +318,12 @@ set_ipset() {
     fi
 
     if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then
-      echo -e "create $IPSET_TMP hash:net family inet maxelem $(wc -l $MAX)\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
+      echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
       [ "$VERBOSE" ] && echo "- Created whitelist, swapping it."
       ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
       ipset destroy "$IPSET_TMP"
     else
-      echo -e "create $IPSET_WL_NAME hash:net family inet maxelem $(wc -l $MAX)\n$(sed "s/^/add $IPSET_WL_NAME /" $WL_FILE)" | ipset restore
+      echo -e "create $IPSET_WL_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_WL_NAME /" $WL_FILE)" | ipset restore
       [ "$VERBOSE" ] && echo "- Created whitelist."
     fi
     [ "$VERBOSE" ] && echo "- Done."
