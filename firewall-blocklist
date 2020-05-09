@@ -62,7 +62,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   if ! ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     if [ -r "$WL_FILE" ]; then
     # netset file exists, so creating whitelist ipset from it
-      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
+      echo -e "create $IPSET_WL_NAME hash:net family inet maxelem $(wc -l "$WL_FILE")\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
     elif [ "$WGW_IN_BL" ]; then
     # no netset file, creating empty whitelist ipset because needed for WAN gateway
