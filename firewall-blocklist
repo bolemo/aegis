@@ -259,6 +259,23 @@ fw_restart() {
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
 }
 
+fw_needs_restart() {
+  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g' | md5sum -)" in
+    "$IPT_MD5") return 0 ;;
+    "$IPT_MD5_NO_WL") return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+fw_restart_if_needed() {
+  if fw_needs_restart; then
+    [ "$VERBOSE" ] && echo "Internal firewall needs to be restarted..."
+    fw_restart
+  else
+    [ "$VERBOSE" ] && echo "Internal firewall does not need to be restarted."
+  fi
+}
+
 print_log() {
   echo -e "\033[1;36mLog:\033[0m"
   echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
@@ -581,9 +598,9 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[
 case "$2" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "load_set") init; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
   "update_set") update_iplist ;;
-  "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "update") init; update_iplist; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
