@@ -62,7 +62,7 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   if ! ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     if [ -r "$WL_FILE" ]; then
     # netset file exists, so creating whitelist ipset from it
-      echo -e "create $IPSET_WL_NAME hash:net family inet maxelem $(wc -l "$WL_FILE")\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
+      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
     elif [ "$WGW_IN_BL" ]; then
     # no netset file, creating empty whitelist ipset because needed for WAN gateway
@@ -311,19 +311,19 @@ set_ipset() {
   
   # whitelist
   if [ -s "$WL_FILE" ]; then
-    MAX="$(wc -l < $WL_FILE)"
     if [ "$VERBOSE" ]; then
+      MAX="$(wc -l < $WL_FILE)"
       NUM_IP="$(count_ip_in_file "$WL_FILE")"
       echo -e "\033[1;36mBuilding ipset whitelist ($MAX entries bypassing $NUM_IP ips)...\033[0m"
     fi
 
     if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then
-      echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
+      echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
       [ "$VERBOSE" ] && echo "- Created whitelist, swapping it."
       ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
       ipset destroy "$IPSET_TMP"
     else
-      echo -e "create $IPSET_WL_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_WL_NAME /" $WL_FILE)" | ipset restore
+      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" $WL_FILE)" | ipset restore
       [ "$VERBOSE" ] && echo "- Created whitelist."
     fi
     [ "$VERBOSE" ] && echo "- Done."
