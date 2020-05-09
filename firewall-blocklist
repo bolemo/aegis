@@ -260,6 +260,13 @@ fw_restart() {
 }
 
 fw_needs_restart() {
+  if [ "$LOG_ACT" ]; then
+    LOG_IS_ON="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -F -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+    if [ "$LOG_ACT" = 'ON' ]
+      then [ "$LOG_IS_ON" ] || return 0
+      else [ "$LOG_IS_ON" ] && return 0
+    fi
+  fi
   case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g' | md5sum -)" in
     "$IPT_MD5") return 1 ;;
     "$IPT_MD5_NO_WL") return 1 ;;
@@ -269,10 +276,10 @@ fw_needs_restart() {
 
 fw_restart_if_needed() {
   if fw_needs_restart; then
-    [ "$VERBOSE" ] && echo "Internal firewall needs to be restarted..."
+    [ "$VERBOSE" ] && echo "- Internal firewall needs to be restarted..."
     fw_restart
   else
-    [ "$VERBOSE" ] && echo "Internal firewall does not need to be restarted."
+    [ "$VERBOSE" ] && echo "- Internal firewall does not need to be restarted."
   fi
 }
 
