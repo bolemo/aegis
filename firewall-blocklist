@@ -268,8 +268,16 @@ fw_needs_restart() {
     fi
   fi
   case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g' | md5sum -)" in
-    "$IPT_MD5") return 1 ;;
-    "$IPT_MD5_NO_WL") return 1 ;;
+    "$IPT_MD5")
+      if [ -r "$WL_FILE" ] return 1
+      elif [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 1
+      else return 0
+      fi ;;
+    "$IPT_MD5_NO_WL")
+      if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then return 0
+      elif [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 0
+      else return 1
+      fi ;;
     *) return 0 ;;
   esac
 }
