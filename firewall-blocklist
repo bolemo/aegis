@@ -128,8 +128,8 @@ fi
 
 #we are called from post-mount.sh
 if [ "$1" -a "$2" ] && [ "$1" = "_pm" ]; then
-  [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
   sleep 5
+  [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
   _fws
   exit 0
 fi
@@ -218,7 +218,7 @@ create_firewall_start() {
 
 check_postmount() {
   [ -x "$PM_FILE" ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _pm \$1 &")" = 1 ] || return 1
   return 0
 }
 
@@ -226,7 +226,7 @@ create_postmount() {
   [ "$EXT_DRIVE" ] || return 1
   [ -d "$PM_DIR" ] || mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && sed -i "/$SC_NAME _pm/d" "$PM_FILE"
-  echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
+  echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1 &" >> "$PM_FILE"
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
