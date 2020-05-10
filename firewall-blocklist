@@ -139,6 +139,14 @@ FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 RC_FILE="/etc/rc.d/S99$SC_NAME"
 RC_MD5="f3da3fae0a61497e3979aa35e123b319"
+# Check if scriot is installed on USB
+if echo "$SC_PATH" | grep -q '^/tmp/mnt/'; then
+  PM_DIR="$(echo "$SC_PATH" | sed "s|\(/tmp/mnt/[[:alnum:]]*\)/.*|\1|")/autorun/scripts"
+  PM_FILE="$PM_DIR/post-mount.sh"
+  EXT_DRIVE='y'
+else
+  EXT_DRIVE=''
+fi
 
 upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
@@ -198,14 +206,13 @@ create_firewall_start() {
 }
 
 check_postmount() {
-  # check if we are on ext drive or not, if no return 0
-  [ -x $PM_FILE ] || return 1
+  [ -x "$PM_FILE" ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -c -- "sleep 5 && \[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws &")" = 1 ] || return 1
   return 0
 }
-#/mnt/optware/autorun/scripts/
 
 create_postmount() {
+  [ "$EXT_DRIVE" ] || return 1
   [ -d "$PM_DIR" ] || mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && sed -i "/$SC_NAME _fws/d" "$PM_FILE"
   echo "sleep 5 && [ -x $SC_NICEPATH ] && $SC_NICEPATH _fws &" >> "$PM_FILE"
@@ -264,12 +271,26 @@ init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_firewall_start; then
-    [ "$VERBOSE" ] && echo "- $FWS_FILE is in place and ok"
+    [ "$VERBOSE" ] && echo "- $FWS_FILE is in place and ok."
   else
     create_firewall_start
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ "$VERBOSE" ] && echo "- $FWS_FILE was edited and is now ok."
   fi
+  
+  if [ "$EXT_DRIVE" ]; then
+    [ "$VERBOSE" ] && echo "- Script is installed on external drive."
+    if check_postmount; then
+      [ "$VERBOSE" ] && echo "- $PM_FILE is in place and ok."
+    else
+      create_postmount
+      check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
+      [ "$VERBOSE" ] && echo "- $PM_FILE was edited and is now ok."
+    fi
+  else
+    [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
+  fi
+  
   if check_rc_file; then
     [ "$VERBOSE" ] && echo "- $RC_FILE is in place and ok"
   else
@@ -340,13 +361,22 @@ clean() {
       [ "$VERBOSE" ] && echo "- $FWS_FILE has some other rules; removed only our rules."
     else
       rm "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- $FWS_FILE has no other rules; removed it."
+      [ "$VERBOSE" ] && echo "- $FWS_FILE had no other rules; removed it."
     fi
   fi
-  if [ -e "$RC_FILE" ]; then
-    rm "$RC_FILE" 2>/dev/null
-    [ "$VERBOSE" ] && echo "- Removed $RC_FILE."
+  if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
+    if [ "$(grep -Fv "$SC_NAME _fws" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$PM_FILE _fws"
+      [ "$VERBOSE" ] && echo "- $PM_FILE has some other code; removed only our code."
+    else
+      rm "$PM_FILE" 2>/dev/null
+      [ "$VERBOSE" ] && echo "- $PM_FILE had no other code; removed it."
+    fi
   fi
+#  if [ -e "$RC_FILE" ]; then
+#    rm "$RC_FILE" 2>/dev/null
+#    [ "$VERBOSE" ] && echo "- Removed $RC_FILE."
+#  fi
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
