@@ -503,6 +503,9 @@ status() {
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   
+  # check post-mount.sh script if script on external drive
+  if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
+  
   # check iptables
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
   case "$(echo "$STAT_IPT" | md5sum -)" in
@@ -534,7 +537,7 @@ status() {
   fi
   
   # master check
-  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
       echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
@@ -542,9 +545,9 @@ status() {
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use $SC_NAME -v status for more details"
     fi
-  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
+  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
     echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
-  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then
+  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
     echo "- Firewall blocklist is not active; Settings are clean."
   else
     echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"
@@ -558,6 +561,12 @@ status() {
     echo "- $FWS_FILE exists with correct settings."
   else
     echo "- $FWS_FILE does not exist or does not have firewall-blocklist settings."
+  fi
+
+  if [ "$STAT_PM" ]; then
+    [ "$STAT_PM" = 'ok' ] && echo "- $PM_FILE exists with correct settings."
+  else
+    echo "- $PM_FILE does not exist or does not have firewall-blocklist settings."
   fi
   
   # dates
