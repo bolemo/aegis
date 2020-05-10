@@ -148,8 +148,8 @@ CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-wl.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
-RC_FILE="/etc/rc.d/S99$SC_NAME"
-RC_MD5="f3da3fae0a61497e3979aa35e123b319"
+#RC_FILE="/etc/rc.d/S99$SC_NAME"
+#RC_MD5="f3da3fae0a61497e3979aa35e123b319"
 # Check if scriot is installed on USB
 if echo "$SC_PATH" | grep -q '^/tmp/mnt/'; then
   PM_DIR="$(echo "$SC_PATH" | sed "s|\(/tmp/mnt/[[:alnum:]]*\)/.*|\1|")/autorun/scripts"
@@ -230,16 +230,16 @@ create_postmount() {
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
-check_rc_file () {
-  [ -x $RC_FILE ] || return 1
-  md5sum "$RC_FILE" | grep -qF "$RC_MD5" || return 1
-  return 0
-}
+#check_rc_file () {
+#  [ -x $RC_FILE ] || return 1
+#  md5sum "$RC_FILE" | grep -qF "$RC_MD5" || return 1
+#  return 0
+#}
 
-create_rc_file() {
-  echo -e "#!/bin/sh /etc/rc.common\nSTART=99\nstart() {\nsleep 5 && [ -x $SC_NICEPATH ] && $SC_NICEPATH _fws\n}\nstop() {\n:\n}" > "$RC_FILE"
-  [ -x "$RC_FILE" ] || chmod +x "$RC_FILE"
-}
+#create_rc_file() {
+#  echo -e "#!/bin/sh /etc/rc.common\nSTART=99\nstart() {\nsleep 5 && [ -x $SC_NICEPATH ] && $SC_NICEPATH _fws\n}\nstop() {\n:\n}" > "$RC_FILE"
+#  [ -x "$RC_FILE" ] || chmod +x "$RC_FILE"
+#}
 
 last_avail_version() {
   wget -qO- "https://api.github.com/repos/bolemo/firewall-blocklist/releases/latest" | jq -r .tag_name
@@ -288,7 +288,6 @@ init() {
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ "$VERBOSE" ] && echo "- $FWS_FILE was edited and is now ok."
   fi
-  
   if [ "$EXT_DRIVE" ]; then
     [ "$VERBOSE" ] && echo "- Script is installed on external drive."
     if check_postmount; then
@@ -301,7 +300,6 @@ init() {
   else
     [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
   fi
-  
 #  if check_rc_file; then
 #    [ "$VERBOSE" ] && echo "- $RC_FILE is in place and ok"
 #  else
