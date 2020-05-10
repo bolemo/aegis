@@ -138,7 +138,7 @@ TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 RC_FILE="/etc/rc.d/S99$SC_NAME"
-RC_MD5="ed428681b52dbae6436cca311ee1711e"
+RC_MD5="f3da3fae0a61497e3979aa35e123b319"
 
 upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
