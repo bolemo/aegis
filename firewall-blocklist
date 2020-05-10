@@ -291,13 +291,13 @@ init() {
     [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
   fi
   
-  if check_rc_file; then
-    [ "$VERBOSE" ] && echo "- $RC_FILE is in place and ok"
-  else
-    create_rc_file
-    check_rc_file || { >&2 echo -e "\033[31m! Problem with $RC_FILE!\033[0m"; exit 1; }
-    [ "$VERBOSE" ] && echo "- $RC_FILE was (re)created."
-  fi
+#  if check_rc_file; then
+#    [ "$VERBOSE" ] && echo "- $RC_FILE is in place and ok"
+#  else
+#    create_rc_file
+#    check_rc_file || { >&2 echo -e "\033[31m! Problem with $RC_FILE!\033[0m"; exit 1; }
+#    [ "$VERBOSE" ] && echo "- $RC_FILE was (re)created."
+#  fi
 }
 
 fw_restart() {
