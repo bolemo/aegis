@@ -199,7 +199,7 @@ create_firewall_start() {
 
 check_rc_file () {
   [ -x $RC_FILE ] || return 1
-  md5sum "$RC_FILE" | grep -F "$RC_MD5" || return 1
+  md5sum "$RC_FILE" | grep -qF "$RC_MD5" || return 1
   return 0
 }
 
