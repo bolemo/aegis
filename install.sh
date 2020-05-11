@@ -1,8 +1,15 @@
 #!/bin/sh
 SELF_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
+  # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
-  echo "Installing on external device $BASE_DIR"
+  A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
+    echo -e "e - external drive ($BASE_DIR)\ni - router internal memory (rootfs)\nWhere do you want to install? [e/i] "
+    A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
+  case "$A" IN
+    i|I) BASE_DIR="/root"; echo "Installing on internal memory $BASE_DIR" ;;
+    *) echo "Installing on external device $BASE_DIR" ;;
+  esac
 elif echo "$SELF_PATH" | grep -q '^/root/'; then
   BASE_DIR="/root"
   echo "Installing on internal memory $BASE_DIR"
@@ -39,7 +46,7 @@ else
     *) IPRANGE_IPK='' ;; 
   esac
   if [ -x "$IPRANGE_IPK" ]; then
-    echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into internal flash (/usr/bin)? [y/n] "
+    echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into router internal memory (/usr/bin)? [y/n] "
     case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
       Y|y|yes|Yes|YES) echo "Installing iprange..."; /bin/opkg install "$IPRANGE_IPK" ;;
       *) echo 'Skipping installation of iprange' ;;
