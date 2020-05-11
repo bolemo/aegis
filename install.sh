@@ -4,7 +4,7 @@ if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
   A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
-    echo -e "e - external drive ($BASE_DIR)\ni - router internal memory (rootfs)\nWhere do you want to install? [e/i] "
+    echo -ne "Where do you want to install?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\nYour choice [e/i]: "
     A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
   done
   case "$A" in
@@ -38,7 +38,7 @@ else
     'IPQ8065') IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_ipq806x.ipk" ;;
     'unknown') if [ "$(/bin/uname -n)" = 'R9000' ]; then IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk"
                else
-                 echo "Can you confirm you have a R9000 router? [y/n] "
+                 echo -n "Can you confirm you have a R9000 router? [y/n] "
                  case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
                    Y|y|yes|Yes|YES) IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk" ;;
                    *) IPRANGE_IPK='' ;;
