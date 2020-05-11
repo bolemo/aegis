@@ -3,14 +3,13 @@ SELF_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
   echo "Installing on external device $BASE_DIR"
-elif echo "$SELF_PATH" | grep -q '^/root/.*/'; then
-  BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/root/.*\)/.*|\1|")"
+elif echo "$SELF_PATH" | grep -q '^/root/'; then
+  BASE_DIR="/root"
   echo "Installing on internal memory $BASE_DIR"
 else
   echo "The install files are not in the right place!"
   exit 1
 fi
-
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 echo "Creating directory (if not already existing): $BASE_DIR/bolemo"
 [ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
