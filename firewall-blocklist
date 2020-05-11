@@ -135,7 +135,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="v3.3"
+SC_VERS="v3.3.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
