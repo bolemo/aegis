@@ -33,7 +33,7 @@ _fws() {
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r "$IP_LIST" ]; then
     # netset file exists, so creating blocklist ipset from it
-      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l "$IP_LIST")\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
+      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$IP_LIST")\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
       echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
