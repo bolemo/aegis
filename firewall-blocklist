@@ -126,13 +126,14 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
   exit 0
 fi
 
-#we are called from post-mount.sh
-if [ "$1" -a "$2" ] && [ "$1" = "_pm" ]; then
-  sleep 5
+#when called from post-mount.sh
+_pm() {
+#  sleep 1
   [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
+  init
   _fws
   exit 0
-fi
+}
 
 SC_VERS="v3.3"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
@@ -674,6 +675,7 @@ print_help() {
 
 # Main routine
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+[ "$1" = "_pm" ] && [ -z "$2" ] && _pm # called from post-mount.sh
 
 if [ "$1" != "_niced" ]; then
   OPTS=''
