@@ -212,7 +212,7 @@ check_firewall_start() {
 create_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
   [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
-  echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
+  echo -e "# Bolemo firewall-blocklist\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
 
@@ -225,8 +225,8 @@ check_postmount() {
 create_postmount() {
   [ "$EXT_DRIVE" ] || return 1
   [ -d "$PM_DIR" ] || mkdir -p "$PM_DIR"
-  [ -e "$PM_FILE" ] && sed -i "/$SC_NAME _pm/d" "$PM_FILE"
-  echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
+  [ -e "$PM_FILE" ] && sed -i "/$SC_NAME/d" "$PM_FILE"
+  echo -e "# Bolemo firewall-blocklist\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
@@ -374,8 +374,8 @@ clean() {
     fi
   fi
   if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
-    if [ "$(grep -Fv "$SC_NAME _pm" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
-      sed -i "/$SC_NAME _pm/d" "$PM_FILE"
+    if [ "$(grep -Fv "$SC_NAME" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$PM_FILE"
       [ "$VERBOSE" ] && echo "- $PM_FILE has some other code; removed only our code."
     else
       rm "$PM_FILE" 2>/dev/null
