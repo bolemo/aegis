@@ -6,7 +6,8 @@ if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
   A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
     echo -e "e - external drive ($BASE_DIR)\ni - router internal memory (rootfs)\nWhere do you want to install? [e/i] "
     A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
-  case "$A" IN
+  done
+  case "$A" in
     i|I) BASE_DIR="/root"; echo "Installing on internal memory $BASE_DIR" ;;
     *) echo "Installing on external device $BASE_DIR" ;;
   esac
@@ -30,7 +31,7 @@ echo "Installing firewall-blocklist files"
 \cp -n "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist"
 echo "Done!"
-if command -v iprange; then
+if command -v iprange>/dev/null; then
   echo 'iprange is installed.'
 else
   case "$(/bin/uname -p)" in
