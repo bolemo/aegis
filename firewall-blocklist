@@ -374,8 +374,8 @@ clean() {
     fi
   fi
   if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
-    if [ "$(grep -Fv "$SC_NAME _fws" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
-      sed -i "/$SC_NAME/d" "$PM_FILE _fws"
+    if [ "$(grep -Fv "$SC_NAME _pm" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$PM_FILE _pm"
       [ "$VERBOSE" ] && echo "- $PM_FILE has some other code; removed only our code."
     else
       rm "$PM_FILE" 2>/dev/null
