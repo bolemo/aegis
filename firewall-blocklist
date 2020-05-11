@@ -675,7 +675,7 @@ print_help() {
 
 # Main routine
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
-[ "$1" = "_pm" ] && [ -z "$2" ] && _pm # called from post-mount.sh
+[ "$1" = "_pm" ] && [ "$2" ] && _pm
 
 if [ "$1" != "_niced" ]; then
   OPTS=''
