@@ -3,18 +3,33 @@ Firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.2.3
+3.3.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* Although not mandatory for this script to work properly, it is recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 only for now, but Entware version works on R9000). You can decide to install it separately or not at all. iprange allows great optimizations and recommended.
-* If it is possible to install the script on the system partition, this is not recommended and this installation requires to be on an external (USB) drive (the one on which you may have installed Entware).
+* It is not mandatory, but it is strongly recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
+* The script can be installed either on the router internal memory (no extra USB drive required) or an external (USB) drive (like the one on which you may have installed Entware). If installed on external drive (recommanded), it will survive firmware upgrades and factory resets.
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
+* If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is nit needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
 
 ## Install
+You can install either from external (USB) drive or internal memory.
+
+### CHOICE 1: From external (USB) drive
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.2.3.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Make install script executable: `chmod +x fbl/install.sh`
+* Run install script: `fbl/install.sh`
+* Choose if tou want to install on external drive (e) or internal memory (i)
+* Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
+* You will now be asked to confirm to remove install files [`y` recommanded]
+* Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
+
+### CHOICE 2: From router's internal memory (rootfs)
+* Connect to router's terminal with ssh or telnet
+* Go to the root directory: `cd /root`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.0.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
 * Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
@@ -30,12 +45,14 @@ Anytime, you can use `/opt/bolemo/scripts/firewall-blocklist status` to check if
 
 You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/firewall-blocklist update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning (or local time if using Kamoj's addon).
 
+If firewall-blocklist was set and running before a router reboot, it should be back automatically after the reboot.
+
 ## Upgrade
 Since version 2, you do not need to go through the whole installation process to install a new version.
 The comnand `/opt/bolemo/scripts/firewall-blocklist info` will show the installed version and the latest version available online.
 The `/opt/bolemo/scripts/firewall-blocklist upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
-After an upgrade, it is strongly advised to perform `/opt/bolemo/scripts/firewall-blocklist clean` then `/opt/bolemo/scripts/firewall-blocklist update`
+Before an upgrade, it is strongly advised to perform `/opt/bolemo/scripts/firewall-blocklist clean` then upgrade, then perform `/opt/bolemo/scripts/firewall-blocklist update`
 
 ## Usage
 Usage: `/opt/bolemo/scripts/firewall-blocklist COMMAND [OPTION(S)]`

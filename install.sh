@@ -1,7 +1,23 @@
 #!/bin/sh
 SELF_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
-echo "Installing on device $BASE_DIR"
+if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
+  # We are on external drive
+  BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
+  A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
+    echo -ne "Where do you want to install?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\nYour choice [e/i]: "
+    A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
+  done
+  case "$A" in
+    i|I) BASE_DIR="/root"; echo "Installing on internal memory $BASE_DIR" ;;
+    *) echo "Installing on external device $BASE_DIR" ;;
+  esac
+elif echo "$SELF_PATH" | grep -q '^/root/'; then
+  BASE_DIR="/root"
+  echo "Installing on internal memory $BASE_DIR"
+else
+  echo "The install files are not in the right place!"
+  exit 1
+fi
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 echo "Creating directory (if not already existing): $BASE_DIR/bolemo"
 [ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
@@ -15,14 +31,14 @@ echo "Installing firewall-blocklist files"
 \cp -n "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist"
 echo "Done!"
-if command -v iprange; then
+if command -v iprange>/dev/null; then
   echo 'iprange is installed.'
 else
   case "$(/bin/uname -p)" in
     'IPQ8065') IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_ipq806x.ipk" ;;
     'unknown') if [ "$(/bin/uname -n)" = 'R9000' ]; then IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk"
                else
-                 echo "Can you confirm you have a R9000 router? [y/n] "
+                 echo -n "Can you confirm you have a R9000 router? [y/n] "
                  case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
                    Y|y|yes|Yes|YES) IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk" ;;
                    *) IPRANGE_IPK='' ;;
@@ -31,7 +47,7 @@ else
     *) IPRANGE_IPK='' ;; 
   esac
   if [ -x "$IPRANGE_IPK" ]; then
-    echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into internal flash (/usr/bin)? [y/n] "
+    echo -ne "iprange does not seem to be installed.\nDo you want to install iprange into router internal memory (/usr/bin)? [y/n] "
     case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
       Y|y|yes|Yes|YES) echo "Installing iprange..."; /bin/opkg install "$IPRANGE_IPK" ;;
       *) echo 'Skipping installation of iprange' ;;

@@ -26,15 +26,14 @@ INFO_IPT_LOG='b'
 INFO_IPT_BL='c'
 INFO_IPT_WL='d'
 
-#we are called from firewall_start.sh
-if [ "$1" ] && [ "$1" = "_fws" ]; then
+_fws() {
   :> "$INFO_FILE"
 
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
     if [ -r "$IP_LIST" ]; then
     # netset file exists, so creating blocklist ipset from it
-      echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
+      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$IP_LIST")\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
       echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
@@ -119,11 +118,24 @@ if [ "$1" ] && [ "$1" = "_fws" ]; then
     iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     echo -e "$INFO_IPT_BL\n$INFO_IPT_WL" >> "$INFO_FILE"
   fi
+}
 
+#we are called from firewall_start.sh
+if [ "$1" ] && [ "$1" = "_fws" ]; then
+  _fws
   exit 0
 fi
 
-SC_VERS="v3.2.3"
+#when called from post-mount.sh
+_pm() {
+#  sleep 1
+  [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
+  init
+  _fws
+  exit 0
+}
+
+SC_VERS="v3.3.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -137,6 +149,16 @@ CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-wl.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
+#RC_FILE="/etc/rc.d/S99$SC_NAME"
+#RC_MD5="f3da3fae0a61497e3979aa35e123b319"
+# Check if scriot is installed on USB
+if echo "$SC_PATH" | grep -q '^/tmp/mnt/'; then
+  PM_DIR="$(echo "$SC_PATH" | sed "s|\(/tmp/mnt/[[:alnum:]]*\)/.*|\1|")/autorun/scripts"
+  PM_FILE="$PM_DIR/post-mount.sh"
+  EXT_DRIVE='y'
+else
+  EXT_DRIVE=''
+fi
 
 upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
@@ -191,9 +213,34 @@ check_firewall_start() {
 create_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
   [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
-  echo "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
+  echo -e "# Bolemo firewall-blocklist\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
+
+check_postmount() {
+  [ -x "$PM_FILE" ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
+  return 0
+}
+
+create_postmount() {
+  [ "$EXT_DRIVE" ] || return 1
+  [ -d "$PM_DIR" ] || mkdir -p "$PM_DIR"
+  [ -e "$PM_FILE" ] && sed -i "/$SC_NAME/d" "$PM_FILE"
+  echo -e "# Bolemo firewall-blocklist\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
+  [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
+}
+
+#check_rc_file () {
+#  [ -x $RC_FILE ] || return 1
+#  md5sum "$RC_FILE" | grep -qF "$RC_MD5" || return 1
+#  return 0
+#}
+
+#create_rc_file() {
+#  echo -e "#!/bin/sh /etc/rc.common\nSTART=99\nstart() {\nsleep 5 && [ -x $SC_NICEPATH ] && $SC_NICEPATH _fws\n}\nstop() {\n:\n}" > "$RC_FILE"
+#  [ -x "$RC_FILE" ] || chmod +x "$RC_FILE"
+#}
 
 last_avail_version() {
   wget -qO- "https://api.github.com/repos/bolemo/firewall-blocklist/releases/latest" | jq -r .tag_name
@@ -236,12 +283,31 @@ init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_firewall_start; then
-    [ "$VERBOSE" ] && echo "- $FWS_FILE is in place and ok"
+    [ "$VERBOSE" ] && echo "- $FWS_FILE is in place and ok."
   else
     create_firewall_start
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ "$VERBOSE" ] && echo "- $FWS_FILE was edited and is now ok."
   fi
+  if [ "$EXT_DRIVE" ]; then
+    [ "$VERBOSE" ] && echo "- Script is installed on external drive."
+    if check_postmount; then
+      [ "$VERBOSE" ] && echo "- $PM_FILE is in place and ok."
+    else
+      create_postmount
+      check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
+      [ "$VERBOSE" ] && echo "- $PM_FILE was edited and is now ok."
+    fi
+  else
+    [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
+  fi
+#  if check_rc_file; then
+#    [ "$VERBOSE" ] && echo "- $RC_FILE is in place and ok"
+#  else
+#    create_rc_file
+#    check_rc_file || { >&2 echo -e "\033[31m! Problem with $RC_FILE!\033[0m"; exit 1; }
+#    [ "$VERBOSE" ] && echo "- $RC_FILE was (re)created."
+#  fi
 }
 
 fw_restart() {
@@ -259,6 +325,38 @@ fw_restart() {
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
 }
 
+fw_needs_restart() {
+  if [ "$LOG_ACT" ]; then
+    LOG_IS_ON="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -F -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+    if [ "$LOG_ACT" = 'ON' ]
+      then [ "$LOG_IS_ON" ] || return 0
+      else [ "$LOG_IS_ON" ] && return 0
+    fi
+  fi
+  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g' | md5sum -)" in
+    "$IPT_MD5")
+      if [ -r "$WL_FILE" ]; then return 1
+      elif [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 1
+      else return 0
+      fi ;;
+    "$IPT_MD5_NO_WL")
+      if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then return 0
+      elif [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 0
+      else return 1
+      fi ;;
+    *) return 0 ;;
+  esac
+}
+
+fw_restart_if_needed() {
+  if fw_needs_restart; then
+    [ "$VERBOSE" ] && echo "- Internal firewall needs to be restarted..."
+    fw_restart
+  else
+    [ "$VERBOSE" ] && echo "- Internal firewall does not need to be restarted."
+  fi
+}
+
 print_log() {
   echo -e "\033[1;36mLog:\033[0m"
   echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
@@ -273,9 +371,22 @@ clean() {
       [ "$VERBOSE" ] && echo "- $FWS_FILE has some other rules; removed only our rules."
     else
       rm "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- $FWS_FILE has no other rules; removed it."
+      [ "$VERBOSE" ] && echo "- $FWS_FILE had no other rules; removed it."
     fi
   fi
+  if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
+    if [ "$(grep -Fv "$SC_NAME" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$PM_FILE"
+      [ "$VERBOSE" ] && echo "- $PM_FILE has some other code; removed only our code."
+    else
+      rm "$PM_FILE" 2>/dev/null
+      [ "$VERBOSE" ] && echo "- $PM_FILE had no other code; removed it."
+    fi
+  fi
+#  if [ -e "$RC_FILE" ]; then
+#    rm "$RC_FILE" 2>/dev/null
+#    [ "$VERBOSE" ] && echo "- Removed $RC_FILE."
+#  fi
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
@@ -291,19 +402,20 @@ clean() {
 set_ipset() {
   [ -r "$IP_LIST" ] || { >&2 echo -e "\033[31m! $IP_LIST not readable!\033[0m"; exit 1; }
 
+  MAX="$(wc -l < $IP_LIST)"
+  
   if [ "$VERBOSE" ]; then
-    MAX="$(wc -l < $IP_LIST)"
     NUM_IP="$(count_ip_in_file $IP_LIST)"
     echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries blocking $NUM_IP ips)...\033[0m"
   fi
 
   if ipset -q list -n "$IPSET_NAME">/dev/null; then
-    echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist, swapping it."
     ipset swap "$IPSET_NAME" "$IPSET_TMP"
     ipset destroy $IPSET_TMP
   else
-    echo -e "create $IPSET_NAME hash:net family inet\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist."
   fi
   [ "$VERBOSE" ] && echo "- Done."
@@ -401,6 +513,9 @@ status() {
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   
+  # check post-mount.sh script if script on external drive
+  if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
+  
   # check iptables
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
   case "$(echo "$STAT_IPT" | md5sum -)" in
@@ -432,7 +547,7 @@ status() {
   fi
   
   # master check
-  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" ]; then
+  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
       echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
@@ -440,9 +555,9 @@ status() {
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use $SC_NAME -v status for more details"
     fi
-  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a ! "$STAT_GW_IN_BL" ]; then
+  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
     echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
-  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS" ]; then
+  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
     echo "- Firewall blocklist is not active; Settings are clean."
   else
     echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"
@@ -456,6 +571,12 @@ status() {
     echo "- $FWS_FILE exists with correct settings."
   else
     echo "- $FWS_FILE does not exist or does not have firewall-blocklist settings."
+  fi
+
+  if [ "$STAT_PM" ]; then
+    [ "$STAT_PM" = 'ok' ] && echo "- $PM_FILE exists with correct settings."
+  else
+    echo "- $PM_FILE does not exist or does not have firewall-blocklist settings."
   fi
   
   # dates
@@ -513,7 +634,7 @@ status() {
     fi
     echo -e "\033[35m$STAT_IPS\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset filter (blocklist) does not exist."
+    echo "- ipset filter (blocklist) is not set."
   fi
   if [ "$STAT_IPS_WL" ]; then
     echo "- ipset bypass (whitelist) is set:"
@@ -554,6 +675,7 @@ print_help() {
 
 # Main routine
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+[ "$1" = "_pm" ] && [ "$2" ] && _pm
 
 if [ "$1" != "_niced" ]; then
   OPTS=''
@@ -580,9 +702,9 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[
 case "$2" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set") init; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "load_set") init; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
   "update_set") update_iplist ;;
-  "update") init; update_iplist; set_ipset; fw_restart; [ $VERBOSE ] && status ;;
+  "update") init; update_iplist; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
