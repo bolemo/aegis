@@ -134,7 +134,7 @@ if [ "$1" -a "$2" ] && [ "$1" = "_pm" ]; then
   exit 0
 fi
 
-SC_VERS="v3.3d1"
+SC_VERS="v3.3"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -633,7 +633,7 @@ status() {
     fi
     echo -e "\033[35m$STAT_IPS\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset filter (blocklist) does not exist."
+    echo "- ipset filter (blocklist) is not set."
   fi
   if [ "$STAT_IPS_WL" ]; then
     echo "- ipset bypass (whitelist) is set:"
