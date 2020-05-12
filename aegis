@@ -234,6 +234,15 @@ create_postmount() {
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
+check_profile() {
+  echo $PATH | grep -qF "$ROOT_DIR/scripts" && return 0 || return 1
+}
+
+set_profile() {
+  [ -e '/root/.profile' ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" '/root/.profile'
+  echo "export PATH=$ROOT_DIR/scripts:\$PATH" >> '/root/.profile'
+}
+
 last_avail_version() {
   wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
 }
@@ -293,6 +302,7 @@ init() {
   else
     [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
   fi
+  check_profile || set_profile
 }
 
 fw_restart() {
