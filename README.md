@@ -15,7 +15,7 @@ Should work with several other Netgear routers as well.
 ## Install
 You can install either from external (USB) drive or internal memory.
 
-### CHOICE 1: From external (USB) drive
+### CHOICE 1: install from external (USB) drive
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
 * Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
@@ -26,7 +26,7 @@ You can install either from external (USB) drive or internal memory.
 * You will now be asked to confirm to remove install files [`y` recommanded]
 * Check if installation went fine: `/opt/bolemo/scripts/firewall-blocklist info`
 
-### CHOICE 2: From router's internal memory (rootfs)
+### CHOICE 2: install from router's internal memory (rootfs)
 * Connect to router's terminal with ssh or telnet
 * Go to the root directory: `cd /root`
 * Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
