@@ -234,13 +234,27 @@ create_postmount() {
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
-check_profile() {
+check_bolemo_profile() {
   echo $PATH | grep -qF "$ROOT_DIR/scripts" && return 0 || return 1
 }
 
-set_profile() {
-  [ -e '/root/.profile' ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" '/root/.profile'
+set_bolemo_profile() {
+  [ -e "$ROOT_DIR/etc/profile" ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" '/root/.profile'
   echo "export PATH=$ROOT_DIR/scripts:\$PATH" >> '/root/.profile'
+  [ -e '/root/.profile' ] && sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
+  echo ". $ROOT_DIR/etc/profile" >> '/root/.profile'
+}
+
+remove_bolemo_profile() {
+  if [ -e '/root/.profile' ]; then
+    if [ "$(grep -Fv ". $ROOT_DIR/etc/profile" '/root/.profile' | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
+      [ "$VERBOSE" ] && echo "- .profile has some other code; removed only our code."
+    else
+      rm '/root/.profile' 2>/dev/null
+      [ "$VERBOSE" ] && echo "- .profile had no other code; removed it."
+    fi
+  fi
 }
 
 last_avail_version() {
@@ -558,6 +572,10 @@ status() {
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
+  if check_profile
+    then echo "- profile PATH is set."
+    else echo "- profile PATH is unset."
+  fi
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings."
   else
