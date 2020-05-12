@@ -572,9 +572,9 @@ status() {
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
-  if check_profile
-    then echo "- profile PATH is set."
-    else echo "- profile PATH is unset."
+  if check_bolemo_profile
+    then echo "- bolemo profile PATH is set."
+    else echo "- bolemo profile PATH is unset."
   fi
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings."
