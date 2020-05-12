@@ -1,9 +1,9 @@
 #! /bin/sh
 
-SC_NAME="firewall-blocklist"
-SC_ABR="FwBl"
+SC_NAME="aegis"
+SC_ABR="aegis"
 IPTBL_NAME="${SC_ABR}_DROP"
-[ "$(nvram get log_firewall_blocklist)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
+[ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
@@ -150,13 +150,11 @@ IPT_MD5_NO_WL="9b7ed183ae8e4d418c957c16fca26939  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-bl.netset"
-CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-wl.netset"
+CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
+CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-whitelist.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
-#RC_FILE="/etc/rc.d/S99$SC_NAME"
-#RC_MD5="f3da3fae0a61497e3979aa35e123b319"
 # Check if scriot is installed on USB
 if echo "$SC_PATH" | grep -q '^/tmp/mnt/'; then
   PM_DIR="$(echo "$SC_PATH" | sed "s|\(/tmp/mnt/[[:alnum:]]*\)/.*|\1|")/autorun/scripts"
@@ -233,20 +231,9 @@ create_postmount() {
   [ "$EXT_DRIVE" ] || return 1
   [ -d "$PM_DIR" ] || mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && sed -i "/$SC_NAME/d" "$PM_FILE"
-  echo -e "# Bolemo firewall-blocklist\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
+  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
-
-#check_rc_file () {
-#  [ -x $RC_FILE ] || return 1
-#  md5sum "$RC_FILE" | grep -qF "$RC_MD5" || return 1
-#  return 0
-#}
-
-#create_rc_file() {
-#  echo -e "#!/bin/sh /etc/rc.common\nSTART=99\nstart() {\nsleep 5 && [ -x $SC_NICEPATH ] && $SC_NICEPATH _fws\n}\nstop() {\n:\n}" > "$RC_FILE"
-#  [ -x "$RC_FILE" ] || chmod +x "$RC_FILE"
-#}
 
 last_avail_version() {
   wget -qO- "https://api.github.com/repos/bolemo/firewall-blocklist/releases/latest" | jq -r .tag_name
@@ -307,13 +294,6 @@ init() {
   else
     [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
   fi
-#  if check_rc_file; then
-#    [ "$VERBOSE" ] && echo "- $RC_FILE is in place and ok"
-#  else
-#    create_rc_file
-#    check_rc_file || { >&2 echo -e "\033[31m! Problem with $RC_FILE!\033[0m"; exit 1; }
-#    [ "$VERBOSE" ] && echo "- $RC_FILE was (re)created."
-#  fi
 }
 
 fw_restart() {
@@ -321,10 +301,10 @@ fw_restart() {
   if [ "$LOG_ACT" ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
-      nvram set log_firewall_blocklist=1
+      nvram set aegis_log=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
-      nvram unset log_firewall_blocklist
+      nvram unset aegis_log
     fi
   fi
   /usr/sbin/net-wall restart > /dev/null
@@ -389,10 +369,6 @@ clean() {
       [ "$VERBOSE" ] && echo "- $PM_FILE had no other code; removed it."
     fi
   fi
-#  if [ -e "$RC_FILE" ]; then
-#    rm "$RC_FILE" 2>/dev/null
-#    [ "$VERBOSE" ] && echo "- Removed $RC_FILE."
-#  fi
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
@@ -471,7 +447,7 @@ update_iplist() {
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
   if [ -r "$CUST_BL_FILE" ]; then
-    [ "$VERBOSE" ] && echo "- Adding netset from custom list ($CUST_BL_FILE)"
+    [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist ($CUST_BL_FILE)"
     grep '^[0-9]' "$CUST_BL_FILE" | sed 's/;.*//' >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
@@ -555,16 +531,16 @@ status() {
   # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
-      echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
+      echo -e "- Aegis is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
-      echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+      echo -e "- Aegis is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use $SC_NAME -v status for more details"
     fi
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
-    echo -e "- Firewall blocklist is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
+    echo -e "- Aegis is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
-    echo "- Firewall blocklist is not active; Settings are clean."
+    echo "- Aegis is not active; Settings are clean."
   else
     echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"
   fi
@@ -576,13 +552,13 @@ status() {
   if [ "$STAT_FWS" ]; then
     echo "- $FWS_FILE exists with correct settings."
   else
-    echo "- $FWS_FILE does not exist or does not have firewall-blocklist settings."
+    echo "- $FWS_FILE does not exist or does not have aegis settings."
   fi
 
   if [ "$STAT_PM" ]; then
     [ "$STAT_PM" = 'ok' ] && echo "- $PM_FILE exists with correct settings."
   else
-    echo "- $PM_FILE does not exist or does not have firewall-blocklist settings."
+    echo "- $PM_FILE does not exist or does not have aegis settings."
   fi
   
   # dates
