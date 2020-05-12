@@ -169,7 +169,7 @@ upgrade() {
   echo "- Version installed: $SC_VERS"
   if [ "$DEVMODE" ]; then
     echo "- Devmode on, force downloading dev version..."
-    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/dev/firewall-blocklist"
+    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/aegis/dev/aegis"
   else
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)";
@@ -182,7 +182,7 @@ upgrade() {
         >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
         exit 1
     fi
-    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/firewall-blocklist/master/firewall-blocklist"
+    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/aegis/master/aegis"
   fi
   if [ ! "$DEVMODE" ]; then
     echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
@@ -217,7 +217,7 @@ check_firewall_start() {
 create_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
   [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
-  echo -e "# Bolemo firewall-blocklist\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
+  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
 
@@ -236,7 +236,7 @@ create_postmount() {
 }
 
 last_avail_version() {
-  wget -qO- "https://api.github.com/repos/bolemo/firewall-blocklist/releases/latest" | jq -r .tag_name
+  wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
 }
 
 count_ip_in_file() {
