@@ -141,12 +141,12 @@ _pm() {
   exit 0
 }
 
-SC_VERS="v3.3.1"
+SC_VERS="v3.4"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
-IPT_MD5="2ad1475a410bd55d4afac0b7a36e65e1  -"
-IPT_MD5_NO_WL="9b7ed183ae8e4d418c957c16fca26939  -"
+IPT_MD5="0971dde0bba1ee792ba7df52c5e5b7fb  -"
+IPT_MD5_NO_WL="791faa4367d930528829e420a375692c  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
