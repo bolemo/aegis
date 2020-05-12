@@ -1,7 +1,7 @@
 # Aegis
 A firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
-Formerly named `firewall-blocklist`
+Formerly named **firewall-blocklist**
 
 ## Version
 4.0.0
