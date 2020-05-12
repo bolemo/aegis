@@ -28,7 +28,7 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 echo "Installing aegis files"
 \cp "$SELF_PATH/aegis" "$BASE_DIR/bolemo/scripts/"
-\cp -n "$SELF_PATH/aegis.sources" "$BASE_DIR/bolemo/etc/"
+[ -e "$BASE_DIR/bolemo/etc/aegis.sources" ] || \cp "$SELF_PATH/aegis.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/aegis"
 echo "Done!"
 if command -v iprange>/dev/null; then
