@@ -3,11 +3,11 @@ Firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
 
 ## Version
-3.3.1
+3.3.2
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* It is not mandatory, but it is strongly recommanded to bave iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
+* It is not mandatory, but it is strongly recommanded to have iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
 * The script can be installed either on the router internal memory (no extra USB drive required) or an external (USB) drive (like the one on which you may have installed Entware). If installed on external drive (recommanded), it will survive firmware upgrades and factory resets.
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 * If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is nit needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
@@ -18,7 +18,7 @@ You can install either from external (USB) drive or internal memory.
 ### CHOICE 1: install from external (USB) drive
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.2.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
 * Choose if tou want to install on external drive (e) or internal memory (i)
@@ -29,7 +29,7 @@ You can install either from external (USB) drive or internal memory.
 ### CHOICE 2: install from router's internal memory (rootfs)
 * Connect to router's terminal with ssh or telnet
 * Go to the root directory: `cd /root`
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.1.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/firewall-blocklist/archive/v3.3.2.tar.gz | tar xzf - --one-top-level=fbl --strip-components 1`
 * Make install script executable: `chmod +x fbl/install.sh`
 * Run install script: `fbl/install.sh`
 * Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
