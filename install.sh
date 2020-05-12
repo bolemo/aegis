@@ -4,7 +4,7 @@ if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
   A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
-    echo -ne "Where do you want to install?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\nYour choice [e/i]: "
+    echo -ne "Where do you want to install aegis?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\nYour choice [e/i]: "
     A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
   done
   case "$A" in
@@ -26,10 +26,10 @@ echo "Creating symlink (if not already existing): /opt/bolemo"
 echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/scripts" ] || mkdir "$BASE_DIR/bolemo/scripts"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
-echo "Installing firewall-blocklist files"
-\cp "$SELF_PATH/firewall-blocklist" "$BASE_DIR/bolemo/scripts/"
-\cp -n "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
-chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist"
+echo "Installing aegis files"
+\cp "$SELF_PATH/aegis" "$BASE_DIR/bolemo/scripts/"
+\cp -n "$SELF_PATH/aegis.sources" "$BASE_DIR/bolemo/etc/"
+chmod +x "$BASE_DIR/bolemo/scripts/aegis"
 echo "Done!"
 if command -v iprange>/dev/null; then
   echo 'iprange is installed.'
