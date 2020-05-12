@@ -25,6 +25,7 @@ INFO_IPT_KEEP='a'
 INFO_IPT_LOG='b'
 INFO_IPT_BL='c'
 INFO_IPT_WL='d'
+INFO_IPT_PBM='e'
 
 _fws() {
   :> "$INFO_FILE"
@@ -90,13 +91,18 @@ _fws() {
     echo "$INFO_IPS_WL_WGW_ADD" >> "$INFO_FILE"
   fi
 
-  #checking if IPTBL_NAME is already set (should not); if it is, exit
-  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && { echo "$INFO_IPT_KEEP" >> "$INFO_FILE"; exit 1; }
-  
-  # creating the filtering (blocking) iptables chain
-  iptables -N "$IPTBL_NAME"
-  [ "$IPTBL_LOGGING" ] && { iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "; echo "$INFO_IPT_LOG" >> "$INFO_FILE"; }
-  iptables -A "$IPTBL_NAME" -j DROP
+  #checking if IPTBL_NAME is already set
+  if iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null; then
+    REFERENCES=$(iptables -L "$IPTBL_NAME" | sed "s/Chain $IPTBL_NAME (\([[0-9]]*\) references)/\1/ ; 1q")
+    #checking if IPTBL_NAME is correctly referenced; if it is, exit
+    [ $REFERENCES = 4 ] && { echo "$INFO_IPT_KEEP" >> "$INFO_FILE"; exit 0; }
+    [ $REFERENCES = 0 ] || { echo "$INFO_IPT_PBM" >> "$INFO_FILE"; exit 1; }
+  else
+    # creating the filtering (blocking) iptables chain
+    iptables -N "$IPTBL_NAME"
+    [ "$IPTBL_LOGGING" ] && { iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "; echo "$INFO_IPT_LOG" >> "$INFO_FILE"; }
+    iptables -A "$IPTBL_NAME" -j DROP
+  fi
   
   # creating the required iptables
   if [ "$NO_WL" ]; then
@@ -135,7 +141,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="v3.3.0"
+SC_VERS="v3.3.2"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -600,6 +606,7 @@ status() {
     /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     logging rules were added to iptables.'
     /bin/grep -qF "$INFO_IPT_BL" "$INFO_FILE" && echo '     blocklist rules were added to iptables.'
     /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     whitelist rules were added to iptables.'
+    /bin/grep -qF "$INFO_IPT_PBM" "$INFO_FILE" && echo '     problem encountered with iptables rules!'
     echo -ne "\033[0m"
   else
     echo '- No status file found.'

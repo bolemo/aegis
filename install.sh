@@ -28,7 +28,7 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 echo "Installing firewall-blocklist files"
 \cp "$SELF_PATH/firewall-blocklist" "$BASE_DIR/bolemo/scripts/"
-\cp -n "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
+[ -e "$BASE_DIR/bolemo/etc/firewall-blocklist.sources" ] || \cp "$SELF_PATH/firewall-blocklist.sources" "$BASE_DIR/bolemo/etc/"
 chmod +x "$BASE_DIR/bolemo/scripts/firewall-blocklist"
 echo "Done!"
 if command -v iprange>/dev/null; then
