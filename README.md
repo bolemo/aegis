@@ -85,15 +85,15 @@ Since version 3.1, you can have your own custom blacklist of IPs or netsets (IPs
 Since version 3.2, you can have your own custom whitelist of IPs or netsets (IPs with cidr netmask): just create a file named `firewall-blocklist.custom-wl.netset` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `firewall-blocklist update`, it will integrate your custom list to the master whitelist.
 
 ## Logging
-### Enabling
+### Enable logging
 To log activity of firewall-blocklist and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `/opt/bolemo/scripts/firewall-blocklist restart -log=on`).
 You can also use the following command: `nvram set log_firewall_blocklist=1`; the next time the firewall-blocklist will be restarted, logging will be active until next reboot of the router.
 If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set log_firewall_blocklist=1` do `nvram commit`.
 
-### Accessing the log
+### Access the log
 To watch the log, use `/opt/bolemo/scripts/firewall-blocklist log` or `dmesg | grep 'firewall-blocklist'`.
 
-### Disabling
+### Disable logging
 To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
 You can also use `nvram unset log_firewall_blocklist`.
 If you used `nvram commit` after enabling logging, then you need to use `nvram commit` again after using the `-log=off` option or the command `nvram unset log_firewall_blocklist` to stay disabled after router reboot.
