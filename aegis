@@ -259,7 +259,8 @@ remove_bolemo_profile() {
 }
 
 last_avail_version() {
-  wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
+#  wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
+  wget -qO- 'https://raw.githubusercontent.com/bolemo/aegis/master/version'
 }
 
 count_ip_in_file() {
