@@ -250,10 +250,10 @@ remove_bolemo_profile() {
   if [ -e '/root/.profile' ]; then
     if [ "$(grep -Fv ". $ROOT_DIR/etc/profile" '/root/.profile' | sed '/^[[:space:]]*$/d')" ]; then
       sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
-      [ "$VERBOSE" ] && echo "- .profile has some other code; removed only our code."
+      [ "$VERBOSE" ] && echo "- '.profile' has some other code; removed only our code."
     else
       rm '/root/.profile' 2>/dev/null
-      [ "$VERBOSE" ] && echo "- .profile had no other code; removed it."
+      [ "$VERBOSE" ] && echo "- '.profile' had no other code; removed it."
     fi
   fi
 }
@@ -279,10 +279,9 @@ count_ip_in_ipset() {
 info() {
   echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo "- The script is properly installed."
+    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive' || echo 'on internal drive'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
-  echo "- $SC_NAME version: $SC_VERS"
   echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
   if [ "$SC_LAST_VERS" ]
@@ -292,30 +291,30 @@ info() {
     fi
     else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
   fi
-  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
 }
 
 init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_firewall_start; then
-    [ "$VERBOSE" ] && echo "- $FWS_FILE is in place and ok."
+    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' is in place and ok."
   else
     create_firewall_start
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
-    [ "$VERBOSE" ] && echo "- $FWS_FILE was edited and is now ok."
+    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' was edited and is now ok."
   fi
   if [ "$EXT_DRIVE" ]; then
-    [ "$VERBOSE" ] && echo "- Script is installed on external drive."
+    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on external drive."
     if check_postmount; then
-      [ "$VERBOSE" ] && echo "- $PM_FILE is in place and ok."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' is in place and ok."
     else
       create_postmount
       check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
-      [ "$VERBOSE" ] && echo "- $PM_FILE was edited and is now ok."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' was edited and is now ok."
     fi
   else
-    [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
+    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
   check_profile || set_profile
 }
@@ -332,7 +331,7 @@ fw_restart() {
     fi
   fi
   /usr/sbin/net-wall restart > /dev/null
-  [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
+  [ "$VERBOSE" ] && echo "- Firewall restarted."
 }
 
 fw_needs_restart() {
@@ -378,19 +377,19 @@ clean() {
   if [ -e "$FWS_FILE" ]; then
     if [ "$(grep -Fv "$SC_NAME" "$FWS_FILE" | sed '/^[[:space:]]*$/d')" ]; then
       sed -i "/$SC_NAME/d" "$FWS_FILE"
-      [ "$VERBOSE" ] && echo "- $FWS_FILE has some other rules; removed only our rules."
+      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
     else
       rm "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- $FWS_FILE had no other rules; removed it."
+      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
     fi
   fi
   if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
     if [ "$(grep -Fv "$SC_NAME" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
       sed -i "/$SC_NAME/d" "$PM_FILE"
-      [ "$VERBOSE" ] && echo "- $PM_FILE has some other code; removed only our code."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
     else
       rm "$PM_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- $PM_FILE had no other code; removed it."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
   rm "$INFO_FILE" 2>/dev/null
