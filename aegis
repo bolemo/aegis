@@ -6,7 +6,7 @@ IPTBL_NAME="${SC_ABR}_DROP"
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
-IP_LIST="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
+BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_GATEWAY="$(nvram get wan_gateway)"
@@ -31,9 +31,9 @@ _fws() {
 
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
-    if [ -r "$IP_LIST" ]; then
+    if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
-      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$IP_LIST")\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
+      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_NAME /" "$BL_FILE")" | ipset restore
       echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
@@ -277,7 +277,7 @@ count_ip_in_ipset() {
 
 info() {
   echo -e "\033[1;36mInfo:\033[0m"
-  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
     then echo "- The script is properly installed."
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
@@ -405,22 +405,22 @@ clean() {
 }
 
 set_ipset() {
-  [ -r "$IP_LIST" ] || { >&2 echo -e "\033[31m! $IP_LIST not readable!\033[0m"; exit 1; }
+  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
 
-  MAX="$(wc -l < $IP_LIST)"
+  MAX="$(wc -l < $BL_FILE)"
   
   if [ "$VERBOSE" ]; then
-    NUM_IP="$(count_ip_in_file $IP_LIST)"
+    NUM_IP="$(count_ip_in_file $BL_FILE)"
     echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries blocking $NUM_IP ips)...\033[0m"
   fi
 
   if ipset -q list -n "$IPSET_NAME">/dev/null; then
-    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist, swapping it."
     ipset swap "$IPSET_NAME" "$IPSET_TMP"
     ipset destroy $IPSET_TMP
   else
-    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $BL_FILE)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist."
   fi
   [ "$VERBOSE" ] && echo "- Done."
@@ -475,10 +475,10 @@ update_iplist() {
   fi
   if [ -x "$IPR_BIN" ]; then
     [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-    $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$IP_LIST"
+    $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
   else
     [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
-    sort "$TMP_FILE" | uniq > "$IP_LIST"
+    sort "$TMP_FILE" | uniq > "$BL_FILE"
   fi
   rm "$TMP_FILE" 2>/dev/null
   [ "$VERBOSE" ] && echo "- Done."
@@ -490,7 +490,7 @@ update_iplist() {
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
-        if [ "$($IPR_BIN --common "$IP_LIST" "$TMP_FILE")" ]; then
+        if [ "$($IPR_BIN --common "$BL_FILE" "$TMP_FILE")" ]; then
           [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
           $IPR_BIN --ipset-reduce 20 "$TMP_FILE"  > "$WL_FILE"
         else
@@ -589,13 +589,13 @@ status() {
   fi
   
   # dates
-  echo "- Actual router time: $(/bin/date +'%Y-%d-%m-%X')"
-  [ -e "$IP_LIST" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%d-%m-%X' -r $IP_LIST)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%d-%m-%X' -r $WL_FILE)"
+  echo "- Actual router time: $(/bin/date +'%Y-%d-%m %X')"
+  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%d-%m %X' -r $BL_FILE)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%d-%m %X' -r $WL_FILE)"
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
-    echo -e "- Router firewall was last started $(/bin/date -r $INFO_FILE): \033[35m"
+    echo -e "- Router firewall was last started $(/bin/date +'%Y-%d-%m %X' -r $INFO_FILE): \033[35m"
     /bin/grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
     /bin/grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
     /bin/grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded and was kept.'
@@ -664,7 +664,7 @@ status() {
 
 print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
-  echo -e "Usage: \033[1m$SC_NICEPATH \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
+  echo -e "Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
   echo -e "\033[7mCOMMANDS (use only one):\033[0m"
   echo -e " \033[1;35mrestart\033[0m    - setup ipset and iptables then restarts internal firewall"
   echo -e " \033[1;35mupdate_set\033[0m - generates blocklist set from servers in $SRC_LIST"
