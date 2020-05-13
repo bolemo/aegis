@@ -7,7 +7,7 @@ IPTBL_NAME="${SC_ABR}_DROP"
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 ROOT_DIR="/opt/bolemo"
-IP_LIST="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
+BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_GATEWAY="$(nvram get wan_gateway)"
@@ -32,9 +32,9 @@ _fws() {
 
   # creating ipset blocklist if needed
   if ! ipset -q -n list "$IPSET_NAME">/dev/null; then
-    if [ -r "$IP_LIST" ]; then
+    if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
-      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$IP_LIST")\n$(sed "s/^/add $IPSET_NAME /" "$IP_LIST")" | ipset restore
+      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_NAME /" "$BL_FILE")" | ipset restore
       echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
@@ -141,7 +141,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="v4.0.0"
+SC_VERS="1.0.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -235,8 +235,32 @@ create_postmount() {
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
+check_bolemo_profile() {
+  echo $PATH | grep -qF "$ROOT_DIR/scripts" && return 0 || return 1
+}
+
+set_bolemo_profile() {
+  [ -e "$ROOT_DIR/etc/profile" ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" '/root/.profile'
+  echo "export PATH=$ROOT_DIR/scripts:\$PATH" >> '/root/.profile'
+  [ -e '/root/.profile' ] && sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
+  echo ". $ROOT_DIR/etc/profile" >> '/root/.profile'
+}
+
+remove_bolemo_profile() {
+  if [ -e '/root/.profile' ]; then
+    if [ "$(grep -Fv ". $ROOT_DIR/etc/profile" '/root/.profile' | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
+      [ "$VERBOSE" ] && echo "- '.profile' has some other code; removed only our code."
+    else
+      rm '/root/.profile' 2>/dev/null
+      [ "$VERBOSE" ] && echo "- '.profile' had no other code; removed it."
+    fi
+  fi
+}
+
 last_avail_version() {
-  wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
+#  wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
+  wget -qO- 'https://raw.githubusercontent.com/bolemo/aegis/master/version'
 }
 
 count_ip_in_file() {
@@ -255,11 +279,10 @@ count_ip_in_ipset() {
 
 info() {
   echo -e "\033[1;36mInfo:\033[0m"
-  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$IP_LIST") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo "- The script is properly installed."
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
+    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
-  echo "- $SC_NAME version: $SC_VERS"
   echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
   if [ "$SC_LAST_VERS" ]
@@ -269,31 +292,32 @@ info() {
     fi
     else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
   fi
-  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
 }
 
 init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_firewall_start; then
-    [ "$VERBOSE" ] && echo "- $FWS_FILE is in place and ok."
+    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' is in place and ok."
   else
     create_firewall_start
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
-    [ "$VERBOSE" ] && echo "- $FWS_FILE was edited and is now ok."
+    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' was edited and is now ok."
   fi
   if [ "$EXT_DRIVE" ]; then
-    [ "$VERBOSE" ] && echo "- Script is installed on external drive."
+    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on external drive."
     if check_postmount; then
-      [ "$VERBOSE" ] && echo "- $PM_FILE is in place and ok."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' is in place and ok."
     else
       create_postmount
       check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
-      [ "$VERBOSE" ] && echo "- $PM_FILE was edited and is now ok."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' was edited and is now ok."
     fi
   else
-    [ "$VERBOSE" ] && echo "- Script is installed on internal drive."
+    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
+  check_profile || set_profile
 }
 
 fw_restart() {
@@ -308,7 +332,7 @@ fw_restart() {
     fi
   fi
   /usr/sbin/net-wall restart > /dev/null
-  [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
+  [ "$VERBOSE" ] && echo "- Firewall restarted."
 }
 
 fw_needs_restart() {
@@ -354,19 +378,19 @@ clean() {
   if [ -e "$FWS_FILE" ]; then
     if [ "$(grep -Fv "$SC_NAME" "$FWS_FILE" | sed '/^[[:space:]]*$/d')" ]; then
       sed -i "/$SC_NAME/d" "$FWS_FILE"
-      [ "$VERBOSE" ] && echo "- $FWS_FILE has some other rules; removed only our rules."
+      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
     else
       rm "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- $FWS_FILE had no other rules; removed it."
+      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
     fi
   fi
   if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
     if [ "$(grep -Fv "$SC_NAME" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
       sed -i "/$SC_NAME/d" "$PM_FILE"
-      [ "$VERBOSE" ] && echo "- $PM_FILE has some other code; removed only our code."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
     else
       rm "$PM_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- $PM_FILE had no other code; removed it."
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
   rm "$INFO_FILE" 2>/dev/null
@@ -382,22 +406,22 @@ clean() {
 }
 
 set_ipset() {
-  [ -r "$IP_LIST" ] || { >&2 echo -e "\033[31m! $IP_LIST not readable!\033[0m"; exit 1; }
+  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
 
-  MAX="$(wc -l < $IP_LIST)"
+  MAX="$(wc -l < $BL_FILE)"
   
   if [ "$VERBOSE" ]; then
-    NUM_IP="$(count_ip_in_file $IP_LIST)"
+    NUM_IP="$(count_ip_in_file $BL_FILE)"
     echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries blocking $NUM_IP ips)...\033[0m"
   fi
 
   if ipset -q list -n "$IPSET_NAME">/dev/null; then
-    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist, swapping it."
     ipset swap "$IPSET_NAME" "$IPSET_TMP"
     ipset destroy $IPSET_TMP
   else
-    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $IP_LIST)" | ipset restore
+    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $BL_FILE)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist."
   fi
   [ "$VERBOSE" ] && echo "- Done."
@@ -452,10 +476,10 @@ update_iplist() {
   fi
   if [ -x "$IPR_BIN" ]; then
     [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-    $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$IP_LIST"
+    $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
   else
     [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
-    sort "$TMP_FILE" | uniq > "$IP_LIST"
+    sort "$TMP_FILE" | uniq > "$BL_FILE"
   fi
   rm "$TMP_FILE" 2>/dev/null
   [ "$VERBOSE" ] && echo "- Done."
@@ -467,7 +491,7 @@ update_iplist() {
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
-        if [ "$($IPR_BIN --common "$IP_LIST" "$TMP_FILE")" ]; then
+        if [ "$($IPR_BIN --common "$BL_FILE" "$TMP_FILE")" ]; then
           [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
           $IPR_BIN --ipset-reduce 20 "$TMP_FILE"  > "$WL_FILE"
         else
@@ -487,10 +511,10 @@ update_iplist() {
 }
 
 status() {
-  echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
+  echo -e "\033[1;36mStatus:\033[0m\n- '$SC_NAME' version: $SC_VERS"
   
   # check iprange binary
-  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
   
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
@@ -531,44 +555,48 @@ status() {
   # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
-      echo -e "- $SC_NAME is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
+      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
-      echo -e "- $SC_NAME is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
     else
-      echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use $SC_NAME -v status for more details"
+      echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use '$SC_NAME -v status' for more details"
     fi
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
-    echo -e "- $SC_NAME is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
+    echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
-    echo "- $SC_NAME is not active; Settings are clean."
+    echo "- '$SC_NAME' is not active; Settings are clean."
   else
-    echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"
+    echo -e "- \033[1;31mSomething is not right!\033[0m Use '$SC_NAME -v status' for more details"
   fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ "$VERBOSE" ] || return 0
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
+  if check_bolemo_profile
+    then echo "- bolemo profile PATH is set."
+    else echo "- bolemo profile PATH is unset."
+  fi
   if [ "$STAT_FWS" ]; then
-    echo "- $FWS_FILE exists with correct settings."
+    echo "- 'firewall-start.sh' exists with correct settings."
   else
-    echo "- $FWS_FILE does not exist or does not have $SC_NAME settings."
+    echo "- 'firewall-start.sh' does not exist or does not have '$SC_NAME' settings."
   fi
 
   if [ "$STAT_PM" ]; then
-    [ "$STAT_PM" = 'ok' ] && echo "- $PM_FILE exists with correct settings."
+    [ "$STAT_PM" = 'ok' ] && echo "- 'post-mount.sh' exists with correct settings."
   else
-    echo "- $PM_FILE does not exist or does not have $SC_NAME settings."
+    echo "- 'post-mount.sh' does not exist or does not have '$SC_NAME' settings."
   fi
   
   # dates
-  echo "- Actual router time: $(/bin/date)"
-  [ -e "$IP_LIST" ] && echo "- Blocklist generation time: $(/bin/date -r $IP_LIST)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date -r $WL_FILE)"
+  echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
+  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
-    echo -e "- Router firewall was last started $(/bin/date -r $INFO_FILE): \033[35m"
+    echo -e "- Router firewall was last started $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE): \033[35m"
     /bin/grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
     /bin/grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
     /bin/grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded and was kept.'
@@ -637,7 +665,7 @@ status() {
 
 print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
-  echo -e "Usage: \033[1m$SC_NICEPATH \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
+  echo -e "Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
   echo -e "\033[7mCOMMANDS (use only one):\033[0m"
   echo -e " \033[1;35mrestart\033[0m    - setup ipset and iptables then restarts internal firewall"
   echo -e " \033[1;35mupdate_set\033[0m - generates blocklist set from servers in $SRC_LIST"
