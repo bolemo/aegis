@@ -1,4 +1,5 @@
 #! /bin/sh
+
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPTBL_NAME="${SC_ABR}_DROP"
@@ -590,12 +591,12 @@ status() {
   
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%d-%m %X')"
-  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%d-%m %X' -r $BL_FILE)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%d-%m %X' -r $WL_FILE)"
+  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
-    echo -e "- Router firewall was last started $(/bin/date +'%Y-%d-%m %X' -r $INFO_FILE): \033[35m"
+    echo -e "- Router firewall was last started $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE): \033[35m"
     /bin/grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
     /bin/grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
     /bin/grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded and was kept.'
