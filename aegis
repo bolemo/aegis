@@ -511,10 +511,10 @@ update_iplist() {
 }
 
 status() {
-  echo -e "\033[1;36mStatus:\033[0m\n- $SC_NAME version: $SC_VERS"
+  echo -e "\033[1;36mStatus:\033[0m\n- `$SC_NAME` version: $SC_VERS"
   
   # check iprange binary
-  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | head -n 1)" || echo "- iprange is not installed."
+  [ "$IPR_BIN" ] && echo "- `iprange` is installed: $($IPR_BIN --version | head -n 1)" || echo "- `iprange` is not installed."
   
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
@@ -555,18 +555,18 @@ status() {
   # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
-      echo -e "- $SC_NAME is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
+      echo -e "- `$SC_NAME` is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
-      echo -e "- $SC_NAME is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+      echo -e "- `$SC_NAME` is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
     else
-      echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use $SC_NAME -v status for more details"
+      echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use `$SC_NAME -v status` for more details"
     fi
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
-    echo -e "- $SC_NAME is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
+    echo -e "- `$SC_NAME` is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
-    echo "- $SC_NAME is not active; Settings are clean."
+    echo "- `$SC_NAME` is not active; Settings are clean."
   else
-    echo -e "- \033[1;31mSomething is not right!\033[0m Use $SC_NAME -v status for more details"
+    echo -e "- \033[1;31mSomething is not right!\033[0m Use `$SC_NAME -v status` for more details"
   fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
   [ "$VERBOSE" ] || return 0
@@ -578,15 +578,15 @@ status() {
     else echo "- bolemo profile PATH is unset."
   fi
   if [ "$STAT_FWS" ]; then
-    echo "- $FWS_FILE exists with correct settings."
+    echo "- `firewall-start.sh` exists with correct settings."
   else
-    echo "- $FWS_FILE does not exist or does not have $SC_NAME settings."
+    echo "- `firewall-start.sh` does not exist or does not have `$SC_NAME` settings."
   fi
 
   if [ "$STAT_PM" ]; then
-    [ "$STAT_PM" = 'ok' ] && echo "- $PM_FILE exists with correct settings."
+    [ "$STAT_PM" = 'ok' ] && echo "- `post-mount.sh` exists with correct settings."
   else
-    echo "- $PM_FILE does not exist or does not have $SC_NAME settings."
+    echo "- `post-mount.sh does not exist or does not have `$SC_NAME` settings."
   fi
   
   # dates
