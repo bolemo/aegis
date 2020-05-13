@@ -589,9 +589,9 @@ status() {
   fi
   
   # dates
-  echo "- Actual router time: $(/bin/date +'%m-%d-%Y-%X')"
-  [ -e "$IP_LIST" ] && echo "- Blocklist generation time: $(/bin/date +'%m-%d-%Y-%X' -r $IP_LIST)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%m-%d-%Y-%X' -r $WL_FILE)"
+  echo "- Actual router time: $(/bin/date +'%Y-%d-%m-%X')"
+  [ -e "$IP_LIST" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%d-%m-%X' -r $IP_LIST)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%d-%m-%X' -r $WL_FILE)"
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
