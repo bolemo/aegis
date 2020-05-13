@@ -590,7 +590,7 @@ status() {
   fi
   
   # dates
-  echo "- Actual router time: $(/bin/date +'%Y-%d-%m %X')"
+  echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
   [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   
