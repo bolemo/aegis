@@ -4,7 +4,7 @@ Should work with several other Netgear routers as well.
 Formerly named **firewall-blocklist**
 
 ## Version
-4.0.0
+1.0.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -19,9 +19,8 @@ You can install either from external (USB) drive or internal memory.
 ### CHOICE 1: install from external (USB) drive
 * Connect to router's terminal with ssh or telnet
 * Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/aegis/archive/v4.0.0.tar.gz | tar xzf - --one-top-level=aegis --strip-components 1`
-* Make install script executable: `chmod +x aegis/install.sh`
-* Run install script: `aegis/install.sh`
+* Copy and paste the following command: `sh <(wget -qO- URL)`
+* Run install script: `./aegis-install.sh`
 * Choose if tou want to install on external drive (e) or internal memory (i)
 * Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
 * You will now be asked to confirm to remove install files [`y` recommanded]
