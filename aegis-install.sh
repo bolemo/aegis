@@ -25,11 +25,11 @@ if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
     e|E) echo "aegis will be installed on external device $BASE_DIR" ;;
     *) exit 0 ;;
   esac
-elif echo "$SELF_PATH" | grep -q '^/root/'; then
+elif ask_yn 'Install aegis in router internal memory (rootfs)?'; then
   BASE_DIR="/root"
   echo "aegis will be installed on internal memory $BASE_DIR"
 else
-  >&2 echo "aegis-install.sh is not in the right place!"; exit 1
+  exit 0
 fi
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 
