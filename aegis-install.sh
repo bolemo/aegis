@@ -12,7 +12,7 @@ ask_yn() {
     *) return 1  ;;
   esac
 }
-
+echo $SELF_PATH
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
