@@ -12,13 +12,11 @@ ask_yn() {
   esac
 }
 
-i=1
-for var in $(ls /tmp/mnt); do eval var$i="'$var'"; i=$((i+1)); done;
+i=1; for var in $(ls /tmp/mnt); do eval var$i="'$var'"; i=$((i+1)); done;
 until [ "$A" ] && $(echo "$A" | grep -qE '^[0-9]?$') && [ "$A" -ge 0 ] && [ "$A" -lt "$i" ]; do
   echo "Where do you want to install aegis?"
   echo '  0 - router internal memory (rootfs)'
-  j=1
-  while [ "$j" -ne "$i" ]; do
+  j=1; while [ "$j" -ne "$i" ]; do
     echo "  $j - external drive: /mnt/$(eval echo "\$var$j")"
     j=$((j+1))
   done
@@ -57,6 +55,14 @@ if [ -e "$BASE_DIR/bolemo/etc/aegis.sources" ]
   else
     echo "Downloading aegis default sources file..."
     wget -qO "$BASE_DIR/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
+fi
+
+# bolemo path
+if ! echo $PATH | grep -qF "/opt/bolemo/scripts"
+  [ -e "/opt/bolemo//etc/profile" ] && sed -i "|export PATH=/opt/bolemo/scripts:\$PATH|d" '/root/.profile'
+  echo "export PATH=/opt/bolemo/scripts:\$PATH" >> '/root/.profile'
+  [ -e '/root/.profile' ] && sed -i "|. /opt/bolemo/etc/profile|d" '/root/.profile'
+  echo ". /opt/bolemo/etc/profile" >> '/root/.profile'
 fi
 
 # iprange
