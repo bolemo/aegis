@@ -1,5 +1,5 @@
 #!/bin/sh
-# v4.0.0
+AEGIS_URL=
 SELF_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
   # We are on external drive
