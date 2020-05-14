@@ -11,6 +11,7 @@ ask_yn() {
     *) return 1  ;;
   esac
 }
+
 echo $0
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
   # We are on external drive
