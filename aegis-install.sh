@@ -2,8 +2,7 @@
 AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/master'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
-SELF_PATH="$(pwd)"
-#"$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SELF_PATH="$(pwd -P)"
 
 ask_yn() {
   echo -ne "$1 [y/n] "
@@ -12,7 +11,7 @@ ask_yn() {
     *) return 1  ;;
   esac
 }
-echo $SELF_PATH
+
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
