@@ -36,6 +36,8 @@ else
 fi
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 
+echo "Creating directory (if not already existing): /opt/scripts"
+[ -d "/opt/scripts" ] || mkdir -p "/opt/scripts"
 echo "Creating directory (if not already existing): $BASE_DIR/bolemo"
 [ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
 echo "Creating symlink (if not already existing): /opt/bolemo"
@@ -45,21 +47,21 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 
 echo "Downloading and installing aegis..."
-if wget -qO "$BASE_DIR/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
-  then chmod +x "$BASE_DIR/bolemo/scripts/aegis"
+if wget -qO "/opt/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
+  then chmod +x "/opt/bolemo/scripts/aegis"
   else >&2 echo 'Could not download aegis!'; exit 1
 fi
 
-if [ -e "$BASE_DIR/bolemo/etc/aegis.sources" ]
+if [ -e "/opt/bolemo/etc/aegis.sources" ]
   then echo "An aegis sources file already exists, keeping it."
   else
     echo "Downloading aegis default sources file..."
-    wget -qO "$BASE_DIR/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
+    wget -qO "/opt/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
 fi
 
 # bolemo path
 if ! echo $PATH | grep -qF "/opt/bolemo/scripts"
-  [ -e "/opt/bolemo//etc/profile" ] && sed -i "|export PATH=/opt/bolemo/scripts:\$PATH|d" '/root/.profile'
+  [ -e "/opt/bolemo/etc/profile" ] && sed -i "|export PATH=/opt/bolemo/scripts:\$PATH|d" '/root/.profile'
   echo "export PATH=/opt/bolemo/scripts:\$PATH" >> '/root/.profile'
   [ -e '/root/.profile' ] && sed -i "|. /opt/bolemo/etc/profile|d" '/root/.profile'
   echo ". /opt/bolemo/etc/profile" >> '/root/.profile'
