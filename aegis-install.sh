@@ -12,16 +12,17 @@ ask_yn() {
   esac
 }
 
-if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]]/'; then
+if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]]+/?.*'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
-  A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
-    echo -ne "Where do you want to install aegis?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\nYour choice [e/i]: "
+  A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ] || [ "$A" = 'c' ] || [ "$A" = 'C' ]; do
+    echo -ne "Where do you want to install aegis?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\n  c - cancel installation\nYour choice [e/i/c]: "
     A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
   done
   case $A in
     i|I) BASE_DIR="/root"; echo "aegis will be installed on internal memory $BASE_DIR" ;;
-    *) echo "aegis will be installed on external device $BASE_DIR" ;;
+    e|E) echo "aegis will be installed on external device $BASE_DIR" ;;
+    *) exit 0 ;;
   esac
 elif echo "$SELF_PATH" | grep -q '^/root/'; then
   BASE_DIR="/root"
@@ -40,7 +41,7 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 
 echo "Downloading and installing aegis..."
-if wget -qO "$BASE_DIR/bolemo/scripts/" "$AEGIS_SCP_URL"
+if wget -qO "$BASE_DIR/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
   then chmod +x "$BASE_DIR/bolemo/scripts/aegis"
   else >&2 echo 'Could not download aegis!'; exit 1
 fi
@@ -49,7 +50,7 @@ if [ -e "$BASE_DIR/bolemo/etc/aegis.sources" ]
   then echo "An aegis sources file already exists, keeping it."
   else
     echo "Downloading aegis default sources file..."
-    wget -qO "$BASE_DIR/bolemo/etc/" "$AEGIS_SRC_URL"
+    wget -qO "$BASE_DIR/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
 fi
 
 # iprange
@@ -68,11 +69,9 @@ else
   if [ $_ASK_ROOTFS ]; then
     case "$(/bin/uname -p)" in
       'IPQ8065') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_ipq806x.ipk" ;;
-      'unknown') if [ "$(/bin/uname -n)" = 'R9000' ]
-                   then IPRANGE_IPK="$SELF_PATH/iprange_1.0.4-1_r9000.ipk"
-                 elif ask_yn 'Can you confirm you have a R9000 router?'
+      'unknown') if [ "$(/bin/uname -n)" = 'R9000' ] || ask_yn 'Can you confirm your router model is R9000?'
                    then IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_r9000.ipk"
-                 else IPRANGE_IPK_URL=''
+                   else IPRANGE_IPK_URL=''
                  fi ;;
       *) IPRANGE_IPK_URL='' ;; 
     esac
