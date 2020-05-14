@@ -12,7 +12,7 @@ ask_yn() {
   esac
 }
 
-echo '____ INSTALL AEGIS ____'
+echo $0
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
