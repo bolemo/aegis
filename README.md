@@ -18,9 +18,8 @@ You can install either on external (USB) drive or internal memory.
 
 ### Install procedure
 * Connect to router's terminal with ssh or telnet
-* ***If you want to be able to install on external (USB) drive***, go to it: `cd /mnt/optware/` (change `optware` by the mountpoint of your external drive if it is not optware)
 * Copy and paste the following command: `wget -qO- https://github.com/bolemo/aegis/raw/master/aegis-install.sh | sh`
-* ***If you launched install from external (USB) drive***, choose if you want to install on external drive (e) or internal memory (i)
+* Choose where you want to install aegis (external drive or internal memory)
 * If not already present, you will be asked if you want to install iprange
 ** If you have Entware, you will be asked if you want to install iprange with Entware
 ** If you don't gave Entware (or don't want to install with it), you will be asked if you want to install iprange in internal memory
