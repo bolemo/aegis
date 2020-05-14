@@ -23,16 +23,36 @@ You can install either on external (USB) drive or internal memory.
 * If not already present, you will be asked if you want to install iprange (if available, you will be asked if you want to install iprange with Entware, if not (or don't want to install with it), you will be asked if you want to install iprange in internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
-The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
-
 Once installed, you will likely want to launch the script.
 Use `/opt/bolemo/scripts/aegis update -v` or `aegis update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to check if everything is up and running or not.
 
+If aegis was set and running before a router reboot, it should be back automatically after the reboot.
+
+### Cron job
 You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning (or local time if using Kamoj's addon).
 
-If aegis was set and running before a router reboot, it should be back automatically after the reboot.
+### What does install procedure do
+***1) If installed on external drive, it will:***
+* Create the directory DRIVE/bolemo
+* Create a symbolic link of directory DRIVE/bolemo in /opt
+
+***2) If installed on internal memory, it will:***
+* Create the directory /root/bolemo
+* Create a symbolic link of directory /root/bolemo in /opt
+
+***Then, for both (1) or (2), install will:***
+* Create the directory /opt/bolemo/scripts where aegis is physically installed
+* Create the directory /opt/bolemo/etc and install default aegis.sources in it (if not already there)
+* Install a file named `profile` in /opt/bolemo/etc and edit /root/.profile to include it
+* Create /opt/scripts if it does not exist
+
+***If installing iprange with Entware:***
+* iprange will be installed from Entware, so location is according to your Entware setup
+
+***If installing iprange without Entware (on internal memory):***
+* iprange will be installed in /usr/bin
 
 ## Upgrade
 You do not need to go through the installation script to install a new version.
