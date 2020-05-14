@@ -12,18 +12,14 @@ ask_yn() {
   esac
 }
 
-ask_install_loc() {
+if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]]/'; then
+  # We are on external drive
+  BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
   A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ]; do
     echo -ne "Where do you want to install aegis?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\nYour choice [e/i]: "
     A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
   done
-  echo $A
-}
-
-if echo "$SELF_PATH" | grep -q '^/tmp/mnt/.*/'; then
-  # We are on external drive
-  BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
-  case ask_install_loc in
+  case $A in
     i|I) BASE_DIR="/root"; echo "aegis will be installed on internal memory $BASE_DIR" ;;
     *) echo "aegis will be installed on external device $BASE_DIR" ;;
   esac
