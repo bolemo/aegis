@@ -2,7 +2,7 @@
 AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/master'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
-SELF_PATH="$PWD"
+SELF_PATH="$(pwd)"
 #"$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 ask_yn() {
