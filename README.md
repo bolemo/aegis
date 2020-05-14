@@ -18,11 +18,9 @@ You can install either on external (USB) drive or internal memory.
 
 ### Install procedure
 * Connect to router's terminal with ssh or telnet
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/aegis/raw/master/aegis-install.sh | sh`
+* Use command: `wget -qO- https://github.com/bolemo/aegis/raw/master/aegis-install.sh | sh`
 * Choose where you want to install aegis (external drive or internal memory)
-* If not already present, you will be asked if you want to install iprange
-** If you have Entware, you will be asked if you want to install iprange with Entware
-** If you don't gave Entware (or don't want to install with it), you will be asked if you want to install iprange in internal memory
+* If not already present, you will be asked if you want to install iprange (if available, you will be asked if you want to install iprange with Entware, if not (or don't want to install with it), you will be asked if you want to install iprange in internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
