@@ -12,7 +12,6 @@ ask_yn() {
   esac
 }
 
-echo $0
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
@@ -93,10 +92,5 @@ else
     fi
   fi
 fi
-
-if ask_yn 'Remove install script?'
-  then echo 'Removing install script...'; rm -f "$0"
-  else echo 'Keeping install script'
-fi
-
 echo "Done!"
+exit 0
