@@ -14,34 +14,25 @@ Formerly named **firewall-blocklist**
 * If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is nit needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
 
 ## Install
-You can install either from external (USB) drive or internal memory.
+You can install either on external (USB) drive or internal memory.
 
-### CHOICE 1: install from external (USB) drive
+### Install procedure
 * Connect to router's terminal with ssh or telnet
-* Go to the attached drive (USB): `cd /mnt/optware/` (or change optware by the mountpoint of your drive)
-* Copy and paste the following command: `sh <(wget -qO- URL)`
-* Run install script: `./aegis-install.sh`
-* Choose if tou want to install on external drive (e) or internal memory (i)
-* Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
-* You will now be asked to confirm to remove install files [`y` recommanded]
-* Check if installation went fine: `/opt/bolemo/scripts/aegis info`
-
-### CHOICE 2: install from router's internal memory (rootfs)
-* Connect to router's terminal with ssh or telnet
-* Go to the root directory: `cd /root`
-* Copy and paste the following command: `wget -qO- https://github.com/bolemo/aegis/archive/v4.0.0.tar.gz | tar xzf - --one-top-level=aegis --strip-components 1`
-* Make install script executable: `chmod +x aegis/install.sh`
-* Run install script: `aegis/install.sh`
-* Answer `y` if you want to install iprange [`y` recommanded if you don't have Entware]
-* You will now be asked to confirm to remove install files [`y` recommanded]
-* Check if installation went fine: `/opt/bolemo/scripts/aegis info`
+* ***If you want to be able to install on external drive:***, go to the attached drive (USB): `cd /mnt/optware/` (change `optware` by the mountpoint of your external drive if it is not optware)
+* Copy and paste the following command: `wget -qO- https://github.com/bolemo/aegis/raw/master/aegis-install.sh | sh`
+* ***If you launched install from external drive:*** Choose if you want to install on external drive (e) or internal memory (i)
+* ***If you launched install from internal drive:*** Answer `y` to confirm installation on internal memory (i)
+* If not already present, you will be asked if you want to install iprange
+** If you have Entware, you will be asked if you want to install iprange with Entware
+** If you don't gave Entware (or don't want to install with it), you will be asked if you want to install iprange in internal memory
+* Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
 The install script will create a symbolic link of the bolemo directory in /opt and creates /opt/scripts if it does not exists.
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/aegis update -v` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
+Use `/opt/bolemo/scripts/aegis update -v` or `aegis update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
 
-Anytime, you can use `/opt/bolemo/scripts/aegis status` to check if everything is up and running or not.
+Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to check if everything is up and running or not.
 
 You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning (or local time if using Kamoj's addon).
 
@@ -49,13 +40,13 @@ If aegis was set and running before a router reboot, it should be back automatic
 
 ## Upgrade
 Since version 2, you do not need to go through the whole installation process to install a new version.
-The comnand `/opt/bolemo/scripts/aegis info` will show the installed version and the latest version available online.
-The `/opt/bolemo/scripts/aegis upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
+The comnand `aegis info` will show the installed version and the latest version available online.
+The `aegis upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
-Before an upgrade, it is strongly advised to perform `/opt/bolemo/scripts/aegis clean` then upgrade, then perform `/opt/bolemo/scripts/aegis update`
+Before an upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`, then `aegis update`
 
 ## Usage
-Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]`
+Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
 * `restart` - setup ipset and iptables then restarts internal firewall
@@ -86,12 +77,12 @@ Since version 3.2, you can have your own custom white list of IPs or netsets (IP
 
 ## Logging
 ### Enable logging
-To log activity of aegis and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `/opt/bolemo/scripts/aegis restart -log=on`).
+To log activity of aegis and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log=on`).
 You can also use the following command: `nvram set aegis_log=1`; the next time aegis will be restarted, logging will be active until next reboot of the router.
 If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set aegis_log=1` do `nvram commit`.
 
 ### Access the log
-To watch the log, use `/opt/bolemo/scripts/aegis log` or `dmesg | grep 'aegis'`.
+To watch the log, use `aegis log` or `dmesg | grep 'aegis'`.
 
 ### Disable logging
 To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
