@@ -12,6 +12,29 @@ ask_yn() {
   esac
 }
 
+i=1
+choice=''
+ls /tmp/mnt | { while read var; do eval var$i="'$var'"; i=$((i+1)); done;
+  echo $var2;
+  A='U';
+  until [ "$A" = 'c' ] || $(echo $A | grep -qE '^[0-9]?$') && [ "$A" -ge 0 ] && [ "$A" -le "$i" ]; do
+    echo "Where do you want to install aegis?"
+    echo '  0 - router internal memory (rootfs)'
+    j=1
+    while [ "$j" -ne "$i" ]; do
+      echo "  $j - external drive: /mnt/$(eval echo $var$i)"
+      j=$((j+1))
+    done
+    echo '  c - cancel installation'
+    echo -n 'Your choice: "
+    A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
+  done;
+  choice="$(eval echo $var$A)";
+}
+echo $choice
+
+exit 0
+
 if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
   # We are on external drive
   BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
