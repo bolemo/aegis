@@ -35,11 +35,11 @@ You will probably want to setup a cron job to update the blocklists once a day (
 If aegis was set and running before a router reboot, it should be back automatically after the reboot.
 
 ## Upgrade
-Since version 2, you do not need to go through the whole installation process to install a new version.
+You do not need to go through the installation script to install a new version.
 The comnand `aegis info` will show the installed version and the latest version available online.
 The `aegis upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
-Before an upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`, then `aegis update`
+To upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`, then `aegis update`
 
 ## Usage
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
