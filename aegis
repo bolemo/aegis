@@ -240,8 +240,8 @@ check_bolemo_profile() {
 }
 
 set_bolemo_profile() {
-  [ -e "$ROOT_DIR/etc/profile" ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" '/root/.profile'
-  echo "export PATH=$ROOT_DIR/scripts:\$PATH" >> '/root/.profile'
+  [ -e "$ROOT_DIR/etc/profile" ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" "$ROOT_DIR/etc/profile"
+  echo "export PATH=$ROOT_DIR/scripts:\$PATH" >> "$ROOT_DIR/etc/profile"
   [ -e '/root/.profile' ] && sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
   echo ". $ROOT_DIR/etc/profile" >> '/root/.profile'
 }
