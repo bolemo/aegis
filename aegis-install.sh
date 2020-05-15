@@ -2,7 +2,7 @@
 AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/master'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
-SELF_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SELF_PATH="$(pwd -P)"
 
 ask_yn() {
   echo -ne "$1 [y/n] "
@@ -12,26 +12,32 @@ ask_yn() {
   esac
 }
 
-if echo "$SELF_PATH" | grep -q '^/tmp/mnt/[[:alnum:]].*'; then
-  # We are on external drive
-  BASE_DIR="$( echo "$SELF_PATH" | sed "s|\(/tmp/mnt/.*\)/.*|\1|")"
-  A=''; until [ "$A" = 'e' ] || [ "$A" = 'E' ] || [ "$A" = 'i' ] || [ "$A" = 'I' ] || [ "$A" = 'c' ] || [ "$A" = 'C' ]; do
-    echo -ne "Where do you want to install aegis?\n  e - external drive ($BASE_DIR)\n  i - router internal memory (rootfs)\n  c - cancel installation\nYour choice [e/i/c]: "
-    A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
+i=1; for var in $(ls /tmp/mnt); do eval var$i="'$var'"; i=$((i+1)); done;
+until [ "$A" ] && $(echo "$A" | grep -qE '^[0-9]?$') && [ "$A" -ge 0 ] && [ "$A" -lt "$i" ]; do
+  echo "Where do you want to install aegis?"
+  echo '  0 - router internal memory (rootfs)'
+  j=1; while [ "$j" -ne "$i" ]; do
+    echo "  $j - external drive: /mnt/$(eval echo "\$var$j")"
+    j=$((j+1))
   done
-  case $A in
-    i|I) BASE_DIR="/root"; echo "aegis will be installed on internal memory $BASE_DIR" ;;
-    e|E) echo "aegis will be installed on external device $BASE_DIR" ;;
-    *) exit 0 ;;
-  esac
-elif echo "$SELF_PATH" | grep -q '^/root/'; then
+  echo "  c - cancel installation"
+  echo -n 'Your choice: '
+  A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
+  [ "$A" = 'c' ] && exit 0
+done;
+CHOICE="$(eval echo "\$var$A")";
+
+if [ "$CHOICE" ]; then
+  BASE_DIR="/tmp/mnt/$CHOICE"
+  echo "aegis will be installed on external drive $BASE_DIR"
+else
   BASE_DIR="/root"
   echo "aegis will be installed on internal memory $BASE_DIR"
-else
-  >&2 echo "aegis-install.sh is not in the right place!"; exit 1
 fi
 [ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
 
+echo "Creating directory (if not already existing): /opt/scripts"
+[ -d "/opt/scripts" ] || mkdir -p "/opt/scripts"
 echo "Creating directory (if not already existing): $BASE_DIR/bolemo"
 [ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
 echo "Creating symlink (if not already existing): /opt/bolemo"
@@ -41,16 +47,24 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
 
 echo "Downloading and installing aegis..."
-if wget -qO "$BASE_DIR/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
-  then chmod +x "$BASE_DIR/bolemo/scripts/aegis"
+if wget -qO "/opt/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
+  then chmod +x "/opt/bolemo/scripts/aegis"
   else >&2 echo 'Could not download aegis!'; exit 1
 fi
 
-if [ -e "$BASE_DIR/bolemo/etc/aegis.sources" ]
+if [ -e "/opt/bolemo/etc/aegis.sources" ]
   then echo "An aegis sources file already exists, keeping it."
   else
     echo "Downloading aegis default sources file..."
-    wget -qO "$BASE_DIR/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
+    wget -qO "/opt/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
+fi
+
+# bolemo path
+if ! echo $PATH | grep -qF "/opt/bolemo/scripts"
+  [ -e "/opt/bolemo/etc/profile" ] && sed -i "|export PATH=/opt/bolemo/scripts:\$PATH|d" '/root/.profile'
+  echo "export PATH=/opt/bolemo/scripts:\$PATH" >> '/root/.profile'
+  [ -e '/root/.profile' ] && sed -i "|. /opt/bolemo/etc/profile|d" '/root/.profile'
+  echo ". /opt/bolemo/etc/profile" >> '/root/.profile'
 fi
 
 # iprange
@@ -92,10 +106,5 @@ else
     fi
   fi
 fi
-
-if ask_yn 'Remove install script?'
-  then echo 'Removing install script...'; rm -f "$0"
-  else echo 'Keeping install script'
-fi
-
 echo "Done!"
+exit 0
