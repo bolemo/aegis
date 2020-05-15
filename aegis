@@ -141,7 +141,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="1.0.1"
+SC_VERS="1.0.2"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
@@ -235,31 +235,22 @@ create_postmount() {
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
-check_bolemo_profile() {
-  echo $PATH | grep -qF "$ROOT_DIR/scripts" && return 0 || return 1
+check_path() {
+  command -v "$SC_NAME" > /dev/null && return 0 || return 1
 }
 
-set_bolemo_profile() {
-  [ -e "$ROOT_DIR/etc/profile" ] && sed -i "|export PATH=$ROOT_DIR/scripts:\$PATH|d" "$ROOT_DIR/etc/profile"
-  echo "export PATH=$ROOT_DIR/scripts:\$PATH" >> "$ROOT_DIR/etc/profile"
-  [ -e '/root/.profile' ] && sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
-  echo ". $ROOT_DIR/etc/profile" >> '/root/.profile'
+set_path() {
+  [ -e "/usr/bin/$SC_NAME" ] || ln -s "/opt/bolemo/scripts/$SC_NAME" "/usr/bin/$SC_NAME"
 }
 
-remove_bolemo_profile() {
-  if [ -e '/root/.profile' ]; then
-    if [ "$(grep -Fv ". $ROOT_DIR/etc/profile" '/root/.profile' | sed '/^[[:space:]]*$/d')" ]; then
-      sed -i "|. $ROOT_DIR/etc/profile|d" '/root/.profile'
-      [ "$VERBOSE" ] && echo "- '.profile' has some other code; removed only our code."
-    else
-      rm '/root/.profile' 2>/dev/null
-      [ "$VERBOSE" ] && echo "- '.profile' had no other code; removed it."
-    fi
+remove_path() {
+  if [ -e "/usr/bin/$SC_NAME" ]; then
+    rm "/usr/bin/$SC_NAME" 2>/dev/null
+    [ "$VERBOSE" ] && echo "- '/usr/bin' symlink was removed."
   fi
 }
 
 last_avail_version() {
-#  wget -qO- "https://api.github.com/repos/bolemo/aegis/releases/latest" | jq -r .tag_name
   wget -qO- 'https://raw.githubusercontent.com/bolemo/aegis/master/version'
 }
 
@@ -317,7 +308,7 @@ init() {
   else
     [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
-  check_bolemo_profile || set_bolemo_profile
+  check_path || set_path
 }
 
 fw_restart() {
@@ -393,6 +384,7 @@ clean() {
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
+  check_path && remove_path
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
@@ -573,9 +565,9 @@ status() {
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
-  if check_bolemo_profile
-    then echo "- bolemo profile PATH is set."
-    else echo "- bolemo profile PATH is unset."
+  if check_path
+    then echo "- '$SC_NAME' is in \$PATH."
+    else echo "- '$SC_NAME' is not in \$PATH (you need to use $NICE_PATH)."
   fi
   if [ "$STAT_FWS" ]; then
     echo "- 'firewall-start.sh' exists with correct settings."
