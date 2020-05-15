@@ -566,9 +566,9 @@ status() {
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
-  if check_bolemo_profile
-    then echo "- bolemo profile PATH is set."
-    else echo "- bolemo profile PATH is unset."
+  if check_path
+    then echo "- '$SC_PATH' is in \$PATH."
+    else echo "- '$SC_PATH' is not in \$PATH (you need to use $NICE_PATH)."
   fi
   if [ "$STAT_FWS" ]; then
     echo "- 'firewall-start.sh' exists with correct settings."
