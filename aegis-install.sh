@@ -59,13 +59,8 @@ if [ -e "/opt/bolemo/etc/aegis.sources" ]
     wget -qO "/opt/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
 fi
 
-# bolemo path
-if ! echo $PATH | grep -qF "/opt/bolemo/scripts"; then
-  [ -e "/opt/bolemo/etc/profile" ] && sed -i "/export PATH=\/opt\/bolemo\/scripts:\$PATH/d" '/root/.profile'
-  echo "export PATH=/opt/bolemo/scripts:\$PATH" >> '/root/.profile'
-  [ -e '/root/.profile' ] && sed -i "/. \/opt\/bolemo\/etc\/profile/d" '/root/.profile'
-  echo ". /opt/bolemo/etc/profile" >> '/root/.profile'
-fi
+# symlink
+[ -e /usr/bin/aegis ] || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
 
 # iprange
 if command -v iprange>/dev/null; then
