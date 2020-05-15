@@ -60,7 +60,7 @@ if [ -e "/opt/bolemo/etc/aegis.sources" ]
 fi
 
 # bolemo path
-if ! echo $PATH | grep -qF "/opt/bolemo/scripts"
+if ! echo $PATH | grep -qF "/opt/bolemo/scripts"; then
   [ -e "/opt/bolemo/etc/profile" ] && sed -i "|export PATH=/opt/bolemo/scripts:\$PATH|d" '/root/.profile'
   echo "export PATH=/opt/bolemo/scripts:\$PATH" >> '/root/.profile'
   [ -e '/root/.profile' ] && sed -i "|. /opt/bolemo/etc/profile|d" '/root/.profile'
