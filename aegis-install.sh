@@ -60,7 +60,7 @@ if [ -e "/opt/bolemo/etc/aegis.sources" ]
 fi
 
 # symlink
-[ -e /usr/bin/aegis ] || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
+command -v aegis > /dev/null || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
 
 # iprange
 if command -v iprange>/dev/null; then
