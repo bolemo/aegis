@@ -76,12 +76,9 @@ else
   fi
   
   if [ $_ASK_ROOTFS ]; then
-    case "$(/bin/uname -p)" in
-      'IPQ8065') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_ipq806x.ipk" ;;
-      'unknown') if [ "$(/bin/uname -n)" = 'R9000' ] || ask_yn 'Can you confirm your router model is R9000?'
-                   then IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_r9000.ipk"
-                   else IPRANGE_IPK_URL=''
-                 fi ;;
+    case "$(cat /module_name)" in
+      'R7800') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_ipq806x.ipk" ;;
+      'R9000') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_r9000.ipk" ;;
       *) IPRANGE_IPK_URL='' ;; 
     esac
     if [ -x "$IPRANGE_IPK_URL" ]; then
