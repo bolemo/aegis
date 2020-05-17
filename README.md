@@ -4,7 +4,7 @@ Should work with several other Netgear routers as well.
 Formerly named **firewall-blocklist**
 
 ## Version
-1.0.2
+1.0.3
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
