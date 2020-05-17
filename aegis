@@ -516,8 +516,8 @@ status() {
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
   # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/ $//g ; s/$DEF_RTE/I/")"
-  case "$(echo "$STAT_IPT" | md5sum -)" in
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
+  case "$(echo "$STAT_IPT" | sed "s/$DEF_RTE/I/" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
       # iptables are set with whitelist
     "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
