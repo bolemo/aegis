@@ -25,7 +25,7 @@ INFO_IPT_KEEP='a'
 INFO_IPT_LOG='b'
 INFO_IPT_BL='c'
 INFO_IPT_WL='d'
-INFO_IPT_PBM='e'
+INFO_IPT_EXISTS='e'
 
 _fws() {
   :> "$INFO_FILE"
@@ -100,28 +100,28 @@ _fws() {
   else
     iptables -D "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
-  iptables -S "$IPTBL_NAME" | grep -qF -- "-j DROP" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -A "$IPTBL_NAME" -j DROP
+  iptables -S "$IPTBL_NAME" | grep -qF -- "-j DROP" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -A "$IPTBL_NAME" -j DROP
   
   # creating the required iptables
   if [ "$NO_WL" ]; then
   # creating iptables without whitelist
-    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     #Removing any trace of whitelist if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
     echo "$INFO_IPT_BL" >> "$INFO_FILE"
   else
   # creating iptables with whitelist
-    iptables -S INPUT | grep -qF -- "$IPSET_WL_NAME src" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S OUTPUT | grep -qF -- "$IPSET_WL_NAME dst" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME src" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME dst" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_PBM" >> "$INFO_FILE" || iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S INPUT | grep -qF -- "$IPSET_WL_NAME src" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S OUTPUT | grep -qF -- "$IPSET_WL_NAME dst" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME src" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME dst" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" && echo "$INFO_IPT_EXISTS" >> "$INFO_FILE" || iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     echo -e "$INFO_IPT_BL\n$INFO_IPT_WL" >> "$INFO_FILE"
   fi
 }
@@ -599,9 +599,10 @@ status() {
     /bin/grep -qF "$INFO_IPS_WL_WGW_ADD" "$INFO_FILE" && echo '     WAN gateway was added into ipset whitelist.'
     /bin/grep -qF "$INFO_IPS_WL_WGW_KEEP" "$INFO_FILE" && echo '     WAN gateway was already in ipset whitelist.'
     if /bin/grep -qF "$INFO_IPT_KEEP" "$INFO_FILE"; then
-      if /bin/grep -qF "$INFO_IPT_PBM" "$INFO_FILE"
-        then echo '     iptables rules had issues (should be fixed)!'
-        else echo '     iptables rules were already set!'
+      if /bin/grep -qF "$INFO_IPT_EXISTS" "$INFO_FILE"
+        then echo '     iptables rules were already set!'
+        else echo '     iptables rules had issues (should be fixed)!'
+      else echo '     iptables rules were created.'
       fi
     fi
     /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     logging rules were added to iptables.'
