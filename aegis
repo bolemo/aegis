@@ -146,8 +146,8 @@ SC_VERS="1.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
-IPT_MD5="0971dde0bba1ee792ba7df52c5e5b7fb  -"
-IPT_MD5_NO_WL="791faa4367d930528829e420a375692c  -"
+IPT_MD5="7d118815164fb6c69e08b02544363b0f  -"
+IPT_MD5_NO_WL="1f0156a0f6fdb8fcd7ad10f42241b00b  -"
 IPSET_TMP="${IPSET_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -516,7 +516,7 @@ status() {
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
   # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/ $//g ; s/$DEF_RTE/I/")"
   case "$(echo "$STAT_IPT" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
       # iptables are set with whitelist
