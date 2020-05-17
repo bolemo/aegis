@@ -101,32 +101,32 @@ _fws() {
     # creating the filtering (blocking) iptables chain
     iptables -N "$IPTBL_NAME"
     if [ "$IPTBL_LOGGING" ]; then
-      iptables -S "$IPTBL_NAME" | grep -qF "-j LOG" || iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+      iptables -S "$IPTBL_NAME" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
       echo "$INFO_IPT_LOG" >> "$INFO_FILE"
     else
       iptables -D "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     fi
-    iptables -S "$IPTBL_NAME" | grep -qF "-j DROP" || iptables -A "$IPTBL_NAME" -j DROP
+    iptables -S "$IPTBL_NAME" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_NAME" -j DROP
   fi
   
   # creating the required iptables
   if [ "$NO_WL" ]; then
   # creating iptables without whitelist
-    iptables -S INPUT | grep -qF "$IPSET_NAME src" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S OUTPUT | grep -qF "$IPSET_NAME dst" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF "$IPSET_NAME src" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF "$IPSET_NAME dst" || iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" || iptables -I FORWARD 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     echo "$INFO_IPT_BL" >> "$INFO_FILE"
   else
   # creating iptables with whitelist
-    iptables -S INPUT | grep -qF "$IPSET_WL_NAME src" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S INPUT | grep -qF "$IPSET_NAME src" || iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S OUTPUT | grep -qF "$IPSET_WL_NAME dst" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -S OUTPUT | grep -qF "$IPSET_NAME dst" || iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF "$IPSET_WL_NAME src" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S FORWARD | grep -qF "$IPSET_NAME src" || iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF "$IPSET_WL_NAME dst" || iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -S FORWARD | grep -qF "$IPSET_NAME dst" || iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S INPUT | grep -qF -- "$IPSET_WL_NAME src" || iptables -I INPUT 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" || iptables -I INPUT 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S OUTPUT | grep -qF -- "$IPSET_WL_NAME dst" || iptables -I OUTPUT 1 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" || iptables -I OUTPUT 2 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME src" || iptables -I FORWARD 1 -i brwan -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" || iptables -I FORWARD 2 -i brwan -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME dst" || iptables -I FORWARD 3 -o brwan -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" || iptables -I FORWARD 4 -o brwan -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
     echo -e "$INFO_IPT_BL\n$INFO_IPT_WL" >> "$INFO_FILE"
   fi
 }
