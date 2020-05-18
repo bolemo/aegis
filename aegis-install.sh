@@ -81,7 +81,7 @@ else
       'R9000') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_r9000.ipk" ;;
       *) IPRANGE_IPK_URL='' ;; 
     esac
-    if [ -x "$IPRANGE_IPK_URL" ]; then
+    if [ "$IPRANGE_IPK_URL" ]; then
       if ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?'; then
         echo "Downloading and installing iprange..."
         if wget -qO '/tmp/iprange.ipk' "$IPRANGE_IPK_URL"; then
