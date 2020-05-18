@@ -517,7 +517,7 @@ status() {
   
   # check iptables
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
-  case "$(echo "$STAT_IPT" | sed "s/$DEF_RTE/I/" | md5sum -)" in
+  case "$(echo "$STAT_IPT" | sed "s/$WAN_IF/I/" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
       # iptables are set with whitelist
     "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
