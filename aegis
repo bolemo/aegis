@@ -86,8 +86,14 @@ _fws() {
   # creating ipset whitelist if needed
   if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     # ipset whitelist is already in place
-    _WL='y'
-    echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
+    if [ -r "$WL_FILE" ]; then
+      # we want to keep it
+      _WL='y'
+      echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
+    else
+      # we need to remove it
+      ipset -q destroy "$IPSET_WL_NAME"
+    fi
   else
     if [ -r "$WL_FILE" ]; then
       # netset file exists, so creating whitelist ipset from it
