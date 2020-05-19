@@ -66,7 +66,6 @@ _fws() {
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then
     echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
     if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
-      _WG='y'
       # Calculate WAN_RANGE (IP & CIDR)
       _CIDR=0
       for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
@@ -77,6 +76,7 @@ _fws() {
       ipset -q create "$IPSET_WG_NAME" hash:net family inet
       ipset -q flush "$IPSET_WG_NAME"
       ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
+      _WG='y'
       echo "$INFO_IPS_WGW_ADD" >> "$INFO_FILE"
     else
       echo "$INFO_IPS_WGW_KEEP" >> "$INFO_FILE"
@@ -142,6 +142,7 @@ _fws() {
   
   # creating the required iptables WAN gateway whitelist rules for wan interface if needed
   if [ "$_WG" ]; then
+    echo "WG: '$_WG'">/tmp/aegis_debug
     _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_WG_NAME")
     if [ $_CT -ne 4 ]; then
       if [ $_CT -ne 0 ]; then
