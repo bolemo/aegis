@@ -2,12 +2,12 @@
 
 SC_NAME="aegis"
 SC_ABR="aegis"
-IPTBL_SRC="${SC_ABR}_src"
-IPTBL_DST="${SC_ABR}_dst"
+IPTBL_SRC="${SC_ABR}_bl_src"
+IPTBL_DST="${SC_ABR}_bl_dst"
 [ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
-IPSET_BL_NAME="${SC_ABR}_BL"
-IPSET_WL_NAME="${SC_ABR}_WL"
-IPSET_WG_NAME="${SC_ABR}_WG"
+IPSET_BL_NAME="${SC_ABR}_bl"
+IPSET_WL_NAME="${SC_ABR}_wl"
+IPSET_WG_NAME="${SC_ABR}_wg"
 ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
