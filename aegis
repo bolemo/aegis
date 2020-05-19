@@ -439,6 +439,7 @@ clean() {
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
   ipset -q destroy "$IPSET_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
+  ipset -q destroy "$IPSET_WG_NAME"
   ipset -q destroy "$IPSET_TMP"
   [ "$VERBOSE" ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && rm "$TMP_FILE"
