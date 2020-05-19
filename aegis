@@ -12,7 +12,7 @@ WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_IF="$(nvram get wan_ifname)"
 WAN_GW="$(nvram get wan_gateway)"
-WAN_NETMASK="$(nvram get wan_netmask)"
+WAN_NM="$(nvram get wan_netmask)"
 # VPN tunnel detection
 if ifconfig|grep -qF 'wg0'; then
   # WireGuard
@@ -93,7 +93,7 @@ _fws() {
   else
     # Calculate WAN_RANGE (IP & CIDR)
     _CIDR=0
-    for _OCTET in $(echo "$WAN_NETMASK"| sed 's/\./ /g'); do
+    for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
       _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
       let _CIDR+=${#_BINBITS}
     done
