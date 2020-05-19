@@ -56,7 +56,7 @@ _fws() {
   fi
   
   # checking if WAN gateway is in blocklist
-  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"
+  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"
     then
       WGW_IN_BL='y'
       echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
@@ -349,12 +349,12 @@ fw_needs_restart() {
   case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/I/ ; s/ $//g" | md5sum -)" in
     "$IPT_MD5")
       if [ -r "$WL_FILE" ]; then return 1
-      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 1
+      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then return 1
       else return 0
       fi ;;
     "$IPT_MD5_NO_WL")
       if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then return 0
-      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 0
+      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then return 0
       else return 1
       fi ;;
     *) return 0 ;;
