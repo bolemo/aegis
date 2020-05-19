@@ -193,7 +193,8 @@ _pm() {
 SC_VERS="1.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
-# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_BL_NAME and IPSET_WL_NAME
+# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_SRC, IPTBL_DST, IPSET_BL_NAME, IPSET_WL_NAME and IPSET_WL_NAME
+IPT_MD5_WG_WL='0870593a2dab56006733e02b2a48037d  -'
 IPT_MD5="7d118815164fb6c69e08b02544363b0f  -"
 IPT_MD5_NO_WL="1f0156a0f6fdb8fcd7ad10f42241b00b  -"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -383,7 +384,7 @@ fw_needs_restart() {
       else [ "$LOG_IS_ON" ] && return 0
     fi
   fi
-  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/I/ ; s/ $//g" | md5sum -)" in
+  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/ ; s/ $//g" | md5sum -)" in
     "$IPT_MD5")
       if [ -r "$WL_FILE" ]; then return 1
       elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 1
@@ -566,7 +567,7 @@ status() {
   
   # check iptables
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
-  case "$(echo "$STAT_IPT" | sed "s/$WAN_IF/I/" | md5sum -)" in
+  case "$(echo "$STAT_IPT" | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/" | md5sum -)" in
     "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
       # iptables are set with whitelist
     "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
