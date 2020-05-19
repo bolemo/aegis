@@ -5,7 +5,7 @@ SC_ABR="aegis"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 [ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
-IPSET_NAME="${SC_ABR}_BL"
+IPSET_BL_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
 IPSET_WG_NAME="${SC_ABR}_WG"
 ROOT_DIR="/opt/bolemo"
@@ -49,21 +49,21 @@ _fws() {
   :> "$INFO_FILE"
 
   # creating ipset blocklist if needed
-  if ipset -q -n list "$IPSET_NAME">/dev/null; then echo "$INFO_IPS_BL_KEEP" >> "$INFO_FILE"
+  if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then echo "$INFO_IPS_BL_KEEP" >> "$INFO_FILE"
   else
     if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
-      echo -e "create $IPSET_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_NAME /" "$BL_FILE")" | ipset restore
+      echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_NAME /" "$BL_FILE")" | ipset restore
       echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
     else
     # no netset file, creating empty blocklist ipset
-      ipset -q create "$IPSET_NAME" hash:net family inet
+      ipset -q create "$IPSET_BL_NAME" hash:net family inet
       echo "$INFO_IPS_BL_NEW" >> "$INFO_FILE"
     fi
   fi
   
   # checking if WAN gateway is in blocklist
-  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then
+  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then
     _WG='y'
     echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
     if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
@@ -126,17 +126,17 @@ _fws() {
   fi
   
   # creating the required iptables rules for wan interface
-  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_NAME")
+  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
   if [ $_CT -ne 4 ]; then
     if [ $_CT -ne 0 ]; then
       # something is messed up with rules; deleting what is left
-      iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+      iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
       echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"
     fi
-    iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
-    iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
-    iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
-    iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
+    iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+    iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+    iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+    iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
     echo "$INFO_IPT_WAN" >> "$INFO_FILE"
   fi
   
@@ -159,17 +159,17 @@ _fws() {
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
-    _CT=$(iptables -S 2>/dev/null | grep -cF -- "$TUN_IF -m set --match-set $IPSET_NAME")
+    _CT=$(iptables -S 2>/dev/null | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
     if [ $_CT -ne 4 ]; then
       if [ $_CT -ne 0 ]; then
         # something is messed up with rules; deleting what is left
-        iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+        iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
         echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"
       fi
-      iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
-      iptables -I OUTPUT 2 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
-      iptables -I FORWARD 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
-      iptables -I FORWARD 3 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
+      iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+      iptables -I OUTPUT 2 -o $TUN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+      iptables -I FORWARD 2 -i $TUN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+      iptables -I FORWARD 3 -o $TUN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
       echo "$INFO_IPT_TUN" >> "$INFO_FILE"
     fi
   fi
@@ -193,10 +193,10 @@ _pm() {
 SC_VERS="1.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
-# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_NAME and IPSET_WL_NAME
+# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_NAME, IPSET_BL_NAME and IPSET_WL_NAME
 IPT_MD5="7d118815164fb6c69e08b02544363b0f  -"
 IPT_MD5_NO_WL="1f0156a0f6fdb8fcd7ad10f42241b00b  -"
-IPSET_TMP="${IPSET_NAME}_tmp"
+IPSET_TMP="${IPSET_BL_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
@@ -386,12 +386,12 @@ fw_needs_restart() {
   case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/I/ ; s/ $//g" | md5sum -)" in
     "$IPT_MD5")
       if [ -r "$WL_FILE" ]; then return 1
-      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then return 1
+      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 1
       else return 0
       fi ;;
     "$IPT_MD5_NO_WL")
       if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then return 0
-      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then return 0
+      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 0
       else return 1
       fi ;;
     *) return 0 ;;
@@ -437,7 +437,7 @@ clean() {
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
-  ipset -q destroy "$IPSET_NAME"
+  ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_WG_NAME"
   ipset -q destroy "$IPSET_TMP"
@@ -457,13 +457,13 @@ set_ipset() {
     echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries blocking $NUM_IP ips)...\033[0m"
   fi
 
-  if ipset -q list -n "$IPSET_NAME">/dev/null; then
+  if ipset -q list -n "$IPSET_BL_NAME">/dev/null; then
     echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist, swapping it."
-    ipset swap "$IPSET_NAME" "$IPSET_TMP"
+    ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
     ipset destroy $IPSET_TMP
   else
-    echo -e "create $IPSET_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $BL_FILE)" | ipset restore
+    echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_NAME /" $BL_FILE)" | ipset restore
     [ "$VERBOSE" ] && echo "- Created blocklist."
   fi
   [ "$VERBOSE" ] && echo "- Done."
@@ -579,7 +579,7 @@ status() {
   STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -F -- "-A $IPTBL_NAME -j LOG --log-prefix")"
   
   # check ipset blocklist
-  STAT_IPS="$(ipset -q list $IPSET_NAME -t)"
+  STAT_IPS="$(ipset -q list $IPSET_BL_NAME -t)"
   
   # check ipset whitelist
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
@@ -588,7 +588,7 @@ status() {
     STAT_GW_IN_BL=''; STAT_GW_IN_WL=''
   else
     # check WAN gateway in ipset blocklist
-    ipset -q test "$IPSET_NAME" "$WAN_GW" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
+    ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
 
     # check WAN gatewan in ipset whitelist
     ipset -q test "$IPSET_WL_NAME" "$WAN_GW" && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
@@ -597,14 +597,14 @@ status() {
   # master check
   if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
-      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
+      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
-      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use '$SC_NAME -v status' for more details"
     fi
   elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
-    echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_NAME) IP adresses."
+    echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses."
   elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
     echo "- '$SC_NAME' is not active; Settings are clean."
   else
