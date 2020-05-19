@@ -2,10 +2,12 @@
 
 SC_NAME="aegis"
 SC_ABR="aegis"
-IPTBL_NAME="${SC_ABR}_DROP"
+IPTBL_SRC="${SC_ABR}_src"
+IPTBL_DST="${SC_ABR}_dst"
 [ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
 IPSET_NAME="${SC_ABR}_BL"
 IPSET_WL_NAME="${SC_ABR}_WL"
+IPSET_WG_NAME="${SC_ABR}_WG"
 ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
@@ -58,83 +60,93 @@ _fws() {
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"
     then
-      WGW_IN_BL='y'
       echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
-      if ipset -q test "$IPSET_WL_NAME" "$WAN_GW"
-        then WGW_IN_WL='y'
-        else WGW_IN_WL=''
+      if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
+        # Calculate WAN_RANGE (IP & CIDR)
+        _CIDR=0
+        for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
+          _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
+          let _CIDR+=${#_BINBITS}
+        done
+        WAN_RANGE="$WAN_GW/$_CIDR"
+        ipset -q create "$IPSET_WG_NAME" hash:net family inet
+        ipset -q flush "$IPSET_WG_NAME"
+        ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
+        echo "$INFO_IPS_WL_WGW_ADD" >> "$INFO_FILE"
       fi
-    else
-      WGW_IN_BL=''
   fi
   
-  NO_WL=''
   # creating ipset whitelist if needed
-  if ! ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
+  if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
+    # ipset whitelist is already in place
+    _WL='y'
+    echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
+  else
     if [ -r "$WL_FILE" ]; then
-    # netset file exists, so creating whitelist ipset from it
+      # netset file exists, so creating whitelist ipset from it
+      _WL='y'
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
-    elif [ "$WGW_IN_BL" ]; then
-    # no netset file, creating empty whitelist ipset because needed for WAN gateway
-      ipset -q create "$IPSET_WL_NAME" hash:net family inet
-      echo "$INFO_IPS_WL_NEW" >> "$INFO_FILE"
     else
       # no need for whitelist, just destroy if exists
       ipset -q destroy "$IPSET_WL_NAME"
-      NO_WL='y'
     fi
-  else echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
-  fi
-  
-  # if needed, adding WAN gateway to whitelist
-  [ "$WGW_IN_BL" ] && if [ "$WGW_IN_WL" ]; then
-    echo "$INFO_IPS_WL_WGW_KEEP" >> "$INFO_FILE"
-  else
-    # Calculate WAN_RANGE (IP & CIDR)
-    _CIDR=0
-    for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
-      _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
-      let _CIDR+=${#_BINBITS}
-    done
-    WAN_RANGE="$WAN_GW/$_CIDR"
-    ipset -q add "$IPSET_WL_NAME" "$WAN_RANGE"
-    echo "$INFO_IPS_WL_WGW_ADD" >> "$INFO_FILE"
   fi
 
-  #Creating IPTBL_NAME if not already set
-  iptables -L "$IPTBL_NAME" >/dev/null 2>/dev/null && echo "$INFO_IPT_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_NAME"
+  #Creating our iptables chains if not already set
+  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && echo "$INFO_IPT_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
+  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && echo "$INFO_IPT_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
   
   if [ "$IPTBL_LOGGING" ]; then
-    iptables -S "$IPTBL_NAME" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] "
+    iptables -S "$IPTBL_SRC" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
+    iptables -S "$IPTBL_DST" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
     echo "$INFO_IPT_LOG" >> "$INFO_FILE"
   else
-    iptables -D "$IPTBL_NAME" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
-  iptables -S "$IPTBL_NAME" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_NAME" -j DROP
+  iptables -S "$IPTBL_SRC" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
+  iptables -S "$IPTBL_DST" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
   
-  # creating the required iptables
-  _KEPT=0
-  if [ "$NO_WL" ]; then
-  # creating iptables without whitelist
-    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" && _KEPT=$((_KEPT+1)) || iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" && _KEPT=$((_KEPT+1)) || iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" && _KEPT=$((_KEPT+1)) || iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" && _KEPT=$((_KEPT+1)) || iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+  if [ "$_WL" ]; then
+    # apply whitelist
+    iptables -S "$IPTBL_SRC" | grep -qF -- "$IPSET_WL_NAME" || iptables -I "$IPTBL_SRC" -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    iptables -S "$IPTBL_DST" | grep -qF -- "$IPSET_WL_NAME" || iptables -I "$IPTBL_DST" -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+  else
     #Removing any trace of whitelist if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
-    [ $_KEPT = 4 ] || echo "$INFO_IPT_BL" >> "$INFO_FILE"
-  else
-  # creating iptables with whitelist
-    iptables -S INPUT | grep -qF -- "$IPSET_WL_NAME src" && _KEPT=$((_KEPT+1)) || iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S INPUT | grep -qF -- "$IPSET_NAME src" && _KEPT=$((_KEPT+1)) || iptables -I INPUT 2 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S OUTPUT | grep -qF -- "$IPSET_WL_NAME dst" && _KEPT=$((_KEPT+1)) || iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -S OUTPUT | grep -qF -- "$IPSET_NAME dst" && _KEPT=$((_KEPT+1)) || iptables -I OUTPUT 2 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME src" && _KEPT=$((_KEPT+1)) || iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME src" && _KEPT=$((_KEPT+1)) || iptables -I FORWARD 2 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -S FORWARD | grep -qF -- "$IPSET_WL_NAME dst" && _KEPT=$((_KEPT+1)) || iptables -I FORWARD 3 -o $WAN_IF -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    iptables -S FORWARD | grep -qF -- "$IPSET_NAME dst" && _KEPT=$((_KEPT+1)) || iptables -I FORWARD 4 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    [ $_KEPT = 8 ] || echo -e "$INFO_IPT_BL\n$INFO_IPT_WL" >> "$INFO_FILE"
+  fi
+  
+  # creating the required iptables rules for wan interface
+  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_NAME")
+  if [ _CT -ne 4 ]; then
+    if [ _CT -ne 0 ]; then
+      # something is messed up with rules; deleting what is left
+      iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+      echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"
+    fi
+    iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+    iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    echo "$INFO_IPT_WAN" >> "$INFO_FILE"
+  fi
+  
+  # creating the required iptables rules for vpn tunnel interface (if needed)
+  if [ "$TUN_IF" ]; then
+    _CT=$(iptables -S 2>/dev/null | grep -cF -- "$TUN_IF -m set --match-set $IPSET_NAME")
+    if [ _CT -ne 4 ]; then
+      if [ _CT -ne 0 ]; then
+        # something is messed up with rules; deleting what is left
+        iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+        echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"
+      fi
+      iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+      iptables -I OUTPUT 2 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+      iptables -I FORWARD 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
+      iptables -I FORWARD 3 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+      echo "$INFO_IPT_TUN" >> "$INFO_FILE"
+    fi
   fi
 }
 
