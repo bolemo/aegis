@@ -13,6 +13,17 @@ INFO_FILE="/tmp/${SC_ABR}_status"
 WAN_IF="$(nvram get wan_ifname)"
 WAN_GATEWAY="$(nvram get wan_gateway)"
 WAN_NETMASK="$(nvram get wan_netmask)"
+# VPN tunnel detection
+if ifconfig|grep -qF 'wg0'; then
+  # WireGuard
+  TUN_IF='wg0'
+elif ps -w|grep -vE 'grep|server_tap|server_tun'|grep -qF -- '/usr/sbin/openvpn --dev'; then
+  # Open VPN client
+  TUN_IF="$(ps -w|grep -F -- '/usr/sbin/openvpn --dev'|grep -vE 'grep|server_tap|server_tun'|sed -n -- 's/.*openvpn --dev \([[:alnum:]]*\).*/\1/p')"
+else
+  # No tunneling
+  TUN_IF=''
+fi
 INFO_IPS_BL_LOAD='1'
 INFO_IPS_BL_NEW='2'
 INFO_IPS_BL_KEEP='3'
