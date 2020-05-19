@@ -2,8 +2,8 @@
 
 SC_NAME="aegis"
 SC_ABR="aegis"
-IPTBL_SRC="${SC_ABR}_bl_src"
-IPTBL_DST="${SC_ABR}_bl_dst"
+IPTBL_SRC="${SC_ABR}_src"
+IPTBL_DST="${SC_ABR}_dst"
 [ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
