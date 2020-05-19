@@ -38,8 +38,8 @@ INFO_IPT_SRC_KEEP='a'
 INFO_IPT_DST_KEEP='b'
 INFO_IPT_LOG='c'
 INFO_IPT_WL='d'
-INFO_IPT_WAN='e'
 INFO_IPT_WG='f'
+INFO_IPT_WAN='e'
 INFO_IPT_TUN='g'
 INFO_IPT_WAN_PBM='h'
 INFO_IPT_TUN_PBM='i'
@@ -159,21 +159,21 @@ _fws() {
   fi
   
   # creating the required iptables WAN gateway whitelist rules for wan interface if needed
-  if [ "$_WG" ]; then
-    _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_WG_NAME")
-    if [ $_CT -ne 4 ]; then
-      if [ $_CT -ne 0 ]; then
+#  if [ "$_WG" ]; then
+#    _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_WG_NAME")
+#    if [ $_CT -ne 4 ]; then
+#      if [ $_CT -ne 0 ]; then
         # something is messed up with rules; deleting what is left
-        iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
-        echo "$INFO_IPT_WG_PBM" >> "$INFO_FILE"
-      fi
-      iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
-      iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-      iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
-      iptables -I FORWARD 3 -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-      echo "$INFO_IPT_WG" >> "$INFO_FILE"
-    fi
-  fi
+#        iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+#        echo "$INFO_IPT_WG_PBM" >> "$INFO_FILE"
+#      fi
+#      iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
+#      iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+#      iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
+#      iptables -I FORWARD 3 -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+#      echo "$INFO_IPT_WG" >> "$INFO_FILE"
+#    fi
+#  fi
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
@@ -212,10 +212,11 @@ SC_VERS="1.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 # IPT_MD5s depend on IPTBL_SRC, IPTBL_DST, IPSET_BL_NAME, IPSET_WL_NAME and IPSET_WL_NAME
-IPT_MD5_CHAIN_NOWL='30aa610321f89e62733f42d39ab71f57  -'
+IPT_MD5_CHAIN_='30aa610321f89e62733f42d39ab71f57  -'
 IPT_MD5_CHAIN_WL='ac58a39a1ca2790d8dfc8d08ff294676  -'
+IPT_MD5_CHAIN_WG=
+IPT_MD5_CHAIN_WG_WL=
 IPT_MD5_WAN='787798fddbfbee944d419ea0600dcec4  -'
-IPT_MD5_WAN_WG='0c1fdacaaa46960e275e9ded1c5919a8  -'
 IPT_MD5_TUN='cece9632deb38f649efc757da0ce908b  -'
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -397,32 +398,44 @@ fw_restart() {
 }
 
 fw_needs_restart() {
+  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)$(iptables -S "$IPTBL_DST" 2>/dev/null)"
+  _IPT="$(echo "$_IPT" | sed "s/ $//g")"
+
   if [ "$LOG_ACT" ]; then
-    LOG_IS_ON="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -F -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+    LOG_IS_ON="$(echo $_IPT | grep -cF -- '-j LOG --log-prefix')"
     if [ "$LOG_ACT" = 'ON' ]
       then [ "$LOG_IS_ON" ] || return 0
       else [ "$LOG_IS_ON" ] && return 0
     fi
   fi
-  case "$(/usr/sbin/iptables -S 2>/dev/null | grep "^-. $SC_ABR" | grep -Fv 'LOG' | sed "s/ $//g" | md5sum -)" in
-    "$IPT_MD5_CHAIN_NOWL")
-      [ -r "$WL_FILE" ] && return 0
-      ipset -q list -n "$IPSET_WL_NAME">/dev/null && return 0
-      ;;
-    "$IPT_MD5_CHAIN_WL") [ -r "$WL_FILE" ] || return 0 ;;
+  
+  case "$(echo $_IPT | grep -Fv 'LOG' | md5sum -)" in
+    "$IPT_MD5_CHAIN") : ;;
+    "$IPT_MD5_CHAIN_WL") _WL='y' ;;
+    "$IPT_MD5_CHAIN_WG") _WG='y' ;;
+    "$IPT_MD5_CHAIN_WL_WG") _WL='y'; _WG='y' ;;
     *) return 0 ;;
   esac
+
+  if [ "$_WL" ]; then
+    [ -r "$WL_FILE" ] || return 0
+  else
+    [ -r "$WL_FILE" ] && return 0
+    ipset -q list -n "$IPSET_WL_NAME">/dev/null && return 0
+  fi
+  
+  if [ "$_WG" ]; then
+    [ "$WAN_GW" = '0.0.0.0' ] && return 0
+    ipset -q test "$IPSET_BL_NAME" "$WAN_GW" || return 0
+  else
+    ipset -q list -n "$IPSET_WG_NAME">/dev/null && return 0
+    [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && return 0
+  fi
+  
   _IPT="$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/ ; s/ $//g")"
-  case "$(echo "$_IPT" | grep -F "wan" | md5sum -)" in
-    "$IPT_MD5_WAN")
-      ipset -q list -n "$IPSET_WG_NAME">/dev/null && return 0
-      if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 0; fi
-      ;;
-    "$IPT_MD5_WAN_WG")
-      if [ "$WAN_GW" = '0.0.0.0' ] || ! ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 0; fi
-      ;;
-    *) return 0 ;;
-  esac
+  
+  [ "$(echo "$_IPT" | grep -F "wan" | md5sum -)" = "$IPT_MD5_WAN" ] || return 0
+  
   if [ "$TUN_IF" ]
     then [ "$(echo "$_IPT" | grep -F "tun" | md5sum -)" = "$IPT_MD5_TUN" ] || return 0
     else [ "$(echo "$_IPT" | grep -F "tun" | md5sum -)" = "$IPT_MD5_TUN" ] && return 0
