@@ -193,10 +193,12 @@ _pm() {
 SC_VERS="1.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
-# IPT_MD5 & IPT_MD5_NO_WL depends on IPTBL_SRC, IPTBL_DST, IPSET_BL_NAME, IPSET_WL_NAME and IPSET_WL_NAME
-IPT_MD5_WG_WL='0870593a2dab56006733e02b2a48037d  -'
-IPT_MD5="7d118815164fb6c69e08b02544363b0f  -"
-IPT_MD5_NO_WL="1f0156a0f6fdb8fcd7ad10f42241b00b  -"
+# IPT_MD5s depend on IPTBL_SRC, IPTBL_DST, IPSET_BL_NAME, IPSET_WL_NAME and IPSET_WL_NAME
+IPT_MD5_CHAIN_NOWL='30aa610321f89e62733f42d39ab71f57  -'
+IPT_MD5_CHAIN_WL='ac58a39a1ca2790d8dfc8d08ff294676  -'
+IPT_MD5_WAN='787798fddbfbee944d419ea0600dcec4  -'
+IPT_MD5_WAN_WG='0c1fdacaaa46960e275e9ded1c5919a8  -'
+IPT_MD5_TUN='cece9632deb38f649efc757da0ce908b  -'
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -384,19 +386,31 @@ fw_needs_restart() {
       else [ "$LOG_IS_ON" ] && return 0
     fi
   fi
-  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/ ; s/ $//g" | md5sum -)" in
-    "$IPT_MD5")
-      if [ -r "$WL_FILE" ]; then return 1
-      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 1
-      else return 0
-      fi ;;
-    "$IPT_MD5_NO_WL")
-      if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then return 0
-      elif [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 0
-      else return 1
-      fi ;;
+  case "$(/usr/sbin/iptables -S 2>/dev/null | grep "^-. $SC_ABR" | grep -Fv 'LOG' | sed "s/ $//g" | md5sum -)" in
+    "$IPT_MD5_CHAIN_NOWL")
+      [ -r "$WL_FILE" ] && return 0
+      ipset -q list -n "$IPSET_WL_NAME">/dev/null && return 0
+      ;;
+    "$IPT_MD5_CHAIN_WL") [ -r "$WL_FILE" ] || return 0 ;;
     *) return 0 ;;
   esac
+  _IPT="$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/ ; s/ $//g")"
+  case "$(echo "$_IPT" | grep -F "wan" | md5sum -)" in
+    "$IPT_MD5_WAN")
+      ipset -q list -n "$IPSET_WG_NAME">/dev/null && return 0
+      if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 0; fi
+      ;;
+    "$IPT_MD5_WAN_WG")
+      if [ "$WAN_GW" = '0.0.0.0' ] || ! ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then return 0; fi
+      ;;
+    *) return 0 ;;
+  esac
+  if [ "$TUN_IF" ]
+    then [ "$(echo "$_IPT" | grep -F "tun" | md5sum -)" = "$IPT_MD5_TUN" ] || return 0
+    else [ "$(echo "$_IPT" | grep -F "tun" | md5sum -)" = "$IPT_MD5_TUN" ] && return 0
+  fi
+  
+  return 1;
 }
 
 fw_restart_if_needed() {
