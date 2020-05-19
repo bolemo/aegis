@@ -133,10 +133,10 @@ _fws() {
       iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
       echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"
     fi
-    iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-    iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-    iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+    iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
+    iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
+    iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
+    iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
     echo "$INFO_IPT_WAN" >> "$INFO_FILE"
   fi
   
@@ -166,10 +166,10 @@ _fws() {
         iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
         echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"
       fi
-      iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-      iptables -I OUTPUT 2 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
-      iptables -I FORWARD 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_NAME"
-      iptables -I FORWARD 3 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_NAME"
+      iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
+      iptables -I OUTPUT 2 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
+      iptables -I FORWARD 2 -i $TUN_IF -m set --match-set "$IPSET_NAME" src -j "$IPTBL_SRC"
+      iptables -I FORWARD 3 -o $TUN_IF -m set --match-set "$IPSET_NAME" dst -j "$IPTBL_DST"
       echo "$INFO_IPT_TUN" >> "$INFO_FILE"
     fi
   fi
