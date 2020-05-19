@@ -335,7 +335,7 @@ fw_needs_restart() {
       else [ "$LOG_IS_ON" ] && return 0
     fi
   fi
-  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g' | md5sum -)" in
+  case "$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/I/ ; s/ $//g" | md5sum -)" in
     "$IPT_MD5")
       if [ -r "$WL_FILE" ]; then return 1
       elif [ "$WAN_GATEWAY" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GATEWAY"; then return 1
