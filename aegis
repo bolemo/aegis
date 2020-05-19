@@ -33,12 +33,16 @@ INFO_IPS_BL_WGW='4'
 INFO_IPS_WL_LOAD='5'
 INFO_IPS_WL_NEW='6'
 INFO_IPS_WL_KEEP='7'
-INFO_IPS_WL_WGW_ADD='8'
-INFO_IPS_WL_WGW_KEEP='9'
-INFO_IPT_KEEP='a'
-INFO_IPT_LOG='b'
-INFO_IPT_BL='c'
+INFO_IPS_WGW_ADD='8'
+INFO_IPS_WGW_KEEP='9'
+INFO_IPT_SRC_KEEP='a'
+INFO_IPT_DST_KEEP='b'
+INFO_IPT_LOG='c'
 INFO_IPT_WL='d'
+INFO_IPT_WAN='e'
+INFO_IPT_TUN='f'
+INFO_IPT_WAN_PBM='g'
+INFO_IPT_TUN_PBM='h'
 
 _fws() {
   :> "$INFO_FILE"
@@ -58,22 +62,23 @@ _fws() {
   fi
   
   # checking if WAN gateway is in blocklist
-  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"
-    then
-      echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
-      if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
-        # Calculate WAN_RANGE (IP & CIDR)
-        _CIDR=0
-        for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
-          _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
-          let _CIDR+=${#_BINBITS}
-        done
-        WAN_RANGE="$WAN_GW/$_CIDR"
-        ipset -q create "$IPSET_WG_NAME" hash:net family inet
-        ipset -q flush "$IPSET_WG_NAME"
-        ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
-        echo "$INFO_IPS_WL_WGW_ADD" >> "$INFO_FILE"
-      fi
+  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_NAME" "$WAN_GW"; then
+    echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
+    if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
+      # Calculate WAN_RANGE (IP & CIDR)
+      _CIDR=0
+      for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
+        _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| bc | sed 's/0//g')
+        let _CIDR+=${#_BINBITS}
+      done
+      WAN_RANGE="$WAN_GW/$_CIDR"
+      ipset -q create "$IPSET_WG_NAME" hash:net family inet
+      ipset -q flush "$IPSET_WG_NAME"
+      ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
+      echo "$INFO_IPS_WGW_ADD" >> "$INFO_FILE"
+    else
+      echo "$INFO_IPS_WGW_KEEP" >> "$INFO_FILE"
+    fi
   fi
   
   # creating ipset whitelist if needed
@@ -94,8 +99,8 @@ _fws() {
   fi
 
   #Creating our iptables chains if not already set
-  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && echo "$INFO_IPT_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
-  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && echo "$INFO_IPT_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
+  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && echo "$INFO_IPT_SRC_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
+  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && echo "$INFO_IPT_DST_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
   
   if [ "$IPTBL_LOGGING" ]; then
     iptables -S "$IPTBL_SRC" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
