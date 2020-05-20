@@ -211,13 +211,6 @@ _pm() {
 SC_VERS="1.1.0"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
-# IPT_MD5s depend on IPTBL_SRC, IPTBL_DST, IPSET_BL_NAME, IPSET_WL_NAME and IPSET_WL_NAME
-IPT_MD5_CHAIN_='30aa610321f89e62733f42d39ab71f57  -'
-IPT_MD5_CHAIN_WL='ac58a39a1ca2790d8dfc8d08ff294676  -'
-IPT_MD5_CHAIN_WG=
-IPT_MD5_CHAIN_WG_WL=
-IPT_MD5_WAN='787798fddbfbee944d419ea0600dcec4  -'
-IPT_MD5_TUN='cece9632deb38f649efc757da0ce908b  -'
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -398,24 +391,19 @@ fw_restart() {
 }
 
 fw_needs_restart() {
-  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)$(iptables -S "$IPTBL_DST" 2>/dev/null)"
-  _IPT="$(echo "$_IPT" | sed "s/ $//g")"
+  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)\n$(iptables -S "$IPTBL_DST" 2>/dev/null)"
+  _IPT="$(echo -e "$_IPT"|sed "s/ *$//g ; s/WAN_IF/wan/")"
 
   if [ "$LOG_ACT" ]; then
-    LOG_IS_ON="$(echo $_IPT | grep -cF -- '-j LOG --log-prefix')"
+    [ $(echo "$_IPT"|grep -Fc -- '-j LOG ') = 2 ] && LOG_IS_ON='y'
     if [ "$LOG_ACT" = 'ON' ]
       then [ "$LOG_IS_ON" ] || return 0
       else [ "$LOG_IS_ON" ] && return 0
     fi
   fi
   
-  case "$(echo $_IPT | grep -Fv 'LOG' | md5sum -)" in
-    "$IPT_MD5_CHAIN") : ;;
-    "$IPT_MD5_CHAIN_WL") _WL='y' ;;
-    "$IPT_MD5_CHAIN_WG") _WG='y' ;;
-    "$IPT_MD5_CHAIN_WL_WG") _WL='y'; _WG='y' ;;
-    *) return 0 ;;
-  esac
+  [ $(echo "$_IPT"|grep -Fc -- "$IPSET_WL_NAME") = 2 ] && _WL='y'
+  [ $(echo "$_IPT"|grep -Fc -- "$IPSET_WG_NAME") = 2 ] && _WG='y'
 
   if [ "$_WL" ]; then
     [ -r "$WL_FILE" ] || return 0
@@ -431,14 +419,14 @@ fw_needs_restart() {
     ipset -q list -n "$IPSET_WG_NAME">/dev/null && return 0
     [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && return 0
   fi
+    
+  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
+  [ $_CT = 4 ] || return 0
   
-  _IPT="$(/usr/sbin/iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/ ; s/ $//g")"
-  
-  [ "$(echo "$_IPT" | grep -F "wan" | md5sum -)" = "$IPT_MD5_WAN" ] || return 0
-  
+  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
   if [ "$TUN_IF" ]
-    then [ "$(echo "$_IPT" | grep -F "tun" | md5sum -)" = "$IPT_MD5_TUN" ] || return 0
-    else [ "$(echo "$_IPT" | grep -F "tun" | md5sum -)" = "$IPT_MD5_TUN" ] && return 0
+    then [ $_CT = 4 ] || return 0
+    else [ $_CT -ne 0 ] && return 0
   fi
   
   return 1;
@@ -611,18 +599,40 @@ status() {
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
   # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | grep -Fv 'LOG' | sed 's/ $//g')"
-  case "$(echo "$STAT_IPT" | sed "s/$WAN_IF/wan/ ; s/$TUN_IF/tun/" | md5sum -)" in
-    "$IPT_MD5") STAT_IPT_MATCH_WL='ok'; STAT_IPT_MATCH_NOWL='' ;;
-      # iptables are set with whitelist
-    "$IPT_MD5_NO_WL") STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='ok' ;;
-      # iptables are set without whitelist
-    *) STAT_IPT_MATCH_WL=''; STAT_IPT_MATCH_NOWL='' ;;
-      # iptables are not set
-  esac
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | sed 's/ *$//g')"
+  if [ "$STAT_IPT" ]; then
+    _CT=$(echo "$STAT_IPT"|grep -c -- "-A ${SC_ABR}_... -j DROP")
+    [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y' ;;
   
-  # check log
-  STAT_LOG="$(iptables -S $IPTBL_NAME 2>/dev/null | grep -F -- "-A $IPTBL_NAME -j LOG --log-prefix")"
+    case $(echo "$STAT_IPT"|grep -Fc -- "$IPSET_WL_NAME") in
+      2) STAT_IPT_WL='y' ;;
+      0) STAT_IPT_WL='' ;;
+      *) STAT_IPT_PBM='y' ;;
+    esac
+  
+    case $(echo "$STAT_IPT"|grep -Fc -- "$IPSET_WG_NAME") in
+      2) STAT_IPT_WG='y' ;;
+      0) STAT_IPT_WG='' ;;
+      *) STAT_IPT_PBM='y' ;;
+    esac
+  
+    _CT=$(echo "$STAT_IPT" | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
+    [ $_CT = 4 ] && STAT_IPT_WAN='' || STAT_IPT_WAN='ok'
+  
+    _CT=$(echo "$STAT_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
+    if [ "$TUN_IF" ]
+      then [ $_CT = 4 ] && STAT_IPT_TUN='' || STAT_IPT_TUN='ok'
+      else [ $_CT -ne 0 ] && STAT_IPT_TUN='na' || STAT_IPT_TUN=''
+    fi
+  
+    # check log    
+    case $(echo "$STAT_IPT"| grep -c -- "-A ${SC_ABR}_... -j LOG --log-prefix") in
+      2) STAT_LOG='y' ;;
+      0) STAT_LOG='' ;;
+      *) STAT_IPT_PBM='y' ;;
+    esac
+  fi
+  # end check iptables
   
   # check ipset blocklist
   STAT_IPS="$(ipset -q list $IPSET_BL_NAME -t)"
@@ -630,29 +640,39 @@ status() {
   # check ipset whitelist
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
   
+  # check ipset WAN gateway whitelist
+  STAT_IPS_WG="$(ipset -q list $IPSET_WG_NAME -t)"
+  
   if [ "$WAN_GW" = '0.0.0.0' ]; then
-    STAT_GW_IN_BL=''; STAT_GW_IN_WL=''
+    STAT_GW_IN_BL=''; STAT_GW_IN_WG=''
   else
     # check WAN gateway in ipset blocklist
     ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
 
-    # check WAN gatewan in ipset whitelist
-    ipset -q test "$IPSET_WL_NAME" "$WAN_GW" && STAT_GW_IN_WL='y' || STAT_GW_IN_WL=''
+    # check WAN gatewan in WAN gateway ipset whitelist
+    ipset -q test "$IPSET_WG_NAME" "$WAN_GW" && STAT_GW_IN_WG='y' || STAT_GW_IN_WG=''
   fi
   
   # master check
-  if   [ "$STAT_IPT_MATCH_WL" -a "$STAT_IPS" -a "$STAT_IPS_WL" -a "$STAT_FWS" -a "$STAT_PM" ]; then
-    if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WL" ]; then
-      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses (including WAN gateway and its subnet)."
-    elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WL" ]; then
-      echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses.\n- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+  if   [ "$STAT_IPT_PBM" ]; then
+    echo -e "- \033[1;31mSomething is not right with iptables setup!\033[0m Use '$SC_NAME -v status' for more details"
+  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_IPS_WG$STAT_FWS$STAT_PM" ]; then
+    echo "- '$SC_NAME' is not active; Settings are clean."
+  elif [ "$STAT_IPT_WAN" -a "$STAT_IPT_TUN" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" ]; then
+    echo -n "- '$SC_NAME' is set and active"
+    [ "$STAT_IPT_WAN" ] && echo -n " for WAN interface ($WAN_IF)"
+    [ "$STAT_IPT_TUN" = 'ok' ] && echo -n " and VPN tunnel ($TUN_IF)"
+    echo -e ".\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses."
+    [ "$STAT_IPT_WL" ] && if [ "$STAT_IPS_WL" ]; then
+      echo "- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+    else
+      echo -e "- \033[1;31mWhitelist is defined in ipset but not in iptables!\033[0m Use '$SC_NAME -v status' for more details"
+    fi
+    if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WG" -a "$STAT_IPT_WG" ]; then
+      echo "- WAN gateway IP range is bypassed (because in blocklist)."
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use '$SC_NAME -v status' for more details"
     fi
-  elif [ "$STAT_IPT_MATCH_NOWL" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" -a ! "$STAT_GW_IN_BL" ]; then
-    echo -e "- '$SC_NAME' is set and active.\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses."
-  elif [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_FWS$STAT_PM" ]; then
-    echo "- '$SC_NAME' is not active; Settings are clean."
   else
     echo -e "- \033[1;31mSomething is not right!\033[0m Use '$SC_NAME -v status' for more details"
   fi
@@ -709,12 +729,13 @@ status() {
   fi
   
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_MATCH_WL" ]; then
-      echo "- iptables rules are set with bypass rules (whitelist):"
-    elif [ "$STAT_IPT_MATCH_NOWL" ]; then
-      echo "- iptables rules are set:"
-    else
+    if [ "$STAT_IPT_PBM" ]; then
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
+    else
+      echo -n "- iptables rules are set"
+      [ "$STAT_IPT_WL" ] && echo -n ", with whitelist"
+      [ "$STAT_IPT_WG" ] && echo -n ", with WAN gateway bypass"
+      echo ':'
     fi
     echo -ne "\033[35m"
     echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
@@ -723,35 +744,40 @@ status() {
     echo "- iptables rules are not set."
   fi
   if [ "$STAT_LOG" ];
-    then echo -e "- Logging is active:\n\033[35m     iptables $STAT_LOG\033[0m"
+    then echo "- Logging is active."
     else echo "- Logging is inactive."
   fi
   if [ "$STAT_IPS" ]; then
-    echo "- ipset filter (blocklist) is set:"
+    echo "- ipset blocklist is set:"
     if [ "$STAT_GW_IN_BL" ]
-      then if [ "$STAT_GW_IN_WL" ]
+      then if [ "$STAT_GW_IN_WG" ]
         then echo -e "     \033[36mWAN gateway ($WAN_GW) is in blocklist\033[0m"
-        else echo -e "     \033[31mWAN gateway ($WAN_GW) is in blocklist (but not in whitelist)!\033[0m"
+        else echo -e "     \033[31mWAN gateway ($WAN_GW) is in blocklist (but not bypassed)!\033[0m"
       fi
     fi
     echo -e "\033[35m$STAT_IPS\033[0m" | sed -e 's/^/     /g'
   else
-    echo "- ipset filter (blocklist) is not set."
+    echo "- ipset blocklist is not set."
   fi
+  
   if [ "$STAT_IPS_WL" ]; then
-    echo "- ipset bypass (whitelist) is set:"
-    if [ "$STAT_GW_IN_BL" ]
-      then if [ "$STAT_GW_IN_WL" ]
-        then echo -e "     \033[36mWAN gateway ($WAN_GW) is in whitelist\033[0m"
-        else echo -e "     \033[31mWAN gateway ($WAN_GW) is NOT in whitelist!\033[0m"
-      fi
-    elif [ "$STAT_GW_IN_WL" ]; then
-        echo -e "     \033[31mWAN gateway ($WAN_GW) is in whitelist (but not in blacklist)!\033[0m"
-    fi
+    echo "- ipset whitelist is set:"
     echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
   else
+    echo "- ipset whitelist is not set."
+  fi
+  
+  if [ "$STAT_IPS_WG" ]; then
+    echo "- ipset WAN gateway bypass is set:"
+    [ "$STAT_GW_IN_BL" ] || echo -e "     \033[31mWAN gateway IP ($WAN_GW) is NOT in blocklist!\033[0m"
+    if [ "$STAT_GW_IN_WG" ]
+        then echo -e "     \033[36mWAN gateway ($WAN_GW) is in bypass list\033[0m"
+        else echo -e "     \033[31mWAN gateway ($WAN_GW) is NOT in bypass list!\033[0m"
+    fi
+    echo -e "\033[35m$STAT_IPS_WG\033[0m" | sed -e 's/^/     /g'
+  else
     [ "$STAT_GW_IN_BL" ] && _CLR='\033[31m' || _CLR='\033[0m'
-    echo -e "${_CLR}- ipset bypass (whitelist) is not set.\033[0m"
+    echo -e "${_CLR}- ipset WAN gateway bypass is not set.\033[0m"
   fi
 }
 
