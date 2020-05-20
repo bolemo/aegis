@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.1.1
+1.1.2
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -81,6 +81,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 ### Options:
 * `-v` - verbose mode
 * `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
+* `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
