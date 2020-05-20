@@ -809,7 +809,7 @@ if [ "$1" != "_niced" ]; then
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
-  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS" $_HTML
+  eval "nice -n 15 $SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML"
   ############# $WWW_PATH needs to be checked and created if needed (same with path in another general init?
   exit $?
 fi
