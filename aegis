@@ -695,20 +695,20 @@ status() {
     /bin/grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
     /bin/grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
     /bin/grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded.'
-    /bin/grep -qF "$INFO_IPS_BL_WGW" "$INFO_FILE" && echo '     WAN gateway was in ipset blocklist.'
-    /bin/grep -qF "$INFO_IPS_WL_LOAD" "$INFO_FILE" && echo '     ipset whitelist was loaded from whitelist file.'
-    /bin/grep -qF "$INFO_IPS_WL_KEEP" "$INFO_FILE" && echo '     ipset whitelist was already loaded and was kept.'
+    /bin/grep -qF "$INFO_IPS_BL_WGW" "$INFO_FILE" && echo '     WAN gateway was found in ipset blocklist.'
     /bin/grep -qF "$INFO_IPS_WG_ADD" "$INFO_FILE" && echo '     ipset WAN gateway bypass was set.'
     /bin/grep -qF "$INFO_IPS_WG_KEEP" "$INFO_FILE" && echo '     ipset WAN gateway bypass was already set.'
+    /bin/grep -qF "$INFO_IPS_WL_LOAD" "$INFO_FILE" && echo '     ipset whitelist was loaded from whitelist file.'
+    /bin/grep -qF "$INFO_IPS_WL_KEEP" "$INFO_FILE" && echo '     ipset whitelist was already loaded and was kept.'
     /bin/grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     inbound iptables rules were already set!'
     /bin/grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     outbound iptables rules were already set!'
     /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     iptables logging rules were set.'
-    /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables whitelist rules were set.'
-    /bin/grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables WAN blocklist rules had problems and were reset.'
-    /bin/grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables VPN blocklist rules had problems and were reset.'
-    /bin/grep -qF "$INFO_IPT_WAN" "$INFO_FILE" && echo '     iptables WAN blocklist rules were set.'
     /bin/grep -qF "$INFO_IPT_WG" "$INFO_FILE" && echo '     iptables WAN gateway bypass rules were set.'
-    /bin/grep -qF "$INFO_IPT_TUN" "$INFO_FILE" && echo '     iptables VPN blocklist rules were set.'
+    /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables whitelist rules were set.'
+    /bin/grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables WAN rules had problems and were reset.'
+    /bin/grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables VPN rules had problems and were reset.'
+    /bin/grep -qF "$INFO_IPT_WAN" "$INFO_FILE" && echo '     iptables WAN rules were set.'
+    /bin/grep -qF "$INFO_IPT_TUN" "$INFO_FILE" && echo '     iptables VPN rules were set.'
     echo -ne "\033[0m"
   else
     echo '- No status file found.'
@@ -724,7 +724,6 @@ status() {
     [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mVPN tunnel interface rules are set\033[0m"
     [ "$STAT_IPT_WL" ] && echo -e "     \033[36mwhitelist rules are set\033[0m"
     [ "$STAT_IPT_WG" ] && echo -e "     \033[36mWAN gateway bypass rules are set\033[0m"
-    echo -e "     \033[36mWAN gateway ($WAN_GW) is in blocklist\033[0m"
     echo -ne "\033[35m"
     echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
     echo -ne "\033[0m"
