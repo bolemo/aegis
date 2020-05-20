@@ -588,7 +588,7 @@ status() {
     [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y'
     
     _CT=$(echo "$STAT_IPT" | grep -cv -- "^-. $SC_ABR")
-    if [ $"TUN_IF"]
+    if [ $"TUN_IF" ]
       then [ $_CT = 8 ] || STAT_IPT_PBM='y'
       else [ $_CT = 4 ] || STAT_IPT_PBM='y'
     fi
@@ -721,11 +721,11 @@ status() {
   if [ "$STAT_IPT" ]; then
     if [ "$STAT_IPT_PBM" ]
       then echo -e "- \033[31miptables rules are not set properly\033[0m:"
-      elif [ "$TUN_IF" -a ! "$STAT_IPT_TUN" ]; then echo -e "- \033[31miptables rules are not set for VPN tunnel\033[0m:"
+      elif [ -z "$STAT_IPT_TUN" ]; then echo -e "- \033[31miptables rules are not set for VPN tunnel\033[0m:"
       else echo "- iptables rules are set:"
     fi
     [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mfor WAN interface\033[0m"
-    [ "$STAT_IPT_TUN" ] && echo -e "     \033[36mfor VPN tunnel interface\033[0m"
+    [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mfor VPN tunnel interface\033[0m"
     [ "$STAT_IPT_WL" ] && echo -e "     \033[36mwhitelist is set\033[0m"
     [ "$STAT_IPT_WG" ] && echo -e "     \033[36mWAN gateway bypass is set\033[0m"
     echo -e "     \033[36mWAN gateway ($WAN_GW) is in blocklist\033[0m"
