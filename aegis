@@ -193,6 +193,7 @@ SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
 CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-whitelist.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
+WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 # Check if scriot is installed on USB
@@ -581,7 +582,7 @@ status() {
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
   # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | sed 's/ *$//g')"
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR")"
   if [ "$STAT_IPT" ]; then
     _CT=$(echo "$STAT_IPT"|grep -c -- "-A ${SC_ABR}_... -j DROP")
     [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y'
@@ -804,10 +805,12 @@ if [ "$1" != "_niced" ]; then
   if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
   if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
   if [ -z "${*##-rm-symlink *}" ] || [ -z "${*##* -rm-symlink *}" ] || [ -z "${*##* -rm-symlink}" ]; then OPTS="${OPTS}_rmsl"; fi
+  if [ -z "${*##-html *}" ] || [ -z "${*##* -html *}" ] || [ -z "${*##* -html}" ]; then _HTML=">$WWW_PATH/$SC_NAME.htm"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
-  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
+  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS" $_HTML
+  ############# $WWW_PATH needs to be checked and created if needed (same with path in another general init?
   exit $?
 fi
 
