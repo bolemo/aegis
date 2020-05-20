@@ -184,7 +184,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="1.1.1"
+SC_VERS="1.1.2"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -449,7 +449,7 @@ clean() {
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
-  check_path && remove_path
+  [ "$RM_SYMLINK" ] && check_path && remove_path
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
@@ -790,6 +790,7 @@ print_help() {
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
+  echo -e " \033[1;36m-rm-symlink\033[0m          - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
 
 # Main routine
@@ -802,6 +803,7 @@ if [ "$1" != "_niced" ]; then
   if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
   if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
   if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
+  if [ -z "${*##-rm-symlink *}" ] || [ -z "${*##* -rm-symlink *}" ] || [ -z "${*##* -rm-symlink}" ]; then OPTS="${OPTS}_rmsl"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
@@ -814,6 +816,7 @@ if [ "$3" ]; then
   [ -z "${3##*verbose*}" ] && VERBOSE='y'
   [ -z "${3##*logon*}" ] && LOG_ACT='ON'
   [ -z "${3##*logoff*}" ] && LOG_ACT='OFF'
+  [ -z "${3##*rmsl*}" ] && RM_SYMLINK='y'
 fi
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
