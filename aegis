@@ -12,7 +12,7 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
-WAN_IF="$(nvram get wan_ifname)"
+ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(nvram get wan_ifname)"
 WAN_GW="$(nvram get wan_gateway)"
 WAN_NM="$(nvram get wan_netmask)"
 # VPN tunnel detection
