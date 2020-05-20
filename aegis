@@ -602,7 +602,7 @@ status() {
   STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | sed 's/ *$//g')"
   if [ "$STAT_IPT" ]; then
     _CT=$(echo "$STAT_IPT"|grep -c -- "-A ${SC_ABR}_... -j DROP")
-    [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y' ;;
+    [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y'
   
     case $(echo "$STAT_IPT"|grep -Fc -- "$IPSET_WL_NAME") in
       2) STAT_IPT_WL='y' ;;
