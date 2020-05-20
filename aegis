@@ -603,6 +603,12 @@ status() {
   if [ "$STAT_IPT" ]; then
     _CT=$(echo "$STAT_IPT"|grep -c -- "-A ${SC_ABR}_... -j DROP")
     [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y'
+    
+    _CT=$(echo "$STAT_IPT" | grep -cv -- "^-. $SC_ABR")
+    if [ $"TUN_IF"]
+      then [ $_CT = 8 ] || STAT_IPT_PBM='y'
+      else [ $_CT = 4 ] || STAT_IPT_PBM='y'
+    fi
   
     case $(echo "$STAT_IPT"|grep -Fc -- "$IPSET_WL_NAME") in
       2) STAT_IPT_WL='y' ;;
@@ -617,12 +623,14 @@ status() {
     esac
   
     _CT=$(echo "$STAT_IPT" | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
-    [ $_CT = 4 ] && STAT_IPT_WAN='' || STAT_IPT_WAN='ok'
+    [ $_CT = 4 ] && STAT_IPT_WAN='ok'
   
-    _CT=$(echo "$STAT_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
-    if [ "$TUN_IF" ]
-      then [ $_CT = 4 ] && STAT_IPT_TUN='' || STAT_IPT_TUN='ok'
-      else [ $_CT -ne 0 ] && STAT_IPT_TUN='na' || STAT_IPT_TUN=''
+    if [ "$TUN_IF" ]; then
+      case $(echo "$STAT_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME") in
+        4) STAT_IPT_TUN='ok' ;;
+        0) STAT_IPT_TUN='na' ;;
+        *) STAT_IPT_TUN='' ;;
+      esac
     fi
   
     # check log    
@@ -730,14 +738,16 @@ status() {
   fi
   
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_PBM" ]; then
-      echo -e "- \033[31miptables rules are not set properly\033[0m:"
-    else
-      echo -n "- iptables rules are set"
-      [ "$STAT_IPT_WL" ] && echo -n ", with whitelist"
-      [ "$STAT_IPT_WG" ] && echo -n ", with WAN gateway bypass"
-      echo ':'
+    if [ "$STAT_IPT_PBM" ]
+      then echo -e "- \033[31miptables rules are not set properly\033[0m:"
+      elif [ "$TUN_IF" -a ! "$STAT_IPT_TUN" ]; then echo -e "- \033[31miptables rules are not set for VPN tunnel\033[0m:"
+      else echo "- iptables rules are set:"
     fi
+    [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mfor WAN interface\033[0m"
+    [ "$STAT_IPT_TUN" ] && echo -e "     \033[36mfor VPN tunnel interface\033[0m"
+    [ "$STAT_IPT_WL" ] && echo -e "     \033[36mwhitelist is set\033[0m"
+    [ "$STAT_IPT_WG" ] && echo -e "     \033[36mWAN gateway bypass is set\033[0m"
+    echo -e "     \033[36mWAN gateway ($WAN_GW) is in blocklist\033[0m"
     echo -ne "\033[35m"
     echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
     echo -ne "\033[0m"
