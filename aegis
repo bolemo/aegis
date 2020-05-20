@@ -184,7 +184,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="1.1.2"
+SC_VERS="1.1.3"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
