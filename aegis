@@ -137,7 +137,7 @@ _fws() {
     echo "$INFO_IPT_WG" >> "$INFO_FILE"
   else
     #Removing any trace of WAN gareway whitelist if any
-    iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+    iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
   fi
   
   # creating the required iptables rules for wan interface
