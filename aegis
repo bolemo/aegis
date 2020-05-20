@@ -89,9 +89,6 @@ _fws() {
       # we want to keep it
       _WL='y'
       echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
-    else
-      # we need to remove it
-      ipset -q destroy "$IPSET_WL_NAME"
     fi
   else
     if [ -r "$WL_FILE" ]; then
@@ -99,9 +96,6 @@ _fws() {
       _WL='y'
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
-    else
-      # no need for whitelist, just destroy if exists
-      ipset -q destroy "$IPSET_WL_NAME"
     fi
   fi
 
@@ -128,6 +122,7 @@ _fws() {
   else
     #Removing any trace of whitelist if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    ipset -q destroy "$IPSET_WL_NAME"
   fi
   
   if [ "$_WG" ]; then
@@ -138,6 +133,7 @@ _fws() {
   else
     #Removing any trace of WAN gareway whitelist if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    ipset -q destroy "$IPSET_WG_NAME"
   fi
   
   # creating the required iptables rules for wan interface
