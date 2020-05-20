@@ -711,10 +711,11 @@ status() {
   fi
   
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_PBM" ]
-      then echo -e "- \033[31miptables rules are not set properly\033[0m:"
-      elif [ -z "$STAT_IPT_TUN" ]; then echo -e "- \033[31miptables rules are not set for VPN tunnel\033[0m:"
-      else echo "- iptables rules are set:"
+    if [ "$STAT_IPT_PBM" ]; then
+      echo -e "- \033[31miptables rules are not set properly\033[0m:"
+      [ -z "$STAT_IPT_TUN" ]; then echo -e "     \033[31miptables rules are not set for VPN tunnel\033[0m"
+    else
+      echo "- iptables rules are set:"
     fi
     [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mWAN interface rules are set\033[0m"
     [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mVPN tunnel interface rules are set\033[0m"
