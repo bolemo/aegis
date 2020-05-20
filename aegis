@@ -236,6 +236,7 @@ upgrade() {
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
+    sed -i 's/^[[:space:]]*// ; /^#/d ; /^$/d' "$DL_PATH"
     \mv "$DL_PATH" "$SC_NICEPATH"
     chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
