@@ -184,7 +184,7 @@ _pm() {
   exit 0
 }
 
-SC_VERS="1.1.0"
+SC_VERS="1.1.1"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -395,14 +395,20 @@ fw_needs_restart() {
     ipset -q list -n "$IPSET_WG_NAME">/dev/null && return 0
     [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && return 0
   fi
-    
-  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
+  
+  _IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR")"
+  _CT=$(echo "$_IPT" | grep -cv -- "^-. $SC_ABR")
+  if [ "$TUN_IF" ]
+    then [ $_CT = 8 ] || return 0
+    else [ $_CT = 4 ] || return 0
+  fi
+  
+  _CT=$(echo "$_IPT" | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
   [ $_CT = 4 ] || return 0
   
-  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
-  if [ "$TUN_IF" ]
-    then [ $_CT = 4 ] || return 0
-    else [ $_CT -ne 0 ] && return 0
+  if [ "$TUN_IF" ]; then
+    _CT=$(echo "$_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
+    [ $_CT = 4 ] || return 0
   fi
   
   return 1;
@@ -653,6 +659,8 @@ status() {
     fi
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WG" -a "$STAT_IPT_WG" ]; then
       echo "- WAN gateway IP range is bypassed (because in blocklist)."
+    elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WG$STAT_IPT_WG" ]; then
+      echo "- WAN gateway IP range does not need to be bypassed."
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use '$SC_NAME -v status' for more details"
     fi
@@ -711,10 +719,11 @@ status() {
   fi
   
   if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_PBM" ]
-      then echo -e "- \033[31miptables rules are not set properly\033[0m:"
-      elif [ -z "$STAT_IPT_TUN" ]; then echo -e "- \033[31miptables rules are not set for VPN tunnel\033[0m:"
-      else echo "- iptables rules are set:"
+    if [ "$STAT_IPT_PBM" ]; then
+      echo -e "- \033[31miptables rules are not set properly\033[0m:"
+      [ -z "$STAT_IPT_TUN" ] && echo -e "     \033[31miptables rules are not set for VPN tunnel\033[0m"
+    else
+      echo "- iptables rules are set:"
     fi
     [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mWAN interface rules are set\033[0m"
     [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mVPN tunnel interface rules are set\033[0m"
