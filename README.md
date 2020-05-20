@@ -3,8 +3,10 @@ A firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmwar
 Should work with several other Netgear routers as well.
 Formerly named **firewall-blocklist**
 
+It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
+
 ## Version
-1.0.3
+1.1.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
