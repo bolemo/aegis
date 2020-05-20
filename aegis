@@ -653,6 +653,7 @@ status() {
     ipset -q test "$IPSET_WG_NAME" "$WAN_GW" && STAT_GW_IN_WG='y' || STAT_GW_IN_WG=''
   fi
   
+  echo -e "WAN:$STAT_IPT_WAN\nTUN:$STAT_IPT_TUN\nIPS:$STAT_IPS\nFWS:$STAT_FWS\nPM:$STAT_PM"
   # master check
   if   [ "$STAT_IPT_PBM" ]; then
     echo -e "- \033[1;31mSomething is not right with iptables setup!\033[0m Use '$SC_NAME -v status' for more details"
