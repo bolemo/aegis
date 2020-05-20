@@ -145,7 +145,7 @@ _fws() {
   if [ $_CT -ne 4 ]; then
     if [ $_CT -ne 0 ]; then
       # something is messed up with rules; deleting what is left
-      iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+      iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"
     fi
     iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
@@ -161,7 +161,7 @@ _fws() {
     if [ $_CT -ne 4 ]; then
       if [ $_CT -ne 0 ]; then
         # something is messed up with rules; deleting what is left
-        iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+        iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
         echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"
       fi
       iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
