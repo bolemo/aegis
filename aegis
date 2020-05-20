@@ -127,7 +127,7 @@ _fws() {
     echo "$INFO_IPT_WL" >> "$INFO_FILE"
   else
     #Removing any trace of whitelist if any
-    iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do "$_CMD 2>/dev/null"; done
+    iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
   fi
   
   if [ "$_WG" ]; then
