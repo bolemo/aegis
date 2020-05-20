@@ -659,6 +659,8 @@ status() {
     fi
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WG" -a "$STAT_IPT_WG" ]; then
       echo "- WAN gateway IP range is bypassed (because in blocklist)."
+    elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WG$STAT_IPT_WG" ]; then
+      echo "- WAN gateway IP range does not need to be bypassed."
     else
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use '$SC_NAME -v status' for more details"
     fi
