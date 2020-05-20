@@ -43,7 +43,6 @@ INFO_IPT_WAN='e'
 INFO_IPT_TUN='g'
 INFO_IPT_WAN_PBM='h'
 INFO_IPT_TUN_PBM='i'
-INFO_IPT_WG_PBM='j'
 
 _fws() {
   :> "$INFO_FILE"
@@ -706,7 +705,6 @@ status() {
     /bin/grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     iptables logging rules were set.'
     /bin/grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables whitelist rules were set.'
     /bin/grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables WAN blocklist rules had problems and were reset.'
-    /bin/grep -qF "$INFO_IPT_WG_PBM" "$INFO_FILE" && echo '     iptables WAN gateway bypass rules had problems and were reset.'
     /bin/grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables VPN blocklist rules had problems and were reset.'
     /bin/grep -qF "$INFO_IPT_WAN" "$INFO_FILE" && echo '     iptables WAN blocklist rules were set.'
     /bin/grep -qF "$INFO_IPT_WG" "$INFO_FILE" && echo '     iptables WAN gateway bypass rules were set.'
