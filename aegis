@@ -406,10 +406,9 @@ fw_needs_restart() {
   _CT=$(echo "$_IPT" | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
   [ $_CT = 4 ] || return 0
   
-  _CT=$(echo "$_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
-  if [ "$TUN_IF" ]
-    then [ $_CT = 4 ] || return 0
-    else [ $_CT -ne 0 ] && return 0
+  if [ "$TUN_IF" ]; then
+    _CT=$(echo "$_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
+    [ $_CT = 4 ] || return 0
   fi
   
   return 1;
