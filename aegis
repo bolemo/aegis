@@ -812,7 +812,7 @@ if [ "$1" != "_niced" ]; then
 
   if [ "$_HTML" ]; then
     echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis status page</title>\n<pre><span>'>$_HTML
-    _STDOUT="|sed 's/[[:cntrl:]]\[\([^m]*\)m/##s##\1;##e#/g ; s/##s#\([^#]*\)#7;31/##s#\1background-color:red;#/g ;  s/##s#\([^#]*\)#1;/##s#\1font-weight:bold;#/g ; s/##s#\([^#]*\)#0;/##s#\1#/g ; s/##s#\([^#]*\)#36;/##s#\1color:blue;#/g ; s/##s#\([^#]*\)#35;/##s#\1color:orange;#/g ; s/##s#\([^#]*\)###e#/<\/span><span style=\"\1\">/g ; $ a <\/span>'"
+    _STDOUT="|sed 's/[[:cntrl:]]\[\([^m]*\)m/##s##\1;##e#/g ; s/##s#\([^#]*\)#7;31;/##s#\1background-color:red;#/g ;  s/##s#\([^#]*\)#1;/##s#\1font-weight:bold;#/g ; s/##s#\([^#]*\)#0;/##s#\1#/g ; s/##s#\([^#]*\)#36;/##s#\1color:blue;#/g ; s/##s#\([^#]*\)#35;/##s#\1color:orange;#/g ; s/##s#\([^#]*\)###e#/<\/span><span style=\"\1\">/g ; $ a <\/span>'"
     _STDOUT="$_STDOUT>>$_HTML"
   fi
 
