@@ -45,6 +45,7 @@ echo "Creating symlink (if not already existing): /opt/bolemo"
 echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/scripts" ] || mkdir "$BASE_DIR/bolemo/scripts"
 [ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
+[ -d "$BASE_DIR/bolemo/www" ] || mkdir "$BASE_DIR/bolemo/www"
 
 echo "Downloading and installing aegis..."
 if wget -qO "/opt/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
