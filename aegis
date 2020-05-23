@@ -250,6 +250,20 @@ upgrade() {
   exit 0
 }
 
+get_def_srclst() {
+  if [ ! -e "$SRC_LIST" ]; then
+    [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing!"
+    SRC_LIST_URL="https://raw.githubusercontent.com/bolemo/aegis/master/$SC_NAME.sources"
+    if wget -qO "$SRC_LIST" "$SRC_LIST_URL"; then
+      [ "$VERBOSE" ] && echo -e "- Default list was downloaded."
+    else
+      >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
+      rm -f "$SRC_LIST"
+      exit 1
+    fi
+  fi
+}
+
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" = 1 ] || return 1
@@ -328,6 +342,12 @@ info() {
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
 }
 
+pre_init() {
+  check_path || set_path
+  [ -d "$ROOT_DIR/bolemo/etc" ] || mkdir "$ROOT_DIR/bolemo/etc"
+  [ -d "$ROOT_DIR/bolemo/www" ] || mkdir "$ROOT_DIR/bolemo/www"
+}
+
 init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
@@ -350,7 +370,6 @@ init() {
   else
     [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
-  check_path || set_path
 }
 
 fw_restart() {
@@ -511,7 +530,7 @@ set_ipset() {
 
 update_iplist() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating blocklist from sources...\033[0m"
-  [ -r "$SRC_LIST" ] || { >&2 echo -e "\033[31m! $SRC_LIST not readable!\033[0m"; exit 1; }
+  [ -e "$SRC_LIST" ] || get_def_srclst
 
   :>"$TMP_FILE"
   # Process each source url
@@ -821,6 +840,8 @@ if [ "$1" != "_niced" ]; then
   ############# $WWW_PATH needs to be checked and created if needed (same with path in another general init?
   exit $?
 fi
+
+pre_init
 
 if [ "$3" ]; then
   [ -z "${3##*devmode*}" ] && DEVMODE='y'
