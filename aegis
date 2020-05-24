@@ -810,6 +810,7 @@ print_help() {
   echo -e " \033[1;35mupgrade\033[0m    - download and install latest version"
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
+  echo -e " \033[1;36m-html\033[0m          - sends output to router's web: http://routerlogin.net/bolemo/$SC_NAME.htm"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
