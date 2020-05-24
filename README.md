@@ -80,6 +80,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 
 ### Options:
 * `-v` - verbose mode
+* `-html` - sends output to router's web: http://routerlogin.net/bolemo/aegis.htm
 * `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
 * `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
 
@@ -93,6 +94,12 @@ Since version 3.1, you can have your own custom black list of IPs or netsets (IP
 
 ### Custom whitelist
 Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.custom-whitelist.netset` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
+
+## Web interface
+Each time an aegis command is done with the option `-html`, the output is sent to a page accessible here: http://routerlogin.net/bolemo/aegis.htm
+The cron job for an update could call `/bin/sh /opt/bolemo/scripts/aegis update -html` or `/bin/sh /opt/bolemo/scripts/aegis update -v -html`.
+Also, a cron job called every 10 minutes, or hour... could call `/bin/sh /opt/bolemo/scripts/aegis status -html` or `/bin/sh /opt/bolemo/scripts/aegis status -v -html`.
+In the future, I would like to be able to have the page call aegis to refresh itself.
 
 ## Logging
 ### Enable logging
