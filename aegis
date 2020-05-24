@@ -1,5 +1,6 @@
 #! /bin/sh
 
+SC_VERS="1.1.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPTBL_SRC="${SC_ABR}_src"
@@ -177,14 +178,13 @@ fi
 
 #when called from post-mount.sh
 _pm() {
-#  sleep 1
   [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
+  pre_init
   init
   _fws
   exit 0
 }
 
-SC_VERS="1.1.3"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
