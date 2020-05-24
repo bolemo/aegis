@@ -1,5 +1,6 @@
 #! /bin/sh
 
+SC_VERS="1.1.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPTBL_SRC="${SC_ABR}_src"
@@ -177,14 +178,13 @@ fi
 
 #when called from post-mount.sh
 _pm() {
-#  sleep 1
   [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
+  pre_init
   init
   _fws
   exit 0
 }
 
-SC_VERS="1.1.2"
 SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -193,6 +193,7 @@ SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
 CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-whitelist.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
+WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 # Check if scriot is installed on USB
@@ -235,6 +236,7 @@ upgrade() {
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
+    sed -i 's/^[[:space:]]*// ; /^#/d ; /^$/d' "$DL_PATH"
     \mv "$DL_PATH" "$SC_NICEPATH"
     chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
@@ -246,6 +248,20 @@ upgrade() {
   fi
 
   exit 0
+}
+
+get_def_srclst() {
+  if [ ! -e "$SRC_LIST" ]; then
+    [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing!"
+    SRC_LIST_URL="https://raw.githubusercontent.com/bolemo/aegis/master/$SC_NAME.sources"
+    if wget -qO "$SRC_LIST" "$SRC_LIST_URL"; then
+      [ "$VERBOSE" ] && echo -e "- Default list was downloaded."
+    else
+      >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
+      rm -f "$SRC_LIST"
+      exit 1
+    fi
+  fi
 }
 
 check_firewall_start() {
@@ -326,6 +342,12 @@ info() {
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
 }
 
+pre_init() {
+  check_path || set_path
+  [ -d "$ROOT_DIR/etc" ] || mkdir "$ROOT_DIR/etc" 2>/dev/null
+  [ -d "$ROOT_DIR/www" ] || mkdir "$ROOT_DIR/www" 2>/dev/null
+}
+
 init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
@@ -348,7 +370,6 @@ init() {
   else
     [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
-  check_path || set_path
 }
 
 fw_restart() {
@@ -509,7 +530,7 @@ set_ipset() {
 
 update_iplist() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating blocklist from sources...\033[0m"
-  [ -r "$SRC_LIST" ] || { >&2 echo -e "\033[31m! $SRC_LIST not readable!\033[0m"; exit 1; }
+  [ -e "$SRC_LIST" ] || get_def_srclst
 
   :>"$TMP_FILE"
   # Process each source url
@@ -581,7 +602,7 @@ status() {
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
   # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR" | sed 's/ *$//g')"
+  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR")"
   if [ "$STAT_IPT" ]; then
     _CT=$(echo "$STAT_IPT"|grep -c -- "-A ${SC_ABR}_... -j DROP")
     [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y'
@@ -789,6 +810,7 @@ print_help() {
   echo -e " \033[1;35mupgrade\033[0m    - download and install latest version"
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
+  echo -e " \033[1;36m-html\033[0m       - sends output to router's web: http://routerlogin.net/bolemo/$SC_NAME.htm"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
@@ -799,17 +821,28 @@ print_help() {
 
 if [ "$1" != "_niced" ]; then
   OPTS=''
-  if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
-  if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
-  if [ -z "${*##-rm-symlink *}" ] || [ -z "${*##* -rm-symlink *}" ] || [ -z "${*##* -rm-symlink}" ]; then OPTS="${OPTS}_rmsl"; fi
+  ARGS=" $* "
+  if [ -z "${ARGS##* -v *}" ]; then OPTS='_verbose'; fi
+  if [ -z "${ARGS##* --devmode *}" ]; then OPTS="${OPTS}_devmode"; fi
+  if [ -z "${ARGS##* -log=on *}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${ARGS##* -log=off *}" ]; then OPTS="${OPTS}_logoff"; fi
+  if [ -z "${ARGS##* -rm-symlink *}" ]; then OPTS="${OPTS}_rmsl"; fi
+  if [ -z "${ARGS##* -html *}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
-  nice -n 15 "$SC_PATH/$SC_NAME" _niced "$PARAM" "$OPTS"
+  if [ "$_HTML" ]; then
+    echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
+    echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
+    _HTML_FILTER="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
+    exec 2>&1 1>>$_HTML
+  fi
+
+  eval "nice -n 15 $SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML_FILTER"
   exit $?
 fi
+
+pre_init
 
 if [ "$3" ]; then
   [ -z "${3##*devmode*}" ] && DEVMODE='y'
