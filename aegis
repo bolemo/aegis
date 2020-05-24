@@ -344,8 +344,8 @@ info() {
 
 pre_init() {
   check_path || set_path
-  [ -d "$ROOT_DIR/bolemo/etc" ] || mkdir "$ROOT_DIR/bolemo/etc"
-  [ -d "$ROOT_DIR/bolemo/www" ] || mkdir "$ROOT_DIR/bolemo/www"
+  [ -d "$ROOT_DIR/etc" ] || mkdir "$ROOT_DIR/etc" 2>/dev/null
+  [ -d "$ROOT_DIR/www" ] || mkdir "$ROOT_DIR/www" 2>/dev/null
 }
 
 init() {
@@ -821,12 +821,12 @@ print_help() {
 if [ "$1" != "_niced" ]; then
   OPTS=''
   ARGS=" $* "
-  if [ -z "${ARGS## -v *}" ]; then OPTS='_verbose'; fi
-  if [ -z "${ARGS## --devmode *}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${ARGS## -log=on *}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${ARGS## -log=off *}" ]; then OPTS="${OPTS}_logoff"; fi
-  if [ -z "${ARGS## -rm-symlink *}" ]; then OPTS="${OPTS}_rmsl"; fi
-  if [ -z "${ARGS## -html *}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
+  if [ -z "${ARGS##* -v *}" ]; then OPTS='_verbose'; fi
+  if [ -z "${ARGS##* --devmode *}" ]; then OPTS="${OPTS}_devmode"; fi
+  if [ -z "${ARGS##* -log=on *}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${ARGS##* -log=off *}" ]; then OPTS="${OPTS}_logoff"; fi
+  if [ -z "${ARGS##* -rm-symlink *}" ]; then OPTS="${OPTS}_rmsl"; fi
+  if [ -z "${ARGS##* -html *}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
