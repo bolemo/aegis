@@ -820,12 +820,13 @@ print_help() {
 
 if [ "$1" != "_niced" ]; then
   OPTS=''
-  if [ -z "${*##-v *}" ] || [ -z "${*##* -v *}" ] || [ -z "${*##* -v}" ]; then OPTS='_verbose'; fi
-  if [ -z "${*##--devmode *}" ] || [ -z "${*##* --devmode *}" ] || [ -z "${*##* --devmode}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${*##-log=on *}" ] || [ -z "${*##* -log=on *}" ] || [ -z "${*##* -log=on}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${*##-log=off *}" ] || [ -z "${*##* -log=off *}" ] || [ -z "${*##* -log=off}" ]; then OPTS="${OPTS}_logoff"; fi
-  if [ -z "${*##-rm-symlink *}" ] || [ -z "${*##* -rm-symlink *}" ] || [ -z "${*##* -rm-symlink}" ]; then OPTS="${OPTS}_rmsl"; fi
-  if [ -z "${*##-html *}" ] || [ -z "${*##* -html *}" ] || [ -z "${*##* -html}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
+  ARGS=" $* "
+  if [ -z "${ARGS## -v *}" ]; then OPTS='_verbose'; fi
+  if [ -z "${ARGS## --devmode *}" ]; then OPTS="${OPTS}_devmode"; fi
+  if [ -z "${ARGS## -log=on *}" ]; then OPTS="${OPTS}_logon"; fi
+  if [ -z "${ARGS## -log=off *}" ]; then OPTS="${OPTS}_logoff"; fi
+  if [ -z "${ARGS## -rm-symlink *}" ]; then OPTS="${OPTS}_rmsl"; fi
+  if [ -z "${ARGS## -html *}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
   PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
   [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 
@@ -833,11 +834,10 @@ if [ "$1" != "_niced" ]; then
     echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
     echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
     _STDOUT="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
-    _STDOUT="$_STDOUT>>$_HTML"
+    _STDOUT="|tee -a $_HTML"
   fi
 
   eval "nice -n 15 $SC_PATH/$SC_NAME _niced $PARAM $OPTS $_STDOUT"
-  ############# $WWW_PATH needs to be checked and created if needed (same with path in another general init?
   exit $?
 fi
 
