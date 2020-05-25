@@ -332,6 +332,10 @@ info() {
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
+  if check_path
+    then echo "- '$SC_NAME' is in PATH."
+    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
+  fi
   echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
   if [ "$SC_LAST_VERS" ]
@@ -696,10 +700,6 @@ status() {
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
-  if check_path
-    then echo "- '$SC_NAME' is in \$PATH."
-    else echo "- '$SC_NAME' is not in \$PATH (you need to use $NICE_PATH)."
-  fi
   if [ "$STAT_FWS" ]; then
     echo "- 'firewall-start.sh' exists with correct settings."
   else
