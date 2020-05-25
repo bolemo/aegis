@@ -193,6 +193,7 @@ SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
 CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-whitelist.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
+TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
@@ -820,6 +821,13 @@ print_help() {
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
+PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
+case $(echo "$PARAM" | wc -w) in
+  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
+  1) PARAM="$(echo "$PARAM" | sed 's/ //g')" ;;
+  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
+esac
+
 ARGS=" $* "
 [ -z "${ARGS##* -v *}" ] && VERBOSE='y'
 [ -z "${ARGS##* --devmode *}" ] && DEVMODE='y'
@@ -828,18 +836,10 @@ ARGS=" $* "
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK='y'
 [ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
 
-PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
-case $(echo "$PARAM" | wc -w) in
-  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
-  1) PARAM="$(echo "$PARAM" | sed 's/ //g')" ;;
-  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
-esac
-
 if [ "$_HTML" ]; then
   echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
   echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
-  _HTML_FILTER="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
-  exec|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'>>$_HTML 2>&1
+  exec>>$TMP_HTML
 fi
 
 pre_init
@@ -860,5 +860,10 @@ case "$PARAM" in
   "upgrade") upgrade ;;
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
+
+if [ "$_HTML" ]; then
+  sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $HTML_TMP>>$_HTML
+  \rm $TMP_HTML 2>/dev/null
+fi
 
 exit 0
