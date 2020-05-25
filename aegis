@@ -839,7 +839,7 @@ if [ "$1" != "_niced" ]; then
     exec 2>&1 1>>$_HTML
   fi
 
-  eval "nice -n 15 $SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML_FILTER"
+  nice -n 15 sh -c "$SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML_FILTER"
   exit $?
 fi
 
