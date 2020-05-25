@@ -185,7 +185,7 @@ _pm() {
   exit 0
 }
 
-SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+SC_PATH="$(cd "$(dirname "$(readlink -f "$0")")" >/dev/null 2>&1 ; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
