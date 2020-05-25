@@ -13,7 +13,7 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
-ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(nvram get wan_ifname)"
+ifconfig ppp0 >/dev/null 2>&1 && WAN_IF='ppp0' || WAN_IF="$(nvram get wan_ifname)"
 WAN_GW="$(nvram get wan_gateway)"
 WAN_NM="$(nvram get wan_netmask)"
 # VPN tunnel detection
@@ -101,8 +101,8 @@ _fws() {
   fi
 
   #Creating our iptables chains if not already set
-  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && echo "$INFO_IPT_SRC_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
-  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && echo "$INFO_IPT_DST_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
+  iptables -L "$IPTBL_SRC" >/dev/null 2>&1 && echo "$INFO_IPT_SRC_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
+  iptables -L "$IPTBL_DST" >/dev/null 2>&1 && echo "$INFO_IPT_DST_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
   
   if [ "$IPTBL_LOGGING" ]; then
     iptables -S "$IPTBL_SRC" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
