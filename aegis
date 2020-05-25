@@ -836,7 +836,7 @@ if [ "$1" != "_niced" ]; then
     echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
     echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
     _HTML_FILTER="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
-    exec 2>&1 1>>$_HTML
+    exec>>$_HTML 2>&1
   fi
 
   nice -n 15 sh -c "$SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML_FILTER"
