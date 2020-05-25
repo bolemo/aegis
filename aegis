@@ -1,4 +1,5 @@
 #! /bin/sh
+[ $PATH ] || { export PATH=/bin:/sbin:/usr/bin:/usr/sbin; [ -e /root/.profile ] && source /root/.profile; }
 
 SC_VERS="1.1.4"
 SC_NAME="aegis"
@@ -185,7 +186,6 @@ _pm() {
   exit 0
 }
 
-[ -e /root/.profile ] && source /root/.profile
 SC_PATH="$(cd "$(\ls -l "$0"|sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
