@@ -1,6 +1,7 @@
 #! /bin/sh
+command -v iptables>/dev/null 2>&1 || { export PATH=/bin:/sbin:/usr/bin:/usr/sbin; [ -e /root/.profile ] && source /root/.profile; }
 
-SC_VERS="1.1.3"
+SC_VERS="1.1.4"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPTBL_SRC="${SC_ABR}_src"
@@ -17,7 +18,7 @@ ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(nvram get wan
 WAN_GW="$(nvram get wan_gateway)"
 WAN_NM="$(nvram get wan_netmask)"
 # VPN tunnel detection
-if ifconfig|grep -qF 'wg0'; then
+if ifconfig wg0 >/dev/null 2>/dev/null; then
   # WireGuard
   TUN_IF='wg0'
 elif ps -w|grep -vE 'grep|server_tap|server_tun'|grep -qF -- '/usr/sbin/openvpn --dev'; then
@@ -185,7 +186,7 @@ _pm() {
   exit 0
 }
 
-SC_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+SC_PATH="$(cd "$(\ls -l "$0"|sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
@@ -193,6 +194,7 @@ SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
 CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-whitelist.netset"
 TMP_FILE="/tmp/$SC_NAME.tmp"
+TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
@@ -329,6 +331,10 @@ info() {
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
+  fi
+  if check_path
+    then echo "- '$SC_NAME' is in PATH."
+    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
   fi
   echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
@@ -694,10 +700,6 @@ status() {
   
   # details
   echo -e "\033[1;36mDetailed status:\033[0m"
-  if check_path
-    then echo "- '$SC_NAME' is in \$PATH."
-    else echo "- '$SC_NAME' is not in \$PATH (you need to use $NICE_PATH)."
-  fi
   if [ "$STAT_FWS" ]; then
     echo "- 'firewall-start.sh' exists with correct settings."
   else
@@ -820,42 +822,33 @@ print_help() {
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
-if [ "$1" != "_niced" ]; then
-  OPTS=''
-  ARGS=" $* "
-  if [ -z "${ARGS##* -v *}" ]; then OPTS='_verbose'; fi
-  if [ -z "${ARGS##* --devmode *}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${ARGS##* -log=on *}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${ARGS##* -log=off *}" ]; then OPTS="${OPTS}_logoff"; fi
-  if [ -z "${ARGS##* -rm-symlink *}" ]; then OPTS="${OPTS}_rmsl"; fi
-  if [ -z "${ARGS##* -html *}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
-  PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
-  [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
+case $(echo "$PARAM" | wc -w) in
+  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
+  1) PARAM="$(echo "$PARAM" | sed 's/ //g')" ;;
+  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
+esac
 
-  if [ "$_HTML" ]; then
-    echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
-    echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
-    _HTML_FILTER="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
-    exec 2>&1 1>>$_HTML
-  fi
+ARGS=" $* "
+[ -z "${ARGS##* -v *}" ] && VERBOSE='y'
+[ -z "${ARGS##* --devmode *}" ] && DEVMODE='y'
+[ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
+[ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
+[ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK='y'
+[ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
 
-  eval "nice -n 15 $SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML_FILTER"
-  exit $?
+if [ "$_HTML" ]; then
+  echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
+  echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
+  exec>>$TMP_HTML
 fi
 
 pre_init
 
-if [ "$3" ]; then
-  [ -z "${3##*devmode*}" ] && DEVMODE='y'
-  [ -z "${3##*verbose*}" ] && VERBOSE='y'
-  [ -z "${3##*logon*}" ] && LOG_ACT='ON'
-  [ -z "${3##*logoff*}" ] && LOG_ACT='OFF'
-  [ -z "${3##*rmsl*}" ] && RM_SYMLINK='y'
-fi
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
-case "$2" in
+case "$PARAM" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
   "load_set") init; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
@@ -868,5 +861,10 @@ case "$2" in
   "upgrade") upgrade ;;
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
+
+if [ "$_HTML" ]; then
+  sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $TMP_HTML>>$_HTML
+  \rm $TMP_HTML 2>/dev/null
+fi
 
 exit 0
