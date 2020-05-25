@@ -862,7 +862,7 @@ case "$PARAM" in
 esac
 
 if [ "$_HTML" ]; then
-  sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $HTML_TMP>>$_HTML
+  sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $TMP_HTML>>$_HTML
   \rm $TMP_HTML 2>/dev/null
 fi
 
