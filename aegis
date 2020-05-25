@@ -820,42 +820,33 @@ print_help() {
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
-if [ "$1" != "_niced" ]; then
-  OPTS=''
-  ARGS=" $* "
-  if [ -z "${ARGS##* -v *}" ]; then OPTS='_verbose'; fi
-  if [ -z "${ARGS##* --devmode *}" ]; then OPTS="${OPTS}_devmode"; fi
-  if [ -z "${ARGS##* -log=on *}" ]; then OPTS="${OPTS}_logon"; fi
-  if [ -z "${ARGS##* -log=off *}" ]; then OPTS="${OPTS}_logoff"; fi
-  if [ -z "${ARGS##* -rm-symlink *}" ]; then OPTS="${OPTS}_rmsl"; fi
-  if [ -z "${ARGS##* -html *}" ]; then _HTML="$WWW_PATH/$SC_NAME.htm"; fi
-  PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g' | sed 's/ //g')"
-  [ "$PARAM" ] || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+ARGS=" $* "
+[ -z "${ARGS##* -v *}" ] && VERBOSE='y'
+[ -z "${ARGS##* --devmode *}" ] && DEVMODE='y'
+[ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
+[ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
+[ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK='y'
+[ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"; fi
+PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
+case $(echo "$PARAM" | wc -w) in
+  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
+  1) PARAM="$(echo "$PARAM" | sed 's/ //g')" ;;
+  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
+esac
 
-  if [ "$_HTML" ]; then
-    echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
-    echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
-    _HTML_FILTER="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
-    exec>>$_HTML 2>&1
-  fi
-
-  nice -n 15 sh -c "$SC_PATH/$SC_NAME _niced $PARAM $OPTS $_HTML_FILTER"
-  exit $?
+if [ "$_HTML" ]; then
+  echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
+  echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
+  _HTML_FILTER="|sed 's/[[:cntrl:]]\[\([^m]*\)m//g'"
+  exec>>$_HTML 2>&1
 fi
 
 pre_init
 
-if [ "$3" ]; then
-  [ -z "${3##*devmode*}" ] && DEVMODE='y'
-  [ -z "${3##*verbose*}" ] && VERBOSE='y'
-  [ -z "${3##*logon*}" ] && LOG_ACT='ON'
-  [ -z "${3##*logoff*}" ] && LOG_ACT='OFF'
-  [ -z "${3##*rmsl*}" ] && RM_SYMLINK='y'
-fi
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
-case "$2" in
+case "$PARAM" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
   "load_set") init; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
