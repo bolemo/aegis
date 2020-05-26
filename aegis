@@ -1,7 +1,7 @@
 #! /bin/sh
 command -v iptables>/dev/null 2>&1 || { export PATH=/bin:/sbin:/usr/bin:/usr/sbin; [ -e /root/.profile ] && source /root/.profile; }
 
-SC_VERS="1.1.4"
+SC_VERS="1.1.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPTBL_SRC="${SC_ABR}_src"
@@ -179,7 +179,7 @@ fi
 
 #when called from post-mount.sh
 _pm() {
-  [ -e /opt/bolemo ] || /bin/ln -sf /tmp/mnt/$2/bolemo /opt/bolemo
+  [ -d /opt/bolemo ] || /bin/ln -sfn /tmp/mnt/$2/bolemo /opt/bolemo
   pre_init
   init
   _fws
@@ -281,7 +281,7 @@ create_firewall_start() {
 
 check_postmount() {
   [ -x "$PM_FILE" ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -cF -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
   return 0
 }
 
