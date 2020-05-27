@@ -347,7 +347,7 @@ set_path() {
   [ -e "/usr/bin/$SC_NAME" ] || ln -s "/opt/bolemo/scripts/$SC_NAME" "/usr/bin/$SC_NAME"
 }
 
-remove_path() {
+clean_path() {
   if [ -e "/usr/bin/$SC_NAME" ]; then
     rm "/usr/bin/$SC_NAME" 2>/dev/null
     [ "$VERBOSE" ] && echo "- '/usr/bin' symlink was removed."
@@ -507,7 +507,7 @@ clean() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mCleaning...\033[0m"
   clean_firewall_start
   clean_postmount
-  [ "$RM_SYMLINK" ] && check_path && remove_path
+  [ "$RM_SYMLINK" ] && check_path && clean_path
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
