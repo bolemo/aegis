@@ -765,7 +765,7 @@ status() {
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
-    echo -e "- Router firewall was last started $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE): \033[35m"
+    echo -e "- Router firewall was last started $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)\033[35m"
     /bin/grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
     /bin/grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
     /bin/grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded.'
@@ -791,12 +791,12 @@ status() {
   if [ "$STAT_IPT" ]; then
     if [ "$STAT_IPT_PBM" ]; then
       echo -e "- \033[31miptables rules are not set properly\033[0m:"
-      [ -z "$STAT_IPT_TUN" ] && echo -e "     \033[31miptables rules are not set for VPN tunnel\033[0m"
+      [ -z "$STAT_IPT_TUN" ] && echo -e "     \033[31miptables rules are not set for VPN tunnel ($TUN_IF)\033[0m"
     else
       echo "- iptables rules are set:"
     fi
-    [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mWAN interface rules are set\033[0m"
-    [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mVPN tunnel interface rules are set\033[0m"
+    [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mWAN interface ($WAN_IF) rules are set\033[0m"
+    [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mVPN tunnel interface ($TUN_IF) rules are set\033[0m"
     [ "$STAT_IPT_WL" ] && echo -e "     \033[36mwhitelist rules are set\033[0m"
     [ "$STAT_IPT_WG" ] && echo -e "     \033[36mWAN gateway bypass rules are set\033[0m"
     echo -ne "\033[35m"
@@ -859,6 +859,7 @@ print_help() {
   echo -e " \033[1;35mupgrade\033[0m    - download and install latest version"
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
   echo -e " \033[1;36m-v\033[0m          - verbose mode"
+  echo -e " \033[1;36m-q\033[0m          - quiet mode"
   echo -e " \033[1;36m-html\033[0m       - sends output to router's web: http://routerlogin.net/bolemo/$SC_NAME.htm"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
