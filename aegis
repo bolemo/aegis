@@ -916,4 +916,4 @@ if [ "$_HTML" ]; then
   \rm $TMP_HTML 2>/dev/null
 fi
 
-exit _RETVAL
+exit $_RETVAL
