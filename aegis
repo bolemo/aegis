@@ -754,7 +754,7 @@ status() {
   else
     if [ "$STAT_CLEAN" ]
       then echo "- 'post-mount.sh' does not exist or does not have '$SC_NAME' settings."
-      else echo -e "- \033[1;31m'post-mount.sh' does not exist or does not have '$SC_NAME' settings!\033[0m
+      else echo -e "- \033[1;31m'post-mount.sh' does not exist or does not have '$SC_NAME' settings!\033[0m"
     fi
   fi
   
