@@ -179,7 +179,7 @@ _fws() {
 
 ###############################################
 #
-#    SPECIFIC CALLS FIREWALL-START & POST-MOUNT
+#    CALLED FROM FIREWALL-START & POST-MOUNT
 #
 ###############################################
 
@@ -278,6 +278,14 @@ get_def_srclst() {
   fi
 }
 
+###############################################
+#
+#    DEALING WITH EXTERNAL SCRIPTS/CONFS
+#    check, set, clean
+#
+###############################################
+
+# SCRIPT: firewall-start.sh ###################
 check_firewall_start() {
   [ -x $FWS_FILE ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" = 1 ] || return 1
@@ -291,6 +299,19 @@ create_firewall_start() {
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
 
+clean_firewall_start() {
+  if [ -e "$FWS_FILE" ]; then
+    if [ "$(grep -Fv "$SC_NAME" "$FWS_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$FWS_FILE"
+      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
+    else
+      rm "$FWS_FILE" 2>/dev/null
+      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
+    fi
+  fi
+}
+
+# SCRIPT: post-mount.sh ########################
 check_postmount() {
   [ -x "$PM_FILE" ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $PM_FILE | grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
@@ -305,6 +326,19 @@ create_postmount() {
   [ -x "$PM_FILE" ] || chmod +x "$PM_FILE"
 }
 
+clean_postmount() {
+  if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
+    if [ "$(grep -Fv "$SC_NAME" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
+      sed -i "/$SC_NAME/d" "$PM_FILE"
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
+    else
+      rm "$PM_FILE" 2>/dev/null
+      [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
+    fi
+  fi
+}
+
+# SYMLINK: /usr/bin/SELF ######################
 check_path() {
   command -v "$SC_NAME" > /dev/null && return 0 || return 1
 }
@@ -471,24 +505,8 @@ print_log() {
 
 clean() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mCleaning...\033[0m"
-  if [ -e "$FWS_FILE" ]; then
-    if [ "$(grep -Fv "$SC_NAME" "$FWS_FILE" | sed '/^[[:space:]]*$/d')" ]; then
-      sed -i "/$SC_NAME/d" "$FWS_FILE"
-      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
-    else
-      rm "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
-    fi
-  fi
-  if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
-    if [ "$(grep -Fv "$SC_NAME" "$PM_FILE" | sed '/^[[:space:]]*$/d')" ]; then
-      sed -i "/$SC_NAME/d" "$PM_FILE"
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
-    else
-      rm "$PM_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
-    fi
-  fi
+  clean_firewall_start
+  clean_postmount
   [ "$RM_SYMLINK" ] && check_path && remove_path
   rm "$INFO_FILE" 2>/dev/null
   /usr/sbin/net-wall restart > /dev/null
@@ -691,7 +709,7 @@ status() {
   elif [ "$STAT_CLEAN" ]; then
     echo "- '$SC_NAME' is not active; Settings are clean."
   elif [ "$STAT_IPT_WAN" -a "$STAT_IPT_TUN" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" ]; then
-    echo -n "- '$SC_NAME' is set and active"
+    echo -ne "- \033[1m'$SC_NAME' is set and active\033[0m"
     [ "$STAT_IPT_WAN" ] && echo -n " for WAN interface ($WAN_IF)"
     [ "$STAT_IPT_TUN" = 'ok' ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -e ".\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses."
