@@ -46,6 +46,12 @@ INFO_IPT_TUN='g'
 INFO_IPT_WAN_PBM='h'
 INFO_IPT_TUN_PBM='i'
 
+###############################################
+#
+#    FIREWALL-START
+#
+###############################################
+
 _fws() {
   :> "$INFO_FILE"
 
@@ -170,6 +176,12 @@ _fws() {
     fi
   fi
 }
+
+###############################################
+#
+#    SPECIFIC CALLS FIREWALL-START & POST-MOUNT
+#
+###############################################
 
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
