@@ -198,6 +198,12 @@ _pm() {
   exit 0
 }
 
+###############################################
+#
+#    ADDITIONNAL GLOBALS NEEDED WHEN NOT CALLED FROM FIREWALL-START
+#
+###############################################
+
 _RETVAL=0
 SC_PATH="$(cd "$(\ls -l "$0"|sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 IPR_BIN="$(command -v iprange)"
@@ -219,65 +225,6 @@ if echo "$SC_PATH" | grep -q '^/tmp/mnt/'; then
 else
   EXT_DRIVE=''
 fi
-
-upgrade() {
-  echo -e "\033[1;36mUpgrading:\033[0m"
-  echo "- Version installed: $SC_VERS"
-  if [ "$DEVMODE" ]; then
-    echo "- Devmode on, force downloading dev version..."
-    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/aegis/dev/aegis"
-  else
-    echo -ne "- Checking latest available version...\r"
-    SC_LAST_VERS="$(last_avail_version)";
-    if [ "$SC_LAST_VERS" ]
-      then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
-        then echo "- This is already the last version.         "; exit 0
-        else echo "- Version found: $SC_LAST_VERS                    "
-      fi
-      else
-        >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
-        exit 1
-    fi
-    UPGRADE_URL="https://raw.githubusercontent.com/bolemo/aegis/master/aegis"
-  fi
-  if [ ! "$DEVMODE" ]; then
-    echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
-    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
-  fi
-  echo "- Downloading:"
-
-  DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress';
-  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  echo -ne "\033[35m"
-  if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    sed -i 's/^[[:space:]]*// ; /^#/d ; /^$/d' "$DL_PATH"
-    \mv "$DL_PATH" "$SC_NICEPATH"
-    chmod +x "$SC_NICEPATH"
-    echo -e "\033[0m- Script installed to $SC_NICEPATH"
-  else
-    echo -ne "\033[0m"
-    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
-    rm -f "$DL_PATH"
-    exit 1
-  fi
-
-  exit 0
-}
-
-get_def_srclst() {
-  if [ ! -e "$SRC_LIST" ]; then
-    [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing!"
-    SRC_LIST_URL="https://raw.githubusercontent.com/bolemo/aegis/master/$SC_NAME.sources"
-    if wget -qO "$SRC_LIST" "$SRC_LIST_URL"; then
-      [ "$VERBOSE" ] && echo -e "- Default list was downloaded."
-    else
-      >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
-      rm -f "$SRC_LIST"
-      exit 1
-    fi
-  fi
-}
 
 ###############################################
 #
@@ -355,9 +302,85 @@ clean_path() {
   fi
 }
 
+###############################################
+#
+#    FUNCTIONS DEPENDING ON BOLEMO GIT REPO
+#
+###############################################
+BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
+SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
+SC_MAIN_REPO="$SC_BASE_REPO/master"
+SC_DEV_REPO="$SC_BASE_REPO/dev"
+
 last_avail_version() {
-  wget -qO- 'https://raw.githubusercontent.com/bolemo/aegis/master/version'
+  wget -qO- "$SC_MAIN_REPO/version"
 }
+
+upgrade() {
+  echo -e "\033[1;36mUpgrading:\033[0m"
+  echo "- Version installed: $SC_VERS"
+  if [ "$DEVMODE" ]; then
+    echo "- Devmode on, force downloading dev version..."
+    UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
+  else
+    echo -ne "- Checking latest available version...\r"
+    SC_LAST_VERS="$(last_avail_version)";
+    if [ "$SC_LAST_VERS" ]
+      then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
+        then echo "- This is already the last version.         "; exit 0
+        else echo "- Version found: $SC_LAST_VERS                    "
+      fi
+      else
+        >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+        exit 1
+    fi
+    UPGRADE_URL="UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME""
+  fi
+  if [ ! "$DEVMODE" ]; then
+    echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
+    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
+  fi
+  echo "- Downloading:"
+
+  DL_PATH="/tmp/$SC_NAME.dl"
+  _PROG='--show-progress';
+  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
+  echo -ne "\033[35m"
+  if wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
+    sed -i 's/^[[:space:]]*// ; /^#/d ; /^$/d' "$DL_PATH"
+    \mv "$DL_PATH" "$SC_NICEPATH"
+    chmod +x "$SC_NICEPATH"
+    echo -e "\033[0m- Script installed to $SC_NICEPATH"
+  else
+    echo -ne "\033[0m"
+    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
+    rm -f "$DL_PATH"
+    exit 1
+  fi
+
+  exit 0
+}
+
+# get default sources list (from bolemo github)
+get_def_srclst() {
+  if [ ! -e "$SRC_LIST" ]; then
+    [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing!"
+    SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
+    if wget -qO "$SRC_LIST" "$SRC_LIST_URL"; then
+      [ "$VERBOSE" ] && echo -e "- Default list was downloaded."
+    else
+      >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
+      rm -f "$SRC_LIST"
+      exit 1
+    fi
+  fi
+}
+
+###############################################
+#
+#    UTILITY FUNCTIONS
+#
+###############################################
 
 count_ip_in_file() {
   if [ -x "$IPR_BIN" ]
