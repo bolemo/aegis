@@ -292,7 +292,7 @@ check_firewall_start() {
   return 0
 }
 
-create_firewall_start() {
+set_firewall_start() {
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
   [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
   echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
@@ -318,7 +318,7 @@ check_postmount() {
   return 0
 }
 
-create_postmount() {
+set_postmount() {
   [ "$EXT_DRIVE" ] || return 1
   [ -d "$PM_DIR" ] || mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && sed -i "/$SC_NAME/d" "$PM_FILE"
@@ -407,7 +407,7 @@ init() {
   if check_firewall_start; then
     [ "$VERBOSE" ] && echo "- 'firewall-start.sh' is in place and ok."
   else
-    create_firewall_start
+    set_firewall_start
     check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
     [ "$VERBOSE" ] && echo "- 'firewall-start.sh' was edited and is now ok."
   fi
@@ -416,7 +416,7 @@ init() {
     if check_postmount; then
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' is in place and ok."
     else
-      create_postmount
+      set_postmount
       check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' was edited and is now ok."
     fi
