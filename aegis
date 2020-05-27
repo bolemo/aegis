@@ -198,6 +198,7 @@ _pm() {
   exit 0
 }
 
+_RETVAL=0
 SC_PATH="$(cd "$(\ls -l "$0"|sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -705,10 +706,13 @@ status() {
   
   # master check
   if   [ "$STAT_IPT_PBM" ]; then
+    _RETVAL=2
     echo -e "- \033[1;31mSomething is not right with iptables setup!\033[0m Use '$SC_NAME status -v' for more details"
   elif [ "$STAT_CLEAN" ]; then
+    _RETVAL=2
     echo "- '$SC_NAME' is not active; Settings are clean."
   elif [ "$STAT_IPT_WAN" -a "$STAT_IPT_TUN" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" ]; then
+    _RETVAL=0
     echo -ne "- \033[1m'$SC_NAME' is set and active\033[0m"
     [ "$STAT_IPT_WAN" ] && echo -n " for WAN interface ($WAN_IF)"
     [ "$STAT_IPT_TUN" = 'ok' ] && echo -n " and VPN tunnel ($TUN_IF)"
@@ -716,6 +720,7 @@ status() {
     [ "$STAT_IPT_WL" ] && if [ "$STAT_IPS_WL" ]; then
       echo "- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
     else
+      _RETVAL=2
       echo -e "- \033[1;31mWhitelist is defined in ipset but not in iptables!\033[0m Use '$SC_NAME status -v' for more details"
     fi
     if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WG" -a "$STAT_IPT_WG" ]; then
@@ -723,9 +728,11 @@ status() {
     elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WG$STAT_IPT_WG" ]; then
       echo "- WAN gateway IP range does not need to be bypassed."
     else
+      _RETVAL=2
       echo -e "- \033[1;31mSomething is not right with the WAN gateway bypass!\033[0m Use '$SC_NAME status -v' for more details"
     fi
   else
+    _RETVAL=2
     echo -e "- \033[1;31mSomething is not right!\033[0m Use '$SC_NAME -v status' for more details"
   fi
   [ "$STAT_LOG" ] && echo "- Logging is on." || echo "- Logging is off."
@@ -870,11 +877,14 @@ esac
 
 ARGS=" $* "
 [ -z "${ARGS##* -v *}" ] && VERBOSE='y'
+[ -z "${ARGS##* -q *}" ] && QUIET='y'
 [ -z "${ARGS##* --devmode *}" ] && DEVMODE='y'
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK='y'
 [ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
+
+[ "$QUIET" ] && exec>/dev/null
 
 if [ "$_HTML" ]; then
   echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
@@ -906,4 +916,4 @@ if [ "$_HTML" ]; then
   \rm $TMP_HTML 2>/dev/null
 fi
 
-exit 0
+exit _RETVAL
