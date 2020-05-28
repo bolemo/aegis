@@ -397,27 +397,12 @@ count_ip_in_ipset() {
   fi
 }
 
-info() {
-  echo -e "\033[1;36mInfo:\033[0m"
-  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
-    else echo -e "\033[31m! Something is wrong with installation!\033[0m"
-  fi
-  if check_path
-    then echo "- '$SC_NAME' is in PATH."
-    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
-  fi
-  echo -ne "- Checking latest available version...\r"
-  SC_LAST_VERS="$(last_avail_version)";
-  if [ "$SC_LAST_VERS" ]
-    then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
-      then echo "- This is the last version.            "
-      else echo -e "\033[35m- Lastest version available: $SC_LAST_VERS       \033[0m"
-    fi
-    else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
-  fi
-  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
-}
+###############################################
+#
+#    INIT FUNCTIONS
+#    script init & when using firewall init
+#
+###############################################
 
 pre_init() {
   check_path || set_path
@@ -520,6 +505,34 @@ fw_restart_if_needed() {
   else
     [ "$VERBOSE" ] && echo "- Internal firewall does not need to be restarted."
   fi
+}
+
+###############################################
+#
+#    FUNCTIONS FOR SCRIPT CMD ARGUMENTS
+#
+###############################################
+
+info() {
+  echo -e "\033[1;36mInfo:\033[0m"
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
+    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
+    else echo -e "\033[31m! Something is wrong with installation!\033[0m"
+  fi
+  if check_path
+    then echo "- '$SC_NAME' is in PATH."
+    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
+  fi
+  echo -ne "- Checking latest available version...\r"
+  SC_LAST_VERS="$(last_avail_version)";
+  if [ "$SC_LAST_VERS" ]
+    then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
+      then echo "- This is the last version.            "
+      else echo -e "\033[35m- Lastest version available: $SC_LAST_VERS       \033[0m"
+    fi
+    else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+  fi
+  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
 }
 
 print_log() {
