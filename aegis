@@ -53,6 +53,28 @@ INFO_IPT_TUN_PBM='i'
 #
 ###############################################
 
+set_ipt_for_if_pos() {
+  IF="$1"
+  POS=$2
+  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$IF -m set --match-set $IPSET_BL_NAME")
+  if [ $_CT -ne 4 ]; then
+    if [ $_CT -ne 0 ]; then
+      # something is messed up with rules; deleting what is left
+      iptables -S 2>/dev/null | grep -F -- "$IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      RET=2
+    else
+      RET=1
+    fi
+    iptables -I INPUT $POS -i $IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+    iptables -I OUTPUT $POS -o $IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+    iptables -I FORWARD $POS -i $IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+    iptables -I FORWARD $((POS+1)) -o $IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+  else
+    RET=0
+  fi
+  return $RET
+}
+
 _fws() {
   :> "$INFO_FILE"
 
@@ -146,36 +168,16 @@ _fws() {
   fi
   
   # creating the required iptables rules for wan interface
-  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
-  if [ $_CT -ne 4 ]; then
-    if [ $_CT -ne 0 ]; then
-      # something is messed up with rules; deleting what is left
-      iptables -S 2>/dev/null | grep -F -- "$WAN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"
-    fi
-    iptables -I INPUT 1 -i $WAN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    iptables -I OUTPUT 1 -o $WAN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-    iptables -I FORWARD 1 -i $WAN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    iptables -I FORWARD 2 -o $WAN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-    echo "$INFO_IPT_WAN" >> "$INFO_FILE"
-  fi
+  case $(set_ipt_for_if_pos "$WAN_IF" 1) in
+    2) echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"; echo "$INFO_IPT_WAN" >> "$INFO_FILE" ;;
+    1) echo "$INFO_IPT_WAN" >> "$INFO_FILE" ;;
+  esac
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
-  if [ "$TUN_IF" ]; then
-    _CT=$(iptables -S 2>/dev/null | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
-    if [ $_CT -ne 4 ]; then
-      if [ $_CT -ne 0 ]; then
-        # something is messed up with rules; deleting what is left
-        iptables -S 2>/dev/null | grep -F -- "$TUN_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-        echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"
-      fi
-      iptables -I INPUT 2 -i $TUN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-      iptables -I OUTPUT 2 -o $TUN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-      iptables -I FORWARD 2 -i $TUN_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-      iptables -I FORWARD 3 -o $TUN_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-      echo "$INFO_IPT_TUN" >> "$INFO_FILE"
-    fi
-  fi
+  [ "$TUN_IF" ] && case $(set_ipt_for_if_pos "$TUN_IF" 2) in
+    2) echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"; echo "$INFO_IPT_TUN" >> "$INFO_FILE" ;;
+    1) echo "$INFO_IPT_TUN" >> "$INFO_FILE" ;;
+  esac
 }
 
 ###############################################
