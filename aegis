@@ -204,8 +204,6 @@ _pm() {
 #    ADDITIONNAL GLOBALS NEEDED WHEN NOT CALLED FROM FIREWALL-START
 #
 ###############################################
-
-_RETVAL=0
 SC_PATH="$(cd "$(\ls -l "$0"|sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 IPR_BIN="$(command -v iprange)"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -902,7 +900,13 @@ print_help() {
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
 
-# Main routine
+###############################################
+#
+#    MAIN ROUTINE
+#
+###############################################
+_RETVAL=0
+
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
