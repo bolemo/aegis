@@ -51,7 +51,7 @@ INFO_FROM_PM='k'
 INFO_FROM_SC='l'
 ###############################################
 #
-#    FIREWALL-START
+#    ENGINE-START
 #
 ###############################################
 
@@ -77,9 +77,9 @@ _set_ipt_for_if_pos() {
   return $_RET
 }
 
-_fws() {
+engine_start() {
   _FROM=$1
-  "$_FROM" > "$INFO_FILE"
+  echo "$_FROM" > "$INFO_FILE"
   [ "$_FROM" = "$INFO_FROM_SC" ] && _RELOAD='y'
 
   # creating ipset blocklist if needed
@@ -210,7 +210,7 @@ _fws() {
 
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
-  _fws "$INFO_FROM_FWS"
+  engine_start "$INFO_FROM_FWS"
   exit 0
 fi
 
@@ -219,7 +219,7 @@ _pm() {
   [ -d /opt/bolemo ] || /bin/ln -sfn /tmp/mnt/$2/bolemo /opt/bolemo
   pre_init
   init
-  _fws "$INFO_FROM_PM"
+  engine_start "$INFO_FROM_PM"
   exit 0
 }
 
@@ -459,74 +459,8 @@ init() {
 
 fw_restart() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
-  if [ "$LOG_ACT" ]; then
-    if [ "$LOG_ACT" = 'ON' ]; then
-      [ "$VERBOSE" ] && echo "- Enabling logging."
-      nvram set aegis_log=1
-    else
-      [ "$VERBOSE" ] && echo "- Disabling logging."
-      nvram unset aegis_log
-    fi
-  fi
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Firewall restarted."
-}
-
-fw_needs_restart() {
-  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)\n$(iptables -S "$IPTBL_DST" 2>/dev/null)"
-  _IPT="$(echo -e "$_IPT"|sed "s/ *$//g ; s/WAN_IF/wan/")"
-
-  if [ "$LOG_ACT" ]; then
-    [ $(echo "$_IPT"|grep -Fc -- '-j LOG ') = 2 ] && LOG_IS_ON='y'
-    if [ "$LOG_ACT" = 'ON' ]
-      then [ "$LOG_IS_ON" ] || return 0
-      else [ "$LOG_IS_ON" ] && return 0
-    fi
-  fi
-  
-  [ $(echo "$_IPT"|grep -Fc -- "$IPSET_WL_NAME") = 2 ] && _WL='y'
-  [ $(echo "$_IPT"|grep -Fc -- "$IPSET_WG_NAME") = 2 ] && _WG='y'
-
-  if [ "$_WL" ]; then
-    [ -r "$WL_FILE" ] || return 0
-  else
-    [ -r "$WL_FILE" ] && return 0
-    ipset -q list -n "$IPSET_WL_NAME">/dev/null && return 0
-  fi
-  
-  if [ "$_WG" ]; then
-    [ "$WAN_GW" = '0.0.0.0' ] && return 0
-    ipset -q test "$IPSET_BL_NAME" "$WAN_GW" || return 0
-  else
-    ipset -q list -n "$IPSET_WG_NAME">/dev/null && return 0
-    [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && return 0
-  fi
-  
-  _IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR")"
-  _CT=$(echo "$_IPT" | grep -cv -- "^-. $SC_ABR")
-  if [ "$TUN_IF" ]
-    then [ $_CT = 8 ] || return 0
-    else [ $_CT = 4 ] || return 0
-  fi
-  
-  _CT=$(echo "$_IPT" | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
-  [ $_CT = 4 ] || return 0
-  
-  if [ "$TUN_IF" ]; then
-    _CT=$(echo "$_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
-    [ $_CT = 4 ] || return 0
-  fi
-  
-  return 1;
-}
-
-fw_restart_if_needed() {
-  if fw_needs_restart; then
-    [ "$VERBOSE" ] && echo "- Internal firewall needs to be restarted..."
-    fw_restart
-  else
-    [ "$VERBOSE" ] && echo "- Internal firewall does not need to be restarted."
-  fi
 }
 
 ###############################################
@@ -563,6 +497,19 @@ print_log() {
   dmesg | grep -F "$SC_NAME"
 }
 
+set_log_state() {
+  if [ "$1" ]; then
+    [ "$VERBOSE" ] && echo -e "\033[1;36mLogging state set:\033[0m"
+    if [ "$1" = 'ON' ]; then
+      [ "$VERBOSE" ] && echo "- Enabling logging."
+      nvram set aegis_log=1
+    else
+      [ "$VERBOSE" ] && echo "- Disabling logging."
+      nvram unset aegis_log
+    fi
+  fi
+}
+
 clean() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mCleaning...\033[0m"
   clean_firewall_start
@@ -583,6 +530,9 @@ clean() {
 
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+  "$VERBOSE" ] && echo "- Starting $SC_NAME engine..."
+  engine_start "$INFO_FROM_SC"
+  "$VERBOSE" ] && echo "- Done."
 }
 
 update_iplist() {
@@ -908,8 +858,8 @@ ARGS=" $* "
 [ -z "${ARGS##* -v *}" ] && VERBOSE='y'
 [ -z "${ARGS##* -q *}" ] && QUIET='y'
 [ -z "${ARGS##* --devmode *}" ] && DEVMODE='y'
-[ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
-[ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
+[ -z "${ARGS##* -log=on *}" ] && set_log_state 'ON'
+[ -z "${ARGS##* -log=off *}" ] && set_log_state 'OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK='y'
 [ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
 
@@ -929,13 +879,9 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[
 case "$PARAM" in
   "restart") init; fw_restart; [ $VERBOSE ] && status ;;
   "clean") clean; [ $VERBOSE ] && status ;;
-  "load_set")
-    init
-    _fws "$INFO_FROM_SC"
-    [ $VERBOSE ] && status
-    ;;
+  "load_set") init; set_ipset; [ $VERBOSE ] && status ;;
   "update_set") update_iplist ;;
-  "update") init; update_iplist; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
+  "update") init; update_iplist; set_ipset; [ $VERBOSE ] && status ;;
   "status") status ;;
   "help") print_help ;;
   "info") info ;;
