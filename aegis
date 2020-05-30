@@ -530,7 +530,8 @@ clean() {
 
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
-  [ "$VERBOSE" ] && echo -e "\033[1;36m- Starting $SC_NAME engine...\033[0m"
+  [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
+  echo "- Starting $SC_NAME engine..."
   engine_start "$INFO_FROM_SC"
   [ "$VERBOSE" ] && echo "- Done."
 }
@@ -735,7 +736,7 @@ status() {
   # Status file
   if [ -r "$INFO_FILE" ]; then
     echo "- $SC_NAME engine last launch report:"
-    echo -e "\033[35m     $SC_NAME engine was started: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+    echo -e "\033[35m     $SC_NAME engine start time: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     grep -qF "$INFO_FROM_SC" "$INFO_FILE" && echo "     $SC_NAME engine was started from $SC_NAME script."
     grep -qF "$INFO_FROM_PM" "$INFO_FILE" && echo "     $SC_NAME engine was started from post-mount.sh."
     grep -qF "$INFO_FROM_FWS" "$INFO_FILE" && echo "     $SC_NAME engine was started from a firewall-start.sh."
