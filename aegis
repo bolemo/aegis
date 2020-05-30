@@ -734,7 +734,8 @@ status() {
   
   # Status file
   if [ -r "$INFO_FILE" ]; then
-    echo -e "- Router firewall was last started $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)\033[35m"
+    echo "- $SC_NAME engine last launch report:"
+    echo -e "\033[35m     $SC_NAME engine was started: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     grep -qF "$INFO_FROM_SC" "$INFO_FILE" && echo "     $SC_NAME engine was started from $SC_NAME script."
     grep -qF "$INFO_FROM_PM" "$INFO_FILE" && echo "     $SC_NAME engine was started from post-mount.sh."
     grep -qF "$INFO_FROM_FWS" "$INFO_FILE" && echo "     $SC_NAME engine was started from a firewall-start.sh."
