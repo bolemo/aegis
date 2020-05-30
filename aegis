@@ -503,9 +503,11 @@ set_log_state() {
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
       nvram set aegis_log=1
+      IPTBL_LOGGING='y'
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
       nvram unset aegis_log
+      IPTBL_LOGGING=''
     fi
   fi
 }
