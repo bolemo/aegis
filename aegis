@@ -84,6 +84,20 @@ engine_start() {
 
   # creating ipset blocklist if needed
   if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
+  ###
+  ###
+  ### if iprange
+  ### [ -r "$BL_FILE" ] && ipset -L "$IPSET_BL_NAME"|sed -n '/Members:/,$p'|tail -n+2|iprange --quiet - --diff "$BL_FILE" && NOT RELOAD CAUSE SIMILAR
+  ### iprange needs to be checked first
+  ### list ipset function needs to be defined before
+  ###
+  ### if [ -r "$BL_FILE" ]; then
+  ###   [ "$_RELOAD_WTD" ] && _RELOAD='y'
+  ###   ipset -L "$IPSET_BL_NAME"|sed -n '/Members:/,$p'|tail -n+2|iprange --quiet - --diff "$BL_FILE" && _RELOAD='' || _RELOAD='y'
+  ### else
+  ###   
+  ### fi
+  ###
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
       echo -e "create $IPSET_TMP hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
