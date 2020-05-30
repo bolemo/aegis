@@ -531,7 +531,7 @@ clean() {
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
   [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
-  echo "- Starting $SC_NAME engine..."
+  echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
   engine_start "$INFO_FROM_SC"
   [ "$VERBOSE" ] && echo "- Done."
 }
