@@ -1,7 +1,7 @@
 #! /bin/sh
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
-SC_VERS="1.1.5"
+SC_VERS="1.2.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPTBL_SRC="${SC_ABR}_src"
@@ -155,10 +155,54 @@ engine_start() {
   #Creating our iptables chains if not already set
   iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && echo "$INFO_IPT_SRC_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
   iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && echo "$INFO_IPT_DST_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
-  
+
+  if [ "$_WG" ]; then
+    # apply wan gateway whitelist
+    _POS=1
+    if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
+      iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      iptables -I $_POS "$IPTBL_SRC" -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
+    fi
+    if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
+      iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      iptables -I $_POS "$IPTBL_DST" -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+    fi
+    echo "$INFO_IPT_WG" >> "$INFO_FILE"
+  else
+    #Removing any trace of WAN gareway whitelist if any
+    iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    ipset -q destroy "$IPSET_WG_NAME"
+    _POS=0
+  fi
+
+  if [ "$_WL" ]; then
+    # apply whitelist
+    _POS=$((1+_POS))
+    if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
+      iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      iptables -I $_POS "$IPTBL_SRC" -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+    fi
+    if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
+      iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      iptables -I $_POS "$IPTBL_DST" -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+    fi
+    echo "$INFO_IPT_WL" >> "$INFO_FILE"
+  else
+    #Removing any trace of whitelist if any
+    iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    ipset -q destroy "$IPSET_WL_NAME"
+  fi
+
   if [ "$IPTBL_LOGGING" ]; then
-    iptables -S "$IPTBL_SRC" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
-    iptables -S "$IPTBL_DST" | grep -qF -- "-j LOG" || iptables -A "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
+    _POS=$((1+_POS))
+    if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "-j LOG"; then
+      iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      iptables -I $_POS "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
+    fi
+    if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "-j LOG"; then
+      iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      iptables -I $_POS "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
+    fi
     echo "$INFO_IPT_LOG" >> "$INFO_FILE"
   else
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
@@ -166,28 +210,6 @@ engine_start() {
   fi
   iptables -S "$IPTBL_SRC" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
   iptables -S "$IPTBL_DST" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
-  
-  if [ "$_WL" ]; then
-    # apply whitelist
-    iptables -S "$IPTBL_SRC" | grep -qF -- "$IPSET_WL_NAME" || iptables -I "$IPTBL_SRC" -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-    iptables -S "$IPTBL_DST" | grep -qF -- "$IPSET_WL_NAME" || iptables -I "$IPTBL_DST" -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-    echo "$INFO_IPT_WL" >> "$INFO_FILE"
-  else
-    #Removing any trace of whitelist if any
-    iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    ipset -q destroy "$IPSET_WL_NAME"
-  fi
-  
-  if [ "$_WG" ]; then
-    # apply whitelist
-    iptables -S "$IPTBL_SRC" | grep -qF -- "$IPSET_WG_NAME" || iptables -I "$IPTBL_SRC" -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
-    iptables -S "$IPTBL_DST" | grep -qF -- "$IPSET_WG_NAME" || iptables -I "$IPTBL_DST" -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-    echo "$INFO_IPT_WG" >> "$INFO_FILE"
-  else
-    #Removing any trace of WAN gareway whitelist if any
-    iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    ipset -q destroy "$IPSET_WG_NAME"
-  fi
   
   # creating the required iptables rules for wan interface
   case $(_set_ipt_for_if_pos "$WAN_IF" 1) in
