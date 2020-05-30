@@ -459,6 +459,7 @@ init() {
 
 fw_restart() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
+  set_log_state
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Firewall restarted."
 }
@@ -498,9 +499,8 @@ print_log() {
 }
 
 set_log_state() {
-  if [ "$1" ]; then
-    [ "$VERBOSE" ] && echo -e "\033[1;36mLogging state set:\033[0m"
-    if [ "$1" = 'ON' ]; then
+  if [ "$LOG_ACT" ]; then
+    if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
       nvram set aegis_log=1
     else
@@ -531,6 +531,7 @@ clean() {
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
   [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
+  set_log_state
   [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
   engine_start "$INFO_FROM_SC"
 }
@@ -848,21 +849,21 @@ _RETVAL=0
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
+PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
+case $(echo "$PARAM" | wc -w) in
+  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
+  1) PARAM="$(echo "$PARAM" | sed 's/ //g')" ;;
+  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
+esac
+
 ARGS=" $* "
 [ -z "${ARGS##* -v *}" ] && VERBOSE='y'
 [ -z "${ARGS##* -q *}" ] && QUIET='y'
 [ -z "${ARGS##* --devmode *}" ] && DEVMODE='y'
-[ -z "${ARGS##* -log=on *}" ] && { LOG_ACT='ON'; _OINP='y'; }
-[ -z "${ARGS##* -log=off *}" ] && { LOG_ACT='OFF'; _OINP='y'; }
+[ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
+[ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK='y'
 [ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
-
-PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
-case $(echo "$PARAM" | wc -w) in
-  0) [ "$_OINP" ] && PARAM='void' || { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; } ;;
-  1) PARAM="$(echo "$PARAM" | sed 's/ //g')" ;;
-  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
-esac
 
 [ "$QUIET" ] && exec>/dev/null
 
@@ -876,8 +877,6 @@ pre_init
 
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
-
-[ "$LOG_ACT" ] && set_log_state "$LOG_ACT"
 
 case "$PARAM" in
   'restart') init; fw_restart; [ $VERBOSE ] && status ;;
