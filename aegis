@@ -530,9 +530,9 @@ clean() {
 
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
-  "$VERBOSE" ] && echo "- Starting $SC_NAME engine..."
+  [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine..."
   engine_start "$INFO_FROM_SC"
-  "$VERBOSE" ] && echo "- Done."
+  [ "$VERBOSE" ] && echo "- Done."
 }
 
 update_iplist() {
