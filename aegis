@@ -583,46 +583,6 @@ clean() {
 
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
-
-#  MAX="$(wc -l < $BL_FILE)"
-  
-#  if [ "$VERBOSE" ]; then
-#    NUM_IP="$(count_ip_in_file $BL_FILE)"
-#    echo -e "\033[1;36mBuilding ipset blocklist ($MAX entries blocking $NUM_IP ips)...\033[0m"
-#  fi
-
-#  if ipset -q list -n "$IPSET_BL_NAME">/dev/null; then
-#    echo -e "create $IPSET_TMP hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
-#    [ "$VERBOSE" ] && echo "- Created blocklist, swapping it."
-#    ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
-#    ipset destroy $IPSET_TMP
-#  else
-#    echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $MAX\n$(sed "s/^/add $IPSET_BL_NAME /" $BL_FILE)" | ipset restore
-#    [ "$VERBOSE" ] && echo "- Created blocklist."
-#  fi
-#  [ "$VERBOSE" ] && echo "- Done."
-  
-  # whitelist
-#  if [ -s "$WL_FILE" ]; then
-#    if [ "$VERBOSE" ]; then
-#      MAX="$(wc -l < $WL_FILE)"
-#      NUM_IP="$(count_ip_in_file "$WL_FILE")"
-#      echo -e "\033[1;36mBuilding ipset whitelist ($MAX entries bypassing $NUM_IP ips)...\033[0m"
-#    fi
-
-#    if ipset -q list -n "$IPSET_WL_NAME">/dev/null; then
-#      echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
-#      [ "$VERBOSE" ] && echo "- Created whitelist, swapping it."
-#      ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
-#      ipset destroy "$IPSET_TMP"
-#    else
-#      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" $WL_FILE)" | ipset restore
-#      [ "$VERBOSE" ] && echo "- Created whitelist."
-#    fi
-#    [ "$VERBOSE" ] && echo "- Done."
-#  else
-#    ipset -q destroy "$IPSET_WL_NAME"
-#  fi
 }
 
 update_iplist() {
@@ -972,7 +932,8 @@ case "$PARAM" in
   "load_set")
     init
     _fws "$INFO_FROM_SC"
-    [ $VERBOSE ] && status ;;
+    [ $VERBOSE ] && status
+    ;;
   "update_set") update_iplist ;;
   "update") init; update_iplist; set_ipset; fw_restart_if_needed; [ $VERBOSE ] && status ;;
   "status") status ;;
