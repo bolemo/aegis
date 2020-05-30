@@ -738,8 +738,8 @@ status() {
     echo "- $SC_NAME engine last launch report:"
     echo -e "\033[35m     $SC_NAME engine start time: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     grep -qF "$INFO_FROM_SC" "$INFO_FILE" && echo "     $SC_NAME engine was started from $SC_NAME script."
-    grep -qF "$INFO_FROM_PM" "$INFO_FILE" && echo "     $SC_NAME engine was started from post-mount.sh."
-    grep -qF "$INFO_FROM_FWS" "$INFO_FILE" && echo "     $SC_NAME engine was started from a firewall-start.sh."
+    grep -qF "$INFO_FROM_PM" "$INFO_FILE" && echo "     $SC_NAME engine was started from 'post-mount.sh'."
+    grep -qF "$INFO_FROM_FWS" "$INFO_FILE" && echo "     $SC_NAME engine was started from 'firewall-start.sh'."
     grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
     grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
     grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded.'
@@ -748,8 +748,8 @@ status() {
     grep -qF "$INFO_IPS_WG_KEEP" "$INFO_FILE" && echo '     ipset WAN gateway bypass was already set.'
     grep -qF "$INFO_IPS_WL_LOAD" "$INFO_FILE" && echo '     ipset whitelist was loaded from whitelist file.'
     grep -qF "$INFO_IPS_WL_KEEP" "$INFO_FILE" && echo '     ipset whitelist was already loaded and was kept.'
-    grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     inbound iptables rules were already set!'
-    grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     outbound iptables rules were already set!'
+    grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     inbound iptables rules were already set.'
+    grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     outbound iptables rules were already set.'
     grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     iptables logging rules were set.'
     grep -qF "$INFO_IPT_WG" "$INFO_FILE" && echo '     iptables WAN gateway bypass rules were set.'
     grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables whitelist rules were set.'
