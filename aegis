@@ -1,9 +1,10 @@
 #! /bin/sh
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-
+command -v iprange>/dev/null 2>&1 || [ -e /root/.profile ] && source /root/.profile
 SC_VERS="1.2.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
+IPR_BIN="$(command -v iprange)"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 [ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
@@ -55,6 +56,10 @@ INFO_FROM_SC='l'
 #
 ###############################################
 
+ipset_list_members() {
+  ipset -L "$1"|sed -n '/Members:/,$p'|tail -n+2
+}
+
 _set_ipt_for_if_pos() {
   _IF="$1"
   _POS=$2
@@ -80,24 +85,19 @@ _set_ipt_for_if_pos() {
 engine_start() {
   _FROM=$1
   echo "$_FROM" > "$INFO_FILE"
-  [ "$_FROM" = "$INFO_FROM_SC" ] && _RELOAD='y'
+  [ "$_FROM" = "$INFO_FROM_SC" ] && _RELOAD_WTD='y'
 
   # creating ipset blocklist if needed
   if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
-  ###
-  ###
-  ### if iprange
-  ### [ -r "$BL_FILE" ] && ipset -L "$IPSET_BL_NAME"|sed -n '/Members:/,$p'|tail -n+2|iprange --quiet - --diff "$BL_FILE" && NOT RELOAD CAUSE SIMILAR
-  ### iprange needs to be checked first
-  ### list ipset function needs to be defined before
-  ###
-  ### if [ -r "$BL_FILE" ]; then
-  ###   [ "$_RELOAD_WTD" ] && _RELOAD='y'
-  ###   ipset -L "$IPSET_BL_NAME"|sed -n '/Members:/,$p'|tail -n+2|iprange --quiet - --diff "$BL_FILE" && _RELOAD='' || _RELOAD='y'
-  ### else
-  ###   
-  ### fi
-  ###
+    # an ipset blocklist is already loaded
+    if [ -r "$BL_FILE" ]; then
+      [ "$_RELOAD_WTD" ] && _RELOAD='y'
+      # checking if ipset and file are identical
+      [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" && _RELOAD='' || _RELOAD='y'
+    else
+      # blocklist file is missing!
+      _RELOAD=''
+    fi
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
       echo -e "create $IPSET_TMP hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
@@ -105,7 +105,7 @@ engine_start() {
       ipset destroy $IPSET_TMP
       echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
     else
-    # blocklist already loaded, keeping it
+    # keeping existing blocklist
       echo "$INFO_IPS_BL_KEEP" >> "$INFO_FILE"
     fi
   else
@@ -146,6 +146,10 @@ engine_start() {
     # ipset whitelist is already in place
     if [ -r "$WL_FILE" ]; then
       _WL='y'
+      [ "$_RELOAD_WTD" ] && _RELOAD='y'
+      # checking if ipset and file are identical
+      [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" && _RELOAD='' || _RELOAD='y'
+      
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
         echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
@@ -264,9 +268,7 @@ _pm() {
 #    ADDITIONNAL GLOBALS NEEDED WHEN NOT CALLED FROM FIREWALL-START
 #
 ###############################################
-command -v iprange>/dev/null 2>&1 || [ -e /root/.profile ] && source /root/.profile
 SC_PATH="$(cd "$(\ls -l "$0"|sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
-IPR_BIN="$(command -v iprange)"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.custom-blacklist.netset"
@@ -450,8 +452,8 @@ count_ip_in_file() {
 
 count_ip_in_ipset() {
   if [ -x "$IPR_BIN" ]
-    then ipset list "$1" | sed -n '/Members:/,$p' | tail -n +2 | $IPR_BIN -C | sed -n 's/.*,//p'
-    else ipset list "$1" | sed -n '/Members:/,$p' | tail -n +2 | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
+    then ipset_list_members "$1" | $IPR_BIN -C | sed -n 's/.*,//p'
+    else ipset_list_members "$1" | grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' | awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
   fi
 }
 
