@@ -355,7 +355,7 @@ clean_path() {
 BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
 SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
 SC_MAIN_REPO="$SC_BASE_REPO/master"
-SC_DEV_REPO="$SC_BASE_REPO/dev"
+SC_DEV_REPO="$SC_BASE_REPO/Dev2"
 
 last_avail_version() {
   wget -qO- "$SC_MAIN_REPO/version"
