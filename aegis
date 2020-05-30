@@ -161,11 +161,11 @@ engine_start() {
     _POS=1
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I $_POS "$IPTBL_SRC" -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
+      iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I $_POS "$IPTBL_DST" -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
     fi
     echo "$INFO_IPT_WG" >> "$INFO_FILE"
   else
@@ -180,11 +180,11 @@ engine_start() {
     _POS=$((1+_POS))
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I $_POS "$IPTBL_SRC" -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+      iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I $_POS "$IPTBL_DST" -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+      iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
     fi
     echo "$INFO_IPT_WL" >> "$INFO_FILE"
   else
@@ -197,11 +197,11 @@ engine_start() {
     _POS=$((1+_POS))
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      iptables -I $_POS "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
+      iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      iptables -I $_POS "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
+      iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
     fi
     echo "$INFO_IPT_LOG" >> "$INFO_FILE"
   else
