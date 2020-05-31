@@ -44,10 +44,15 @@ INFO_IPS_WG_ADD='8'
 INFO_IPS_WG_KEEP='9'
 INFO_IPT_SRC_KEEP='a'
 INFO_IPT_DST_KEEP='b'
-INFO_IPT_PBM='q'
 INFO_IPT_LOG='c'
+INFO_IPT_LOG_SRC_NEW='q'
+INFO_IPT_LOG_DST_NEW='r'
 INFO_IPT_WL='d'
+INFO_IPT_WL_SRC_NEW='s'
+INFO_IPT_WL_DST_NEW='t'
 INFO_IPT_WG='f'
+INFO_IPT_WG_SRC_NEW='u'
+INFO_IPT_WG_DST_NEW='v'
 INFO_IPT_WAN='e'
 INFO_IPT_TUN='g'
 INFO_IPT_WAN_PBM='h'
@@ -196,10 +201,12 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
+      echo "$INFO_IPT_WG_SRC_NEW" >> "$INFO_FILE"
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+      echo "$INFO_IPT_WG_DST_NEW" >> "$INFO_FILE"
     fi
     echo "$INFO_IPT_WG" >> "$INFO_FILE"
   else
@@ -215,10 +222,12 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+      echo "$INFO_IPT_WL_SRC_NEW" >> "$INFO_FILE"
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+      echo "$INFO_IPT_WL_DST_NEW" >> "$INFO_FILE"
     fi
     echo "$INFO_IPT_WL" >> "$INFO_FILE"
   else
@@ -232,10 +241,12 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
+      echo "$INFO_IPT_LOG_SRC_NEW" >> "$INFO_FILE"
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
+      echo "$INFO_IPT_LOG_DST_NEW" >> "$INFO_FILE"
     fi
     echo "$INFO_IPT_LOG" >> "$INFO_FILE"
   else
@@ -808,9 +819,14 @@ status() {
     grep -qF "$INFO_IPS_WL_MISS" "$INFO_FILE" && echo '     no whitelist file was found.'
     grep -qF "$INFO_IPS_WL_LOAD" "$INFO_FILE" && echo '     ipset: whitelist from file was loaded.'
     grep -qF "$INFO_IPS_WL_KEEP" "$INFO_FILE" && echo '     ipset: the whitelist already loaded was kept.'
-    grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     iptables: inbound rules were already set.'
-    grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     iptables: outbound rules were already set.'
-    grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     iptables: logging rules were set.'
+    grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     iptables: inbound chain was already set.'
+    grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     iptables: outbound chain was already set.'
+    if grep -qF "$INFO_IPT_LOG" "$INFO_FILE"; then
+      grep -qF "$INFO_IPT_LOG_SRC_NEW" "$INFO_FILE" && echo '     iptables: inbound logging rules were (re)set.'
+                                                    || echo '     iptables: inbound logging rules were already set.'
+      grep -qF "$INFO_IPT_LOG_DST_NEW" "$INFO_FILE" && echo '     iptables: outbound logging rules were (re)set.'
+                                                    || echo '     iptables: outbound logging rules were already set.'
+    fi
     grep -qF "$INFO_IPT_WG" "$INFO_FILE" && echo '     iptables: WAN gateway bypass rules were set.'
     grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables: whitelist rules were set.'
     grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables: WAN rules had problems and were reset.'
