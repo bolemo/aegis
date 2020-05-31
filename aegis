@@ -851,10 +851,14 @@ status() {
         else echo '     iptables: outbound whitelist rules already set.'
       fi
     fi
-    grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables: WAN rules reset (because of problems).'
-    grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables: VPN rules reset (because of problems).'
-    grep -qF "$INFO_IPT_WAN" "$INFO_FILE" && echo '     iptables: WAN rules set.'
-    grep -qF "$INFO_IPT_TUN" "$INFO_FILE" && echo '     iptables: VPN rules set.'
+    if grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE"; then echo '     iptables: WAN rules reset (because of problems).'
+      elif grep -qF "$INFO_IPT_WAN" "$INFO_FILE"; then echo '     iptables: WAN rules set.'
+      then                                             echo '     iptables: WAN rules already set.'
+    fi
+    if grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE"; then echo '     iptables: VPN rules reset (because of problems).'
+      elif grep -qF "$INFO_IPT_TUN" "$INFO_FILE"; then echo '     iptables: VPN rules set.'
+      then                                             echo '     iptables: VPN rules already set.'
+    fi
     echo -ne "\033[0m"
   else
     echo '- No status file found.'
