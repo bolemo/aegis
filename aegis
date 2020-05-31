@@ -33,13 +33,18 @@ fi
 INFO_IPS_BL_LOAD='1'
 INFO_IPS_BL_NEW='2'
 INFO_IPS_BL_KEEP='3'
+INFO_IPS_BL_MISS='m'
+INFO_IPS_BL_SAME='n'
 INFO_IPS_BL_WGW='4'
 INFO_IPS_WL_LOAD='5'
 INFO_IPS_WL_KEEP='7'
+INFO_IPS_WL_MISS='o'
+INFO_IPS_WL_SAME='p'
 INFO_IPS_WG_ADD='8'
 INFO_IPS_WG_KEEP='9'
 INFO_IPT_SRC_KEEP='a'
 INFO_IPT_DST_KEEP='b'
+INFO_IPT_PBM='q'
 INFO_IPT_LOG='c'
 INFO_IPT_WL='d'
 INFO_IPT_WG='f'
@@ -93,10 +98,14 @@ engine_start() {
     if [ -r "$BL_FILE" ]; then
       [ "$_RELOAD_WTD" ] && _RELOAD='y'
       # checking if ipset and file are identical
-      [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" && _RELOAD='' || _RELOAD='y'
+      if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
+        then _RELOAD=''; echo "$INFO_IPS_BL_SAME" >> "$INFO_FILE"
+        else_RELOAD='y'
+      fi
     else
       # blocklist file is missing!
       _RELOAD=''
+      echo "$INFO_IPS_BL_MISS" >> "$INFO_FILE"
     fi
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
@@ -116,7 +125,7 @@ engine_start() {
     else
     # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_BL_NAME" hash:net family inet
-      echo "$INFO_IPS_BL_NEW" >> "$INFO_FILE"
+      echo -e "$INFO_IPS_BL_MISS\n$INFO_IPS_BL_NEW" >> "$INFO_FILE"
     fi
   fi
   
@@ -148,7 +157,10 @@ engine_start() {
       _WL='y'
       [ "$_RELOAD_WTD" ] && _RELOAD='y'
       # checking if ipset and file are identical
-      [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" && _RELOAD='' || _RELOAD='y'
+      if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
+        then _RELOAD=''; echo "$INFO_IPS_WL_SAME" >> "$INFO_FILE"
+        else_RELOAD='y'
+      fi
       
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
@@ -160,6 +172,8 @@ engine_start() {
       # we want to keep it
         echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
       fi
+    else
+      echo "$INFO_IPS_WL_MISS" >> "$INFO_FILE"
     fi
   else
     if [ -r "$WL_FILE" ]; then
@@ -167,6 +181,8 @@ engine_start() {
       _WL='y'
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
+    else
+      echo "$INFO_IPS_WL_MISS" >> "$INFO_FILE"
     fi
   fi
 
@@ -780,23 +796,27 @@ status() {
     grep -qF "$INFO_FROM_SC" "$INFO_FILE" && echo "     $SC_NAME engine was started from $SC_NAME script."
     grep -qF "$INFO_FROM_PM" "$INFO_FILE" && echo "     $SC_NAME engine was started from 'post-mount.sh'."
     grep -qF "$INFO_FROM_FWS" "$INFO_FILE" && echo "     $SC_NAME engine was started from 'firewall-start.sh'."
-    grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset blocklist was loaded from blocklist file.'
-    grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset blocklist was created empty.'
-    grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset blocklist was already loaded.'
-    grep -qF "$INFO_IPS_BL_WGW" "$INFO_FILE" && echo '     WAN gateway was found in ipset blocklist.'
-    grep -qF "$INFO_IPS_WG_ADD" "$INFO_FILE" && echo '     ipset WAN gateway bypass was set.'
-    grep -qF "$INFO_IPS_WG_KEEP" "$INFO_FILE" && echo '     ipset WAN gateway bypass was already set.'
-    grep -qF "$INFO_IPS_WL_LOAD" "$INFO_FILE" && echo '     ipset whitelist was loaded from whitelist file.'
-    grep -qF "$INFO_IPS_WL_KEEP" "$INFO_FILE" && echo '     ipset whitelist was already loaded and was kept.'
-    grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     inbound iptables rules were already set.'
-    grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     outbound iptables rules were already set.'
-    grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     iptables logging rules were set.'
-    grep -qF "$INFO_IPT_WG" "$INFO_FILE" && echo '     iptables WAN gateway bypass rules were set.'
-    grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables whitelist rules were set.'
-    grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables WAN rules had problems and were reset.'
-    grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables VPN rules had problems and were reset.'
-    grep -qF "$INFO_IPT_WAN" "$INFO_FILE" && echo '     iptables WAN rules were set.'
-    grep -qF "$INFO_IPT_TUN" "$INFO_FILE" && echo '     iptables VPN rules were set.'
+    grep -qF "$INFO_IPS_BL_SAME" "$INFO_FILE" && echo '     ipset: loaded blocklist was similar to file.'
+    grep -qF "$INFO_IPS_BL_MISS" "$INFO_FILE" && echo '     no blocklist file was found!'
+    grep -qF "$INFO_IPS_BL_LOAD" "$INFO_FILE" && echo '     ipset: blocklist from file was loaded.'
+    grep -qF "$INFO_IPS_BL_NEW" "$INFO_FILE" && echo '     ipset: an empty blocklist was loaded.'
+    grep -qF "$INFO_IPS_BL_KEEP" "$INFO_FILE" && echo '     ipset: the blocklist already loaded was kept.'
+    grep -qF "$INFO_IPS_BL_WGW" "$INFO_FILE" && echo '     ipset: WAN gateway was found in blocklist.'
+    grep -qF "$INFO_IPS_WG_ADD" "$INFO_FILE" && echo '     ipset: WAN gateway bypass was set.'
+    grep -qF "$INFO_IPS_WG_KEEP" "$INFO_FILE" && echo '     ipset: WAN gateway bypass was already set.'
+    grep -qF "$INFO_IPS_WL_SAME" "$INFO_FILE" && echo '     ipset: loaded whitelist was similar to file.'
+    grep -qF "$INFO_IPS_WL_MISS" "$INFO_FILE" && echo '     no whitelist file was found.'
+    grep -qF "$INFO_IPS_WL_LOAD" "$INFO_FILE" && echo '     ipset: whitelist from file was loaded.'
+    grep -qF "$INFO_IPS_WL_KEEP" "$INFO_FILE" && echo '     ipset: the whitelist already loaded was kept.'
+    grep -qF "$INFO_IPT_SRC_KEEP" "$INFO_FILE" && echo '     iptables: inbound rules were already set.'
+    grep -qF "$INFO_IPT_DST_KEEP" "$INFO_FILE" && echo '     iptables: outbound rules were already set.'
+    grep -qF "$INFO_IPT_LOG" "$INFO_FILE" && echo '     iptables: logging rules were set.'
+    grep -qF "$INFO_IPT_WG" "$INFO_FILE" && echo '     iptables: WAN gateway bypass rules were set.'
+    grep -qF "$INFO_IPT_WL" "$INFO_FILE" && echo '     iptables: whitelist rules were set.'
+    grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables: WAN rules had problems and were reset.'
+    grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables: VPN rules had problems and were reset.'
+    grep -qF "$INFO_IPT_WAN" "$INFO_FILE" && echo '     iptables: WAN rules were set.'
+    grep -qF "$INFO_IPT_TUN" "$INFO_FILE" && echo '     iptables: VPN rules were set.'
     echo -ne "\033[0m"
   else
     echo '- No status file found.'
