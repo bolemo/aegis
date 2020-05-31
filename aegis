@@ -53,8 +53,10 @@ INFO_IPT_WL_DST_NEW='t'
 INFO_IPT_WG='f'
 INFO_IPT_WG_SRC_NEW='u'
 INFO_IPT_WG_DST_NEW='v'
-INFO_IPT_WAN='e'
-INFO_IPT_TUN='g'
+INFO_IPT_WAN_NEW='e'
+INFO_IPT_TUN_NEW='g'
+INFO_IPT_WAN_KEEP='x'
+INFO_IPT_TUN_KEEP='y'
 INFO_IPT_WAN_PBM='h'
 INFO_IPT_TUN_PBM='i'
 INFO_FROM_FWS='j'
@@ -258,14 +260,16 @@ engine_start() {
   
   # creating the required iptables rules for wan interface
   case $(_set_ipt_for_if_pos "$WAN_IF" 1) in
-    2) echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE"; echo "$INFO_IPT_WAN" >> "$INFO_FILE" ;;
-    1) echo "$INFO_IPT_WAN" >> "$INFO_FILE" ;;
+    2) echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE" ;;
+    1) echo "$INFO_IPT_WAN_NEW" >> "$INFO_FILE" ;;
+    0) echo "$INFO_IPT_WAN_KEEP" >> "$INFO_FILE" ;;
   esac
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   [ "$TUN_IF" ] && case $(_set_ipt_for_if_pos "$TUN_IF" 2) in
-    2) echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE"; echo "$INFO_IPT_TUN" >> "$INFO_FILE" ;;
-    1) echo "$INFO_IPT_TUN" >> "$INFO_FILE" ;;
+    2) echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE" ;;
+    1) echo "$INFO_IPT_TUN_NEW" >> "$INFO_FILE" ;;
+    0) echo "$INFO_IPT_TUN_KEEP" >> "$INFO_FILE" ;;
   esac
 }
 
@@ -851,14 +855,12 @@ status() {
         else echo '     iptables: outbound whitelist rules already set.'
       fi
     fi
-    if grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE"; then echo '     iptables: WAN rules reset.'
-      elif grep -qF "$INFO_IPT_WAN" "$INFO_FILE"; then echo '     iptables: WAN rules set.'
-      else                                             echo '     iptables: WAN rules already set.'
-    fi
-    if grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE"; then echo '     iptables: VPN rules reset.'
-      elif grep -qF "$INFO_IPT_TUN" "$INFO_FILE"; then echo '     iptables: VPN rules set.'
-      else                                             echo '     iptables: VPN rules already set.'
-    fi
+    grep -qF "$INFO_IPT_WAN_PBM" "$INFO_FILE" && echo '     iptables: WAN rules reset.'
+    grep -qF "$INFO_IPT_WAN_NEW" "$INFO_FILE" && echo '     iptables: WAN rules set.'
+    grep -qF "$INFO_IPT_WAN_KEEP" "$INFO_FILE" && echo '     iptables: WAN rules already set.'
+    grep -qF "$INFO_IPT_TUN_PBM" "$INFO_FILE" && echo '     iptables: VPN rules reset.'
+    grep -qF "$INFO_IPT_TUN_NEW" "$INFO_FILE" && echo '     iptables: VPN rules set.'
+    grep -qF "$INFO_IPT_TUN_KEEP" "$INFO_FILE" && echo '     iptables: VPN rules already set.'
     echo -ne "\033[0m"
   else
     echo '- No status file found.'
