@@ -624,7 +624,7 @@ update_iplist() {
   { while read -r URL; do
       _TOT=$((_TOT+1))
       [ "$VERBOSE" ] && echo -e "$_TOT) $URL\033[35m"
-      { { { { wget $WGET_OPTS "$URL"; echo $? >&3; } | grep '^[0-9]' | sed 's/;.*//' >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } } 4>&1
+      { { { { wget $WGET_OPTS "$URL"; echo $? >&3; } | grep '^[0-9]' | sed 's/;.*//' >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
       _EC=$?
       [ "$VERBOSE" ] && echo -e "\033[0m"
       [ $_EC = 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
