@@ -276,7 +276,7 @@ engine_start() {
     esac
   fi
   
-  echo $_INFO > "$INFO_FILE"
+  echo -n $_INFO > "$INFO_FILE"
 }
 
 ###############################################
