@@ -30,41 +30,41 @@ else
   # No tunneling
   TUN_IF=''
 fi
-INFO_IPS_BL_LOAD='1'
-INFO_IPS_BL_NEW='2'
-INFO_IPS_BL_KEEP='3'
-INFO_IPS_BL_MISS='m'
-INFO_IPS_BL_SAME='n'
-INFO_IPS_BL_WGW='4'
-INFO_IPS_WL_LOAD='5'
-INFO_IPS_WL_KEEP='7'
-INFO_IPS_WL_MISS='o'
-INFO_IPS_WL_SAME='p'
-INFO_IPS_WG_ADD='8'
-INFO_IPS_WG_KEEP='9'
-INFO_IPT_SRC_KEEP='a'
-INFO_IPT_DST_KEEP='b'
-INFO_IPT_LOG='c'
-INFO_IPT_LOG_SRC_NEW='q'
-INFO_IPT_LOG_DST_NEW='r'
-INFO_IPT_WL='d'
-INFO_IPT_WL_SRC_NEW='s'
-INFO_IPT_WL_DST_NEW='t'
-INFO_IPT_WG='f'
-INFO_IPT_WG_SRC_NEW='u'
-INFO_IPT_WG_DST_NEW='v'
-INFO_IPT_WAN_NEW='e'
-INFO_IPT_TUN_NEW='g'
-INFO_IPT_WAN_KEEP='x'
-INFO_IPT_TUN_KEEP='y'
-INFO_IPT_WAN_PBM='h'
-INFO_IPT_TUN_PBM='i'
-INFO_FROM_FWS='j'
-INFO_FROM_PM='k'
-INFO_FROM_SC='l'
+INFO_IPS_BL_LOAD     = $((1<<0))
+INFO_IPS_BL_NEW      = $((1<<1))
+INFO_IPS_BL_KEEP     = $((1<<2))
+INFO_IPS_BL_MISS     = $((1<<3))
+INFO_IPS_BL_SAME     = $((1<<4))
+INFO_IPS_BL_WGW      = $((1<<5))
+INFO_IPS_WL_LOAD     = $((1<<5))
+INFO_IPS_WL_KEEP     = $((1<<6))
+INFO_IPS_WL_MISS     = $((1<<7))
+INFO_IPS_WL_SAME     = $((1<<8))
+INFO_IPS_WG_ADD      = $((1<<9))
+INFO_IPS_WG_KEEP     = $((1<<10))
+INFO_IPT_SRC_KEEP    = $((1<<11))
+INFO_IPT_DST_KEEP    = $((1<<12))
+INFO_IPT_LOG         = $((1<<13))
+INFO_IPT_LOG_SRC_NEW = $((1<<14))
+INFO_IPT_LOG_DST_NEW = $((1<<15))
+INFO_IPT_WL          = $((1<<16))
+INFO_IPT_WL_SRC_NEW  = $((1<<17))
+INFO_IPT_WL_DST_NEW  = $((1<<18))
+INFO_IPT_WG          = $((1<<19))
+INFO_IPT_WG_SRC_NEW  = $((1<<20))
+INFO_IPT_WG_DST_NEW  = $((1<<21))
+INFO_IPT_WAN_NEW     = $((1<<22))
+INFO_IPT_TUN_NEW     = $((1<<23))
+INFO_IPT_WAN_KEEP    = $((1<<24))
+INFO_IPT_TUN_KEEP    = $((1<<25))
+INFO_IPT_WAN_PBM     = $((1<<26))
+INFO_IPT_TUN_PBM     = $((1<<27))
+INFO_FROM_FWS        = $((1<<28))
+INFO_FROM_PM         = $((1<<29))
+INFO_FROM_SC         = $((1<<30))
 ###############################################
 #
-#    ENGINE-START
+#    ENGINE-STA
 #
 ###############################################
 
@@ -96,8 +96,8 @@ _set_ipt_for_if_pos() {
 
 engine_start() {
   _FROM=$1
-  echo "$_FROM" > "$INFO_FILE"
-  [ "$_FROM" = "$INFO_FROM_SC" ] && _RELOAD_WTD='y'
+  _INFO=$_FROM
+  [ $_FROM = $INFO_FROM_SC ] && _RELOAD_WTD='y'
 
   # creating ipset blocklist if needed
   if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
@@ -106,40 +106,40 @@ engine_start() {
       [ "$_RELOAD_WTD" ] && _RELOAD='y'
       # checking if ipset and file are identical
       if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
-        then _RELOAD=''; echo "$INFO_IPS_BL_SAME" >> "$INFO_FILE"
+        then _RELOAD=''; _INFO=$((_INFO+INFO_IPS_BL_SAME))
         else_RELOAD='y'
       fi
     else
       # blocklist file is missing!
       _RELOAD=''
-      echo "$INFO_IPS_BL_MISS" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_BL_MISS))
     fi
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
       echo -e "create $IPSET_TMP hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
       ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
       ipset destroy $IPSET_TMP
-      echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_BL_LOAD))
     else
     # keeping existing blocklist
-      echo "$INFO_IPS_BL_KEEP" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_BL_KEEP))
     fi
   else
     if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
-      echo "$INFO_IPS_BL_LOAD" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_BL_LOAD))
     else
     # no netset file, creating empty blocklist ipset
       ipset -q create "$IPSET_BL_NAME" hash:net family inet
-      echo -e "$INFO_IPS_BL_MISS\n$INFO_IPS_BL_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_BL_MISS+INFO_IPS_BL_NEW))
     fi
   fi
   
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then
     _WG='y'
-    echo "$INFO_IPS_BL_WGW" >> "$INFO_FILE"
+    _INFO=$((_INFO+INFO_IPS_BL_WGW))
     if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
       # Calculate WAN_RANGE (IP & CIDR)
       _CIDR=0
@@ -151,9 +151,9 @@ engine_start() {
       ipset -q create "$IPSET_WG_NAME" hash:net family inet
       ipset -q flush "$IPSET_WG_NAME"
       ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
-      echo "$INFO_IPS_WG_ADD" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_WG_ADD))
     else
-      echo "$INFO_IPS_WG_KEEP" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_WG_KEEP))
     fi
   fi
   
@@ -165,7 +165,7 @@ engine_start() {
       [ "$_RELOAD_WTD" ] && _RELOAD='y'
       # checking if ipset and file are identical
       if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
-        then _RELOAD=''; echo "$INFO_IPS_WL_SAME" >> "$INFO_FILE"
+        then _RELOAD=''; _INFO=$((_INFO+INFO_IPS_WL_SAME))
         else_RELOAD='y'
       fi
       
@@ -174,28 +174,28 @@ engine_start() {
         echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
         ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
         ipset destroy "$IPSET_TMP"
-        echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
+        _INFO=$((_INFO+INFO_IPS_WL_LOAD))
       else
       # we want to keep it
-        echo "$INFO_IPS_WL_KEEP" >> "$INFO_FILE"
+        _INFO=$((_INFO+INFO_IPS_WL_KEEP))
       fi
     else
-      echo "$INFO_IPS_WL_MISS" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_WL_MISS))
     fi
   else
     if [ -r "$WL_FILE" ]; then
       # netset file exists, so creating whitelist ipset from it
       _WL='y'
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
-      echo "$INFO_IPS_WL_LOAD" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_WL_LOAD))
     else
-      echo "$INFO_IPS_WL_MISS" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPS_WL_MISS))
     fi
   fi
 
   #Creating our iptables chains if not already set
-  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && echo "$INFO_IPT_SRC_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_SRC"
-  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && echo "$INFO_IPT_DST_KEEP" >> "$INFO_FILE" || iptables -N "$IPTBL_DST"
+  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && _INFO=$((_INFO+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC"
+  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && _INFO=$((_INFO+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST"
 
   if [ "$_WG" ]; then
     # apply wan gateway whitelist
@@ -203,12 +203,12 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
-      echo "$INFO_IPT_WG_SRC_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPT_WG_SRC_NEW))
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-      echo "$INFO_IPT_WG_DST_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPT_WG_DST_NEW))
     fi
     echo "$INFO_IPT_WG" >> "$INFO_FILE"
   else
@@ -224,12 +224,12 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-      echo "$INFO_IPT_WL_SRC_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPT_WL_SRC_NEW))
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-      echo "$INFO_IPT_WL_DST_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPT_WL_DST_NEW))
     fi
     echo "$INFO_IPT_WL" >> "$INFO_FILE"
   else
@@ -243,14 +243,14 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
-      echo "$INFO_IPT_LOG_SRC_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPT_LOG_SRC_NEW))
     fi
     if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
-      echo "$INFO_IPT_LOG_DST_NEW" >> "$INFO_FILE"
+      _INFO=$((_INFO+INFO_IPT_LOG_DST_NEW))
     fi
-    echo "$INFO_IPT_LOG" >> "$INFO_FILE"
+    _INFO=$((_INFO+INFO_IPT_LOG))
   else
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
@@ -261,20 +261,22 @@ engine_start() {
   # creating the required iptables rules for wan interface
   _set_ipt_for_if_pos "$WAN_IF" 1
   case $? in
-    2) echo "$INFO_IPT_WAN_PBM" >> "$INFO_FILE" ;;
-    1) echo "$INFO_IPT_WAN_NEW" >> "$INFO_FILE" ;;
-    0) echo "$INFO_IPT_WAN_KEEP" >> "$INFO_FILE" ;;
+    2) _INFO=$((_INFO+INFO_IPT_WAN_PBM)) ;;
+    1) _INFO=$((_INFO+INFO_IPT_WAN_NEW)) ;;
+    0) _INFO=$((_INFO+INFO_IPT_WAN_KEEP)) ;;
   esac
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
     _set_ipt_for_if_pos "$TUN_IF" 2
     case $? in
-      2) echo "$INFO_IPT_TUN_PBM" >> "$INFO_FILE" ;;
-      1) echo "$INFO_IPT_TUN_NEW" >> "$INFO_FILE" ;;
-      0) echo "$INFO_IPT_TUN_KEEP" >> "$INFO_FILE" ;;
+      2) _INFO=$((_INFO+INFO_IPT_TUN_PBM)) ;;
+      1) _INFO=$((_INFO+INFO_IPT_TUN_NEW)) ;;
+      0) _INFO=$((_INFO+INFO_IPT_TUN_KEEP)) ;;
     esac
   fi
+  
+  echo $_INFO > "$INFO_FILE"
 }
 
 ###############################################
