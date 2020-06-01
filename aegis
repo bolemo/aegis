@@ -107,7 +107,7 @@ engine_start() {
       # checking if ipset and file are identical
       if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
         then _RELOAD=''; _INFO=$((_INFO+INFO_IPS_BL_SAME))
-        else_RELOAD='y'
+        else _RELOAD='y'
       fi
     else
       # blocklist file is missing!
