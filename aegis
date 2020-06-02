@@ -548,28 +548,6 @@ fw_restart() {
 #
 ###############################################
 
-info() {
-  echo -e "\033[1;36mInfo:\033[0m"
-  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
-    else echo -e "\033[31m! Something is wrong with installation!\033[0m"
-  fi
-  if check_path
-    then echo "- '$SC_NAME' is in PATH."
-    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
-  fi
-  echo -ne "- Checking latest available version...\r"
-  SC_LAST_VERS="$(last_avail_version)";
-  if [ "$SC_LAST_VERS" ]
-    then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
-      then echo "- This is the last version.            "
-      else echo -e "\033[35m- Lastest version available: $SC_LAST_VERS       \033[0m"
-    fi
-    else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
-  fi
-  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
-}
-
 print_log() {
   echo -e "\033[1;36mLog:\033[0m"
   echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
@@ -677,11 +655,31 @@ update_iplist() {
   fi
 }
 
-status() {
-  echo -e "\033[1;36mStatus:\033[0m\n- '$SC_NAME' version: $SC_VERS"
-  
+info() {
+  echo -e "\033[1;36mInfo:\033[0m"
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
+    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
+    else echo -e "\033[31m! Something is wrong with installation!\033[0m"
+  fi
+  if check_path
+    then echo "- '$SC_NAME' is in PATH."
+    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
+  fi
+  echo -ne "- Checking latest available version...\r"
+  SC_LAST_VERS="$(last_avail_version)";
+  if [ "$SC_LAST_VERS" ]
+    then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
+      then echo "- This is the last version.            "
+      else echo -e "\033[35m- Lastest version available: $SC_LAST_VERS       \033[0m"
+    fi
+    else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+  fi
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
+}
+
+status() {
+  echo -e "\033[1;36mStatus:\033[0m"
   
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
@@ -807,6 +805,9 @@ status() {
       else echo -e "- \033[1;31m'post-mount.sh' does not exist or does not have '$SC_NAME' settings!\033[0m"
     fi
   fi
+  
+  # check iprange binary
+  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
   
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
