@@ -425,15 +425,17 @@ upgrade() {
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
   else
     echo -ne "- Checking latest available version...\r"
-    SC_LAST_VERS="$(last_avail_version)";
-    if [ "$SC_LAST_VERS" ]
-      then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
-        then echo "- This is already the last version.         "; exit 0
-        else echo "- Version found: $SC_LAST_VERS                    "
+    SC_LAST_VERS="$(last_avail_version)"
+    if [ "$SC_LAST_VERS" ]; then
+      _LOC_VERS=$(echo "$SC_VERS"|sed 's/[^[:digit:]]//g')
+      _REM_VERS=$(echo "$SC_LAST_VERS"|sed 's/[^[:digit:]]//g')
+      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the last version.            "; exit 0
+      elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS       "
+      else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS       \033[0m"
       fi
-      else
-        >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
-        exit 1
+    else
+      >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+      exit 1
     fi
     UPGRADE_URL="UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME""
   fi
@@ -661,18 +663,20 @@ info() {
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
+  echo -ne "- Checking latest available version...\r"
+  SC_LAST_VERS="$(last_avail_version)";
+  if [ "$SC_LAST_VERS" ]; then
+    _LOC_VERS=$(echo "$SC_VERS"|sed 's/[^[:digit:]]//g')
+    _REM_VERS=$(echo "$SC_LAST_VERS"|sed 's/[^[:digit:]]//g')
+    if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is the last version.            "
+    elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo -e "\033[35m- New version available: $SC_LAST_VERS       \033[0m"
+    else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS       \033[0m"
+    fi
+  else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+  fi
   if check_path
     then echo "- '$SC_NAME' is in PATH."
     else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
-  fi
-  echo -ne "- Checking latest available version...\r"
-  SC_LAST_VERS="$(last_avail_version)";
-  if [ "$SC_LAST_VERS" ]
-    then if [ "$SC_VERS" = "$SC_LAST_VERS" ]
-      then echo "- This is the last version.            "
-      else echo -e "\033[35m- Lastest version available: $SC_LAST_VERS       \033[0m"
-    fi
-    else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
   fi
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
