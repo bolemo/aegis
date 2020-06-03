@@ -169,7 +169,7 @@ engine_start() {
       # checking if ipset and file are identical
       if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
         then _RELOAD=''; _IPS=$((_IPS+INFO_IPS_WL_SAME))
-        else_RELOAD='y'
+        else _RELOAD='y'
       fi
       
       if [ "$_RELOAD" ]; then
@@ -690,126 +690,53 @@ STAT_IPT_TUN=$((1<<1))
 STAT_IPT_WL=$((1<<2))
 STAT_IPT_WG=$((1<<3))
 STAT_IPT_LOG=$((1<<4))
-status() {  
+CHK_FILE_BL=0
+status() {
+  _CHK=0
+  _PBM=0
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
   
   # check post-mount.sh script if script on external drive
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
-  # check iptables
-  STAT_IPT="$(iptables -S 2>/dev/null | grep -F "$SC_ABR")"
-  if [ "$STAT_IPT" ]; then
-    _CT=$(echo "$STAT_IPT"|grep -c -- "-A ${SC_ABR}_... -j DROP")
-    [ $_CT = 2 ] && STAT_IPT_PBM='' || STAT_IPT_PBM='y'
+  
+  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then    _CHK=$((_CHK+CHK_BL_IPS))   # check engine ipset blocklist
+    # checking WAN gateway
+    if [ "$WAN_GW" != '0.0.0.0' ] &&
+       ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then     _CHK=$((_CHK+CHK_WG))       # check WAN gateway
+      if ! ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then _PBM=$((_PBM+CHK_WG))       # and bypass
+      fi
+    fi
+  fi
+  ipset -q -n -L "$IPSET_WL_NAME">/dev/null &&          _CHK=$((_CHK+CHK_WL_IPS))   # check engine ipset whitelist
+  
+  # checks that can only be done with iprange
+  if [ "$IPR_BIN" ]; then
+    if [ -r "$BL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
+      ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" ||
+                                                        _PBM=$((_PBM+CHK_BL_DIFF))  # check bl file & ipset diff
+    fi
+    if [ -r "$WL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
+      ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" ||
+                                                        _PBM=$((_PBM+CHK_WL_DIFF)) # check bl file & ipset diff
+    fi
+  else
+    if [ -r "$BL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then :
+      else                                              _PBM=$((_CHK+PBM_BL_FILE))
+    fi
+    if [ -r "$WL_FILE" ] && [ $((_CHK & CHK_WL_IPS)) -ne 0 ]; then :
+      else                                              _PBM=$((_CHK+PBM_WL_FILE))
+    fi
+  fi
+
     
-    _CT=$(echo "$STAT_IPT" | grep -cv -- "^-. $SC_ABR")
-    if [ "$TUN_IF" ]
-      then [ $_CT = 8 ] || STAT_IPT_PBM='y'
-      else [ $_CT = 4 ] || STAT_IPT_PBM='y'
-    fi
-  
-    case $(echo "$STAT_IPT"|grep -Fc -- "$IPSET_WL_NAME") in
-      2) STAT_IPT_WL='y' ;;
-      0) STAT_IPT_WL='' ;;
-      *) STAT_IPT_PBM='y' ;;
-    esac
-  
-    case $(echo "$STAT_IPT"|grep -Fc -- "$IPSET_WG_NAME") in
-      2) STAT_IPT_WG='y' ;;
-      0) STAT_IPT_WG='' ;;
-      *) STAT_IPT_PBM='y' ;;
-    esac
-  
-    _CT=$(echo "$STAT_IPT" | grep -cF -- "$WAN_IF -m set --match-set $IPSET_BL_NAME")
-    [ $_CT = 4 ] && STAT_IPT_WAN='ok'
-  
-    if [ "$TUN_IF" ]; then
-      _CT=$(echo "$STAT_IPT" | grep -cF -- "$TUN_IF -m set --match-set $IPSET_BL_NAME")
-      [ $_CT = 4 ] && STAT_IPT_TUN='ok'
-    else
-      STAT_IPT_TUN='na'
-    fi
-  
-    # check log    
-    case $(echo "$STAT_IPT"| grep -c -- "-A ${SC_ABR}_... -j LOG --log-prefix") in
-      2) STAT_LOG='y' ;;
-      0) STAT_LOG='' ;;
-      *) STAT_IPT_PBM='y' ;;
-    esac
-  fi
-  # end check iptables
-  
-  # check ipset blocklist
-  STAT_IPS="$(ipset -q list $IPSET_BL_NAME -t)"
-  
-  # check ipset whitelist
-  STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
-  
-  # check ipset WAN gateway whitelist
-  STAT_IPS_WG="$(ipset -q list $IPSET_WG_NAME -t)"
-  
-  if [ "$WAN_GW" = '0.0.0.0' ]; then
-    STAT_GW_IN_BL=''; STAT_GW_IN_WG=''
-  else
-    # check WAN gateway in ipset blocklist
-    ipset -q test "$IPSET_BL_NAME" "$WAN_GW" && STAT_GW_IN_BL='y' || STAT_GW_IN_BL=''
-    # check WAN gatewan in WAN gateway ipset whitelist
-    ipset -q test "$IPSET_WG_NAME" "$WAN_GW" && STAT_GW_IN_WG='y' || STAT_GW_IN_WG=''
-  fi
-  
-  # are settings clean?
-  [ -z "$STAT_IPT$STAT_IPS$STAT_IPS_WL$STAT_IPS_WG$STAT_FWS$STAT_PM" ] && STAT_CLEAN='y' || STAT_CLEAN=''
-  
-  # master check
-  if   [ "$STAT_IPT_PBM" ]; then
-    _RETVAL=2
-    # Something is not right with iptables setup!
-  elif [ "$STAT_CLEAN" ]; then
-    _RETVAL=2
-    # Engine is not active; Settings are clean.
-  elif [ "$STAT_IPT_WAN" -a "$STAT_IPT_TUN" -a "$STAT_IPS" -a "$STAT_FWS" -a "$STAT_PM" ]; then
-    _RETVAL=0
-    # Engine is set and active
-    [ "$STAT_IPT_WAN" ] && # for WAN interface ($WAN_IF)
-    [ "$STAT_IPT_TUN" = 'ok' ] && # and for VPN tunnel ($TUN_IF)
-    [ "$STAT_IPT_WL" ] && if [ "$STAT_IPS_WL" ]; then
-      # whitelist set and active
-    else
-      _RETVAL=2
-      # Whitelist is defined in ipset but not in iptables!
-    fi
-    if [ "$STAT_GW_IN_BL" -a "$STAT_GW_IN_WG" -a "$STAT_IPT_WG" ]; then
-      # WAN gateway IP range is bypassed (because in blocklist).
-    elif [ -z "$STAT_GW_IN_BL$STAT_GW_IN_WG$STAT_IPT_WG" ]; then
-      # WAN gateway IP range does not need to be bypassed.
-    else
-      _RETVAL=2
-      # Something is not right with the WAN gateway bypass!
-    fi
-  else
-    _RETVAL=2
-    # Something is not right!
-  fi
-  [ "$STAT_LOG" ] && # Logging is on. || # Logging is off.
-  
-  # details
-  if [ "$STAT_FWS" ]; then
-    echo "- 'firewall-start.sh' exists with correct settings."
-  else
-    if [ "$STAT_CLEAN" ]
-      then echo "- 'firewall-start.sh' does not exist or does not have '$SC_NAME' settings."
-      else echo -e "- \033[1;31m'firewall-start.sh' does not exist or does not have '$SC_NAME' settings!\033[0m"
-    fi
-  fi
-  if [ "$STAT_PM" ]; then
-    [ "$STAT_PM" = 'ok' ] && echo "- 'post-mount.sh' exists with correct settings."
-  else
-    if [ "$STAT_CLEAN" ]
-      then echo "- 'post-mount.sh' does not exist or does not have '$SC_NAME' settings."
-      else echo -e "- \033[1;31m'post-mount.sh' does not exist or does not have '$SC_NAME' settings!\033[0m"
-    fi
-  fi
+      
+
+
+
+
+
   
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
