@@ -711,6 +711,7 @@ status() {
   fi
   ipset -q -n -L "$IPSET_WL_NAME">/dev/null &&          _CHK=$((_CHK+CHK_WL_IPS))   # check engine ipset whitelist
   
+  
   # checks that can only be done with iprange
   if [ "$IPR_BIN" ]; then
     if [ -r "$BL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
@@ -722,8 +723,17 @@ status() {
                                                         _PBM=$((_PBM+CHK_WL_DIFF)) # check bl file & ipset diff
     fi
   else
-    if [ -r "$BL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then :
-      else                                              _PBM=$((_CHK+PBM_BL_FILE))
+    if [ -r "$BL_FILE" ]; then                          _CHK=$((_CHK+CHK_BL_FILE)) # check blacklist file
+      if [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
+        if [ "$IPR_BIN" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
+          if ! ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
+            then                                        _WNG=$((_WNG+CHK_BL_DIFF)) # blacklist file & ipset different
+          fi
+        else                                            _WNG=$((_WNG+CHK_BL_DIFF_IMP)) # can't check diff
+        fi
+      else                                              _WNG=$((_WNG+CHK_BL_FILE_NOIPS))
+      fi
+      
     fi
     if [ -r "$WL_FILE" ] && [ $((_CHK & CHK_WL_IPS)) -ne 0 ]; then :
       else                                              _PBM=$((_CHK+PBM_WL_FILE))
