@@ -693,6 +693,7 @@ STAT_IPT_LOG=$((1<<4))
 CHK_FILE_BL=0
 status() {
   _CHK=0
+  _WNG=0
   _PBM=0
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
@@ -701,42 +702,38 @@ status() {
   if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
   
   
-  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then    _CHK=$((_CHK+CHK_BL_IPS))   # check engine ipset blocklist
+  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then     _CHK=$((_CHK+CHK_BL_IPS))  # check engine ipset blocklist
     # checking WAN gateway
     if [ "$WAN_GW" != '0.0.0.0' ] &&
-       ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then     _CHK=$((_CHK+CHK_WG))       # check WAN gateway
-      if ! ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then _PBM=$((_PBM+CHK_WG))       # and bypass
+       ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then      _CHK=$((_CHK+CHK_WG))      # check WAN gateway
+      if ! ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then  _PBM=$((_PBM+CHK_WG))      # and bypass
+      fi
+    elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then _PBM=$((_PBM+CHK_WG))      # bypass exists but shouldn't
+    fi
+  fi
+  ipset -q -n -L "$IPSET_WL_NAME">/dev/null &&           _CHK=$((_CHK+CHK_WL_IPS))  # check engine ipset whitelist
+  
+  # checking blocklist file
+  if [ -r "$BL_FILE" ]; then                           _CHK=$((_CHK+CHK_BL_FILE)) # check blacklist file
+    if [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
+      if [ "$IPR_BIN" ]; then
+        if ! ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
+          then                                         _WNG=$((_WNG+CHK_BL_DIFF)) # blacklist file & ipset different
+        fi
+      else                                             _WNG=$((_WNG+CHK_BL_DIFF_IMP)) # can't check diff
       fi
     fi
   fi
-  ipset -q -n -L "$IPSET_WL_NAME">/dev/null &&          _CHK=$((_CHK+CHK_WL_IPS))   # check engine ipset whitelist
-  
-  
-  # checks that can only be done with iprange
-  if [ "$IPR_BIN" ]; then
-    if [ -r "$BL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
-      ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" ||
-                                                        _PBM=$((_PBM+CHK_BL_DIFF))  # check bl file & ipset diff
-    fi
-    if [ -r "$WL_FILE" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
-      ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" ||
-                                                        _PBM=$((_PBM+CHK_WL_DIFF)) # check bl file & ipset diff
-    fi
-  else
-    if [ -r "$BL_FILE" ]; then                          _CHK=$((_CHK+CHK_BL_FILE)) # check blacklist file
-      if [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
-        if [ "$IPR_BIN" ] && [ $((_CHK & CHK_BL_IPS)) -ne 0 ]; then
-          if ! ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
-            then                                        _WNG=$((_WNG+CHK_BL_DIFF)) # blacklist file & ipset different
-          fi
-        else                                            _WNG=$((_WNG+CHK_BL_DIFF_IMP)) # can't check diff
-        fi
-      else                                              _WNG=$((_WNG+CHK_BL_FILE_NOIPS))
-      fi
       
-    fi
-    if [ -r "$WL_FILE" ] && [ $((_CHK & CHK_WL_IPS)) -ne 0 ]; then :
-      else                                              _PBM=$((_CHK+PBM_WL_FILE))
+  # checking whitelist file
+  if [ -r "$WL_FILE" ]; then                           _CHK=$((_CHK+CHK_WL_FILE)) # check whitelist file
+    if [ $((_CHK & CHK_WL_IPS)) -ne 0 ]; then
+      if [ "$IPR_BIN" ]; then
+        if ! ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
+          then                                         _WNG=$((_WNG+CHK_WL_DIFF)) # blacklist file & ipset different
+        fi
+      else                                             _WNG=$((_WNG+CHK_WL_DIFF_IMP)) # can't check diff
+      fi
     fi
   fi
 
