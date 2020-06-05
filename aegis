@@ -67,7 +67,7 @@ INFO_FROM_PM=$((1<<1))
 INFO_FROM_SC=$((1<<2))
 ###############################################
 #
-#    ENGINE-STA
+#    ENGINE-START
 #
 ###############################################
 
@@ -684,16 +684,17 @@ info() {
 
 #---------------------------- _STATUS ----------------------------
 # STATUS VARS
-#STAT IPT CHAIN?
-STAT_IPT_WAN=$((1<<0))
-STAT_IPT_TUN=$((1<<1))
-STAT_IPT_WL=$((1<<2))
-STAT_IPT_WG=$((1<<3))
-STAT_IPT_LOG=$((1<<4))
-CHK_FILE_BL=0
+CHK_IPS=$((1<<0))       # used in BL WL WG
+CHK_IPT_WAN=$((1<<1))   # used in BL              PBM
+CHK_IPT_TUN=$((1<<2))   # used in BL              PBM
+CHK_IPT_SRC=$((1<<1))   # used in    WL WG CH LOG
+CHK_IPT_DST=$((1<<2))   # used in    WL WG CH LOG
+CHK_IPT_IFO=$((1<<0))   # used in                 PBM
+CHK_FILE=$((1<<3))      # used in BL WL
+CHK_DIFF=$((1<<4))      # used in BL WL
+CHK_WG_BL=$((1<<3))     # used in       WG
+CHK_WG_BP=$((1<<4))     # used in       WG
 status() {
-  _CHK=0
-  _WNG=0
   _PBM=0
   # check firewall-start.sh script
   check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
@@ -703,6 +704,7 @@ status() {
   
   
   # CHECK BLOCKLIST
+  _CHK_BL=0
   ipset -q -n -L "$IPSET_BL_NAME">/dev/null &&           _CHK_BL=$((_CHK_BL+CHK_IPS))  # check ipset
   [ -r "$BL_FILE" ] &&                                   _CHK_BL=$((_CHK_BL+CHK_FILE)) # check file
   if [ $_CHK_BL -eq $((CHK_IPS+CHK_FILE)) ]; then
@@ -712,6 +714,7 @@ status() {
   fi
   
   # CHECK WHITELIST
+  _CHK_WL=0
   ipset -q -n -L "$IPSET_WL_NAME">/dev/null &&           _CHK_WL=$((_CHK_WL+CHK_IPS))  # check ipset
   [ -r "$WL_FILE" ] &&                                   _CHK_WL=$((_CHK_WL+CHK_FILE)) # check file
   if [ $_CHK_WL -eq $((CHK_IPS+CHK_FILE)) ]; then
@@ -721,14 +724,14 @@ status() {
   fi
 
   # CHECK WAN GATEWAY
+  _CHK_WG=0
   ipset -q -n -L "$IPSET_WG_NAME">/dev/null &&         _CHK_WG=$((_CHK_WG+CHK_IPS))
   [ "$WAN_GW" != '0.0.0.0' ] &&
     ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"             _CHK_WG=$((_CHK_WG+CHK_WG_BL))   # WGW in blocklist
   ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"               _CHK_WG=$((_CHK_WG+CHK_WG_BP))   # WGW bypassed
 
-  #Check WAN_IF ? IPT vs actual
-
   # CHECK IPTABLES OWN CHAINS (ENGINE)
+  _CHK_CH=0
   # SRC CHAIN
   _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)"
   if [ "$_IPT" ]; then
@@ -738,6 +741,7 @@ status() {
       _CL=2 # current line
       if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then
         _CHK_WG=$((_CHK_WG+CHK_IPT_SRC))
+        echo "$_IPT"|grep -qF -- "$WAN_IF" || _PBM=$((_PBM+CHK_IPT_WAN))
         _CL=3
       fi
       if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then
@@ -763,6 +767,7 @@ status() {
       _CL=2 # current line
       if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then
         _CHK_WG=$((_CHK_WG+CHK_IPT_DST))
+        echo "$_IPT"|grep -qF -- "$WAN_IF" || _PBM=$((_PBM+CHK_IPT_WAN))
         _CL=3
       fi
       if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then
@@ -779,25 +784,19 @@ status() {
     fi
   fi
   
-
-  
-  # creating the required iptables rules for wan interface
-  _set_ipt_for_if_pos "$WAN_IF" 1
-  case $? in
-    2) _IPT=$((_IPT+INFO_IPT_WAN_PBM)) ;;
-    1) _IPT=$((_IPT+INFO_IPT_WAN_NEW)) ;;
-    0) _IPT=$((_IPT+INFO_IPT_WAN_KEEP)) ;;
-  esac
-  
-  # creating the required iptables rules for vpn tunnel interface (if needed)
-  if [ "$TUN_IF" ]; then
-    _set_ipt_for_if_pos "$TUN_IF" 2
-    case $? in
-      2) _IPT=$((_IPT+INFO_IPT_TUN_PBM)) ;;
-      1) _IPT=$((_IPT+INFO_IPT_TUN_NEW)) ;;
-      0) _IPT=$((_IPT+INFO_IPT_TUN_KEEP)) ;;
-    esac
+  _IPT="$(iptables -S 2>/dev/null | grep -c -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
+  _CT=$(echo "$_IPT"|wc -l)
+  if   [ $_CT = 8 ]; then
+    _CHK_BL=$((_CHK_BL+CHK_IPT_TUN+CHK_IPT_WAN))
+    [ $(echo "$_IPT"|grep -cF -- "$TUN_IF") = 4 ] || _PBM=$((_PBM+CHK_IPT_TUN))
+    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] || _PBM=$((_PBM+CHK_IPT_WAN))
+  elif [ $_CT = 4 ]; then
+    _CHK_BL=$((_CHK_BL+CHK_IPT_WAN))
+    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] || _PBM=$((_PBM+CHK_IPT_WAN))
+  elif [ $_CT !ne 0 ]; then
+    _PBM=$((_PBM+CHK_IPT_IFO))
   fi
+
       
 
 
