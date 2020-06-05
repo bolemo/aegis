@@ -346,6 +346,13 @@ set_firewall_start() {
   [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
   echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
   [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
+  
+  #######
+  if [ -x /opt/scripts/firewall-start.sh ]; then\n/opt/scripts/firewall-start.sh
+  
+  sed 's/if \[ -x \/opt\/scripts\/firewall-start\.sh \]; then/---/ ; /\/opt\/scripts\/firewall-start\.sh/d' /usr/sbin/net-wall
+  
+  #######
 }
 
 clean_firewall_start() {
