@@ -727,47 +727,45 @@ status() {
   ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"               _CHK_WG=$((_CHK_WG+CHK_WG_BP))   # WGW bypassed
 
   # CHECK IPTABLES OWN CHAINS (ENGINE)
-  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null &&   _CHK_CH=$((_CHK_CH+_CHK_SRC))    # src chain
-  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null &&   _CHK_CH=$((_CHK_CH+_CHK_DST))    # dst chain
+  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null|awk '{a[i++]=$0} END {print a[0]} END {for (j=i-1; j>0;) print a[j--] }')"
+  # OUTPUTS
+  # 1:-N aegis_dst
+  # 2:-A aegis_dst -j DROP
+  # 3:-A aegis_dst -j LOG (if LOG)
+  # 4:-A aegis_dst -m set --match-set aegis_wl dst -j ACCEPT (if WL)
+  # 5:-A aegis_dst -o brwan -m set --match-set aegis_wg dst -j ACCEPT (if WG)
+  
+  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)"
+  # OUTPUTS
+  # 1  :-N aegis_dst
+  # 2  :-A aegis_dst -o brwan -m set --match-set aegis_wg dst -j ACCEPT (if WG)
+  # 3  :-A aegis_dst -m set --match-set aegis_wl dst -j ACCEPT (if WL)
+  # L-1:-A aegis_dst -j LOG (if LOG)
+  # L  :-A aegis_dst -j DROP
+  
+  #get line number:
+  echo "$_IPT"|grep -nF 'SEARCH'|cut -d: -f1
+  
+  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null &&   _CHK_CH=$((_CHK_CH+_CHK_IPT_SRC)) # src chain
+  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null &&   _CHK_CH=$((_CHK_CH+_CHK_IPT_DST)) # dst chain
 
-  if [ $((_CHK_WG & CHK_WG_BP)) -ne 0 ]; then
     _POS=1
-    if iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WG_NAME"
-      then _CHK=$((_CHK+_CHK_WG_IPT_SRC))
-      else
-    fi
-    if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WG_NAME"; then
-      iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WG_DST_NEW))
-    fi
-    _IPT=$((_IPT+INFO_IPT_WG))
+  if iptables -S "$IPTBL_SRC" $_POS|grep -qF -- "$IPSET_WG_NAME"; then
+                                                       _CHK_WG=$((_CHK_WG+_CHK_IPT_SRC)) # src IPT WG bypass
+    iptables -S "$IPTBL_DST" $_POS|grep -qF -- "$IPSET_WG_NAME" &&
+                                                       _CHK_WG=$((_CHK_WG+_CHK_IPT_DST)) # dst IPT WG bypass
   else
-    #Removing any trace of WAN gareway whitelist if any
-    iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    ipset -q destroy "$IPSET_WG_NAME"
     _POS=0
   fi
 
-  if [ "$_WL" ]; then
-    # apply whitelist
+  if [ $((_CHK_WL & CHK_IPS)) -ne 0 ]; then
     _POS=$((1+_POS))
-    if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
-      iptables -S "$IPTBL_SRC" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WL_SRC_NEW))
-    fi
-    if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "$IPSET_WL_NAME"; then
-      iptables -S "$IPTBL_DST" 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WL_DST_NEW))
-    fi
-    _IPT=$((_IPT+INFO_IPT_WL))
-  else
-    #Removing any trace of whitelist if any
-    iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    ipset -q destroy "$IPSET_WL_NAME"
+    iptables -S "$IPTBL_SRC" $_POS|grep -qF -- "$IPSET_WL_NAME" &&
+                                                       _CHK_WL=$((_CHK_WL+_CHK_IPT_SRC)) # src IPT whitelist
+    iptables -S "$IPTBL_DST" $_POS|grep -qF -- "$IPSET_WL_NAME" &&
+                                                       _CHK_WL=$((_CHK_WL+_CHK_IPT_DST)) # dst IPT whitelist
   fi
+
 
   if [ "$IPTBL_LOGGING" ]; then
     _POS=$((1+_POS))
