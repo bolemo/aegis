@@ -726,66 +726,60 @@ status() {
     ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"             _CHK_WG=$((_CHK_WG+CHK_WG_BL))   # WGW in blocklist
   ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"               _CHK_WG=$((_CHK_WG+CHK_WG_BP))   # WGW bypassed
 
+  #Check WAN_IF ? IPT vs actual
+
   # CHECK IPTABLES OWN CHAINS (ENGINE)
-  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null|awk '{a[i++]=$0} END {print a[0]} END {for (j=i-1; j>0;) print a[j--] }')"
-  # OUTPUTS
-  # 1:-N aegis_dst
-  # 2:-A aegis_dst -j DROP
-  # 3:-A aegis_dst -j LOG (if LOG)
-  # 4:-A aegis_dst -m set --match-set aegis_wl dst -j ACCEPT (if WL)
-  # 5:-A aegis_dst -o brwan -m set --match-set aegis_wg dst -j ACCEPT (if WG)
-  
+  # SRC CHAIN
   _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)"
-  # OUTPUTS
-  # 1  :-N aegis_dst
-  # 2  :-A aegis_dst -o brwan -m set --match-set aegis_wg dst -j ACCEPT (if WG)
-  # 3  :-A aegis_dst -m set --match-set aegis_wl dst -j ACCEPT (if WL)
-  # L-1:-A aegis_dst -j LOG (if LOG)
-  # L  :-A aegis_dst -j DROP
-  
-  #get line number:
-  echo "$_IPT"|grep -nF 'SEARCH'|cut -d: -f1
-  
-  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null &&   _CHK_CH=$((_CHK_CH+_CHK_IPT_SRC)) # src chain
-  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null &&   _CHK_CH=$((_CHK_CH+_CHK_IPT_DST)) # dst chain
-
-    _POS=1
-  if iptables -S "$IPTBL_SRC" $_POS|grep -qF -- "$IPSET_WG_NAME"; then
-                                                       _CHK_WG=$((_CHK_WG+_CHK_IPT_SRC)) # src IPT WG bypass
-    iptables -S "$IPTBL_DST" $_POS|grep -qF -- "$IPSET_WG_NAME" &&
-                                                       _CHK_WG=$((_CHK_WG+_CHK_IPT_DST)) # dst IPT WG bypass
-  else
-    _POS=0
-  fi
-
-  if [ $((_CHK_WL & CHK_IPS)) -ne 0 ]; then
-    _POS=$((1+_POS))
-    iptables -S "$IPTBL_SRC" $_POS|grep -qF -- "$IPSET_WL_NAME" &&
-                                                       _CHK_WL=$((_CHK_WL+_CHK_IPT_SRC)) # src IPT whitelist
-    iptables -S "$IPTBL_DST" $_POS|grep -qF -- "$IPSET_WL_NAME" &&
-                                                       _CHK_WL=$((_CHK_WL+_CHK_IPT_DST)) # dst IPT whitelist
-  fi
-
-
-  if [ "$IPTBL_LOGGING" ]; then
-    _POS=$((1+_POS))
-    if ! iptables -S "$IPTBL_SRC" $_POS | grep -qF -- "-j LOG"; then
-      iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
-      _IPT=$((_IPT+INFO_IPT_LOG_SRC_NEW))
+  if [ "$_IPT" ]; then
+    _LL=$(echo "$_IPT"|wc -l)
+    if [ $(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1) = 1 ] && [ $(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1) = $_LL ]; then
+      _CHK_CH=$((_CHK_CH+CHK_IPT_SRC))
+      _CL=2 # current line
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then
+        _CHK_WG=$((_CHK_WG+CHK_IPT_SRC))
+        _CL=3
+      fi
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then
+        _CHK_WL=$((_CHK_WL+CHK_IPT_SRC))
+        _CL=$((_CL+1))
+      fi
+      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = _CL ]; then
+        _CHK_LOG=$((_CHK_LOG+CHK_IPT_SRC))
+        _CL=$((_CL+1))
+      fi
+      [ $_CL = $_LL ] || _PBM=$((_PBM+CHK_IPT_SRC))
+    else
+      _PBM=$((_PBM+CHK_IPT_SRC))
     fi
-    if ! iptables -S "$IPTBL_DST" $_POS | grep -qF -- "-j LOG"; then
-      iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
-      _IPT=$((_IPT+INFO_IPT_LOG_DST_NEW))
-    fi
-    _IPT=$((_IPT+INFO_IPT_LOG))
-  else
-    iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-    iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
-  iptables -S "$IPTBL_SRC" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
-  iptables -S "$IPTBL_DST" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
+  
+  # DST CHAIN
+  _IPT="$(iptables -S "$IPTBL_DST" 2>/dev/null)"
+  if [ "$_IPT" ]; then
+    _LL=$(echo "$_IPT"|wc -l)
+    if [ $(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1) = 1 ] && [ $(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1) = $_LL ]; then
+      _CHK_CH=$((_CHK_CH+CHK_IPT_DST))
+      _CL=2 # current line
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then
+        _CHK_WG=$((_CHK_WG+CHK_IPT_DST))
+        _CL=3
+      fi
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then
+        _CHK_WL=$((_CHK_WL+CHK_IPT_DST))
+        _CL=$((_CL+1))
+      fi
+      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = _CL ]; then
+        _CHK_LOG=$((_CHK_LOG+CHK_IPT_DST))
+        _CL=$((_CL+1))
+      fi
+      [ $_CL = $_LL ] || _PBM=$((_PBM+CHK_IPT_DST))
+    else
+      _PBM=$((_PBM+CHK_IPT_DST))
+    fi
+  fi
+  
+
   
   # creating the required iptables rules for wan interface
   _set_ipt_for_if_pos "$WAN_IF" 1
