@@ -317,9 +317,7 @@ TMP_FILE="/tmp/$SC_NAME.tmp"
 TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
-FWS_NAME='firewall-start-z_aegis.sh'
-FWS_FILE="$ROOT_DIR/scripts/$FWS_NAME"
-FWS_SYML="$FWS_DIR/$FWS_NAME"
+FWS_FILE="$FWS_DIR/firewall-start.sh"
 # Check if scriot is installed on USB
 if echo "$SC_PATH" | grep -q '^/tmp/mnt/'; then
   PM_DIR="$(echo "$SC_PATH" | sed "s|\(/tmp/mnt/[[:alnum:]]*\)/.*|\1|")/autorun/scripts"
@@ -338,25 +336,16 @@ fi
 
 # SCRIPT: firewall-start.sh ###################
 check_firewall_start() {
-  [ -x $FWS_SYML ] || return 1
-  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_SYML | grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws")" = 1 ] || return 1
-  if ! grep -qF -- 'for FWS in $(ls --color=never /opt/scripts/firewall-start*.sh); do [ -x "$FWS" ] && { "$FWS"; FWS_FOUND=1; }; done' /mnt/optware/net-wall ||
-     ! grep -qF -- '[ -z $FWS_FOUND ] && [ -x /root/firewall-start.sh ] && /root/firewall-start.sh' /mnt/optware/net-wall
-    then return 1
-  fi
-  
+  [ -x $FWS_FILE ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_FILE | grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" = 1 ] || return 1
   return 0
 }
 
 set_firewall_start() {
-  # replace firewall-start.sh call in Voxel's net-wall
-  sed -i '/if \[ -x \/opt\/scripts\/firewall-start\.sh \]; then/ {N;N;N;N; s/\<if\>.*\<fi\>/for FWS in $(ls --color=never \/opt\/scripts\/firewall-start*.sh); do [ -x "$FWS" ] \&\& { "$FWS"; FWS_FOUND=1; }; done\n\t[ -z $FWS_FOUND ] \&\& [ -x \/root\/firewall-start.sh ] \&\& \/root\/firewall-start.sh/}' /usr/sbin/net-wall
-  # set firewall-start script
-  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" > "$FWS_FILE"
-  [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
-  # set symlink in FWS_DIR
   [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
-  \ln -sfn "$FWS_FILE" "$FWS_SYML"
+  [ -e "$FWS_FILE" ] && sed -i "/$SC_NAME/d" "$FWS_FILE"
+  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
+  [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
 }
 
 clean_firewall_start() {
