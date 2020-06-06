@@ -1,3 +1,7 @@
+FWS_NAME='firewall-start-z_aegis.sh'
+FWS_FILE="$ROOT_DIR/scripts/$FWS_NAME"
+FWS_SYML="$FWS_DIR/$FWS_NAME"
+
 # SCRIPT: firewall-start.sh ###################
 check_firewall_start() {
   [ -x $FWS_SYML ] || return 1
