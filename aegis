@@ -684,6 +684,9 @@ info() {
 
 #---------------------------- _STATUS ----------------------------
 # STATUS VARS
+CHK_FWS=$((1<<0))       # used in                     ENV
+CHK_EXT=$((1<<1))       # used in                     ENV
+CHK_PM=$((1<<2))        # used in                     ENV
 CHK_IPS=$((1<<0))       # used in BL WL WG
 CHK_IPT_WAN=$((1<<1))   # used in BL              PBM
 CHK_IPT_TUN=$((1<<2))   # used in BL              PBM
@@ -696,12 +699,16 @@ CHK_WG_BL=$((1<<3))     # used in       WG
 CHK_WG_BP=$((1<<4))     # used in       WG
 status() {
   _PBM=0
+  
+  # CHECK ENVIRONMENT
+  _CHK_ENV=0
   # check firewall-start.sh script
-  check_firewall_start && STAT_FWS='ok' || STAT_FWS=''
-  
+  check_firewall_start && _CHK_ENV=$((_CHK_ENV+CHK_FWS))
   # check post-mount.sh script if script on external drive
-  if [ "$EXT_DRIVE" ]; then check_postmount && STAT_PM='ok' || STAT_PM=''; else STAT_PM='na'; fi
-  
+  if [ "$EXT_DRIVE" ]; then
+    _CHK_ENV=$((_CHK_ENV+CHK_EXT))
+    check_postmount && _CHK_ENV=$((_CHK_ENV+CHK_PM))
+  fi  
   
   # CHECK BLOCKLIST
   _CHK_BL=0
@@ -797,7 +804,8 @@ status() {
     _PBM=$((_PBM+CHK_IPT_IFO))
   fi
 
-      
+  [ $(((_CHK_ENV&40)+(_CHK_BL&7)+(_CHK_WL&7)+_CHK_WG+_CHK_CH+_CHK_LOG)) -eq 0 ] && _CLEAN='y'
+  echo "$_CHK_ENV $_CHK_BL $_CHK_WG $_CHK_WL $_CHK_CH $_CHK_LOG"
 
 
 
