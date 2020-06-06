@@ -350,7 +350,7 @@ set_firewall_start() {
   #######
   if [ -x /opt/scripts/firewall-start.sh ]; then\n/opt/scripts/firewall-start.sh
   
-  sed 's/if \[ -x \/opt\/scripts\/firewall-start\.sh \]; then/---/ ; /\/opt\/scripts\/firewall-start\.sh/d' /usr/sbin/net-wall
+  sed 's/if \[ -x \/opt\/scripts\/firewall-start\.sh \]; then/ls --color=never \/opt\/scripts\/firewall-start\*\.sh|while read FWS; do \[ -x \"\$FWS\" \] \&\& \"\$FWS\"; done/ ; /\/opt\/scripts\/firewall-start\.sh/d' /usr/sbin/net-wall
   
   #######
 }
