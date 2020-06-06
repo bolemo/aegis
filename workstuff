@@ -6,7 +6,7 @@ FWS_SYML="$FWS_DIR/$FWS_NAME"
 check_firewall_start() {
   [ -x $FWS_SYML ] || return 1
   [ "$(sed 's/[[:space:]]\+/ /g' $FWS_SYML | grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws")" = 1 ] || return 1
-  if ! grep -qF -- 'for FWS in $(ls --color=never /opt/scripts/firewall-start*.sh); do [ -x "$FWS" ] && { "$FWS"; FWS_FOUND=1; }; done' /mnt/optware/net-wall ||
+  if ! grep -qF -- 'IFS='\n'; for FWS in $(ls --color=never -1 /opt/scripts/firewall-start*.sh); do [ -x "$FWS" ] && { "$FWS"; FWS_FOUND=1; }; done' /mnt/optware/net-wall ||
      ! grep -qF -- '[ -z $FWS_FOUND ] && [ -x /root/firewall-start.sh ] && /root/firewall-start.sh' /mnt/optware/net-wall
     then return 1
   fi
