@@ -352,6 +352,9 @@ set_firewall_start() {
   
   sed 's/if \[ -x \/opt\/scripts\/firewall-start\.sh \]; then/ls --color=never \/opt\/scripts\/firewall-start\*\.sh|while read FWS; do \[ -x \"\$FWS\" \] \&\& \"\$FWS\"; done/ ; /\/opt\/scripts\/firewall-start\.sh/d' /usr/sbin/net-wall
   
+  for FWS in $(ls --color=never /opt/scripts/firewall-start*.sh); do [ -x "$FWS" ] && { "$FWS"; FOUND=1; }; done
+  [ -z $FWS_FOUND ] && [ -x /root/firewall-start.sh ] && /root/firewall-start.sh
+  
   #######
 }
 
