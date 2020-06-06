@@ -1,0 +1,22 @@
+# SCRIPT: firewall-start.sh ###################
+check_firewall_start() {
+  [ -x $FWS_SYML ] || return 1
+  [ "$(sed 's/[[:space:]]\+/ /g' $FWS_SYML | grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws")" = 1 ] || return 1
+  if ! grep -qF -- 'for FWS in $(ls --color=never /opt/scripts/firewall-start*.sh); do [ -x "$FWS" ] && { "$FWS"; FWS_FOUND=1; }; done' /mnt/optware/net-wall ||
+     ! grep -qF -- '[ -z $FWS_FOUND ] && [ -x /root/firewall-start.sh ] && /root/firewall-start.sh' /mnt/optware/net-wall
+    then return 1
+  fi
+  
+  return 0
+}
+
+set_firewall_start() {
+  # replace firewall-start.sh call in Voxel's net-wall
+  sed -i '/if \[ -x \/opt\/scripts\/firewall-start\.sh \]; then/ {N;N;N;N; s/\<if\>.*\<fi\>/for FWS in $(ls --color=never \/opt\/scripts\/firewall-start*.sh); do [ -x "$FWS" ] \&\& { "$FWS"; FWS_FOUND=1; }; done\n\t[ -z $FWS_FOUND ] \&\& [ -x \/root\/firewall-start.sh ] \&\& \/root\/firewall-start.sh/}' /usr/sbin/net-wall
+  # set firewall-start script
+  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" > "$FWS_FILE"
+  [ -x "$FWS_FILE" ] || chmod +x "$FWS_FILE"
+  # set symlink in FWS_DIR
+  [ -d "$FWS_DIR" ] || mkdir -p "$FWS_DIR"
+  \ln -sfn "$FWS_FILE" "$FWS_SYML"
+}
