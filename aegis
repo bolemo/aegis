@@ -729,6 +729,8 @@ _status() {
         ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" || _WN=$((_WN+WN_DIFF_BL))
       fi
     else                                                                           _WN=$((_WN+WN_FILE_BL))
+    fi
+  elif [ -r "$BL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_BL))
   fi
   
   # CHECK WHITELIST (IPS, FILE)
