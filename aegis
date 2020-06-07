@@ -738,6 +738,7 @@ _status() {
         ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" || _WN=$((_WN+WN_DIFF_WL))
       fi
     else                                                                           _WN=$((_WN+WN_FILE_WL))
+    fi
   elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_WL))
   fi
 
@@ -745,7 +746,8 @@ _status() {
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then    _CK=$((_CK+CK_WG_IN_BL))
     if ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then                                _CK=$((_CK+CK_WG_BP))
     else                                                                           _PB=$((_PB+CK_WG_BP))
-  elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null &&                                _PB=$((_PB+PB_WG_SNE))
+    fi
+  elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then                             _PB=$((_PB+PB_WG_SNE))
   fi
 
   # CHECK IPTABLES OWN CHAINS (ENGINE)
