@@ -684,149 +684,172 @@ info() {
 
 #---------------------------- _STATUS ----------------------------
 # STATUS VARS
-CHK_FWS=$((1<<0))       # used in                     ENV
-CHK_EXT=$((1<<1))       # used in                     ENV
-CHK_PM=$((1<<2))        # used in                     ENV
-CHK_IPS=$((1<<0))       # used in BL WL WG
-CHK_IPT_WAN=$((1<<1))   # used in BL              PBM
-CHK_IPT_TUN=$((1<<2))   # used in BL              PBM
-CHK_IPT_SRC=$((1<<1))   # used in    WL WG CH LOG
-CHK_IPT_DST=$((1<<2))   # used in    WL WG CH LOG
-CHK_IPT_IFO=$((1<<0))   # used in                 PBM
-CHK_FILE=$((1<<3))      # used in BL WL
-CHK_DIFF=$((1<<4))      # used in BL WL
-CHK_WG_BL=$((1<<3))     # used in       WG
-CHK_WG_BP=$((1<<4))     # used in       WG
-CHK_WG=$((1<<3))        # used in                 PBM
+CK_FWS=$((1<<0))          # CK .. PB
+CK_PM=$((1<<1))           # CK .. PB
+CK_IPS_BL=$((1<<2))       # CK
+CK_IPS_WL=$((1<<3))       # CK
+CK_WG_IN_BL=$((1<<4))     # CK
+CK_WG_BP=$((1<<5))        # CK .. PB
+CK_IPT_CH=$((1<<6))       # CK .. PB
+CK_IPT_WG=$((1<<7))       # CK .. PB
+CK_IPT_WL=$((1<<8))       # CK
+CK_IPT_LOG=$((1<<9))      # CK
+CK_IPT_TUN=$((1<<10))     # CK .. PB
+CK_IPT_WAN=$((1<<11))     # CK .. PB
+
+WN_DIFF_IMP=$((1<<0))     # .. WN ..
+WN_DIFF_BL=$((1<<1))      # .. WN ..
+WN_FILE_BL=$((1<<2))      # .. WN ..
+WN_DIFF_WL=$((1<<3))      # .. WN ..
+WN_FILE_WL=$((1<<4))      # .. WN ..
+WN_LOG=$((1<<5))          # .. WN ..
+
+PB_WG_SNE=$((1<<0))       # .. .. PB
+PB_IPT_IFO=$((1<<1))      # .. .. PB
+PB_WL=$((1<<2))           # .. .. PB
+PB_BL=$((1<<3))           # .. .. PB
+
 status() {
-  _PBM=0
+  _CK=0
+  _WN=0
+  _PB=0
   
   # CHECK ENVIRONMENT
-  _CHK_ENV=0
   # check firewall-start.sh script
-  check_firewall_start && _CHK_ENV=$((_CHK_ENV+CHK_FWS))
+  check_firewall_start &&                                                          _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
-  if [ "$EXT_DRIVE" ]; then
-    _CHK_ENV=$((_CHK_ENV+CHK_EXT))
-    check_postmount && _CHK_ENV=$((_CHK_ENV+CHK_PM))
-  fi  
+  [ "$EXT_DRIVE" ] && check_postmount &&                                           _CK=$((_CK+CK_PM))
   
-  # CHECK BLOCKLIST
-  _CHK_BL=0
-  ipset -q -n -L "$IPSET_BL_NAME">/dev/null &&           _CHK_BL=$((_CHK_BL+CHK_IPS))  # check ipset
-  [ -r "$BL_FILE" ] &&                                   _CHK_BL=$((_CHK_BL+CHK_FILE)) # check file
-  if [ $_CHK_BL -eq $((CHK_IPS+CHK_FILE)) ]; then
-    if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
-      then                                               _CHK_BL=$((_CHK_BL+CHK_DIFF)) # file & ipset different
-    fi
+  [ "$IPR_BIN" ] ||                                                                _WN=$((_WN+WN_DIFF_IMP))
+  
+  # CHECK BLOCKLIST (IPS, FILE)
+  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_BL))
+    if [ -r "$BL_FILE" ]; then
+      if [ "$IPR_BIN" ]; then
+        ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" || _WN=$((_WN+WN_DIFF_BL))
+      fi
+    else                                                                           _WN=$((_WN+WN_FILE_BL))
   fi
   
-  # CHECK WHITELIST
-  _CHK_WL=0
-  ipset -q -n -L "$IPSET_WL_NAME">/dev/null &&           _CHK_WL=$((_CHK_WL+CHK_IPS))  # check ipset
-  [ -r "$WL_FILE" ] &&                                   _CHK_WL=$((_CHK_WL+CHK_FILE)) # check file
-  if [ $_CHK_WL -eq $((CHK_IPS+CHK_FILE)) ]; then
-    if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
-      then                                               _CHK_WL=$((_CHK_WL+CHK_DIFF)) # file & ipset different
-    fi
+  # CHECK WHITELIST (IPS, FILE)
+  if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_WL))
+    if [ -r "$WL_FILE" ]; then
+      if [ "$IPR_BIN" ]; then
+        ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" || _WN=$((_WN+WN_DIFF_WL))
+      fi
+    else                                                                           _WN=$((_WN+WN_FILE_WL))
+  elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_WL))
   fi
 
   # CHECK WAN GATEWAY
-  _CHK_WG=0
-  ipset -q -n -L "$IPSET_WG_NAME">/dev/null &&         _CHK_WG=$((_CHK_WG+CHK_IPS))
-  [ "$WAN_GW" != '0.0.0.0' ] &&
-    ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"             _CHK_WG=$((_CHK_WG+CHK_WG_BL))   # WGW in blocklist
-  ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"               _CHK_WG=$((_CHK_WG+CHK_WG_BP))   # WGW bypassed
+  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then    _CK=$((_CK+CK_WG_IN_BL))
+    if ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then                                _CK=$((_CK+CK_WG_BP))
+    else                                                                           _PB=$((_PB+CK_WG_BP))
+  elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null &&                                _PB=$((_PB+PB_WG_SNE))
+  fi
 
   # CHECK IPTABLES OWN CHAINS (ENGINE)
-  _CHK_CH=0
-  # SRC CHAIN
+  # -- SRC CHAIN
+  _S_CK=0
+  _S_PB=0
   _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)"
   if [ "$_IPT" ]; then
     _LL=$(echo "$_IPT"|wc -l)
     if [ $(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1) = 1 ] && [ $(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1) = $_LL ]; then
-      _CHK_CH=$((_CHK_CH+CHK_IPT_SRC))
+                                                                                   _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=2 # current line
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then
-        _CHK_WG=$((_CHK_WG+CHK_IPT_SRC))
-        echo "$_IPT"|grep -qF -- "$WAN_IF" || _PBM=$((_PBM+CHK_IPT_WAN))
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then  _S_CK=$((_S_CK+CK_IPT_WG))
+        echo "$_IPT"|grep -qF -- "$WAN_IF" ||                                      _S_PB=$((_S_PB+CK_IPT_WG))
         _CL=3
       fi
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then
-        _CHK_WL=$((_CHK_WL+CHK_IPT_SRC))
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then  _S_CK=$((_S_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = _CL ]; then
-        _CHK_LOG=$((_CHK_LOG+CHK_IPT_SRC))
+      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = _CL ]; then             _S_CK=$((_S_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL = $_LL ] || _PBM=$((_PBM+CHK_IPT_SRC))
-    else
-      _PBM=$((_PBM+CHK_IPT_SRC))
+      [ $_CL = $_LL ] ||                                                           _S_PB=$((_S_PB+CK_IPT_CH))
+    else                                                                           _S_PB=$((_S_PB+CK_IPT_CH))
     fi
   fi
   
-  # DST CHAIN
+  # -- DST CHAIN
+  _D_CK=0
+  _D_PB=0
   _IPT="$(iptables -S "$IPTBL_DST" 2>/dev/null)"
   if [ "$_IPT" ]; then
     _LL=$(echo "$_IPT"|wc -l)
     if [ $(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1) = 1 ] && [ $(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1) = $_LL ]; then
-      _CHK_CH=$((_CHK_CH+CHK_IPT_DST))
+                                                                                   _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=2 # current line
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then
-        _CHK_WG=$((_CHK_WG+CHK_IPT_DST))
-        echo "$_IPT"|grep -qF -- "$WAN_IF" || _PBM=$((_PBM+CHK_IPT_WAN))
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = _CL ]; then  _D_CK=$((_D_CK+CK_IPT_WG))
+        echo "$_IPT"|grep -qF -- "$WAN_IF" ||                                      _D_PB=$((_D_PB+CK_IPT_WG))
         _CL=3
       fi
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then
-        _CHK_WL=$((_CHK_WL+CHK_IPT_DST))
+      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = _CL ]; then  _D_CK=$((_D_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = _CL ]; then
-        _CHK_LOG=$((_CHK_LOG+CHK_IPT_DST))
+      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = _CL ]; then             _D_CK=$((_D_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL = $_LL ] || _PBM=$((_PBM+CHK_IPT_DST))
-    else
-      _PBM=$((_PBM+CHK_IPT_DST))
+      [ $_CL = $_LL ] ||                                                           _D_PB=$((_D_PB+CK_IPT_CH))
+    else                                                                           _D_PB=$((_D_PB+CK_IPT_CH))
     fi
   fi
   
+  # -- SRC & DST
+  if [ $_S_CK -eq $_D_CK ]; then                                                   _CK=$((_CK+_S_CK))
+    if [ $_S_PB -eq $_D_PB ]; then                                                 _PB=$((_PB+_S_PB))
+    else
+      [ $((_S_PB&CK_IPT_WG)) -ne 0 ] || [ $((_D_PB&CK_IPT_WG)) -ne 0 ] &&          _PB=$((_PB+CK_IPT_WG))
+      [ $((_S_PB&CK_IPT_CH)) -ne 0 ] || [ $((_D_PB&CK_IPT_CH)) -ne 0 ] &&          _PB=$((_PB+CK_IPT_CH))
+    fi
+  else                                                                             _PB=$((_PB+CK_IPT_CH))                                                                           
+  fi
+  
+  # -- IFO (INPUT, FORWARD, OUTPUT)
   _IPT="$(iptables -S 2>/dev/null | grep -c -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
   _CT=$(echo "$_IPT"|wc -l)
-  if   [ $_CT = 8 ]; then
-    _CHK_BL=$((_CHK_BL+CHK_IPT_TUN+CHK_IPT_WAN))
-    [ $(echo "$_IPT"|grep -cF -- "$TUN_IF") = 4 ] || _PBM=$((_PBM+CHK_IPT_TUN))
-    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] || _PBM=$((_PBM+CHK_IPT_WAN))
-  elif [ $_CT = 4 ]; then
-    _CHK_BL=$((_CHK_BL+CHK_IPT_WAN))
-    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] || _PBM=$((_PBM+CHK_IPT_WAN))
-  elif [ $_CT !ne 0 ]; then
-    _PBM=$((_PBM+CHK_IPT_IFO))
+  if   [ $_CT = 8 ]; then                                                          _CK=$((_CK+CK_IPT_TUN+CK_IPT_WAN))
+    [ $(echo "$_IPT"|grep -cF -- "$TUN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_TUN))
+    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
+  elif [ $_CT = 4 ]; then                                                          _CK=$((_CK+CK_IPT_WAN))
+    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
+  elif [ $_CT !ne 0 ]; then                                                        _PB=$((_PB+PB_IPT_IFO))
   fi
 
-
   # CLEAN
-  [ $(((_CHK_ENV&40)+(_CHK_BL&7)+(_CHK_WL&7)+_CHK_WG+_CHK_CH+_CHK_LOG)) -eq 0 ] && _CLEAN='y'
+  _CK+_PB = 0 -> CLEAN
+    
+  # PROBLEM / WARNING
+  if [ "$_CK" ]; then
+    # ENV
+    [ $((_CK&CK_FWS)) -eq 0 ] &&                                                   _PB=$((_PB+CK_FWS))
+    [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                                _PB=$((_PB+CK_PM))
+    # WG
+    #                                                                              CK_WG_BP
+    #                                                                              PB_WG_SNE
+    #                                                                              CK_IPT_SRC_WG
+    #                                                                              CK_IPT_DST_WG
+    # WL
+    _OK=$((CK_IPS_WL+CK_IPT_SRC_WL+CK_IPT_DST_WL))
+    [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ] &&                         _PB=$((_PB+PB_WL))
+    # BL
+    _OK=$((CK_IPS_BL))
+    [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ] &&                         _PB=$((_PB+PB_BL))
+    # LOG
+
+    # CH & IFO
+    _OK=$(())
+  else
+    # CLEAN
+  fi
+
   
-  # PROBLEM
-  -z _CLEAN
-    $_CHK_ENV & $CHK_FWS = 0 -> PBM
-    $_CHK_ENV & CHK_EXT = 1 && $_CHK_ENV & CHK_PM = 0 -> PBM
-    [ $_CHK_WG -ne $((CHK_IPS+CHK_WG_BL+CHK_WG_BP+CHK_IPT_SRC+CHK_IPT_DST)) ] && _PBM=$((_PBM+CHK_WG)) # WGW PBM
- #   $_CHK_CH != CHK_IPT_SRC + CHK_IPT_DST -> PBM
  
-  # WARNING
-       
-  
-  # RUNNING
-  $_PBM = 0
+
   
   
-  $_CHK_BL = 
-  
-  
-  echo "$_CHK_ENV $_CHK_BL $_CHK_WG $_CHK_WL $_CHK_CH $_CHK_LOG"
 
 
 
