@@ -759,21 +759,21 @@ _status() {
   _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)"
   if [ "$_IPT" ]; then
     _LL=$(echo "$_IPT"|wc -l)
-    if [ $(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1) = 1 ] && [ $(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1) = $_LL ]; then
-                                                                                   _S_CK=$((_S_CK+CK_IPT_CH))
+    if [ "$(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1)" = 1 ] && [ "$(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1)" = $_LL ]; then
+                                                                                     _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=2 # current line
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = $_CL ]; then  _S_CK=$((_S_CK+CK_IPT_WG))
-        echo "$_IPT"|grep -qF -- "$WAN_IF" ||                                      _S_PB=$((_S_PB+CK_IPT_WG))
+      if [ "$(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1)" = $_CL ]; then _S_CK=$((_S_CK+CK_IPT_WG))
+        echo "$_IPT"|grep -qF -- "$WAN_IF" ||                                        _S_PB=$((_S_PB+CK_IPT_WG))
         _CL=3
       fi
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = $_CL ]; then  _S_CK=$((_S_CK+CK_IPT_WL))
+      if [ "$(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1)" = $_CL ]; then _S_CK=$((_S_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = $_CL ]; then             _S_CK=$((_S_CK+CK_IPT_LOG))
+      if [ "$(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1)" = $_CL ]; then            _S_CK=$((_S_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL = $_LL ] ||                                                           _S_PB=$((_S_PB+CK_IPT_CH))
-    else                                                                           _S_PB=$((_S_PB+CK_IPT_CH))
+      [ $_CL = $_LL ] ||                                                             _S_PB=$((_S_PB+CK_IPT_CH))
+    else                                                                             _S_PB=$((_S_PB+CK_IPT_CH))
     fi
   fi
   
@@ -783,21 +783,21 @@ _status() {
   _IPT="$(iptables -S "$IPTBL_DST" 2>/dev/null)"
   if [ "$_IPT" ]; then
     _LL=$(echo "$_IPT"|wc -l)
-    if [ $(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1) = 1 ] && [ $(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1) = $_LL ]; then
-                                                                                   _D_CK=$((_D_CK+CK_IPT_CH))
+    if [ "$(echo "$_IPT"|grep -nF -- "-N "|cut -d: -f1)" = 1 ] && [ "$(echo "$_IPT"|grep -nF -- "-j DROP"|cut -d: -f1)" = $_LL ]; then
+                                                                                     _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=2 # current line
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1) = $_CL ]; then  _D_CK=$((_D_CK+CK_IPT_WG))
-        echo "$_IPT"|grep -qF -- "$WAN_IF" ||                                      _D_PB=$((_D_PB+CK_IPT_WG))
+      if [ "$(echo "$_IPT"|grep -nF -- "$IPSET_WG_NAME"|cut -d: -f1)" = $_CL ]; then _D_CK=$((_D_CK+CK_IPT_WG))
+        echo "$_IPT"|grep -qF -- "$WAN_IF" ||                                        _D_PB=$((_D_PB+CK_IPT_WG))
         _CL=3
       fi
-      if [ $(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1) = $_CL ]; then  _D_CK=$((_D_CK+CK_IPT_WL))
+      if [ "$(echo "$_IPT"|grep -nF -- "$IPSET_WL_NAME"|cut -d: -f1)" = $_CL ]; then _D_CK=$((_D_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ $(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1) = $_CL ]; then             _D_CK=$((_D_CK+CK_IPT_LOG))
+      if [ "$(echo "$_IPT"|grep -nF -- 'LOG'|cut -d: -f1)" = $_CL ]; then            _D_CK=$((_D_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL = $_LL ] ||                                                           _D_PB=$((_D_PB+CK_IPT_CH))
-    else                                                                           _D_PB=$((_D_PB+CK_IPT_CH))
+      [ $_CL = $_LL ] ||                                                             _D_PB=$((_D_PB+CK_IPT_CH))
+    else                                                                             _D_PB=$((_D_PB+CK_IPT_CH))
     fi
   fi
   
