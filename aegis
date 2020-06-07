@@ -684,32 +684,32 @@ info() {
 
 #---------------------------- _STATUS ----------------------------
 # STATUS VARS
-CK_FWS=$((1<<0))          # CK .. PB
-CK_PM=$((1<<1))           # CK .. PB
-CK_IPS_BL=$((1<<2))       # CK
-CK_IPS_WL=$((1<<3))       # CK
-CK_WG_IN_BL=$((1<<4))     # CK
-CK_WG_BP=$((1<<5))        # CK .. PB
-CK_IPT_CH=$((1<<6))       # CK .. PB
-CK_IPT_WG=$((1<<7))       # CK .. PB
-CK_IPT_WL=$((1<<8))       # CK
-CK_IPT_LOG=$((1<<9))      # CK
-CK_IPT_TUN=$((1<<10))     # CK .. PB
-CK_IPT_WAN=$((1<<11))     # CK .. PB
+CK_FWS=$((1<<0))          # CK PB
+CK_PM=$((1<<1))           # CK PB
+CK_IPS_BL=$((1<<2))       # CK PB
+CK_IPS_WL=$((1<<3))       # CK PB
+CK_WG_IN_BL=$((1<<4))     # CK ..
+CK_WG_BP=$((1<<5))        # CK PB
+CK_IPT_CH=$((1<<6))       # CK PB
+CK_IPT_WG=$((1<<7))       # CK PB
+CK_IPT_WL=$((1<<8))       # CK PB
+CK_IPT_LOG=$((1<<9))      # CK ..
+CK_IPT_TUN=$((1<<10))     # CK PB
+CK_IPT_WAN=$((1<<11))     # CK PB
 
-WN_DIFF_IMP=$((1<<0))     # .. WN ..
-WN_DIFF_BL=$((1<<1))      # .. WN ..
-WN_FILE_BL=$((1<<2))      # .. WN ..
-WN_DIFF_WL=$((1<<3))      # .. WN ..
-WN_FILE_WL=$((1<<4))      # .. WN ..
-WN_LOG=$((1<<5))          # .. WN ..
+WN_DIFF_IMP=$((1<<0))     # WN
+WN_DIFF_BL=$((1<<1))      # WN
+WN_FILE_BL=$((1<<2))      # WN
+WN_DIFF_WL=$((1<<3))      # WN
+WN_FILE_WL=$((1<<4))      # WN
+WN_LOG=$((1<<5))          # WN
 
-PB_WG_SNE=$((1<<0))       # .. .. PB
-PB_IPT_IFO=$((1<<1))      # .. .. PB
-PB_WL=$((1<<2))           # .. .. PB
-PB_BL=$((1<<3))           # .. .. PB
+PB_WG_SNE=$((1<<4))       # .. PB
+PB_IPT_IFO=$((1<<9))      # .. PB
 
-status() {
+CK_MASK=4095 #12 bits
+
+_status() {
   _CK=0
   _WN=0
   _PB=0
@@ -815,176 +815,34 @@ status() {
     [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
   elif [ $_CT = 4 ]; then                                                          _CK=$((_CK+CK_IPT_WAN))
     [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
-  elif [ $_CT !ne 0 ]; then                                                        _PB=$((_PB+PB_IPT_IFO))
+  elif [ $_CT -ne 0 ]; then                                                        _PB=$((_PB+PB_IPT_IFO))
   fi
-
-  # CLEAN
-  _CK+_PB = 0 -> CLEAN
     
-  # PROBLEM / WARNING
-  if [ "$_CK" ]; then
+  # DEEPER CHECK
+  if [ $_CK -ne 0 ]; then
+  # -- PROBLEMS / WARNINGS
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                   _PB=$((_PB+CK_FWS))
     [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                                _PB=$((_PB+CK_PM))
-    # WG
-    #                                                                              CK_WG_BP
-    #                                                                              PB_WG_SNE
-    #                                                                              CK_IPT_SRC_WG
-    #                                                                              CK_IPT_DST_WG
+    # WG: we already have CK_WG_BP, PB_WG_SNE, CK_IPT_WG
     # WL
-    _OK=$((CK_IPS_WL+CK_IPT_SRC_WL+CK_IPT_DST_WL))
-    [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ] &&                         _PB=$((_PB+PB_WL))
+    _OK=$((CK_IPS_WL+CK_IPT_WL))
+    if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
+      [ $((_CK&CK_IPS_WL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_WL))
+      [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPT_WL))
     # BL
-    _OK=$((CK_IPS_BL))
-    [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ] &&                         _PB=$((_PB+PB_BL))
+    [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                                _PB=$((_PB+CK_IPS_BL))
     # LOG
-
-    # CH & IFO
-    _OK=$(())
-  else
-    # CLEAN
-  fi
-
-  
- 
-
-  
-  
-
-
-
-
-
-  
-  # check iprange binary
-  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | head -n 1)" || echo "- 'iprange' is not installed."
-  
-  # dates
-  echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
-  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
-  
-  # Status file
-  if [ -r "$INFO_FILE" ]; then
-    INFO_FROM=$(sed '1q;d' "$INFO_FILE")
-    INFO_IPS=$(sed '2q;d' "$INFO_FILE")
-    INFO_IPT=$(sed '3q;d' "$INFO_FILE")
-    echo "- $SC_NAME engine last launch report:"
-    echo -e "\033[35m     start time: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
-    
-    [ $((INFO_FROM & INFO_FROM_SC)) -eq 0 ] || echo "     origin: $SC_NAME script."
-    [ $((INFO_FROM & INFO_FROM_PM)) -eq 0 ] || echo "     origin: 'post-mount.sh'."
-    [ $((INFO_FROM & INFO_FROM_FWS)) -eq 0 ] || echo "     origin: 'firewall-start.sh'."
-    
-    [ $((INFO_IPS & INFO_IPS_BL_SAME)) -eq 0 ] || echo '     ipset: loaded blocklist identical to file.'
-    [ $((INFO_IPS & INFO_IPS_BL_MISS)) -eq 0 ] || echo '     no blocklist file found!'
-    [ $((INFO_IPS & INFO_IPS_BL_LOAD)) -eq 0 ] || echo '     ipset: blocklist from file loaded.'
-    [ $((INFO_IPS & INFO_IPS_BL_NEW)) -eq 0 ] || echo '     ipset: empty blocklist loaded.'
-    [ $((INFO_IPS & INFO_IPS_BL_KEEP)) -eq 0 ] || echo '     ipset: loaded blocklist kept.'
-    [ $((INFO_IPS & INFO_IPS_BL_WGW)) -eq 0 ] || echo '     ipset: WAN gateway found in blocklist.'
-    [ $((INFO_IPS & INFO_IPS_WG_ADD)) -eq 0 ] || echo '     ipset: WAN gateway bypass set.'
-    [ $((INFO_IPS & INFO_IPS_WG_KEEP)) -eq 0 ] || echo '     ipset: WAN gateway bypass already set.'
-    [ $((INFO_IPS & INFO_IPS_WL_SAME)) -eq 0 ] || echo '     ipset: loaded whitelist identical to file.'
-    [ $((INFO_IPS & INFO_IPS_WL_MISS)) -eq 0 ] || echo '     no whitelist file found.'
-    [ $((INFO_IPS & INFO_IPS_WL_LOAD)) -eq 0 ] || echo '     ipset: whitelist from file loaded.'
-    [ $((INFO_IPS & INFO_IPS_WL_KEEP)) -eq 0 ] || echo '     ipset: loaded whitelist kept.'
-    
-    [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ] || echo '     iptables: engine inbound chain already set.'
-    [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ] || echo '     iptables: engine outbound chain already set.'
-    if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
-        then echo '     iptables: inbound logging rules (re)set.'
-        else echo '     iptables: inbound logging rules already set.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
-        then echo '     iptables: outbound logging rules (re)set.'
-        else echo '     iptables: outbound logging rules already set.'
-      fi
-    fi
-    if [ $((INFO_IPT & INFO_IPT_WG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WG_SRC_NEW)) -ne 0 ]
-        then echo '     iptables: inbound WAN gateway bypass rules (re)set.'
-        else echo '     iptables: inbound WAN gateway bypass rules already set.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_WG_DST_NEW)) -ne 0 ]
-        then echo '     iptables: outbound WAN gateway bypass rules (re)set.'
-        else echo '     iptables: outbound WAN gateway bypass rules already set.'
-      fi
-    fi
-    if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
-        then echo '     iptables: inbound whitelist rules (re)set.'
-        else echo '     iptables: inbound whitelist rules already set.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_WL_DST_NEW)) -ne 0 ]
-        then echo '     iptables: outbound whitelist rules (re)set.'
-        else echo '     iptables: outbound whitelist rules already set.'
-      fi
-    fi
-    [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq 0 ] || echo '     iptables: WAN rules reset.'
-    [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -eq 0 ] || echo '     iptables: WAN rules set.'
-    [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -eq 0 ] || echo '     iptables: WAN rules already set.'
-    [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq 0 ] || echo '     iptables: VPN rules reset.'
-    [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -eq 0 ] || echo '     iptables: VPN rules set.'
-    [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -eq 0 ] || echo '     iptables: VPN rules already set.'
-    echo -ne "\033[0m"
-  else
-    echo '- No status file found.'
+    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                 _WN=$((_WN+WN_LOG))
+    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                          _WN=$((_WN+WN_LOG))
+    # CH & IFO: we already have CK_IPT_WG, CK_IPT_CH, PB_IPT_IFO, PB_IPT_WAN, PB_IPT_TUN
   fi
   
-  if [ "$STAT_IPT" ]; then
-    if [ "$STAT_IPT_PBM" ]; then
-      echo -e "- \033[31miptables rules are not set properly\033[0m:"
-      [ -z "$STAT_IPT_TUN" ] && echo -e "     \033[31miptables rules are not set for VPN tunnel ($TUN_IF)\033[0m"
-    else
-      echo "- iptables rules are set:"
-    fi
-    [ "$STAT_IPT_WAN" ] && echo -e "     \033[36mWAN interface ($WAN_IF) rules are set\033[0m"
-    [ "$STAT_IPT_TUN" = 'ok' ] && echo -e "     \033[36mVPN tunnel interface ($TUN_IF) rules are set\033[0m"
-    [ "$STAT_IPT_WL" ] && echo -e "     \033[36mwhitelist rules are set\033[0m"
-    [ "$STAT_IPT_WG" ] && echo -e "     \033[36mWAN gateway bypass rules are set\033[0m"
-    echo -ne "\033[35m"
-    echo "$STAT_IPT" | sed -e 's/^/     iptables /g'
-    echo -ne "\033[0m"
-  else
-    echo "- iptables rules are not set."
-  fi
-  if [ "$STAT_LOG" ];
-    then echo "- Logging is active."
-    else echo "- Logging is inactive."
-  fi
-  if [ "$STAT_IPS" ]; then
-    echo "- ipset blocklist is set:"
-    if [ "$STAT_GW_IN_BL" ]
-      then if [ "$STAT_GW_IN_WG" ]
-        then echo -e "     \033[36mWAN gateway ($WAN_GW) is in blocklist\033[0m"
-        else echo -e "     \033[31mWAN gateway ($WAN_GW) is in blocklist (but not bypassed)!\033[0m"
-      fi
-    fi
-    echo -e "\033[35m$STAT_IPS\033[0m" | sed -e 's/^/     /g'
-  else
-    echo "- ipset blocklist is not set."
-  fi
+  # _CK + _PB = 0 => CLEAN
   
-  if [ "$STAT_IPS_WL" ]; then
-    echo "- ipset whitelist is set:"
-    echo -e "\033[35m$STAT_IPS_WL\033[0m" | sed -e 's/^/     /g'
-  else
-    echo "- ipset whitelist is not set."
-  fi
-  
-  if [ "$STAT_IPS_WG" ]; then
-    echo "- ipset WAN gateway bypass is set:"
-    [ "$STAT_GW_IN_BL" ] || echo -e "     \033[31mWAN gateway IP ($WAN_GW) is NOT in blocklist!\033[0m"
-    if [ "$STAT_GW_IN_WG" ]
-        then echo -e "     \033[36mWAN gateway ($WAN_GW) is in bypass list\033[0m"
-        else echo -e "     \033[31mWAN gateway ($WAN_GW) is NOT in bypass list!\033[0m"
-    fi
-    echo -e "\033[35m$STAT_IPS_WG\033[0m" | sed -e 's/^/     /g'
-  else
-    [ "$STAT_GW_IN_BL" ] && _CLR='\033[31m' || _CLR='\033[0m'
-    echo -e "${_CLR}- ipset WAN gateway bypass is not set.\033[0m"
-  fi
+  # calculating return value
+  _RET=$((_CK+(_PB<<12)+(_WN<<24)))
+  return _RET
 }
 #---------------------------- END _STATUS ----------------------------
 
@@ -1307,6 +1165,10 @@ pre_init
 
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE='y'
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
+
+##### TEST
+[ "$PARAM" = '_status' ] && { _status; echo $?; exit 0; }
+##### END TEST
 
 case "$PARAM" in
   'restart') init; fw_restart; [ $VERBOSE ] && status ;;
