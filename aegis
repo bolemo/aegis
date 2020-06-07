@@ -832,11 +832,13 @@ _status() {
     if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
       [ $((_CK&CK_IPS_WL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_WL))
       [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPT_WL))
+    fi
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                                _PB=$((_PB+CK_IPS_BL))
     # LOG
     if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                 _WN=$((_WN+WN_LOG))
     else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                          _WN=$((_WN+WN_LOG))
+    fi
     # CH & IFO: we already have CK_IPT_WG, CK_IPT_CH, PB_IPT_IFO, PB_IPT_WAN, PB_IPT_TUN
   fi
   
