@@ -852,11 +852,12 @@ _status() {
 }
 
 status_term() {
+  _status; _STAT=$?
+  _CK=$((_STAT&CK_MASK))
+  _PB=$(((_STAT>>12)&CK_MASK))
+  _WN=$(((_STAT>>24)&CK_MASK))
+  echo $_STAT
   echo -e "\033[1;36mStatus:\033[0m"
-  _status
-  _CK=$((?&CK_MASK))
-  _PB=$(((?>>12)&CK_MASK))
-  _WN=$(((?>>24)&CK_MASK))
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo "- '$SC_NAME' is not active; Settings are clean."
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
