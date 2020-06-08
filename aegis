@@ -846,6 +846,12 @@ _status() {
   
   # _CK + _PB = 0 => CLEAN
   
+  echo "CHECK: $CK"
+  
+  echo "WARNINGS: $WN"
+  
+  echo "PROBLEMS: $PB"
+  
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
   return $_RET
