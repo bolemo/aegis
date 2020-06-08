@@ -709,18 +709,16 @@ WN_LOG=32         # WN
 CK_MASK=4095 #12 bits
 
 _status() {
-  _CK=0
-  _WN=0
-  _PB=0
-read up rest </proc/uptime; t1="${up%.*}${up#*.}"
+  _CK=0; _WN=0; _PB=0
+  
   # CHECK ENVIRONMENT
   # check firewall-start.sh script
   check_firewall_start &&                                                          _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
   [ "$EXT_DRIVE" ] && check_postmount &&                                           _CK=$((_CK+CK_PM))
-  
+  # check if we can compare ip sets
   [ "$IPR_BIN" ] ||                                                                _WN=$((_WN+WN_DIFF_IMP))
-read up rest </proc/uptime; t2="${up%.*}${up#*.}"
+
   # CHECK BLOCKLIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_BL))
     if [ -r "$BL_FILE" ]; then
@@ -731,7 +729,7 @@ read up rest </proc/uptime; t2="${up%.*}${up#*.}"
     fi
   elif [ -r "$BL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_BL))
   fi
-read up rest </proc/uptime; t3="${up%.*}${up#*.}"
+
   # CHECK WHITELIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_WL))
     if [ -r "$WL_FILE" ]; then
@@ -742,7 +740,7 @@ read up rest </proc/uptime; t3="${up%.*}${up#*.}"
     fi
   elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_WL))
   fi
-read up rest </proc/uptime; t4="${up%.*}${up#*.}"
+
   # CHECK WAN GATEWAY
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then    _CK=$((_CK+CK_WG_IN_BL))
     if ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then                                _CK=$((_CK+CK_WG_BP))
@@ -750,7 +748,7 @@ read up rest </proc/uptime; t4="${up%.*}${up#*.}"
     fi
   elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then                             _PB=$((_PB+PB_WG_SNE))
   fi
-read up rest </proc/uptime; t5="${up%.*}${up#*.}"
+
   # CHECK IPTABLES OWN CHAINS (CH)
   # -- SRC CHAIN
   _S_CK=0
@@ -775,7 +773,6 @@ read up rest </proc/uptime; t5="${up%.*}${up#*.}"
     else                                                                             _S_PB=$((_S_PB+CK_IPT_CH))
     fi
   fi
-read up rest </proc/uptime; t6="${up%.*}${up#*.}"
   # -- DST CHAIN
   _D_CK=0
   _D_PB=0
@@ -799,7 +796,6 @@ read up rest </proc/uptime; t6="${up%.*}${up#*.}"
     else                                                                             _D_PB=$((_D_PB+CK_IPT_CH))
     fi
   fi
-read up rest </proc/uptime; t7="${up%.*}${up#*.}"
   # -- SRC & DST
   if [ $_S_CK -eq $_D_CK ]; then                                                   _CK=$((_CK+_S_CK))
     if [ $_S_PB -eq $_D_PB ]; then                                                 _PB=$((_PB+_S_PB))
@@ -809,7 +805,6 @@ read up rest </proc/uptime; t7="${up%.*}${up#*.}"
     fi
   else                                                                             _PB=$((_PB+CK_IPT_CH))                                                                           
   fi
-read up rest </proc/uptime; t8="${up%.*}${up#*.}"
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IPT="$(iptables -S 2>/dev/null | grep -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
   _CT=$(echo "$_IPT"|wc -l)
@@ -820,7 +815,7 @@ read up rest </proc/uptime; t8="${up%.*}${up#*.}"
     [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
   elif [ $_CT -ne 0 ]; then                                                        _PB=$((_PB+PB_IPT_IFO))
   fi
-read up rest </proc/uptime; t9="${up%.*}${up#*.}"
+
   # DEEPER CHECK
   if [ $_CK -ne 0 ]; then
   # -- PROBLEMS / WARNINGS
@@ -845,32 +840,14 @@ read up rest </proc/uptime; t9="${up%.*}${up#*.}"
     [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
     [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
-read up rest </proc/uptime; t10="${up%.*}${up#*.}"
 
-echo "ENV           : $(( 10*(t2-t1) )) ms"
-echo "BL (IPS, FILE): $(( 10*(t3-t2) )) ms"
-echo "WL (IPS, FILE): $(( 10*(t4-t3) )) ms"
-echo "WG            : $(( 10*(t5-t4) )) ms"
-echo "IPT CH SRC    : $(( 10*(t6-t5) )) ms"
-echo "IPT CH DST    : $(( 10*(t7-t6) )) ms"
-echo "IPT CH SRC DST: $(( 10*(t8-t7) )) ms"
-echo "IPT CH IFO    : $(( 10*(t9-t8) )) ms"
-echo "DEEPER        : $(( 10*(t10-t9) )) ms"
-
-read up rest </proc/uptime; t1="${up%.*}${up#*.}"
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
   return $_RET
 }
 
 status_term() {
-  _status; _STAT=$?
-  _CK=$((_STAT&CK_MASK))
-  _PB=$(((_STAT>>12)&CK_MASK))
-  _WN=$(((_STAT>>24)&CK_MASK))
-  
-read up rest </proc/uptime; t2="${up%.*}${up#*.}"
-echo "_status to _status_term: $(( 10*(t2-t1) )) ms"
+  _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
 
   echo -e "\033[1;36mStatus:\033[0m"
   if [ $((_CK+_PB)) -eq 0 ]; then
