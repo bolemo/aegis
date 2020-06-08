@@ -812,7 +812,7 @@ _status() {
   fi
   
   # -- IFO (INPUT, FORWARD, OUTPUT)
-  _IPT="$(iptables -S 2>/dev/null | grep -c -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
+  _IPT="$(iptables -S 2>/dev/null | grep -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
   _CT=$(echo "$_IPT"|wc -l)
   if   [ $_CT = 8 ]; then                                                          _CK=$((_CK+CK_IPT_TUN+CK_IPT_WAN))
     [ $(echo "$_IPT"|grep -cF -- "$TUN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_TUN))
