@@ -913,7 +913,7 @@ status_term() {
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
   fi
   
-  if [ $((_CK+_PB)) -eq 0 ]; then
+  if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
     iptables -S 2>/dev/null|grep -F -- "$SC_ABR"
     ipset -L -n|grep -F -- "$SC_ABR"|while read _SET; do
