@@ -847,15 +847,15 @@ read up rest </proc/uptime; t9="${up%.*}${up#*.}"
   fi
 read up rest </proc/uptime; t10="${up%.*}${up#*.}"
 
-echo "ENV           : $(( 10*(t2-t1) ))"|sed 's/\(...\)$/,\1/'
-echo "BL (IPS, FILE): $(( 10*(t3-t2) ))"|sed 's/\(...\)$/,\1/'
-echo "WL (IPS, FILE): $(( 10*(t4-t3) ))"|sed 's/\(...\)$/,\1/'
-echo "WG            : $(( 10*(t5-t4) ))"|sed 's/\(...\)$/,\1/'
-echo "IPT CH SRC    : $(( 10*(t6-t5) ))"|sed 's/\(...\)$/,\1/'
-echo "IPT CH DST    : $(( 10*(t7-t6) ))"|sed 's/\(...\)$/,\1/'
-echo "IPT CH SRC DST: $(( 10*(t8-t7) ))"|sed 's/\(...\)$/,\1/'
-echo "IPT CH IFO    : $(( 10*(t9-t8) ))"|sed 's/\(...\)$/,\1/'
-echo "DEEPER        : $(( 10*(t10-t9) ))"|sed 's/\(...\)$/,\1/'
+echo "ENV           : $(( 10*(t2-t1) )) ms"
+echo "BL (IPS, FILE): $(( 10*(t3-t2) )) ms"
+echo "WL (IPS, FILE): $(( 10*(t4-t3) )) ms"
+echo "WG            : $(( 10*(t5-t4) )) ms"
+echo "IPT CH SRC    : $(( 10*(t6-t5) )) ms"
+echo "IPT CH DST    : $(( 10*(t7-t6) )) ms"
+echo "IPT CH SRC DST: $(( 10*(t8-t7) )) ms"
+echo "IPT CH IFO    : $(( 10*(t9-t8) )) ms"
+echo "DEEPER        : $(( 10*(t10-t9) )) ms"
 
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
