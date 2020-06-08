@@ -689,11 +689,13 @@ CK_PM=$((1<<1))           # CK PB
 CK_IPS_BL=$((1<<2))       # CK PB
 CK_IPS_WL=$((1<<3))       # CK PB
 CK_WG_IN_BL=$((1<<4))     # CK ..
+PB_WG_SNE=$((1<<4))       # .. PB
 CK_WG_BP=$((1<<5))        # CK PB
 CK_IPT_CH=$((1<<6))       # CK PB
 CK_IPT_WG=$((1<<7))       # CK PB
 CK_IPT_WL=$((1<<8))       # CK PB
 CK_IPT_LOG=$((1<<9))      # CK ..
+PB_IPT_IFO=$((1<<9))      # .. PB
 CK_IPT_TUN=$((1<<10))     # CK PB
 CK_IPT_WAN=$((1<<11))     # CK PB
 
@@ -703,9 +705,6 @@ WN_FILE_BL=$((1<<2))      # WN
 WN_DIFF_WL=$((1<<3))      # WN
 WN_FILE_WL=$((1<<4))      # WN
 WN_LOG=$((1<<5))          # WN
-
-PB_WG_SNE=$((1<<4))       # .. PB
-PB_IPT_IFO=$((1<<9))      # .. PB
 
 CK_MASK=4095 #12 bits
 
@@ -847,13 +846,31 @@ _status() {
     [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
   
-  if [ $((_CK+_PB)) -eq 0 ]; then echo 'CLEAN'
-  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then echo 'RUNNING'
-  else echo 'PROBLEMS'
+  # calculating return value
+  _RET=$((_CK+(_PB<<12)+(_WN<<24)))
+  return $_RET
+}
+
+status_term() {
+  echo -e "\033[1;36mStatus:\033[0m"
+  _status
+  _CK=$((?&CK_MASK))
+  _PB=$(((?>>12)&CK_MASK))
+  _WN=$(((?>>24)&CK_MASK))
+  if [ $((_CK+_PB)) -eq 0 ]; then
+    echo "- '$SC_NAME' is not active; Settings are clean."
+  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
+    echo -ne "- \033[1m'$SC_NAME' is set and active\033[0m"
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
+    echo -e ".\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $(count_ip_in_ipset $IPSET_WL_NAME) IP adresses."
+  else
+    echo -e "- \033[1;31mSomething is not right!\033[0m"
   fi
   
   if [ $_PB -ne 0 ]; then
-    echo -e "\033[1;31mDetailed errors:\033[0m (CODE: $_PB)"
+    echo -e "\033[1;31mErrors:\033[0m (CODE: $_PB)"
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for '$SC_NAME'!\033[0m"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for '$SC_NAME'!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: blocklist set is not loaded!\033[0m"
@@ -869,7 +886,7 @@ _status() {
   fi
   
   if [ $_WN -ne 0 ]; then
-    echo -e "\033[1;35mDetailed warnings:\033[0m (CODE: $_WN)"
+    echo -e "\033[1;35mWarnings:\033[0m (CODE: $_WN)"
     [ $((_WN&WN_DIFF_IMP)) -ne 0 ] && echo -e "\033[35m- 'iprange' is not installed: file/ipset comparison skipped.\033[0m"
     [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- the loaded blocklist set is different than the blocklist file.\033[0m"
     [ $((_WN&WN_FILE_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist file is missing.\033[0m"
@@ -878,7 +895,7 @@ _status() {
     [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
  
-  if [ $_CK -ne 0 ]; then
+  if [ "$VERBOSE" ] && [ $_CK -ne 0 ]; then
     echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
     [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for '$SC_NAME'."
     [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for '$SC_NAME'."
@@ -893,10 +910,6 @@ _status() {
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: rules are set for '$TUN_IF'."
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
   fi
-  
-  # calculating return value
-  _RET=$((_CK+(_PB<<12)+(_WN<<24)))
-  return $_RET
 }
 #---------------------------- END _STATUS ----------------------------
 
@@ -1221,7 +1234,7 @@ if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode\033[0m"; fi
 
 ##### TEST
-[ "$PARAM" = '_status' ] && { _status; echo $?; exit 0; }
+[ "$PARAM" = '_status' ] && { status_term; exit 0; }
 ##### END TEST
 
 case "$PARAM" in
