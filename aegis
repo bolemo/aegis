@@ -895,7 +895,9 @@ status_term() {
     [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
  
-  if [ "$VERBOSE" ] && [ $_CK -ne 0 ]; then
+  [ "$VERBOSE" ] || return 0
+  
+  if [ $_CK -ne 0 ]; then
     echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
     [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for '$SC_NAME'."
     [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for '$SC_NAME'."
@@ -909,6 +911,21 @@ status_term() {
     [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: logging is on."
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: rules are set for '$TUN_IF'."
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
+  fi
+  
+  if [ $((_CK+_PB)) -eq 0 ]; then
+    echo -e "\033[1;36miptables:\033[0m"
+    iptables -S 2>/dev/null|grep -F -- "$SC_ABR"
+    ipset -L -n|grep -F -- "$SC_ABR"|while read _SET; do
+      case "$_SET" in
+        "$IPSET_BL_NAME") _NAME='blocklist' ;;
+        "$IPSET_WL_NAME") _NAME='whitelist' ;;
+        "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
+        *) _NAME="$_SET" ;;
+      esac
+      echo -e "\033[1;36mipset '$_SET':\033[0m"
+      ipset -L -t $_SET|sed 's/^/- /'
+    done
   fi
 }
 #---------------------------- END _STATUS ----------------------------
