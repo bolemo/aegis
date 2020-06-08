@@ -684,27 +684,27 @@ info() {
 
 #---------------------------- _STATUS ----------------------------
 # STATUS VARS
-CK_FWS=$((1<<0))          # CK PB
-CK_PM=$((1<<1))           # CK PB
-CK_IPS_BL=$((1<<2))       # CK PB
-CK_IPS_WL=$((1<<3))       # CK PB
-CK_WG_IN_BL=$((1<<4))     # CK ..
-PB_WG_SNE=$((1<<4))       # .. PB
-CK_WG_BP=$((1<<5))        # CK PB
-CK_IPT_CH=$((1<<6))       # CK PB
-CK_IPT_WG=$((1<<7))       # CK PB
-CK_IPT_WL=$((1<<8))       # CK PB
-CK_IPT_LOG=$((1<<9))      # CK ..
-PB_IPT_IFO=$((1<<9))      # .. PB
-CK_IPT_TUN=$((1<<10))     # CK PB
-CK_IPT_WAN=$((1<<11))     # CK PB
+CK_FWS=1          # CK PB
+CK_PM=2           # CK PB
+CK_IPS_BL=4       # CK PB
+CK_IPS_WL=8       # CK PB
+CK_WG_IN_BL=16    # CK ..
+PB_WG_SNE=16      # .. PB
+CK_WG_BP=32       # CK PB
+CK_IPT_CH=64      # CK PB
+CK_IPT_WG=128     # CK PB
+CK_IPT_WL=256     # CK PB
+CK_IPT_LOG=512    # CK ..
+PB_IPT_IFO=512    # .. PB
+CK_IPT_TUN=1024   # CK PB
+CK_IPT_WAN=2048   # CK PB
 
-WN_DIFF_IMP=$((1<<0))     # WN
-WN_DIFF_BL=$((1<<1))      # WN
-WN_FILE_BL=$((1<<2))      # WN
-WN_DIFF_WL=$((1<<3))      # WN
-WN_FILE_WL=$((1<<4))      # WN
-WN_LOG=$((1<<5))          # WN
+WN_DIFF_IMP=1     # WN
+WN_DIFF_BL=2      # WN
+WN_FILE_BL=4      # WN
+WN_DIFF_WL=8      # WN
+WN_FILE_WL=16     # WN
+WN_LOG=32         # WN
 
 CK_MASK=4095 #12 bits
 
@@ -857,6 +857,7 @@ echo "IPT CH SRC DST: $(( 10*(t8-t7) )) ms"
 echo "IPT CH IFO    : $(( 10*(t9-t8) )) ms"
 echo "DEEPER        : $(( 10*(t10-t9) )) ms"
 
+read up rest </proc/uptime; t1="${up%.*}${up#*.}"
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
   return $_RET
@@ -867,6 +868,10 @@ status_term() {
   _CK=$((_STAT&CK_MASK))
   _PB=$(((_STAT>>12)&CK_MASK))
   _WN=$(((_STAT>>24)&CK_MASK))
+  
+read up rest </proc/uptime; t2="${up%.*}${up#*.}"
+echo "_status to _status_term: $(( 10*(t2-t1) )) ms"
+
   echo -e "\033[1;36mStatus:\033[0m"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo "- '$SC_NAME' is not active; Settings are clean."
