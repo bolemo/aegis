@@ -853,42 +853,47 @@ _status() {
   else echo 'PROBLEMS'
   fi
   
-  echo "CHECK: $_CK"
-  echo -n 'CK_FWS :'; [ $((_CK&CK_FWS)) -ne 0 ] &&           echo 'OK' || echo '-'
-  echo -n 'CK_PM :'; [ $((_CK&CK_PM)) -ne 0 ] &&             echo 'OK' || echo '-'
-  echo -n 'CK_IPS_BL :'; [ $((_CK&CK_IPS_BL)) -ne 0 ] &&     echo 'OK' || echo '-'
-  echo -n 'CK_IPS_WL :'; [ $((_CK&CK_IPS_WL)) -ne 0 ] &&     echo 'OK' || echo '-'
-  echo -n 'CK_WG_IN_BL :'; [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo 'OK' || echo '-'
-  echo -n 'CK_WG_BP :'; [ $((_CK&CK_WG_BP)) -ne 0 ] &&       echo 'OK' || echo '-'
-  echo -n 'CK_IPT_CH :'; [ $((_CK&CK_IPT_CH)) -ne 0 ] &&     echo 'OK' || echo '-'
-  echo -n 'CK_IPT_WG :'; [ $((_CK&CK_IPT_WG)) -ne 0 ] &&     echo 'OK' || echo '-'
-  echo -n 'CK_IPT_WL :'; [ $((_CK&CK_IPT_WL)) -ne 0 ] &&     echo 'OK' || echo '-'
-  echo -n 'CK_IPT_LOG :'; [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&   echo 'OK' || echo '-'
-  echo -n 'CK_IPT_TUN :'; [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&   echo 'OK' || echo '-'
-  echo -n 'CK_IPT_WAN :'; [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&   echo 'OK' || echo '-'
+  if [ $_PB -ne 0 ]; then
+    echo -e "\033[1;31mDetailed errors:\033[0m (CODE: $_PB)"
+    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for '$SC_NAME'!\033[0m"
+    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for '$SC_NAME'!\033[0m"
+    [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: blocklist set is not loaded!\033[0m"
+    [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: whitelist set is not loaded!\033[0m"
+    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo -e "\033[31m- WAN gateway bypass is set but should not!\033[0m"
+    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo -e "\033[31m- ipset: WAN gateway bypass is not loaded!\033[0m"
+    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with engine chains!\033[0m"
+    [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with WAN gateway bypass!\033[0m"
+    [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with whitelist!\033[0m"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] && echo -e "\033[31m- iptables: problem with engine IFO rules!\033[0m"
+    [ $((_PB&CK_IPT_TUN)) -ne 0 ] && echo -e "\033[31m- iptables: problem with '$TUN_IF' rules!\033[0m"
+    [ $((_PB&CK_IPT_WAN)) -ne 0 ] && echo -e "\033[31m- iptables: problem with '$WAN_IF' rules!\033[0m"
+  fi
   
-  echo "WARNINGS: $_WN"
-  echo -n 'WN_DIFF_IMP :'; [ $((_WN&WN_DIFF_IMP)) -ne 0 ] && echo 'WN' || echo '-'
-  echo -n 'WN_DIFF_BL :'; [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&   echo 'WN' || echo '-'
-  echo -n 'WN_FILE_BL :'; [ $((_WN&WN_FILE_BL)) -ne 0 ] &&   echo 'WN' || echo '-'
-  echo -n 'WN_DIFF_WL :'; [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&   echo 'WN' || echo '-'
-  echo -n 'WN_FILE_WL :'; [ $((_WN&WN_FILE_WL)) -ne 0 ] &&   echo 'WN' || echo '-'
-  echo -n 'WN_LOG :'; [ $((_WN&WN_LOG)) -ne 0 ] &&           echo 'WN' || echo '-'
-  
-  
-  echo "PROBLEMS: $_PB"
-  echo -n 'CK_FWS :'; [ $((_PB&CK_FWS)) -ne 0 ] &&         echo 'PB' || echo '-'
-  echo -n 'CK_PM :'; [ $((_PB&CK_PM)) -ne 0 ] &&           echo 'PB' || echo '-'
-  echo -n 'CK_IPS_BL :'; [ $((_PB&CK_IPS_BL)) -ne 0 ] &&   echo 'PB' || echo '-'
-  echo -n 'CK_IPS_WL :'; [ $((_PB&CK_IPS_WL)) -ne 0 ] &&   echo 'PB' || echo '-'
-  echo -n 'PB_WG_SNE :'; [ $((_PB&PB_WG_SNE)) -ne 0 ] &&   echo 'PB' || echo '-'
-  echo -n 'CK_WG_BP :'; [ $((_PB&CK_WG_BP)) -ne 0 ] &&     echo 'PB' || echo '-'
-  echo -n 'CK_IPT_CH :'; [ $((_PB&CK_IPT_CH)) -ne 0 ] &&   echo 'PB' || echo '-'
-  echo -n 'CK_IPT_WG :'; [ $((_PB&CK_IPT_WG)) -ne 0 ] &&   echo 'PB' || echo '-'
-  echo -n 'CK_IPT_WL :'; [ $((_PB&CK_IPT_WL)) -ne 0 ] &&   echo 'PB' || echo '-'
-  echo -n 'PB_IPT_IFO :'; [ $((_PB&PB_IPT_IFO)) -ne 0 ] && echo 'PB' || echo '-'
-  echo -n 'CK_IPT_TUN :'; [ $((_PB&CK_IPT_TUN)) -ne 0 ] && echo 'PB' || echo '-'
-  echo -n 'CK_IPT_WAN :'; [ $((_PB&CK_IPT_WAN)) -ne 0 ] && echo 'PB' || echo '-'
+  if [ $_WN -ne 0 ]; then
+    echo -e "\033[1;35mDetailed warnings:\033[0m (CODE: $_WN)"
+    [ $((_WN&WN_DIFF_IMP)) -ne 0 ] && echo -e "\033[35m- 'iprange' is not installed: file/ipset comparison skipped.\033[0m"
+    [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- the loaded blocklist set is different than the blocklist file.\033[0m"
+    [ $((_WN&WN_FILE_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist file is missing.\033[0m"
+    [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- the loaded whitelist set is different than the whitelist file.\033[0m"
+    [ $((_WN&WN_FILE_WL)) -ne 0 ] &&  echo -e "\033[35m- whitelist file existence differs from last time engine was started.\033[0m"
+    [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
+  fi
+ 
+  if [ $_PB -ne 0 ]; then
+    echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
+    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for '$SC_NAME'."
+    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for '$SC_NAME'."
+    [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist set is loaded."
+    [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist set is loaded."
+    [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo "- WAN gateway is in blocklist set."
+    [ $((_CK&CK_WG_BP)) -ne 0 ] &&    echo "- ipset: WAN gateway bypass is loaded."
+    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: engine chains are set."
+    [ $((_CK&CK_IPT_WG)) -ne 0 ] &&   echo "- iptables: WAN gateway bypass is set."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "- iptables: whitelist is set."
+    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: logging is on."
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: rules are set for '$TUN_IF'."
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
+  fi
   
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
