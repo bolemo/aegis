@@ -878,7 +878,7 @@ _status() {
     [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
  
-  if [ $_PB -ne 0 ]; then
+  if [ $_CK -ne 0 ]; then
     echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
     [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for '$SC_NAME'."
     [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for '$SC_NAME'."
