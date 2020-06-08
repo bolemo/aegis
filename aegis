@@ -841,10 +841,17 @@ _status() {
     if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                 _WN=$((_WN+WN_LOG))
     else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                          _WN=$((_WN+WN_LOG))
     fi
-    # CH & IFO: we already have CK_IPT_WG, CK_IPT_CH, PB_IPT_IFO, PB_IPT_WAN, PB_IPT_TUN
+    # CH & IFO
+    [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                              _PB=$((_PB+CK_IPT_CH))
+    [ $(((_CK&PB_IPT_IFO)+(_PB&PB_IPT_IFO))) -eq 0 ] &&                            _PB=$((_PB+PB_IPT_IFO))
+    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
+    [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
   
-  # _CK + _PB = 0 => CLEAN
+  if [ $((_CK+_PB)) -eq 0 ]; then echo 'CLEAN'
+  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then echo 'RUNNING'
+  else echo 'PROBLEMS'
+  fi
   
   echo "CHECK: $_CK"
   echo -n 'CK_FWS :'; [ $((_CK&CK_FWS)) -ne 0 ] &&           echo 'OK' || echo '-'
