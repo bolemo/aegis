@@ -846,11 +846,23 @@ _status() {
   
   # _CK + _PB = 0 => CLEAN
   
-  echo "CHECK: $CK"
+  echo "CHECK: $_CK"
+  [ $((_CK&CK_FWS)) -ne 0 ] &&      echo 'CK_FWS'
+  [ $((_CK&CK_PM)) -ne 0 ] &&       echo 'CK_PM'
+  [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo 'CK_IPS_BL'
+  [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo 'CK_IPS_WL'
+  [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo 'CK_WG_IN_BL'
+  [ $((_CK&CK_WG_BP)) -ne 0 ] &&    echo 'CK_WG_BP'
+  [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo 'CK_IPT_CH'
+  [ $((_CK&CK_IPT_WG)) -ne 0 ] &&   echo 'CK_IPT_WG'
+  [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo 'CK_IPT_WL'
+  [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo 'CK_IPT_LOG'
+  [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo 'CK_IPT_TUN'
+  [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo 'CK_IPT_WAN'
   
-  echo "WARNINGS: $WN"
+  echo "WARNINGS: $_WN"
   
-  echo "PROBLEMS: $PB"
+  echo "PROBLEMS: $_PB"
   
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
