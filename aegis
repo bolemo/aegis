@@ -843,7 +843,6 @@ _status() {
     fi
     # CH & IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                              _PB=$((_PB+CK_IPT_CH))
-    [ $(((_CK&PB_IPT_IFO)+(_PB&PB_IPT_IFO))) -eq 0 ] &&                            _PB=$((_PB+PB_IPT_IFO))
     [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
     [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
