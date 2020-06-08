@@ -923,7 +923,7 @@ status_term() {
         "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
         *) _NAME="$_SET" ;;
       esac
-      echo -e "\033[1;36mipset '$_SET':\033[0m"
+      echo -e "\033[1;36mipset '$_NAME':\033[0m"
       ipset -L -t $_SET|sed 's/^/- /'
     done
   fi
