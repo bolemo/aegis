@@ -1071,12 +1071,8 @@ fi
 
 pre_init
 
-if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=2
+if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=3
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
-
-##### TEST
-[ "$PARAM" = '_status' ] && { status; exit 0; }
-##### END TEST
 
 case "$PARAM" in
   'restart') init; fw_restart; [ $VERBOSE ] && status_term ;;
