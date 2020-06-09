@@ -921,6 +921,8 @@ status_term() {
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
   fi
   
+  [ "$VERBOSE" -lt 2 ] && return 0
+
   # Status file
   echo -ne "\033[1;36m'$SC_NAME' engine last launch report:\033[0m"
   if [ -r "$INFO_FILE" ]; then
@@ -989,7 +991,7 @@ status_term() {
     echo -e '\n- No status file found.'
   fi
   
-  [ "$VERBOSE" -lt 2 ] || return 0
+  [ "$VERBOSE" -lt 3 ] && return 0
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
@@ -1063,7 +1065,7 @@ status() {
   
   # check ipset blocklist
   STAT_IPS="$(ipset -q list $IPSET_BL_NAME -t)"
-ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
+
   # check ipset whitelist
   STAT_IPS_WL="$(ipset -q list $IPSET_WL_NAME -t)"
   
@@ -1310,6 +1312,7 @@ esac
 ARGS=" $* "
 [ -z "${ARGS##* -v *}" ] && VERBOSE=1
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
+[ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 [ -z "${ARGS##* --devmode *}" ] && DEVMODE=1
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
