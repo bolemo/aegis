@@ -806,14 +806,16 @@ _status() {
   else                                                                             _PB=$((_PB+CK_IPT_CH))                                                                           
   fi
   # -- IFO (INPUT, FORWARD, OUTPUT)
-  _IPT="$(iptables -S 2>/dev/null | grep -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
-  _CT=$(echo "$_IPT"|wc -l)
-  if   [ $_CT = 8 ]; then                                                          _CK=$((_CK+CK_IPT_TUN+CK_IPT_WAN))
-    [ $(echo "$_IPT"|grep -cF -- "$TUN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_TUN))
-    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
-  elif [ $_CT = 4 ]; then                                                          _CK=$((_CK+CK_IPT_WAN))
-    [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
-  elif [ $_CT -ne 0 ]; then                                                        _PB=$((_PB+PB_IPT_IFO))
+  _IPT="$(iptables -S 2>/dev/null|grep -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME")"
+  if [ "$_IPT" ]; then
+    _CT=$(echo "$_IPT"|wc -l)
+    if   [ $_CT = 8 ]; then                                                          _CK=$((_CK+CK_IPT_TUN+CK_IPT_WAN))
+      [ $(echo "$_IPT"|grep -cF -- "$TUN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_TUN))
+      [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
+    elif [ $_CT = 4 ]; then                                                          _CK=$((_CK+CK_IPT_WAN))
+      [ $(echo "$_IPT"|grep -cF -- "$WAN_IF") = 4 ] ||                               _PB=$((_PB+CK_IPT_WAN))
+    elif [ $_CT -ne 0 ]; then                                                        _PB=$((_PB+PB_IPT_IFO))
+    fi
   fi
 
   # DEEPER CHECK
@@ -980,7 +982,8 @@ status_term() {
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
-    iptables -S 2>/dev/null|grep -F -- "$SC_ABR"
+    _IPT="$(iptables -S 2>/dev/null|grep -F -- "$SC_ABR")"
+    [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"
     ipset -L -n|grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
