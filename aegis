@@ -441,7 +441,7 @@ upgrade() {
   fi
   if [ ! "$DEVMODE" ]; then
     echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
-    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
+    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
   fi
   echo "- Downloading:"
 
@@ -905,6 +905,11 @@ status_term() {
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: rules are set for '$TUN_IF'."
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
   fi
+  
+  # dates
+  echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
+  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
