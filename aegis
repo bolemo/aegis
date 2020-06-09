@@ -880,13 +880,19 @@ status_term() {
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] && echo -e "\033[31m- iptables: problem with '$WAN_IF' rules!\033[0m"
   fi
   
-  if [ $_WN -ne 0 ]; then
+  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo -e "\033[1;35mWarnings:\033[0m (CODE: $_WN)"
     [ $((_WN&WN_DIFF_IMP)) -ne 0 ] && echo -e "\033[35m- 'iprange' is not installed: file/ipset comparison skipped.\033[0m"
     [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- the loaded blocklist set is different than the blocklist file.\033[0m"
-    [ $((_WN&WN_FILE_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist file is missing.\033[0m"
+    if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
+      [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist set is loaded but file is missing.\033[0m";
+                                   || echo -e "\033[35m- blocklist set file exists and is not loaded.\033[0m"
+    fi
     [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- the loaded whitelist set is different than the whitelist file.\033[0m"
-    [ $((_WN&WN_FILE_WL)) -ne 0 ] &&  echo -e "\033[35m- whitelist file existence differs from last time engine was started.\033[0m"
+    if [ $((_WN&WN_FILE_WL)) -ne 0 ]; then
+      [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist set is loaded but file is missing.\033[0m";
+                                   || echo -e "\033[35m- whitelist set file exists and is not loaded.\033[0m"
+    fi
     [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
  
