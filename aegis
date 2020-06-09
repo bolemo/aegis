@@ -30,6 +30,7 @@ else
   # No tunneling
   TUN_IF=''
 fi
+TUN_IF='tun21'
 # INFO IPSET
 INFO_IPS_BL_LOAD=$((1<<0))
 INFO_IPS_BL_NEW=$((1<<1))
@@ -78,7 +79,7 @@ ipset_list_members() {
 _set_ipt_for_if_pos() {
   _IF="$1"
   _POS=$2
-  _CT=$(iptables -S 2>/dev/null | grep -cF -- "$IF -m set --match-set $IPSET_BL_NAME")
+  _CT=$(iptables -S 2>/dev/null|grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
   if [ $_CT -ne 4 ]; then
     if [ $_CT -ne 0 ]; then
       # something is messed up with rules; deleting what is left
