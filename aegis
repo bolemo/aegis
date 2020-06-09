@@ -30,42 +30,41 @@ else
   # No tunneling
   TUN_IF=''
 fi
-TUN_IF='tun21'
 # INFO IPSET
-INFO_IPS_BL_LOAD=$((1<<0))
-INFO_IPS_BL_NEW=$((1<<1))
-INFO_IPS_BL_KEEP=$((1<<2))
-INFO_IPS_BL_MISS=$((1<<3))
-INFO_IPS_BL_SAME=$((1<<4))
-INFO_IPS_BL_WGW=$((1<<5))
-INFO_IPS_WL_LOAD=$((1<<6))
-INFO_IPS_WL_KEEP=$((1<<7))
-INFO_IPS_WL_MISS=$((1<<8))
-INFO_IPS_WL_SAME=$((1<<9))
-INFO_IPS_WG_ADD=$((1<<10))
-INFO_IPS_WG_KEEP=$((1<<11))
+INFO_IPS_BL_LOAD=1
+INFO_IPS_BL_NEW=2
+INFO_IPS_BL_KEEP=4
+INFO_IPS_BL_MISS=8
+INFO_IPS_BL_SAME=16
+INFO_IPS_BL_WGW=32
+INFO_IPS_WL_LOAD=64
+INFO_IPS_WL_KEEP=128
+INFO_IPS_WL_MISS=256
+INFO_IPS_WL_SAME=512
+INFO_IPS_WG_ADD=1024
+INFO_IPS_WG_KEEP=2048
 # INFO IPTABLES
-INFO_IPT_SRC_KEEP=$((1<<0))
-INFO_IPT_DST_KEEP=$((1<<1))
-INFO_IPT_LOG=$((1<<2))
-INFO_IPT_LOG_SRC_NEW=$((1<<3))
-INFO_IPT_LOG_DST_NEW=$((1<<4))
-INFO_IPT_WL=$((1<<5))
-INFO_IPT_WL_SRC_NEW=$((1<<6))
-INFO_IPT_WL_DST_NEW=$((1<<7))
-INFO_IPT_WG=$((1<<8))
-INFO_IPT_WG_SRC_NEW=$((1<<9))
-INFO_IPT_WG_DST_NEW=$((1<<10))
-INFO_IPT_WAN_NEW=$((1<<11))
-INFO_IPT_TUN_NEW=$((1<<12))
-INFO_IPT_WAN_KEEP=$((1<<13))
-INFO_IPT_TUN_KEEP=$((1<<14))
-INFO_IPT_WAN_PBM=$((1<<15))
-INFO_IPT_TUN_PBM=$((1<<16))
+INFO_IPT_SRC_KEEP=1
+INFO_IPT_DST_KEEP=2
+INFO_IPT_LOG=4
+INFO_IPT_LOG_SRC_NEW=8
+INFO_IPT_LOG_DST_NEW=16
+INFO_IPT_WL=32
+INFO_IPT_WL_SRC_NEW=64
+INFO_IPT_WL_DST_NEW=128
+INFO_IPT_WG=256
+INFO_IPT_WG_SRC_NEW=512
+INFO_IPT_WG_DST_NEW=1024
+INFO_IPT_WAN_NEW=2048
+INFO_IPT_TUN_NEW=4096
+INFO_IPT_WAN_KEEP=8192
+INFO_IPT_TUN_KEEP=16384
+INFO_IPT_WAN_PBM=32768
+INFO_IPT_TUN_PBM=65536
 # INFO FROM
-INFO_FROM_FWS=$((1<<0))
-INFO_FROM_PM=$((1<<1))
-INFO_FROM_SC=$((1<<2))
+INFO_FROM_FWS=1
+INFO_FROM_PM=2
+INFO_FROM_SC=3
 ###############################################
 #
 #    ENGINE-START
@@ -83,7 +82,7 @@ _set_ipt_for_if_pos() {
   if [ $_CT -ne 4 ]; then
     if [ $_CT -ne 0 ]; then
       # something is messed up with rules; deleting what is left
-      iptables -S 2>/dev/null | grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      iptables -S 2>/dev/null|grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       _RET=2
     else
       _RET=1
@@ -91,7 +90,7 @@ _set_ipt_for_if_pos() {
     iptables -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
     iptables -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
     iptables -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    iptables -I FORWARD $((_POS+1)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+    iptables -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
   else
     _RET=0
   fi
@@ -931,9 +930,11 @@ status_term() {
     INFO_IPS=$(sed '2q;d' "$INFO_FILE")
     INFO_IPT=$(sed '3q;d' "$INFO_FILE")
     echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
-    [ $((INFO_FROM & INFO_FROM_SC)) -eq 0 ] || FROM="$SC_NAME script"
-    [ $((INFO_FROM & INFO_FROM_PM)) -eq 0 ] || FROM="post-mount.sh"
-    [ $((INFO_FROM & INFO_FROM_FWS)) -eq 0 ] || FROM="firewall-start.sh"
+    case "$INFO_FROM" in
+      $INFO_FROM_SC) FROM="$SC_NAME script" ;;
+      $INFO_FROM_PM) FROM="post-mount.sh" ;;
+      $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
+    esac
     echo "- engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     
     [ $((INFO_IPS & INFO_IPS_BL_SAME)) -eq 0 ] || echo '- ipset: blocklist set was identical to file.'
