@@ -917,11 +917,10 @@ status_term() {
     INFO_IPS=$(sed '2q;d' "$INFO_FILE")
     INFO_IPT=$(sed '3q;d' "$INFO_FILE")
     echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
-    echo "- start time: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
-    
-    [ $((INFO_FROM & INFO_FROM_SC)) -eq 0 ] || echo "- engine launched from: $SC_NAME script."
-    [ $((INFO_FROM & INFO_FROM_PM)) -eq 0 ] || echo "- engine launched from: 'post-mount.sh'."
-    [ $((INFO_FROM & INFO_FROM_FWS)) -eq 0 ] || echo "- engine launched from: 'firewall-start.sh'."
+    [ $((INFO_FROM & INFO_FROM_SC)) -eq 0 ] || FROM="$SC_NAME script"
+    [ $((INFO_FROM & INFO_FROM_PM)) -eq 0 ] || FROM="post-mount.sh"
+    [ $((INFO_FROM & INFO_FROM_FWS)) -eq 0 ] || FROM="firewall-start.sh"
+    echo -n "- engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     
     [ $((INFO_IPS & INFO_IPS_BL_SAME)) -eq 0 ] || echo '- ipset: blocklist set was identical to file.'
     [ $((INFO_IPS & INFO_IPS_BL_MISS)) -eq 0 ] || echo '- ipset: no blocklist set file was found!'
