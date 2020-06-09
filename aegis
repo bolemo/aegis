@@ -864,12 +864,12 @@ status_term() {
   
   if [ $_PB -ne 0 ]; then
     echo -e "\033[1;31mErrors:\033[0m (CODE: $_PB)"
-    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for '$SC_NAME'!\033[0m"
-    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for '$SC_NAME'!\033[0m"
+    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for $SC_NAME!\033[0m"
+    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: blocklist set is not loaded!\033[0m"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: whitelist set is not loaded!\033[0m"
-    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo -e "\033[31m- WAN gateway bypass is set but should not!\033[0m"
-    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo -e "\033[31m- ipset: WAN gateway bypass is not loaded!\033[0m"
+    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo -e "\033[31m- ipset: WAN gateway bypass set is loaded but should not!\033[0m"
+    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo -e "\033[31m- ipset: WAN gateway bypass set is not loaded!\033[0m"
     [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with engine chains!\033[0m"
     [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with WAN gateway bypass!\033[0m"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with whitelist!\033[0m"
@@ -889,27 +889,26 @@ status_term() {
   fi
  
   [ "$VERBOSE" ] || return 0
-  
-  if [ $_CK -ne 0 ]; then
-    echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
-    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for '$SC_NAME'."
-    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for '$SC_NAME'."
-    [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist set is loaded."
-    [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist set is loaded."
-    [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo "- WAN gateway is in blocklist set."
-    [ $((_CK&CK_WG_BP)) -ne 0 ] &&    echo "- ipset: WAN gateway bypass is loaded."
-    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: engine chains are set."
-    [ $((_CK&CK_IPT_WG)) -ne 0 ] &&   echo "- iptables: WAN gateway bypass is set."
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "- iptables: whitelist is set."
-    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: logging is on."
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: rules are set for '$TUN_IF'."
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
-  fi
-  
+
+  echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
   [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
+  if [ $_CK -ne 0 ]; then
+    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for $SC_NAME."
+    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for $SC_NAME."
+    [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist set is loaded."
+    [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist set is loaded."
+    [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo "- ipset: WAN gateway is in blocklist set."
+    [ $((_CK&CK_WG_BP)) -ne 0 ] &&    echo "- ipset: WAN gateway bypass set is loaded."
+    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: engine chains are set."
+    [ $((_CK&CK_IPT_WG)) -ne 0 ] &&   echo "- iptables: WAN gateway bypass rules are set."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "- iptables: whitelist rules are set."
+    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: logging is on."
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: rules are set for '$TUN_IF'."
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: rules are set for '$WAN_IF'."
+  fi
   
   # Status file
   echo -ne "\033[1;36m'$SC_NAME' engine last launch report:\033[0m"
@@ -917,64 +916,64 @@ status_term() {
     INFO_FROM=$(sed '1q;d' "$INFO_FILE")
     INFO_IPS=$(sed '2q;d' "$INFO_FILE")
     INFO_IPT=$(sed '3q;d' "$INFO_FILE")
-    echo " (CODE: $INFO_FROM-INFO_IPS-INFO_IPT)"
+    echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
     echo "- start time: $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     
-    [ $((INFO_FROM & INFO_FROM_SC)) -eq 0 ] || echo "- origin: $SC_NAME script."
-    [ $((INFO_FROM & INFO_FROM_PM)) -eq 0 ] || echo "- origin: 'post-mount.sh'."
-    [ $((INFO_FROM & INFO_FROM_FWS)) -eq 0 ] || echo "- origin: 'firewall-start.sh'."
+    [ $((INFO_FROM & INFO_FROM_SC)) -eq 0 ] || echo "- engine launched from: $SC_NAME script."
+    [ $((INFO_FROM & INFO_FROM_PM)) -eq 0 ] || echo "- engine launched from: 'post-mount.sh'."
+    [ $((INFO_FROM & INFO_FROM_FWS)) -eq 0 ] || echo "- engine launched from: 'firewall-start.sh'."
     
-    [ $((INFO_IPS & INFO_IPS_BL_SAME)) -eq 0 ] || echo '- ipset: loaded blocklist identical to file.'
-    [ $((INFO_IPS & INFO_IPS_BL_MISS)) -eq 0 ] || echo '- no blocklist file found!'
-    [ $((INFO_IPS & INFO_IPS_BL_LOAD)) -eq 0 ] || echo '- ipset: blocklist from file loaded.'
-    [ $((INFO_IPS & INFO_IPS_BL_NEW)) -eq 0 ] || echo '- ipset: empty blocklist loaded.'
-    [ $((INFO_IPS & INFO_IPS_BL_KEEP)) -eq 0 ] || echo '- ipset: loaded blocklist kept.'
-    [ $((INFO_IPS & INFO_IPS_BL_WGW)) -eq 0 ] || echo '- ipset: WAN gateway found in blocklist.'
-    [ $((INFO_IPS & INFO_IPS_WG_ADD)) -eq 0 ] || echo '- ipset: WAN gateway bypass set.'
-    [ $((INFO_IPS & INFO_IPS_WG_KEEP)) -eq 0 ] || echo '- ipset: WAN gateway bypass already set.'
-    [ $((INFO_IPS & INFO_IPS_WL_SAME)) -eq 0 ] || echo '- ipset: loaded whitelist identical to file.'
-    [ $((INFO_IPS & INFO_IPS_WL_MISS)) -eq 0 ] || echo '- no whitelist file found.'
-    [ $((INFO_IPS & INFO_IPS_WL_LOAD)) -eq 0 ] || echo '- ipset: whitelist from file loaded.'
-    [ $((INFO_IPS & INFO_IPS_WL_KEEP)) -eq 0 ] || echo '- ipset: loaded whitelist kept.'
+    [ $((INFO_IPS & INFO_IPS_BL_SAME)) -eq 0 ] || echo '- ipset: blocklist set was identical to file.'
+    [ $((INFO_IPS & INFO_IPS_BL_MISS)) -eq 0 ] || echo '- ipset: no blocklist set file was found!'
+    [ $((INFO_IPS & INFO_IPS_BL_LOAD)) -eq 0 ] || echo '- ipset: blocklist set from file was loaded.'
+    [ $((INFO_IPS & INFO_IPS_BL_NEW)) -eq 0 ] || echo '- ipset: empty blocklist set was loaded.'
+    [ $((INFO_IPS & INFO_IPS_BL_KEEP)) -eq 0 ] || echo '- ipset: loaded blocklist set was kept.'
+    [ $((INFO_IPS & INFO_IPS_BL_WGW)) -eq 0 ] || echo '- ipset: WAN gateway was found in blocklist set.'
+    [ $((INFO_IPS & INFO_IPS_WG_ADD)) -eq 0 ] || echo '- ipset: WAN gateway bypass set was loaded.'
+    [ $((INFO_IPS & INFO_IPS_WG_KEEP)) -eq 0 ] || echo '- ipset: loaded WAN gateway bypass set was kept.'
+    [ $((INFO_IPS & INFO_IPS_WL_SAME)) -eq 0 ] || echo '- ipset: whitelist set was identical to file.'
+    [ $((INFO_IPS & INFO_IPS_WL_MISS)) -eq 0 ] || echo '- ipset: no whitelist set file was found.'
+    [ $((INFO_IPS & INFO_IPS_WL_LOAD)) -eq 0 ] || echo '- ipset: whitelist set from file was loaded.'
+    [ $((INFO_IPS & INFO_IPS_WL_KEEP)) -eq 0 ] || echo '- ipset: loaded whitelist set was kept.'
     
-    [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ] || echo '- iptables: engine inbound chain already set.'
-    [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ] || echo '- iptables: engine outbound chain already set.'
+    [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ] || echo '- iptables: engine inbound chain were already set.'
+    [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ] || echo '- iptables: engine outbound chain were already set.'
     if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound logging rules (re)set.'
-        else echo '- iptables: inbound logging rules already set.'
+        then echo '- iptables: inbound logging rules were (re)set.'
+        else echo '- iptables: inbound logging rules were kept.'
       fi
       if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound logging rules (re)set.'
-        else echo '- iptables: outbound logging rules already set.'
+        then echo '- iptables: outbound logging rules were (re)set.'
+        else echo '- iptables: outbound logging rules were kept.'
       fi
     fi
     if [ $((INFO_IPT & INFO_IPT_WG)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WG_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound WAN gateway bypass rules (re)set.'
-        else echo '- iptables: inbound WAN gateway bypass rules already set.'
+        then echo '- iptables: inbound WAN gateway bypass rules were (re)set.'
+        else echo '- iptables: inbound WAN gateway bypass rules were kept.'
       fi
       if [ $((INFO_IPT & INFO_IPT_WG_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound WAN gateway bypass rules (re)set.'
-        else echo '- iptables: outbound WAN gateway bypass rules already set.'
+        then echo '- iptables: outbound WAN gateway bypass rules were (re)set.'
+        else echo '- iptables: outbound WAN gateway bypass rules were kept.'
       fi
     fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound whitelist rules (re)set.'
-        else echo '- iptables: inbound whitelist rules already set.'
+        then echo '- iptables: inbound whitelist rules were (re)set.'
+        else echo '- iptables: inbound whitelist rules were kept.'
       fi
       if [ $((INFO_IPT & INFO_IPT_WL_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound whitelist rules (re)set.'
-        else echo '- iptables: outbound whitelist rules already set.'
+        then echo '- iptables: outbound whitelist rules were (re)set.'
+        else echo '- iptables: outbound whitelist rules were kept.'
       fi
     fi
-    [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq 0 ] || echo '- iptables: WAN rules reset.'
-    [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -eq 0 ] || echo '- iptables: WAN rules set.'
-    [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -eq 0 ] || echo '- iptables: WAN rules already set.'
-    [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq 0 ] || echo '- iptables: VPN rules reset.'
-    [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -eq 0 ] || echo '- iptables: VPN rules set.'
-    [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -eq 0 ] || echo '- iptables: VPN rules already set.'
+    [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq 0 ] || echo '- iptables: WAN rules were reset.'
+    [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -eq 0 ] || echo '- iptables: WAN rules were set.'
+    [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -eq 0 ] || echo '- iptables: WAN rules were kept.'
+    [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq 0 ] || echo '- iptables: VPN rules were reset.'
+    [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -eq 0 ] || echo '- iptables: VPN rules were set.'
+    [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -eq 0 ] || echo '- iptables: VPN rules were kept.'
     echo -ne "\033[0m"
   else
     echo -e '\n- No status file found.'
