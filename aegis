@@ -699,12 +699,12 @@ PB_IPT_IFO=512    # .. PB
 CK_IPT_TUN=1024   # CK PB
 CK_IPT_WAN=2048   # CK PB
 
-WN_DIFF_IMP=1     # WN
-WN_DIFF_BL=2      # WN
-WN_FILE_BL=4      # WN
-WN_DIFF_WL=8      # WN
-WN_FILE_WL=16     # WN
-WN_LOG=32         # WN
+WN_DIFF_IMP=1
+WN_DIFF_BL=2
+WN_FILE_BL=4
+WN_DIFF_WL=8
+WN_FILE_WL=16
+WN_LOG=32
 
 CK_MASK=4095 #12 bits
 
@@ -885,13 +885,13 @@ status_term() {
     [ $((_WN&WN_DIFF_IMP)) -ne 0 ] && echo -e "\033[35m- 'iprange' is not installed: file/ipset comparison skipped.\033[0m"
     [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- the loaded blocklist set is different than the blocklist file.\033[0m"
     if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
-      [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist set is loaded but file is missing.\033[0m";
-                                   || echo -e "\033[35m- blocklist set file exists and is not loaded.\033[0m"
+      [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist set is loaded but file is missing.\033[0m" ||
+                                      echo -e "\033[35m- blocklist set file exists and is not loaded.\033[0m"
     fi
     [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- the loaded whitelist set is different than the whitelist file.\033[0m"
     if [ $((_WN&WN_FILE_WL)) -ne 0 ]; then
-      [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist set is loaded but file is missing.\033[0m";
-                                   || echo -e "\033[35m- whitelist set file exists and is not loaded.\033[0m"
+      [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist set is loaded but file is missing.\033[0m" ||
+                                      echo -e "\033[35m- whitelist set file exists and is not loaded.\033[0m"
     fi
     [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
