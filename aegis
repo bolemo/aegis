@@ -37,12 +37,15 @@ INFO_IPS_BL_KEEP=4    # . . . . . . . . . x . .
 INFO_IPS_BL_MISS=8    # . . . . . . . . x . . .
 INFO_IPS_BL_SAME=16   # . . . . . . . x . . . .
 INFO_IPS_BL_WGW=32    # . . . . . . x . . . . .
+
 INFO_IPS_WL_LOAD=64   # . . . . . x . . . . . .
 INFO_IPS_WL_KEEP=128  # . . . . x . . . . . . .
 INFO_IPS_WL_MISS=256  # . . . x . . . . . . . .
 INFO_IPS_WL_SAME=512  # . . x . . . . . . . . .
+
 INFO_IPS_WG_ADD=1024  # . x . . . . . . . . . .
 INFO_IPS_WG_KEEP=2048 # x . . . . . . . . . . .
+
 # INFO IPTABLES
 INFO_IPT_SRC_KEEP=1
 INFO_IPT_DST_KEEP=2
@@ -134,9 +137,9 @@ engine_start() {
       echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
       _IPS=$((_IPS+INFO_IPS_BL_LOAD))
     else
-    # no netset file, creating empty blocklist ipset
-      ipset -q create "$IPSET_BL_NAME" hash:net family inet
+    # no netset file, exiting
       _IPS=$((_IPS+INFO_IPS_BL_MISS+INFO_IPS_BL_NEW))
+      exit 1
     fi
   fi
   
