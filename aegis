@@ -30,26 +30,38 @@ else
   # No tunneling
   TUN_IF=''
 fi
+# INFO FROM (2 bits)
+INFO_FROM_MASK=3
+INFO_FROM_FWS=1       # _ x
+INFO_FROM_PM=2        # x _
+INFO_FROM_SC=3        # x x
 
-# INFO IPSET
-# INFO_IPS_PBM=0      # . . . . . . .
-INFO_IPS_BL_SAME=1    # . . . . . . x  KEEP
-INFO_IPS_BL_MISS=2    # . . . . . x .  KEEP
-INFO_IPS_BL_LOAD=3    # . . . . . x x
+# INFO IPSET (8 bits)
+INFO_IPS_MASK=255
+                      # . . . . . . _ _  PBM, BL FILE MISSING
+INFO_IPS_BL_SAME=1    # . . . . . . _ x  KEEP
+INFO_IPS_BL_MISS=2    # . . . . . . x _  KEEP
+INFO_IPS_BL_LOAD=3    # . . . . . . x x
+INFO_IPS_BL_MASK=3    # . . . . . . x x
 
-INFO_IPS_WL_SAME=4    # . . . . x . .  KEEP
-INFO_IPS_WL_MISS=8    # . . . x . . .
-INFO_IPS_WL_LOAD=12   # . . . x x . .
-INFO_IPS_WL_DEL=16    # . . x . . . .
+INFO_IPS_WL_SAME=4    # . . . _ . x . .  SAME => KEEP
+INFO_IPS_WL_KEEP=8    # . . . _ x . . .  KEEP
+INFO_IPS_WL_LOAD=16   # . . . x _ _ . .
+INFO_IPS_WL_SWAP=20   # . . . x _ x . . = RELOAD
+INFO_IPS_WL_DEL=24    # . . . x x _ . . => was there, was deleted
+                      # . . . _ _ _ . . => was not there, was not loaded
+INFO_IPS_WL_MASK=28   # . . . x x x . .
 
-INFO_IPS_WG_ADD=32    # . x . . . . .  BL_WGW
-INFO_IPS_WG_KEEP=48   # x . . . . . .  BL_WGW
-INFO_IPS_WG_INBL=80   # x x . . . . .  (MASK)
+INFO_IPS_WG_ADD=32    # _ _ x . . . . . => IN BL
+INFO_IPS_WG_KEEP=64   # _ x _ . . . . . => IN BK
+INFO_IPS_WG_DEL=128   # x _ _ . . . . .
+INFO_IPS_WG_MASK=224  # x x x . . . . .
+                      # _ _ _ . . . . . => was not there, was not loaded
 
-# INFO IPTABLES
-# SRC
-INFO_IPT_SRC_NEW=1         # . . . . . . . . . . . . . . . x (or KEEP)
-INFO_IPT_DST_NEW=2         # . . . . . . . . . . . . . . x . (or KEEP)
+# INFO IPTABLES (16 bits)
+INFO_IPT_MASK=65535
+INFO_IPT_SRC_KEEP=1        # . . . . . . . . . . . . . . . x (or NEW)
+INFO_IPT_DST_KEEP=2        # . . . . . . . . . . . . . . x . (or NEW)
 INFO_IPT_WG=4              # . . . . . . . . . . . . . x . .
 INFO_IPT_WG_SRC_NEW=8      # . . . . . . . . . . . . x . . . (or KEEP)
 INFO_IPT_WG_DST_NEW=16     # . . . . . . . . . . . x . . . . (or KEEP)
@@ -60,12 +72,12 @@ INFO_IPT_LOG=256           # . . . . . . . x . . . . . . . .
 INFO_IPT_LOG_SRC_NEW=512   # . . . . . . x . . . . . . . . . (or KEEP)
 INFO_IPT_LOG_DST_NEW=1024  # . . . . . x . . . . . . . . . . (or KEEP)
 
-INFO_IPT_WAN_NEW=2048      # . . . . x . . . . . . . . . . .
-INFO_IPT_WAN_KEEP=4096     # . . . x . . . . . . . . . . . .
+INFO_IPT_WAN_NEW=2048      # . . . _ x . . . . . . . . . . .
+INFO_IPT_WAN_KEEP=4096     # . . . x _ . . . . . . . . . . .
 INFO_IPT_WAN_PBM=6144      # . . . x x . . . . . . . . . . .
 
-INFO_IPT_TUN_NEW=8192      # . . x . . . . . . . . . . . . .
-INFO_IPT_TUN_KEEP=16384    # . x . . . . . . . . . . . . . .
+INFO_IPT_TUN_NEW=8192      # . _ x . . . . . . . . . . . . .
+INFO_IPT_TUN_KEEP=16384    # . x _ . . . . . . . . . . . . .
 INFO_IPT_TUN_PBM=24576     # . x x . . . . . . . . . . . . .
 
 INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
@@ -206,23 +218,23 @@ engine_start() {
     # ipset whitelist is already in place
     if [ -r "$WL_FILE" ]; then
       _WL='y'
-      [ "$_RELOAD_WTD" ] && _RELOAD='y'
+      [ "$_RELOAD_WTD" ] && _RELOAD='y' || _RELOAD=''
       # checking if ipset and file are identical
       if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
         then _RELOAD=''; _IPS=$((_IPS+INFO_IPS_WL_SAME))
         else _RELOAD='y'
       fi
-      
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
         echo -e "create $IPSET_TMP hash:net family inet\n$(sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
         ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
         ipset destroy "$IPSET_TMP"
-        _IPS=$((_IPS+INFO_IPS_WL_LOAD))
+        _IPS=$((_IPS+INFO_IPS_WL_SWAP))
+      else
       # else we want to keep it
+        _IPS=$((_IPS+INFO_IPS_WL_KEEP))
       fi
-    else
-      _IPS=$((_IPS+INFO_IPS_WL_MISS))
+    #else it will be destroyed later
     fi
   else
     if [ -r "$WL_FILE" ]; then
@@ -230,8 +242,6 @@ engine_start() {
       _WL='y'
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       _IPS=$((_IPS+INFO_IPS_WL_LOAD))
-    else
-      _IPS=$((_IPS+INFO_IPS_WL_MISS))
     fi
   fi
 
@@ -254,9 +264,10 @@ engine_start() {
     fi
     _IPT=$((_IPT+INFO_IPT_WG))
   else
-    #Removing any trace of WAN gareway whitelist if any
+    #Removing any trace of WAN gateway bypass if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
     ipset -q destroy "$IPSET_WG_NAME"
+    _IPS=$((_IPS+INFO_IPS_WG_DEL))
     _POS=0
   fi
 
@@ -278,6 +289,7 @@ engine_start() {
     #Removing any trace of whitelist if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
     ipset -q destroy "$IPSET_WL_NAME"
+    _IPS=$((_IPS+INFO_IPS_WL_DEL))
   fi
 
   if [ "$IPTBL_LOGGING" ]; then
@@ -326,7 +338,8 @@ engine_start() {
     esac
   fi
   
-  echo -e "$_FROM\n$_IPS\n$_IPT" > "$INFO_FILE"
+  echo -e "$((_FROM+(_IPS<<2)+(_IPT<<10)))" > "$INFO_FILE"
+#  echo -e "$_FROM\n$_IPS\n$_IPT" > "$INFO_FILE"
 }
 
 ###############################################
@@ -973,9 +986,14 @@ status_term() {
   # Status file
   echo -ne "\033[1;36m'$SC_NAME' engine last launch report:\033[0m"
   if [ -r "$INFO_FILE" ]; then
-    INFO_FROM=$(sed '1q;d' "$INFO_FILE")
-    INFO_IPS=$(sed '2q;d' "$INFO_FILE")
-    INFO_IPT=$(sed '3q;d' "$INFO_FILE")
+    INFO=$(cat "$INFO_FILE")
+    INFO_FROM=$((INFO&INFO_FROM_MASK))
+    INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
+    INFO_IPT=$(((INFO>>10)&INFO_IPT_MASK))
+#    echo -e "$((_FROM+(_IPS<<2)+(_IPT<<10)))" > "$INFO_FILE"
+#    INFO_FROM=$(sed '1q;d' "$INFO_FILE")
+#    INFO_IPS=$(sed '2q;d' "$INFO_FILE")
+#    INFO_IPT=$(sed '3q;d' "$INFO_FILE")
     echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
@@ -983,19 +1001,28 @@ status_term() {
       $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
     esac
     echo "- engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+    case $((INFO_IPS&INFO_IPS_BL_MASK)) in
+      0) echo '! blocklist set file was not found!' ;;
+      $INFO_IPS_BL_SAME) echo '- ipset: blocklist set was already loaded and identical to file.' ;;
+      $INFO_IPS_BL_MISS) echo '- ipset: blocklist set file was not found! The loaded one was kept.' ;;
+      $INFO_IPS_BL_LOAD) echo '- ipset: blocklist set was loaded from file.' ;;
+    esac
+    case $((INFO_IPS&INFO_IPS_WL_MASK)) in
+      0) echo '- no whitelist set file was found.' ;;
+      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo '- ipset: whitelist set was already loaded and identical to file.' ;;
+      $INFO_IPS_WL_KEEP) echo '- ipset: loaded whitelist set was kept.' ;;
+      $INFO_IPS_WL_LOAD) echo '- ipset: whitelist set was loaded from file.' ;;
+      $INFO_IPS_WL_SWAP) echo '- ipset: whitelist set was swapped from file.' ;;
+      $INFO_IPS_WL_DEL) echo '- ipset: loaded whitelist set was unset.' ;;
+    esac
+    case $((INFO_IPS&INFO_IPS_WG_MASK)) in
+      0) echo '- WAN gateway was not in blocklist set and therefore was not bypassed.' ;;
+      $INFO_IPS_WG_ADD) echo '- ipset: WAN gateway was in blocklist set and bypass was set.' ;;
+      $INFO_IPS_WG_KEEP) echo '- ipset: WAN gateway was in blocklist set and bypass was already set.' ;;
+      $INFO_IPS_WG_DEL) echo '- ipset: WAN gateway bypass was unset (because was not in blocklist).' ;;
+    esac
     
-    [ $((INFO_IPS & INFO_IPS_BL_SAME)) -eq 0 ] || echo '- ipset: blocklist set was identical to file.'
-    [ $((INFO_IPS & INFO_IPS_BL_MISS)) -eq 0 ] || echo '- ipset: no blocklist set file was found!'
-    [ $((INFO_IPS & INFO_IPS_BL_LOAD)) -eq 0 ] || echo '- ipset: blocklist set from file was loaded.'
-    [ $((INFO_IPS & INFO_IPS_BL_NEW)) -eq 0 ] || echo '- ipset: empty blocklist set was loaded.'
-    [ $((INFO_IPS & INFO_IPS_BL_KEEP)) -eq 0 ] || echo '- ipset: loaded blocklist set was kept.'
-    [ $((INFO_IPS & INFO_IPS_BL_WGW)) -eq 0 ] || echo '- ipset: WAN gateway was found in blocklist set.'
-    [ $((INFO_IPS & INFO_IPS_WG_ADD)) -eq 0 ] || echo '- ipset: WAN gateway bypass set was loaded.'
-    [ $((INFO_IPS & INFO_IPS_WG_KEEP)) -eq 0 ] || echo '- ipset: loaded WAN gateway bypass set was kept.'
-    [ $((INFO_IPS & INFO_IPS_WL_SAME)) -eq 0 ] || echo '- ipset: whitelist set was identical to file.'
-    [ $((INFO_IPS & INFO_IPS_WL_MISS)) -eq 0 ] || echo '- ipset: no whitelist set file was found.'
-    [ $((INFO_IPS & INFO_IPS_WL_LOAD)) -eq 0 ] || echo '- ipset: whitelist set from file was loaded.'
-    [ $((INFO_IPS & INFO_IPS_WL_KEEP)) -eq 0 ] || echo '- ipset: loaded whitelist set was kept.'
+   
     
     [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ] || echo '- iptables: engine inbound chain were already set.'
     [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ] || echo '- iptables: engine outbound chain were already set.'
