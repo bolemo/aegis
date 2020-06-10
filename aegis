@@ -228,7 +228,7 @@ engine_start() {
   else
     #Removing any trace of WAN gateway bypass if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WG_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    if ipset -q destroy "$IPSET_WG_NAME"; then _IPS=$((_IPS+INFO_IPS_WG_DEL))
+    ipset -q destroy "$IPSET_WG_NAME" && _IPS=$((_IPS+INFO_IPS_WG_DEL))
     _POS=0
   fi
 
@@ -249,7 +249,7 @@ engine_start() {
   else
     #Removing any trace of whitelist if any
     iptables -S 2>/dev/null | grep -F -- "$IPSET_WL_NAME" | sed 's/^-A/iptables -D/' | while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    if ipset -q destroy "$IPSET_WL_NAME"; then _IPS=$((_IPS+INFO_IPS_WL_DEL))
+    ipset -q destroy "$IPSET_WL_NAME" && _IPS=$((_IPS+INFO_IPS_WL_DEL))
   fi
 
   if [ "$IPTBL_LOGGING" ]; then
