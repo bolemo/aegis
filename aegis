@@ -261,6 +261,13 @@ engine_start() {
   iptables -S "$IPTBL_SRC" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
   iptables -S "$IPTBL_DST" | grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
   
+  # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
+  IFO_IPT="$(iptables -S 2>/dev/null|grep -- "-A \(INPUT\|FORWARD\|OUTPUT\) -\(i\|o\) [[:alnum:]]\+ -m set --match-set $IPSET_BL_NAME"|grep -v "\($WAN_IF\|$TUN_IF\)")"
+  if [ "$IFO_IPT" ]; then
+    # we have some unwanted rules (likely old WAN_IF or TUN_IF)
+    echo "$IFO_IPT"|sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+  fi
+  
   # creating the required iptables rules for wan interface
   _set_ipt_for_if_pos "$WAN_IF" 1
   case $? in
