@@ -30,6 +30,45 @@ else
   # No tunneling
   TUN_IF=''
 fi
+
+# INFO IPSET
+INFO_IPS_PBM=0        # . . . . . .
+INFO_IPS_BL_SAME=1    # . . . . . x  KEEP
+INFO_IPS_BL_MISS=2    # . . . . x .  KEEP
+INFO_IPS_BL_LOAD=3    # . . . . x x
+
+INFO_IPS_WL_SAME=4    # . . . x . .  KEEP
+INFO_IPS_WL_MISS=8    # . . x . . .  KEEP
+INFO_IPS_WL_LOAD=12   # . . x x . .
+
+INFO_IPS_WG_ADD=16    # . x . . . .  BL_WGW
+INFO_IPS_WG_KEEP=32   # x . . . . .  BL_WGW
+INFO_IPS_WG_INBL=48   # x x . . . .  (MASK)
+
+# INFO IPTABLES
+# SRC
+INFO_IPT_SRC_NEW=1         # . . . . . . . . . . . . . . . x (or KEEP)
+INFO_IPT_DST_NEW=2         # . . . . . . . . . . . . . . x . (or KEEP)
+INFO_IPT_WG=4              # . . . . . . . . . . . . . x . .
+INFO_IPT_WG_SRC_NEW=8      # . . . . . . . . . . . . x . . . (or KEEP)
+INFO_IPT_WG_DST_NEW=16     # . . . . . . . . . . . x . . . . (or KEEP)
+INFO_IPT_WL=32             # . . . . . . . . . . x . . . . .
+INFO_IPT_WL_SRC_NEW=64     # . . . . . . . . . x . . . . . . (or KEEP)
+INFO_IPT_WL_DST_NEW=128    # . . . . . . . . x . . . . . . . (or KEEP)
+INFO_IPT_LOG=256           # . . . . . . . x . . . . . . . .
+INFO_IPT_LOG_SRC_NEW=512   # . . . . . . x . . . . . . . . . (or KEEP)
+INFO_IPT_LOG_DST_NEW=1024  # . . . . . x . . . . . . . . . . (or KEEP)
+
+INFO_IPT_WAN_NEW=2048      # . . . . x . . . . . . . . . . .
+INFO_IPT_WAN_KEEP=4096     # . . . x . . . . . . . . . . . .
+INFO_IPT_WAN_PBM=6144      # . . . x x . . . . . . . . . . .
+
+INFO_IPT_TUN_NEW=8192      # . . x . . . . . . . . . . . . .
+INFO_IPT_TUN_KEEP=16384    # . x . . . . . . . . . . . . . .
+INFO_IPT_TUN_PBM=24576     # . x x . . . . . . . . . . . . .
+
+INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
+
 # INFO IPSET
 INFO_IPS_BL_LOAD=1    # . . . . . . . . . . . x
 INFO_IPS_BL_NEW=2     # . . . . . . . . . . x .
