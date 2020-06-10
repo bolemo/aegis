@@ -31,18 +31,18 @@ else
   TUN_IF=''
 fi
 # INFO IPSET
-INFO_IPS_BL_LOAD=1
-INFO_IPS_BL_NEW=2
-INFO_IPS_BL_KEEP=4
-INFO_IPS_BL_MISS=8
-INFO_IPS_BL_SAME=16
-INFO_IPS_BL_WGW=32
-INFO_IPS_WL_LOAD=64
-INFO_IPS_WL_KEEP=128
-INFO_IPS_WL_MISS=256
-INFO_IPS_WL_SAME=512
-INFO_IPS_WG_ADD=1024
-INFO_IPS_WG_KEEP=2048
+INFO_IPS_BL_LOAD=1    # . . . . . . . . . . . x
+INFO_IPS_BL_NEW=2     # . . . . . . . . . . x .
+INFO_IPS_BL_KEEP=4    # . . . . . . . . . x . .
+INFO_IPS_BL_MISS=8    # . . . . . . . . x . . .
+INFO_IPS_BL_SAME=16   # . . . . . . . x . . . .
+INFO_IPS_BL_WGW=32    # . . . . . . x . . . . .
+INFO_IPS_WL_LOAD=64   # . . . . . x . . . . . .
+INFO_IPS_WL_KEEP=128  # . . . . x . . . . . . .
+INFO_IPS_WL_MISS=256  # . . . x . . . . . . . .
+INFO_IPS_WL_SAME=512  # . . x . . . . . . . . .
+INFO_IPS_WG_ADD=1024  # . x . . . . . . . . . .
+INFO_IPS_WG_KEEP=2048 # x . . . . . . . . . . .
 # INFO IPTABLES
 INFO_IPT_SRC_KEEP=1
 INFO_IPT_DST_KEEP=2
@@ -61,6 +61,7 @@ INFO_IPT_WAN_KEEP=8192
 INFO_IPT_TUN_KEEP=16384
 INFO_IPT_WAN_PBM=32768
 INFO_IPT_TUN_PBM=65536
+INFO_IPT_IFO_PBM=131072
 # INFO FROM
 INFO_FROM_FWS=1
 INFO_FROM_PM=2
@@ -266,6 +267,7 @@ engine_start() {
   if [ "$IFO_IPT" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$IFO_IPT"|sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    _IPT=$((_IPT+INFO_IPT_IFO_PBM))
   fi
   
   # creating the required iptables rules for wan interface
