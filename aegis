@@ -32,18 +32,19 @@ else
 fi
 
 # INFO IPSET
-INFO_IPS_PBM=0        # . . . . . .
-INFO_IPS_BL_SAME=1    # . . . . . x  KEEP
-INFO_IPS_BL_MISS=2    # . . . . x .  KEEP
-INFO_IPS_BL_LOAD=3    # . . . . x x
+# INFO_IPS_PBM=0      # . . . . . . .
+INFO_IPS_BL_SAME=1    # . . . . . . x  KEEP
+INFO_IPS_BL_MISS=2    # . . . . . x .  KEEP
+INFO_IPS_BL_LOAD=3    # . . . . . x x
 
-INFO_IPS_WL_SAME=4    # . . . x . .  KEEP
-INFO_IPS_WL_MISS=8    # . . x . . .  KEEP
-INFO_IPS_WL_LOAD=12   # . . x x . .
+INFO_IPS_WL_SAME=4    # . . . . x . .  KEEP
+INFO_IPS_WL_MISS=8    # . . . x . . .
+INFO_IPS_WL_LOAD=12   # . . . x x . .
+INFO_IPS_WL_DEL=16    # . . x . . . .
 
-INFO_IPS_WG_ADD=16    # . x . . . .  BL_WGW
-INFO_IPS_WG_KEEP=32   # x . . . . .  BL_WGW
-INFO_IPS_WG_INBL=48   # x x . . . .  (MASK)
+INFO_IPS_WG_ADD=32    # . x . . . . .  BL_WGW
+INFO_IPS_WG_KEEP=48   # x . . . . . .  BL_WGW
+INFO_IPS_WG_INBL=80   # x x . . . . .  (MASK)
 
 # INFO IPTABLES
 # SRC
@@ -166,9 +167,7 @@ engine_start() {
       ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
       ipset destroy $IPSET_TMP
       _IPS=$((_IPS+INFO_IPS_BL_LOAD))
-    else
-    # keeping existing blocklist
-      _IPS=$((_IPS+INFO_IPS_BL_KEEP))
+    # else keeping existing blocklist
     fi
   else
     if [ -r "$BL_FILE" ]; then
@@ -176,8 +175,7 @@ engine_start() {
       echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(wc -l < "$BL_FILE")\n$(sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
       _IPS=$((_IPS+INFO_IPS_BL_LOAD))
     else
-    # no netset file, exiting
-      _IPS=$((_IPS+INFO_IPS_BL_MISS+INFO_IPS_BL_NEW))
+    # no netset file, exiting with _IPS=0
       exit 1
     fi
   fi
@@ -221,9 +219,7 @@ engine_start() {
         ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
         ipset destroy "$IPSET_TMP"
         _IPS=$((_IPS+INFO_IPS_WL_LOAD))
-      else
-      # we want to keep it
-        _IPS=$((_IPS+INFO_IPS_WL_KEEP))
+      # else we want to keep it
       fi
     else
       _IPS=$((_IPS+INFO_IPS_WL_MISS))
