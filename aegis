@@ -30,6 +30,7 @@ else
   # No tunneling
   TUN_IF=''
 fi
+
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
 INFO_FROM_FWS=1       # _ x
@@ -82,45 +83,6 @@ INFO_IPT_TUN_PBM=24576     # . x x . . . . . . . . . . . . .
 
 INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
 
-# INFO IPSET
-INFO_IPS_BL_LOAD=1    # . . . . . . . . . . . x
-INFO_IPS_BL_NEW=2     # . . . . . . . . . . x .
-INFO_IPS_BL_KEEP=4    # . . . . . . . . . x . .
-INFO_IPS_BL_MISS=8    # . . . . . . . . x . . .
-INFO_IPS_BL_SAME=16   # . . . . . . . x . . . .
-INFO_IPS_BL_WGW=32    # . . . . . . x . . . . .
-
-INFO_IPS_WL_LOAD=64   # . . . . . x . . . . . .
-INFO_IPS_WL_KEEP=128  # . . . . x . . . . . . .
-INFO_IPS_WL_MISS=256  # . . . x . . . . . . . .
-INFO_IPS_WL_SAME=512  # . . x . . . . . . . . .
-
-INFO_IPS_WG_ADD=1024  # . x . . . . . . . . . .
-INFO_IPS_WG_KEEP=2048 # x . . . . . . . . . . .
-
-# INFO IPTABLES
-INFO_IPT_SRC_KEEP=1
-INFO_IPT_DST_KEEP=2
-INFO_IPT_LOG=4
-INFO_IPT_LOG_SRC_NEW=8
-INFO_IPT_LOG_DST_NEW=16
-INFO_IPT_WL=32
-INFO_IPT_WL_SRC_NEW=64
-INFO_IPT_WL_DST_NEW=128
-INFO_IPT_WG=256
-INFO_IPT_WG_SRC_NEW=512
-INFO_IPT_WG_DST_NEW=1024
-INFO_IPT_WAN_NEW=2048
-INFO_IPT_TUN_NEW=4096
-INFO_IPT_WAN_KEEP=8192
-INFO_IPT_TUN_KEEP=16384
-INFO_IPT_WAN_PBM=32768
-INFO_IPT_TUN_PBM=65536
-INFO_IPT_IFO_PBM=131072
-# INFO FROM
-INFO_FROM_FWS=1
-INFO_FROM_PM=2
-INFO_FROM_SC=3
 ###############################################
 #
 #    ENGINE-START
@@ -339,7 +301,6 @@ engine_start() {
   fi
   
   echo -e "$((_FROM+(_IPS<<2)+(_IPT<<10)))" > "$INFO_FILE"
-#  echo -e "$_FROM\n$_IPS\n$_IPT" > "$INFO_FILE"
 }
 
 ###############################################
@@ -990,10 +951,6 @@ status_term() {
     INFO_FROM=$((INFO&INFO_FROM_MASK))
     INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
     INFO_IPT=$(((INFO>>10)&INFO_IPT_MASK))
-#    echo -e "$((_FROM+(_IPS<<2)+(_IPT<<10)))" > "$INFO_FILE"
-#    INFO_FROM=$(sed '1q;d' "$INFO_FILE")
-#    INFO_IPS=$(sed '2q;d' "$INFO_FILE")
-#    INFO_IPT=$(sed '3q;d' "$INFO_FILE")
     echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
@@ -1021,47 +978,55 @@ status_term() {
       $INFO_IPS_WG_KEEP) echo '- ipset: WAN gateway was in blocklist set and bypass was already set.' ;;
       $INFO_IPS_WG_DEL) echo '- ipset: WAN gateway bypass was unset (because was not in blocklist).' ;;
     esac
-    
-   
-    
-    [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ] || echo '- iptables: engine inbound chain were already set.'
-    [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ] || echo '- iptables: engine outbound chain were already set.'
-    if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound logging rules were (re)set.'
-        else echo '- iptables: inbound logging rules were kept.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound logging rules were (re)set.'
-        else echo '- iptables: outbound logging rules were kept.'
-      fi
+    if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
+      then echo "- iptables: engine inbound chain was set."
+      else echo "- iptables: engine inbound chain was already set and kept."
+    fi
+    if [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ]
+      then echo '- iptables: engine outbound chain was set.'
+      else echo '- iptables: engine outbound chain was already set and kept.'
     fi
     if [ $((INFO_IPT & INFO_IPT_WG)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WG_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound WAN gateway bypass rules were (re)set.'
+        then echo '- iptables: inbound WAN gateway bypass rules were set.'
         else echo '- iptables: inbound WAN gateway bypass rules were kept.'
       fi
       if [ $((INFO_IPT & INFO_IPT_WG_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound WAN gateway bypass rules were (re)set.'
+        then echo '- iptables: outbound WAN gateway bypass rules were set.'
         else echo '- iptables: outbound WAN gateway bypass rules were kept.'
       fi
     fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound whitelist rules were (re)set.'
+        then echo '- iptables: inbound whitelist rules were set.'
         else echo '- iptables: inbound whitelist rules were kept.'
       fi
       if [ $((INFO_IPT & INFO_IPT_WL_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound whitelist rules were (re)set.'
+        then echo '- iptables: outbound whitelist rules were set.'
         else echo '- iptables: outbound whitelist rules were kept.'
       fi
     fi
-    [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq 0 ] || echo '- iptables: WAN rules were reset.'
-    [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -eq 0 ] || echo '- iptables: WAN rules were set.'
-    [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -eq 0 ] || echo '- iptables: WAN rules were kept.'
-    [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq 0 ] || echo '- iptables: VPN rules were reset.'
-    [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -eq 0 ] || echo '- iptables: VPN rules were set.'
-    [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -eq 0 ] || echo '- iptables: VPN rules were kept.'
+    if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
+      if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
+        then echo '- iptables: inbound logging rules were set.'
+        else echo '- iptables: inbound logging rules were kept.'
+      fi
+      if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
+        then echo '- iptables: outbound logging rules were set.'
+        else echo '- iptables: outbound logging rules were kept.'
+      fi
+    fi
+    
+    [ $((INFO_IPT & INFO_IPT_IFO_PBM)) -ne 0 ] && echo '- iptables: some irrelevant IFO rules had to be removed.'
+    if [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq $INFO_IPT_WAN_PBM ]; then echo '- iptables: WAN rules had to be reset.'
+    elif [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -ne 0 ]; then echo '- iptables: WAN rules were set.'
+    elif [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -ne 0 ]; then echo '- iptables: WAN rules were kept.'
+    fi
+    if [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq $INFO_IPT_TUN_PBM ]; then echo '- iptables: VPN tunnel rules had to be reset.'
+    elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo '- iptables: VPN tunnel rules were set.'
+    elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo '- iptables: VPN tunnel rules were kept.'
+    fi
+    
     echo -ne "\033[0m"
   else
     echo -e '\n- No status file found.'
