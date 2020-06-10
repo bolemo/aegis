@@ -898,7 +898,10 @@ status_term() {
     [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with WAN gateway bypass!\033[0m"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: problem with whitelist!\033[0m"
     [ $((_PB&PB_IPT_IFO)) -ne 0 ] && echo -e "\033[31m- iptables: problem with engine IFO rules!\033[0m"
-    [ $((_PB&CK_IPT_TUN)) -ne 0 ] && echo -e "\033[31m- iptables: problem with VPN tunnel rules!\033[0m"
+    if [ $((_PB&CK_IPT_TUN)) -ne 0 ]; then if [ $((_CK&CK_IPT_TUN)) -ne 0 ]
+        then echo -e "\033[31m- iptables: problem with VPN tunnel rules!\033[0m"
+        else echo -e "\033[31m- iptables: VPN tunnel rules are not set for '$TUN_IF'!\033[0m"
+    fi fi
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] && echo -e "\033[31m- iptables: problem with WAN rules!\033[0m"
   fi
   
