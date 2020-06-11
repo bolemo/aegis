@@ -838,7 +838,7 @@ _status() {
     # checking WAN interface rules
     _CT=$(echo "$_IPT"|grep -cF -- "$WAN_IF"); _TCT=$((_TCT-_CT))
     if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_WAN))
-    elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO)) ;;
+    elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO))
     fi
     # checking if old rules exists or if corrupted
     [ $_TCT -ne 0 ] && _PB=$((_PB+PB_IPT_IFO))
@@ -947,8 +947,8 @@ status_term() {
     [ $((_CK&CK_IPT_WG)) -ne 0 ] &&   echo "- iptables: WAN gateway bypass rules are set."
     [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "- iptables: whitelist rules are set."
     [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: $SC_NAME logging is on."
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: VPN tunnel interface rules are set."
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: WAN interface rules are set."
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: VPN tunnel IFO rules are set."
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: WAN interface IFO rules are set."
   fi
   
   [ "$VERBOSE" -lt 2 ] && return 0
