@@ -134,7 +134,7 @@ engine_start() {
     if [ -r "$BL_FILE" ]; then
       [ "$_RELOAD_WTD" ] && _RELOAD='y'
       # checking if ipset and file are identical
-      if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE"
+      if diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE"
         then _RELOAD=''; _IPS=$((_IPS+INFO_IPS_BL_SAME))
         else _RELOAD='y'
       fi
@@ -190,7 +190,7 @@ engine_start() {
       _WL='y'
       [ "$_RELOAD_WTD" ] && _RELOAD='y' || _RELOAD=''
       # checking if ipset and file are identical
-      if [ "$IPR_BIN" ] && ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE"
+      if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
         then _RELOAD=''; _IPS=$((_IPS+INFO_IPS_WL_SAME))
         else _RELOAD='y'
       fi
@@ -744,14 +744,12 @@ _status() {
   # check post-mount.sh script if script on external drive
   [ "$EXT_DRIVE" ] && check_postmount &&                                           _CK=$((_CK+CK_PM))
   # check if we can compare ip sets
-  [ "$IPR_BIN" ] ||                                                                _WN=$((_WN+WN_DIFF_IMP))
+#  [ "$IPR_BIN" ] ||                                                                _WN=$((_WN+WN_DIFF_IMP))
 
   # CHECK BLOCKLIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_BL))
     if [ -r "$BL_FILE" ]; then
-      if [ "$IPR_BIN" ]; then
-        ipset_list_members "$IPSET_BL_NAME"|iprange --quiet - --diff "$BL_FILE" || _WN=$((_WN+WN_DIFF_BL))
-      fi
+      diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE" ||                               _WN=$((_WN+WN_DIFF_BL))
     else                                                                           _WN=$((_WN+WN_FILE_BL))
     fi
   elif [ -r "$BL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_BL))
@@ -760,9 +758,7 @@ _status() {
   # CHECK WHITELIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_WL))
     if [ -r "$WL_FILE" ]; then
-      if [ "$IPR_BIN" ]; then
-        ipset_list_members "$IPSET_WL_NAME"|iprange --quiet - --diff "$WL_FILE" || _WN=$((_WN+WN_DIFF_WL))
-      fi
+      diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE" ||                               _WN=$((_WN+WN_DIFF_WL))
     else                                                                           _WN=$((_WN+WN_FILE_WL))
     fi
   elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_WL))
