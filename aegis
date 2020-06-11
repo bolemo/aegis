@@ -93,6 +93,14 @@ ipset_list_members() {
   ipset -L "$1"|sed -n '/Members:/,$p'|tail -n+2
 }
 
+diff_ipset_file() {
+  if [ "$IPR_BIN" ]
+    then ipset_list_members "$1"|iprange --quiet - --diff "$2"
+    else ipset_list_members "$1"|sort|diff -q - "$2" >/dev/null
+  fi
+  return $?
+}
+
 _set_ipt_for_if_pos() {
   _IF="$1"
   _POS=$2
