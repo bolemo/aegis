@@ -726,12 +726,11 @@ PB_IPT_IFO=512    # .. PB
 CK_IPT_TUN=1024   # CK PB
 CK_IPT_WAN=2048   # CK PB
 
-WN_DIFF_IMP=1
-WN_DIFF_BL=2
-WN_FILE_BL=4
-WN_DIFF_WL=8
-WN_FILE_WL=16
-WN_LOG=32
+WN_DIFF_BL=1
+WN_FILE_BL=2
+WN_DIFF_WL=4
+WN_FILE_WL=8
+WN_LOG=16
 
 CK_MASK=4095 #12 bits
 
@@ -743,8 +742,6 @@ _status() {
   check_firewall_start &&                                                          _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
   [ "$EXT_DRIVE" ] && check_postmount &&                                           _CK=$((_CK+CK_PM))
-  # check if we can compare ip sets
-#  [ "$IPR_BIN" ] ||                                                                _WN=$((_WN+WN_DIFF_IMP))
 
   # CHECK BLOCKLIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_BL))
@@ -919,16 +916,15 @@ status_term() {
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo -e "\033[1;35mWarnings:\033[0m (CODE: $_WN)"
-    [ $((_WN&WN_DIFF_IMP)) -ne 0 ] && echo -e "\033[35m- 'iprange' is not installed: file/ipset comparison skipped.\033[0m"
     [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist set is different than file.\033[0m"
     if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
       [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist is set but file is missing.\033[0m" ||
-                                      echo -e "\033[35m- blocklist file exists but is not loaded.\033[0m"
+                                      echo -e "\033[35m- no blocklist is set but file exists.\033[0m"
     fi
     [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- whitelist set is different than file.\033[0m"
     if [ $((_WN&WN_FILE_WL)) -ne 0 ]; then
       [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist is set but file is missing.\033[0m" ||
-                                      echo -e "\033[35m- whitelist file exists bit is not loaded.\033[0m"
+                                      echo -e "\033[35m- no whitelist is set but file exists.\033[0m"
     fi
     [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
