@@ -796,15 +796,14 @@ _status() {
   # -- DST CHAIN
   _D_CK=0
   _D_PB=0
-  _D_IPT="$(echo "$_IPT"|/bin/grep -- "^-. $IPTBL_DST")"
+  _D_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
-                                                                                     _D_CK=$((_D_CK+CK_IPT_CH))
-      _CL=2 # current line
+    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then                 _D_CK=$((_D_CK+CK_IPT_CH))
+      _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WG))
         echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _D_PB=$((_D_PB+CK_IPT_WG))
-        _CL=3
+        _CL=2
       fi
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WL))
         _CL=$((_CL+1))
