@@ -780,7 +780,7 @@ _status() {
     if [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then                 _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WG))
-        echo "$_S_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _S_PB=$((_S_PB+CK_IPT_WG))
+        echo "$_S_IPT"|/bin/grep -qF -m1 -- "$WAN_IF" ||                             _S_PB=$((_S_PB+CK_IPT_WG))
         _CL=2
       fi
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WL))
@@ -802,7 +802,7 @@ _status() {
     if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then                 _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WG))
-        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _D_PB=$((_D_PB+CK_IPT_WG))
+        echo "$_D_IPT"|/bin/grep -qF -m1 -- "$WAN_IF" ||                             _D_PB=$((_D_PB+CK_IPT_WG))
         _CL=2
       fi
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WL))
