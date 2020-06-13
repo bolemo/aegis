@@ -781,7 +781,7 @@ _status() {
       _CL=1 # current line
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WG))
 #        echo "$_S_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _S_PB=$((_S_PB+CK_IPT_WG))
-        case "$_S_IPT" in "*$WAN_IF*") : ;; *) _S_PB=$((_S_PB+CK_IPT_WG)) ;; esac
+        case "$_S_IPT" in *"$WAN_IF"*) : ;; *) _S_PB=$((_S_PB+CK_IPT_WG)) ;; esac
         _CL=2
       fi
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WL))
