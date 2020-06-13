@@ -769,25 +769,24 @@ _status() {
   elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then                             _PB=$((_PB+PB_WG_SNE))
   fi
 
-  # CHECK IPTABLES
-  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+  # CHECK IPTABLES OWN CHAINS (CH)
   # -- SRC CHAIN
   _S_CK=0
   _S_PB=0
-  _S_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_SRC")"
-  if [ "$_S_IPT" ]; then
-    _LL=$(echo "$_S_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_S_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
+  _IPT="$(iptables -S "$IPTBL_SRC" 2>/dev/null)"
+  if [ "$_IPT" ]; then
+    _LL=$(echo "$_IPT"|/usr/bin/wc -l)
+    if [ "$(echo "$_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
                                                                                      _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=2 # current line
-      if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WG))
-        echo "$_S_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _S_PB=$((_S_PB+CK_IPT_WG))
+      if [ "$(echo "$_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then          _S_CK=$((_S_CK+CK_IPT_WG))
+        echo "$_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                   _S_PB=$((_S_PB+CK_IPT_WG))
         _CL=3
       fi
-      if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WL))
+      if [ "$(echo "$_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then          _S_CK=$((_S_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ "$(echo "$_S_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then                   _S_CK=$((_S_CK+CK_IPT_LOG))
+      if [ "$(echo "$_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then                     _S_CK=$((_S_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
       [ $_CL = $_LL ] ||                                                             _S_PB=$((_S_PB+CK_IPT_CH))
@@ -797,20 +796,20 @@ _status() {
   # -- DST CHAIN
   _D_CK=0
   _D_PB=0
-  _D_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_DST")"
-  if [ "$_D_IPT" ]; then
-    _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
+  _IPT="$(iptables -S "$IPTBL_DST" 2>/dev/null)"
+  if [ "$_IPT" ]; then
+    _LL=$(echo "$_IPT"|/usr/bin/wc -l)
+    if [ "$(echo "$_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
                                                                                      _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=2 # current line
-      if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WG))
-        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _D_PB=$((_D_PB+CK_IPT_WG))
+      if [ "$(echo "$_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then          _D_CK=$((_D_CK+CK_IPT_WG))
+        echo "$_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                   _D_PB=$((_D_PB+CK_IPT_WG))
         _CL=3
       fi
-      if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WL))
+      if [ "$(echo "$_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then          _D_CK=$((_D_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ "$(echo "$_D_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then                   _D_CK=$((_D_CK+CK_IPT_LOG))
+      if [ "$(echo "$_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then                     _D_CK=$((_D_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
       [ $_CL = $_LL ] ||                                                             _D_PB=$((_D_PB+CK_IPT_CH))
@@ -827,18 +826,18 @@ _status() {
   else                                                                             _PB=$((_PB+CK_IPT_CH))                                                                           
   fi
   # -- IFO (INPUT, FORWARD, OUTPUT)
-  _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
-  if [ "$_IFO_IPT" ]; then
-    _TCT=$(echo "$_IFO_IPT"|/usr/bin/wc -l)
+  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
+  if [ "$_IPT" ]; then
+    _TCT=$(echo "$_IPT"|/usr/bin/wc -l)
     # checking VPN tunnel interface rules
     if [ "$TUN_IF" ]; then
-      _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
+      _CT=$(echo "$_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
       if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_TUN))
       elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_TUN)); _PB=$((_PB+PB_IPT_IFO))
       fi
     fi
     # checking WAN interface rules
-    _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$WAN_IF"); _TCT=$((_TCT-_CT))
+    _CT=$(echo "$_IPT"|/bin/grep -cF -- "$WAN_IF"); _TCT=$((_TCT-_CT))
     if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_WAN))
     elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO))
     fi
