@@ -797,7 +797,7 @@ _status() {
   # -- DST CHAIN
   _D_CK=0
   _D_PB=0
-  _D_IPT="$(echo "$_IPT"|/bin/grep -- "^-. $IPTBL_DST")"
+  _D_IPT="$(echo "$_IPT"|/bin/grep -F -- "-N $IPTBL_DST$(echo '')-A $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_D_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
@@ -828,7 +828,6 @@ _status() {
   fi
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
-echo "$_IFO_IPT" 
   if [ "$_IFO_IPT" ]; then
     _TCT=$(echo "$_IFO_IPT"|/usr/bin/wc -l)
     # checking VPN tunnel interface rules
