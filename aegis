@@ -775,7 +775,7 @@ _status() {
   _S_CK=0
   _S_PB=0
   _S_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_SRC")"
-  if [ "$S_IPT" ]; then
+  if [ "$_S_IPT" ]; then
     _LL=$(echo "$_S_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_S_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
                                                                                      _S_CK=$((_S_CK+CK_IPT_CH))
