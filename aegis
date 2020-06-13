@@ -771,10 +771,12 @@ _status() {
 
   # CHECK IPTABLES
   _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+echo "$_IPT"
   # -- SRC CHAIN
   _S_CK=0
   _S_PB=0
   _S_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_SRC")"
+echo "$_S_IPT"
   if [ "$_S_IPT" ]; then
     _LL=$(echo "$_S_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_S_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
@@ -798,6 +800,7 @@ _status() {
   _D_CK=0
   _D_PB=0
   _D_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_DST")"
+echo "$_D_IPT"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_D_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
@@ -828,6 +831,7 @@ _status() {
   fi
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
+echo "$_IFO_IPT"
   if [ "$_IFO_IPT" ]; then
     _TCT=$(echo "$_IFO_IPT"|/usr/bin/wc -l)
     # checking VPN tunnel interface rules
