@@ -831,7 +831,7 @@ echo "$_D_IPT"
   fi
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
-echo "$_IFO_IPT"
+echo "$_IFO_IPT" 
   if [ "$_IFO_IPT" ]; then
     _TCT=$(echo "$_IFO_IPT"|/usr/bin/wc -l)
     # checking VPN tunnel interface rules
