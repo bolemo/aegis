@@ -771,12 +771,10 @@ _status() {
 
   # CHECK IPTABLES
   _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
-echo "$_IPT"
   # -- SRC CHAIN
   _S_CK=0
   _S_PB=0
-  _S_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_SRC")"
-echo "$_S_IPT"
+  _S_IPT="$(echo "$_IPT"|/bin/grep -- "^-. $IPTBL_SRC")"
   if [ "$_S_IPT" ]; then
     _LL=$(echo "$_S_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_S_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
@@ -799,8 +797,7 @@ echo "$_S_IPT"
   # -- DST CHAIN
   _D_CK=0
   _D_PB=0
-  _D_IPT="$(echo "$_IPT"|/bin/grep -F "$IPTBL_DST")"
-echo "$_D_IPT"
+  _D_IPT="$(echo "$_IPT"|/bin/grep -- "^-. $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_D_IPT"|/bin/sed -n '/-N /=')" = 1 ] && [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then
