@@ -89,6 +89,10 @@ INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
 #
 ###############################################
 
+get_ipt() {
+  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+}
+
 ipset_list_members() {
   ipset -L "$1"|/bin/sed -n '/Members:/,$p'|/usr/bin/tail -n+2
 }
@@ -102,9 +106,8 @@ diff_ipset_file() {
 }
 
 _set_ipt_for_if_pos() {
-  _IPT="$1"
-  _IF="$2"
-  _POS=$3
+  _IF="$1"
+  _POS=$2
   _CT=$(echo "$_IPT"|/bin/grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
   if [ "$_CT" -ne 4 ]; then
     if [ "$_CT" ] && [ "$_CT" -ne 0 ]; then
@@ -217,18 +220,18 @@ engine_start() {
     fi
   fi
 
-  _IPT="$(iptables -S 2>/dev/null|grep -F "$SC_ABR")"
+  get_ipt
+#  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   #Creating our iptables chains if not already set
+  if [ "${_IPT##*-N $IPTBL_SRC*}" ]
+    then NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)); _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
+    else iptables -N "$IPTBL_SRC"
+  fi
   case "$_IPT" in
-    *"-N $IPTBL_SRC"*) NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP))
-                       _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")" ;;
-    *) iptables -N "$IPTBL_SRC" ;;
-  esac
-  case "$_IPT" in
-    *"-N $IPTBL_DST"*) NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP))
-                       _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")" ;;
-    *) iptables -N "$IPTBL_DST" ;;
-  esac
+  if [ "${_IPT##*-N $IPTBL_DST*}" ]
+    then NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)); _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
+    else iptables -N "$IPTBL_DST"
+  fi
 #  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC"
 #  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST"
 
@@ -328,8 +331,10 @@ engine_start() {
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
-  case "$_IPT_SRC" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_SRC" -j DROP;; esac
-  case "$_IPT_DST" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_DST" -j DROP;; esac
+  [ -z "${_IPT_SRC##*-j DROP*}" ] && iptables -A "$IPTBL_SRC" -j DROP
+  [ -z "${_IPT_DST##*-j DROP*}" ] && iptables -A "$IPTBL_DST" -j DROP
+#  case "$_IPT_SRC" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_SRC" -j DROP;; esac
+#  case "$_IPT_DST" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_DST" -j DROP;; esac
 #  iptables -S "$IPTBL_SRC"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
 #  iptables -S "$IPTBL_DST"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
   
@@ -343,7 +348,7 @@ engine_start() {
   fi
   
   # creating the required iptables rules for wan interface
-  _set_ipt_for_if_pos "$_IPT" "$WAN_IF" 1
+  _set_ipt_for_if_pos "$WAN_IF" 1
   case $? in
     2) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_PBM)) ;;
     1) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_NEW)) ;;
@@ -352,7 +357,7 @@ engine_start() {
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
-    _set_ipt_for_if_pos "$_IPT" "$TUN_IF" 2
+    _set_ipt_for_if_pos "$TUN_IF" 2
     case $? in
       2) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_PBM)) ;;
       1) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_NEW)) ;;
@@ -824,7 +829,8 @@ _status() {
   fi
 
   # CHECK IPTABLES
-  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+#  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+  get_ipt
   # -- SRC CHAIN
   _S_CK=0
   _S_PB=0
@@ -835,7 +841,8 @@ _status() {
       _CL=1 # current line
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WG))
 #        echo "$_S_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _S_PB=$((_S_PB+CK_IPT_WG))
-        case "$_S_IPT" in *"$WAN_IF"*) : ;; *) _S_PB=$((_S_PB+CK_IPT_WG)) ;; esac
+#        case "$_S_IPT" in *"$WAN_IF"*) : ;; *) _S_PB=$((_S_PB+CK_IPT_WG)) ;; esac
+        [ -z "${_S_IPT##*$WAN_IF*}" ] &&                                             _S_PB=$((_S_PB+CK_IPT_WG))
         _CL=2
       fi
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WL))
@@ -858,7 +865,8 @@ _status() {
       _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WG))
 #        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                             _D_PB=$((_D_PB+CK_IPT_WG))
-        case "$_D_IPT" in *"$WAN_IF"*) : ;; *) _D_PB=$((_D_PB+CK_IPT_WG)) ;; esac
+#        case "$_D_IPT" in *"$WAN_IF"*) : ;; *)  ;; esac
+        [ -z "${_D_IPT##*$WAN_IF*}" ] &&                                             _D_PB=$((_D_PB+CK_IPT_WG))
         _CL=2
       fi
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WL))
@@ -927,12 +935,11 @@ _status() {
   
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
-  echo "$_IPT"
   return $_RET
 }
 
 status_term() {
-  _IPT="$(_status)"; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
+  _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
 
   echo -e "\033[1;36mStatus:\033[0m"
   if [ $((_CK+_PB)) -eq 0 ]; then
