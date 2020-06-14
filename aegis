@@ -124,10 +124,10 @@ _set_ipt_for_if_pos() {
 }
 
 engine_start() {
-  _FROM=$1
-  [ $_FROM = $INFO_FROM_SC ] && _RELOAD_WTD='y'
+  NFO_FROM=$1
+  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD='y'
 
-  _IPS=0; _IPT=0;
+  NFO_IPS=0; NFO_IPT=0;
   # creating ipset blocklist if needed
   if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
     # an ipset blocklist is already loaded
@@ -135,27 +135,27 @@ engine_start() {
       [ "$_RELOAD_WTD" ] && _RELOAD='y'
       # checking if ipset and file are identical
       if diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE"
-        then _RELOAD=''; _IPS=$((_IPS+INFO_IPS_BL_SAME))
+        then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
         else _RELOAD='y'
       fi
     else
       # blocklist file is missing!
       _RELOAD=''
-      _IPS=$((_IPS+INFO_IPS_BL_MISS))
+      NFO_IPS=$((NFO_IPS+INFO_IPS_BL_MISS))
     fi
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
       echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
       ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
       ipset destroy $IPSET_TMP
-      _IPS=$((_IPS+INFO_IPS_BL_LOAD))
+      NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     # else keeping existing blocklist
     fi
   else
     if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
       echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
-      _IPS=$((_IPS+INFO_IPS_BL_LOAD))
+      NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     else
     # no netset file, exiting with _IPS=0
       exit 1
@@ -165,7 +165,7 @@ engine_start() {
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then
     _WG='y'
-    _IPS=$((_IPS+INFO_IPS_BL_WGW))
+    NFO_IPS=$((NFO_IPS+INFO_IPS_BL_WGW))
     if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
       # Calculate WAN_RANGE (IP & CIDR)
       _CIDR=0
@@ -177,9 +177,9 @@ engine_start() {
       ipset -q create "$IPSET_WG_NAME" hash:net family inet
       ipset -q flush "$IPSET_WG_NAME"
       ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
-      _IPS=$((_IPS+INFO_IPS_WG_ADD))
+      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_ADD))
     else
-      _IPS=$((_IPS+INFO_IPS_WG_KEEP))
+      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_KEEP))
     fi
   fi
   
@@ -191,7 +191,7 @@ engine_start() {
       [ "$_RELOAD_WTD" ] && _RELOAD='y' || _RELOAD=''
       # checking if ipset and file are identical
       if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
-        then _RELOAD=''; _IPS=$((_IPS+INFO_IPS_WL_SAME))
+        then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
         else _RELOAD='y'
       fi
       if [ "$_RELOAD" ]; then
@@ -199,10 +199,10 @@ engine_start() {
         echo -e "create $IPSET_TMP hash:net family inet\n$(/bin/sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
         ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
         ipset destroy "$IPSET_TMP"
-        _IPS=$((_IPS+INFO_IPS_WL_SWAP))
+        NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SWAP))
       else
       # else we want to keep it
-        _IPS=$((_IPS+INFO_IPS_WL_KEEP))
+        NFO_IPS=$((NFO_IPS+INFO_IPS_WL_KEEP))
       fi
     #else it will be destroyed later
     fi
@@ -211,13 +211,13 @@ engine_start() {
       # netset file exists, so creating whitelist ipset from it
       _WL='y'
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(/bin/sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
-      _IPS=$((_IPS+INFO_IPS_WL_LOAD))
+      NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
     fi
   fi
 
   #Creating our iptables chains if not already set
-  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && _IPT=$((_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC"
-  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && _IPT=$((_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST"
+  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC"
+  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST"
 
   if [ "$_WG" ]; then
     # apply wan gateway whitelist
@@ -225,14 +225,14 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS|/bin/grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WG_SRC_NEW))
+      NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
     fi
     if ! iptables -S "$IPTBL_DST" $_POS|/bin/grep -qF -- "$IPSET_WG_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WG_DST_NEW))
+      NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
     fi
-    _IPT=$((_IPT+INFO_IPT_WG))
+    NFO_IPT=$((NFO_IPT+INFO_IPT_WG))
   else
     #Removing any trace of WAN gateway bypass if any
     iptables -S 2>/dev/null|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
@@ -246,18 +246,18 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS|/bin/grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_SRC" 2>/dev/null|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WL_SRC_NEW))
+      NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     if ! iptables -S "$IPTBL_DST" $_POS|/bin/grep -qF -- "$IPSET_WL_NAME"; then
       iptables -S "$IPTBL_DST" 2>/dev/null|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-      _IPT=$((_IPT+INFO_IPT_WL_DST_NEW))
+      NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
-    _IPT=$((_IPT+INFO_IPT_WL))
+    NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   else
     #Removing any trace of whitelist if any
     iptables -S 2>/dev/null|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    ipset -q destroy "$IPSET_WL_NAME" && _IPS=$((_IPS+INFO_IPS_WL_DEL))
+    ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
   if [ "$IPTBL_LOGGING" ]; then
@@ -265,14 +265,14 @@ engine_start() {
     if ! iptables -S "$IPTBL_SRC" $_POS|/bin/grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
-      _IPT=$((_IPT+INFO_IPT_LOG_SRC_NEW))
+      NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
     fi
     if ! iptables -S "$IPTBL_DST" $_POS|/bin/grep -qF -- "-j LOG"; then
       iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
-      _IPT=$((_IPT+INFO_IPT_LOG_DST_NEW))
+      NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
-    _IPT=$((_IPT+INFO_IPT_LOG))
+    NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
   else
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
@@ -285,28 +285,28 @@ engine_start() {
   if [ "$IFO_IPT" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$IFO_IPT"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    _IPT=$((_IPT+INFO_IPT_IFO_PBM))
+    NFO_IPT=$((NFO_IPT+INFO_IPT_IFO_PBM))
   fi
   
   # creating the required iptables rules for wan interface
   _set_ipt_for_if_pos "$WAN_IF" 1
   case $? in
-    2) _IPT=$((_IPT+INFO_IPT_WAN_PBM)) ;;
-    1) _IPT=$((_IPT+INFO_IPT_WAN_NEW)) ;;
-    0) _IPT=$((_IPT+INFO_IPT_WAN_KEEP)) ;;
+    2) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_PBM)) ;;
+    1) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_NEW)) ;;
+    0) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_KEEP)) ;;
   esac
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
     _set_ipt_for_if_pos "$TUN_IF" 2
     case $? in
-      2) _IPT=$((_IPT+INFO_IPT_TUN_PBM)) ;;
-      1) _IPT=$((_IPT+INFO_IPT_TUN_NEW)) ;;
-      0) _IPT=$((_IPT+INFO_IPT_TUN_KEEP)) ;;
+      2) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_PBM)) ;;
+      1) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_NEW)) ;;
+      0) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_KEEP)) ;;
     esac
   fi
   
-  echo -e "$((_FROM+(_IPS<<2)+(_IPT<<10)))" > "$INFO_FILE"
+  echo -e "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<10)))" > "$INFO_FILE"
 }
 
 ###############################################
@@ -803,7 +803,8 @@ _status() {
     if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then                 _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WG))
-        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                             _D_PB=$((_D_PB+CK_IPT_WG))
+#        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                             _D_PB=$((_D_PB+CK_IPT_WG))
+        case "$_D_IPT" in *"$WAN_IF"*) : ;; *) _D_PB=$((_D_PB+CK_IPT_WG)) ;; esac
         _CL=2
       fi
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WL))
