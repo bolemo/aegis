@@ -102,13 +102,15 @@ diff_ipset_file() {
 }
 
 _set_ipt_for_if_pos() {
-  _IF="$1"
-  _POS=$2
-  _CT=$(iptables -S 2>/dev/null|/bin/grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
-  if [ $_CT -ne 4 ]; then
-    if [ $_CT -ne 0 ]; then
+  _IPT="$1"
+  _IF="$2"
+  _POS=$3
+  _CT=$(echo "$_IPT"|/bin/grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
+  if [ "$_CT" -ne 4 ]; then
+    if [ "$_CT" ] && [ "$_CT" -ne 0 ]; then
       # something is messed up with rules; deleting what is left
-      iptables -S 2>/dev/null|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+#      iptables -S 2>/dev/null|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       _RET=2
     else
       _RET=1
@@ -341,7 +343,7 @@ engine_start() {
   fi
   
   # creating the required iptables rules for wan interface
-  _set_ipt_for_if_pos "$WAN_IF" 1
+  _set_ipt_for_if_pos "$_IPT" "$WAN_IF" 1
   case $? in
     2) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_PBM)) ;;
     1) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_NEW)) ;;
@@ -350,7 +352,7 @@ engine_start() {
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
-    _set_ipt_for_if_pos "$TUN_IF" 2
+    _set_ipt_for_if_pos "$_IPT" "$TUN_IF" 2
     case $? in
       2) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_PBM)) ;;
       1) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_NEW)) ;;
@@ -925,11 +927,12 @@ _status() {
   
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<24)))
+  echo "$_IPT"
   return $_RET
 }
 
 status_term() {
-  _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
+  _IPT="$(_status)"; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
 
   echo -e "\033[1;36mStatus:\033[0m"
   if [ $((_CK+_PB)) -eq 0 ]; then
@@ -1098,7 +1101,7 @@ status_term() {
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
-    _IPT="$(iptables -S 2>/dev/null|/bin/grep -F -- "$SC_ABR")"
+#    _IPT="$(iptables -S 2>/dev/null|/bin/grep -F -- "$SC_ABR")"
     [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
