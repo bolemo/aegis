@@ -73,10 +73,17 @@ INFO_IPT_LOG=256           # . . . . . . . x . . . . . . . .
 INFO_IPT_LOG_SRC_NEW=512   # . . . . . . x . . . . . . . . . (or KEEP)
 INFO_IPT_LOG_DST_NEW=1024  # . . . . . x . . . . . . . . . . (or KEEP)
 
+
+INFO_IPT_IF_NEW=1  # _ x
+INFO_IPT_IF_KEEP=2 # x _
+INFO_IPT_IF_PBM=3  # x x
+
+INFO_IPT_WAN_SHIFT=11
 INFO_IPT_WAN_NEW=2048      # . . . _ x . . . . . . . . . . .
 INFO_IPT_WAN_KEEP=4096     # . . . x _ . . . . . . . . . . .
 INFO_IPT_WAN_PBM=6144      # . . . x x . . . . . . . . . . .
 
+INFO_IPT_TUN_SHIFT=13
 INFO_IPT_TUN_NEW=8192      # . _ x . . . . . . . . . . . . .
 INFO_IPT_TUN_KEEP=16384    # . x _ . . . . . . . . . . . . .
 INFO_IPT_TUN_PBM=24576     # . x x . . . . . . . . . . . . .
@@ -114,16 +121,16 @@ _set_ipt_for_if_pos() {
       # something is messed up with rules; deleting what is left
       echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
 #      iptables -S 2>/dev/null|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      _RET=2
+      _RET=$INFO_IPT_IF_PBM
     else
-      _RET=1
+      _RET=$INFO_IPT_IF_NEW
     fi
     iptables -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
     iptables -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
     iptables -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
     iptables -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
   else
-    _RET=0
+    _RET=$INFO_IPT_IF_KEEP
   fi
   return $_RET
 }
@@ -359,20 +366,22 @@ engine_start() {
   
   # creating the required iptables rules for wan interface
   _set_ipt_for_if_pos "$WAN_IF" 1
-  case $? in
-    2) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_PBM)) ;;
-    1) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_NEW)) ;;
-    0) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_KEEP)) ;;
-  esac
+  NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WAN_SHIFT)))
+#  case $? in
+#    2) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_PBM)) ;;
+#    1) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_NEW)) ;;
+#    0) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_KEEP)) ;;
+#  esac
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
     _set_ipt_for_if_pos "$TUN_IF" 2
-    case $? in
-      2) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_PBM)) ;;
-      1) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_NEW)) ;;
-      0) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_KEEP)) ;;
-    esac
+    NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TUN_SHIFT)))
+#    case $? in
+#      2) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_PBM)) ;;
+#      1) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_NEW)) ;;
+#      0) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_KEEP)) ;;
+#    esac
   fi
   
   echo -e "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<10)))" > "$INFO_FILE"
