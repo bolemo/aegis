@@ -223,11 +223,11 @@ engine_start() {
   get_ipt
 #  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   #Creating our iptables chains if not already set
-  if [ "${_IPT##*-N $IPTBL_SRC*}" ]
+  if [ -z "${_IPT##*-N $IPTBL_SRC*}" ]
     then NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)); _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
     else iptables -N "$IPTBL_SRC"
   fi
-  if [ "${_IPT##*-N $IPTBL_DST*}" ]
+  if [ -z "${_IPT##*-N $IPTBL_DST*}" ]
     then NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)); _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
     else iptables -N "$IPTBL_DST"
   fi
@@ -330,8 +330,8 @@ engine_start() {
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
-  [ -z "${_IPT_SRC##*-j DROP*}" ] && iptables -A "$IPTBL_SRC" -j DROP
-  [ -z "${_IPT_DST##*-j DROP*}" ] && iptables -A "$IPTBL_DST" -j DROP
+  [ "${_IPT_SRC##*-j DROP*}" ] && iptables -A "$IPTBL_SRC" -j DROP
+  [ "${_IPT_DST##*-j DROP*}" ] && iptables -A "$IPTBL_DST" -j DROP
 #  case "$_IPT_SRC" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_SRC" -j DROP;; esac
 #  case "$_IPT_DST" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_DST" -j DROP;; esac
 #  iptables -S "$IPTBL_SRC"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
