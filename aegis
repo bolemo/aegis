@@ -330,8 +330,19 @@ engine_start() {
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
-  [ "${_IPT_SRC##*-j DROP*}" ] && iptables -A "$IPTBL_SRC" -j DROP
-  [ "${_IPT_DST##*-j DROP*}" ] && iptables -A "$IPTBL_DST" -j DROP
+  _POS=$((1+_POS))
+  _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
+  if [ "$_DROP_POS" != "$_POS" ]; then
+    [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    iptables -I "$IPTBL_SRC" $_POS -j DROP
+  fi
+  _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j DROP/=")"
+  if [ "$_DROP_POS" != "$_POS" ]; then
+    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    iptables -I "$IPTBL_DST" $_POS -j DROP
+  fi
+#  [ "${_IPT_SRC##*-j DROP*}" ] && iptables -A "$IPTBL_SRC" -j DROP
+#  [ "${_IPT_DST##*-j DROP*}" ] && iptables -A "$IPTBL_DST" -j DROP
 #  case "$_IPT_SRC" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_SRC" -j DROP;; esac
 #  case "$_IPT_DST" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_DST" -j DROP;; esac
 #  iptables -S "$IPTBL_SRC"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
