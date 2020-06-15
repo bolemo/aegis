@@ -230,15 +230,10 @@ engine_start() {
   get_ipt
 #  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   #Creating our iptables chains if not already set
-  _IPT="$(echo -ne '\n')$_IPT"
-  if [ -z "${_IPT##*-N $IPTBL_SRC*}" ]
-    then NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)); _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
-    else iptables -N "$IPTBL_SRC"
-  fi
-  if [ -z "${_IPT##*-N $IPTBL_DST*}" ]
-    then NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)); _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
-    else iptables -N "$IPTBL_DST"
-  fi
+  _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
+  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC" 2>/dev/null
+  _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
+  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST" 2>/dev/null
 #  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC"
 #  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST"
 
