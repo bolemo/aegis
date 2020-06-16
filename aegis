@@ -911,10 +911,10 @@ _status() {
     if [ "$TUN_IF" ]; then
       _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
       case "$_CT" in
-        4)                                                                         _CK=$((_CK+CK_IPT_TUN))
-        0)                                                                         _PB=$((_PB+CK_IPT_TUN))
+        4)                                                                         _CK=$((_CK+CK_IPT_TUN));;
+        0)                                                                         _PB=$((_PB+CK_IPT_TUN));;
         *)                                                                         _PB=$((_PB+CK_IPT_TUN))
-                                                                                   _PB=$((_PB+PB_IPT_IFO))
+                                                                                   _PB=$((_PB+PB_IPT_IFO));;
       esac
 #      if [ "$_CT" = 4 ]; then                                                      _CK=$((_CK+CK_IPT_TUN))
 #      elif [ "$_CT" = 0 ]; then                                                    _PB=$((_PB+CK_IPT_TUN))
@@ -925,10 +925,10 @@ _status() {
     # checking WAN interface rules
     _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$WAN_IF"); _TCT=$((_TCT-_CT))
     case "$_CT" in
-      4)                                                                         _CK=$((_CK+CK_IPT_WAN))
-      0)                                                                         _PB=$((_PB+CK_IPT_WAN))
+      4)                                                                         _CK=$((_CK+CK_IPT_WAN));;
+      0)                                                                         _PB=$((_PB+CK_IPT_WAN));;
       *)                                                                         _PB=$((_PB+CK_IPT_WAN))
-                                                                                 _PB=$((_PB+PB_IPT_WAN))
+                                                                                 _PB=$((_PB+PB_IPT_WAN));;
     esac
 #    if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_WAN))
 #    elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO))
@@ -958,8 +958,8 @@ _status() {
     fi
     # CH, IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                              _PB=$((_PB+CK_IPT_CH))
-#    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB&CK_IPT_WAN))
-#    [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB&CK_IPT_TUN))
+#    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
+#    [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
   
   # calculating return value
