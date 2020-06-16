@@ -800,11 +800,20 @@ PB_IPT_IFO=512    # .. PB
 CK_IPT_TUN=1024   # CK PB
 CK_IPT_WAN=2048   # CK PB
 
-WN_DIFF_BL=1
-WN_FILE_BL=2
-WN_DIFF_WL=4
-WN_FILE_WL=8
-WN_LOG=16
+#WN_DIFF_BL=1
+#WN_FILE_BL=2
+#WN_DIFF_WL=4
+#WN_FILE_WL=8
+#WN_LOG=16
+
+WN_BL_FILE_DIFF=1   # . . . . _ x
+WN_BL_FILE_MISS=2   # . . . . x _
+WN_BL_FILE_NTLD=3   # . . . . x x
+WN_WL_FILE_DIFF=4   # . . _ x . .
+WN_WL_FILE_MISS=8   # . . x _ . .
+WN_WL_FILE_NTLD=12  # . . x x . .
+WN_TUN_MISS=16      # . x . . . .
+WN_LOG_DIFF=32      # x . . . . .
 
 CK_MASK=4095 #12 bits
 
@@ -820,19 +829,19 @@ _status() {
   # CHECK BLOCKLIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_BL))
     if [ -r "$BL_FILE" ]; then
-      diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE" ||                               _WN=$((_WN+WN_DIFF_BL))
-    else                                                                           _WN=$((_WN+WN_FILE_BL))
+      diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE" ||                               _WN=$((_WN+WN_BL_FILE_DIFF))
+    else                                                                           _WN=$((_WN+WN_BL_FILE_MISS))
     fi
-  elif [ -r "$BL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_BL))
+  elif [ -r "$BL_FILE" ]; then                                                     _WN=$((_WN+WN_BL_FILE_NTLD))
   fi
 
   # CHECK WHITELIST (IPS, FILE)
   if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_WL))
     if [ -r "$WL_FILE" ]; then
-      diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE" ||                               _WN=$((_WN+WN_DIFF_WL))
-    else                                                                           _WN=$((_WN+WN_FILE_WL))
+      diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE" ||                               _WN=$((_WN+WN_WL_FILE_DIFF))
+    else                                                                           _WN=$((_WN+WN_WL_FILE_MISS))
     fi
-  elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_FILE_WL))
+  elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_WL_FILE_NTLD))
   fi
 
   # CHECK WAN GATEWAY
@@ -912,7 +921,7 @@ _status() {
       _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
       case "$_CT" in
         4)                                                                         _CK=$((_CK+CK_IPT_TUN));;
-        0)                                                                         _PB=$((_PB+CK_IPT_TUN));;
+        0)                                                                         _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
         *)                                                                         _PB=$((_PB+CK_IPT_TUN))
                                                                                    _PB=$((_PB+PB_IPT_IFO));;
       esac
@@ -953,8 +962,8 @@ _status() {
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                                _PB=$((_PB+CK_IPS_BL))
     # LOG
-    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                 _WN=$((_WN+WN_LOG))
-    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                          _WN=$((_WN+WN_LOG))
+    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                 _WN=$((_WN+WN_LOG_DIFF))
+    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                          _WN=$((_WN+WN_LOG_DIFF))
     fi
     # CH, IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                              _PB=$((_PB+CK_IPT_CH))
@@ -1001,24 +1010,35 @@ status_term() {
       [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&     echo -e "\033[31m- iptables: VPN tunnel IFO rules are not right!\033[0m"
       [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface IFO rules are not right!\033[0m"
     else
-      [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&     echo -e "\033[31m- iptables: VPN tunnel IFO rules are missing!\033[0m"
+  #    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&     echo -e "\033[31m- iptables: VPN tunnel IFO rules are missing!\033[0m"
       [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface IFO rules are missing!\033[0m"
     fi
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo -e "\033[1;35mWarnings:\033[0m (CODE: $_WN)"
-    [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist set is different than file.\033[0m"
-    if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
-      [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist is set but file is missing.\033[0m" ||
-                                      echo -e "\033[35m- no blocklist is set but file exists.\033[0m"
-    fi
-    [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- whitelist set is different than file.\033[0m"
-    if [ $((_WN&WN_FILE_WL)) -ne 0 ]; then
-      [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist is set but file is missing.\033[0m" ||
-                                      echo -e "\033[35m- no whitelist is set but file exists.\033[0m"
-    fi
-    [ $((_WN&WN_LOG)) -ne 0 ] &&      echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
+    case "$((_WN&WN_BL_FILE_NTLD))" in
+      WN_BL_FILE_DIFF) echo -e "\033[35m- blocklist set is different than file.\033[0m";;
+      WN_BL_FILE_MISS) echo -e "\033[35m- blocklist is set but file is missing.\033[0m";;
+      WN_BL_FILE_NTLD) echo -e "\033[35m- no blocklist is set but file exists.\033[0m";;
+    esac
+    case "$((_WN&WN_WL_FILE_NTLD))" in
+      WN_WL_FILE_DIFF) echo -e "\033[35m- whitelist set is different than file.\033[0m";;
+      WN_WL_FILE_MISS) echo -e "\033[35m- whitelist is set but file is missing.\033[0m";;
+      WN_WL_FILE_NTLD) echo -e "\033[35m- no whitelist is set but file exists.\033[0m";;
+    esac
+    [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel IFO rules are missing!\033[0m"
+    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
+#    [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist set is different than file.\033[0m"
+#    if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
+#      [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist is set but file is missing.\033[0m" ||
+#                                      echo -e "\033[35m- no blocklist is set but file exists.\033[0m"
+#    fi
+#    [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- whitelist set is different than file.\033[0m"
+#    if [ $((_WN&WN_FILE_WL)) -ne 0 ]; then
+#      [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist is set but file is missing.\033[0m" ||
+#                                      echo -e "\033[35m- no whitelist is set but file exists.\033[0m"
+#    fi
   fi
  
   [ "$VERBOSE" ] || return 0
