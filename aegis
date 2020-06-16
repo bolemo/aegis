@@ -352,7 +352,9 @@ engine_start() {
 #  iptables -S "$IPTBL_DST"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
-  _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|/bin/grep -v "\($WAN_IF\|$TUN_IF\)")"
+  [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
+  _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|eval $_GREP)"
+#  _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|/bin/grep -v "\($WAN_IF\|$TUN_IF\)")"
 #  _IPT_IFO="$(iptables -S 2>/dev/null|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|/bin/grep -v "\($WAN_IF\|$TUN_IF\)")"
   if [ "$_IPT_IFO" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
