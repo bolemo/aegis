@@ -824,34 +824,34 @@ _status() {
   
   # CHECK ENVIRONMENT
   # check firewall-start.sh script
-  check_firewall_start &&                                                          _CK=$((_CK+CK_FWS))
+  check_firewall_start &&                                                        _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
-  [ "$EXT_DRIVE" ] && check_postmount &&                                           _CK=$((_CK+CK_PM))
+  [ "$EXT_DRIVE" ] && check_postmount &&                                         _CK=$((_CK+CK_PM))
 
   # CHECK BLOCKLIST (IPS, FILE)
-  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_BL))
+  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                             _CK=$((_CK+CK_IPS_BL))
     if [ -r "$BL_FILE" ]; then
-      diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE" ||                               _WN=$((_WN+WN_BL_FILE_DIFF))
-    else                                                                           _WN=$((_WN+WN_BL_FILE_MISS))
+      diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE" ||                             _WN=$((_WN+WN_BL_FILE_DIFF))
+    else                                                                         _WN=$((_WN+WN_BL_FILE_MISS))
     fi
-  elif [ -r "$BL_FILE" ]; then                                                     _WN=$((_WN+WN_BL_FILE_NTLD))
+  elif [ -r "$BL_FILE" ]; then                                                   _WN=$((_WN+WN_BL_FILE_NTLD))
   fi
 
   # CHECK WHITELIST (IPS, FILE)
-  if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                               _CK=$((_CK+CK_IPS_WL))
+  if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                             _CK=$((_CK+CK_IPS_WL))
     if [ -r "$WL_FILE" ]; then
-      diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE" ||                               _WN=$((_WN+WN_WL_FILE_DIFF))
-    else                                                                           _WN=$((_WN+WN_WL_FILE_MISS))
+      diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE" ||                             _WN=$((_WN+WN_WL_FILE_DIFF))
+    else                                                                         _WN=$((_WN+WN_WL_FILE_MISS))
     fi
-  elif [ -r "$WL_FILE" ]; then                                                     _WN=$((_WN+WN_WL_FILE_NTLD))
+  elif [ -r "$WL_FILE" ]; then                                                   _WN=$((_WN+WN_WL_FILE_NTLD))
   fi
 
   # CHECK WAN GATEWAY
-  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then    _CK=$((_CK+CK_WG_IN_BL))
-    if ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then                                _CK=$((_CK+CK_WG_BP))
-    else                                                                           _PB=$((_PB+CK_WG_BP))
+  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then  _CK=$((_CK+CK_WG_IN_BL))
+    if ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then                              _CK=$((_CK+CK_WG_BP))
+    else                                                                         _PB=$((_PB+CK_WG_BP))
     fi
-  elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then                             _PB=$((_PB+PB_WG_SNE))
+  elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then                           _PB=$((_PB+PB_WG_SNE))
   fi
 
   # CHECK IPTABLES
@@ -863,22 +863,22 @@ _status() {
   _S_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
   if [ "$_S_IPT" ]; then
     _LL=$(echo "$_S_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then                 _S_CK=$((_S_CK+CK_IPT_CH))
+    if [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=1 # current line
-      if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WG))
+      if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then    _S_CK=$((_S_CK+CK_IPT_WG))
 #        echo "$_S_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _S_PB=$((_S_PB+CK_IPT_WG))
 #        case "$_S_IPT" in *"$WAN_IF"*) : ;; *) _S_PB=$((_S_PB+CK_IPT_WG)) ;; esac
-        [ "${_S_IPT##*$WAN_IF*}" ] &&                                                _S_PB=$((_S_PB+CK_IPT_WG))
+        [ "${_S_IPT##*$WAN_IF*}" ] &&                                            _S_PB=$((_S_PB+CK_IPT_WG))
         _CL=2
       fi
-      if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _S_CK=$((_S_CK+CK_IPT_WL))
+      if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then    _S_CK=$((_S_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ "$(echo "$_S_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then                   _S_CK=$((_S_CK+CK_IPT_LOG))
+      if [ "$(echo "$_S_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then               _S_CK=$((_S_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL = $_LL ] ||                                                             _S_PB=$((_S_PB+CK_IPT_CH))
-    else                                                                             _S_PB=$((_S_PB+CK_IPT_CH))
+      [ $_CL = $_LL ] ||                                                         _S_PB=$((_S_PB+CK_IPT_CH))
+    else                                                                         _S_PB=$((_S_PB+CK_IPT_CH))
     fi
   fi
   # -- DST CHAIN
@@ -887,32 +887,32 @@ _status() {
   _D_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then                 _D_CK=$((_D_CK+CK_IPT_CH))
+    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
-      if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WG))
+      if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then    _D_CK=$((_D_CK+CK_IPT_WG))
 #        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                             _D_PB=$((_D_PB+CK_IPT_WG))
 #        case "$_D_IPT" in *"$WAN_IF"*) : ;; *)  ;; esac
-        [ "${_D_IPT##*$WAN_IF*}" ] &&                                                _D_PB=$((_D_PB+CK_IPT_WG))
+        [ "${_D_IPT##*$WAN_IF*}" ] &&                                            _D_PB=$((_D_PB+CK_IPT_WG))
         _CL=2
       fi
-      if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then        _D_CK=$((_D_CK+CK_IPT_WL))
+      if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then    _D_CK=$((_D_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ "$(echo "$_D_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then                   _D_CK=$((_D_CK+CK_IPT_LOG))
+      if [ "$(echo "$_D_IPT"|/bin/sed -n '/LOG/=')" = $_CL ]; then               _D_CK=$((_D_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL = $_LL ] ||                                                             _D_PB=$((_D_PB+CK_IPT_CH))
-    else                                                                             _D_PB=$((_D_PB+CK_IPT_CH))
+      [ $_CL = $_LL ] ||                                                         _D_PB=$((_D_PB+CK_IPT_CH))
+    else                                                                         _D_PB=$((_D_PB+CK_IPT_CH))
     fi
   fi
   # -- SRC & DST
-  if [ $_S_CK -eq $_D_CK ]; then                                                   _CK=$((_CK+_S_CK))
-    if [ $_S_PB -eq $_D_PB ]; then                                                 _PB=$((_PB+_S_PB))
+  if [ $_S_CK -eq $_D_CK ]; then                                                 _CK=$((_CK+_S_CK))
+    if [ $_S_PB -eq $_D_PB ]; then                                               _PB=$((_PB+_S_PB))
     else
-      [ $((_S_PB&CK_IPT_WG)) -ne 0 ] || [ $((_D_PB&CK_IPT_WG)) -ne 0 ] &&          _PB=$((_PB+CK_IPT_WG))
-      [ $((_S_PB&CK_IPT_CH)) -ne 0 ] || [ $((_D_PB&CK_IPT_CH)) -ne 0 ] &&          _PB=$((_PB+CK_IPT_CH))
+      [ $((_S_PB&CK_IPT_WG)) -ne 0 ] || [ $((_D_PB&CK_IPT_WG)) -ne 0 ] &&        _PB=$((_PB+CK_IPT_WG))
+      [ $((_S_PB&CK_IPT_CH)) -ne 0 ] || [ $((_D_PB&CK_IPT_CH)) -ne 0 ] &&        _PB=$((_PB+CK_IPT_CH))
     fi
-  else                                                                             _PB=$((_PB+CK_IPT_CH))                                                                           
+  else                                                                           _PB=$((_PB+CK_IPT_CH))                                                                           
   fi
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
@@ -922,10 +922,10 @@ _status() {
     if [ "$TUN_IF" ]; then
       _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
       case "$_CT" in
-        4)                                                                         _CK=$((_CK+CK_IPT_TUN));;
-        0)                                                                         _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
-        *)                                                                         _PB=$((_PB+CK_IPT_TUN))
-                                                                                   _PB=$((_PB+PB_IPT_IFO));;
+        4)                                                                       _CK=$((_CK+CK_IPT_TUN));;
+        0)                                                                       _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
+        *)                                                                       _PB=$((_PB+CK_IPT_TUN))
+                                                                                 _PB=$((_PB+PB_IPT_IFO));;
       esac
 #      if [ "$_CT" = 4 ]; then                                                      _CK=$((_CK+CK_IPT_TUN))
 #      elif [ "$_CT" = 0 ]; then                                                    _PB=$((_PB+CK_IPT_TUN))
@@ -952,23 +952,23 @@ _status() {
   if [ $_CK -ne 0 ]; then
   # -- PROBLEMS / WARNINGS
     # ENV
-    [ $((_CK&CK_FWS)) -eq 0 ] &&                                                   _PB=$((_PB+CK_FWS))
-    [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                                _PB=$((_PB+CK_PM))
+    [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
+    [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                              _PB=$((_PB+CK_PM))
     # WG: we already have CK_WG_BP, PB_WG_SNE, CK_IPT_WG
     # WL
     _OK=$((CK_IPS_WL+CK_IPT_WL))
     if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
-      [ $((_CK&CK_IPS_WL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_WL))
-      [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPT_WL))
+      [ $((_CK&CK_IPS_WL)) -eq 0 ] &&                                            _PB=$((_PB+CK_IPS_WL))
+      [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                            _PB=$((_PB+CK_IPT_WL))
     fi
     # BL
-    [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                                _PB=$((_PB+CK_IPS_BL))
+    [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # LOG
-    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                 _WN=$((_WN+WN_LOG_DIFF))
-    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                          _WN=$((_WN+WN_LOG_DIFF))
+    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&               _WN=$((_WN+WN_LOG_DIFF))
+    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                        _WN=$((_WN+WN_LOG_DIFF))
     fi
     # CH, IFO
-    [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                              _PB=$((_PB+CK_IPT_CH))
+    [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_CH))
 #    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
 #    [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
@@ -981,7 +981,7 @@ _status() {
 status_term() {
   _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
 
-  echo -e "\033[1;36mStatus:\033[0m"
+  echo -ne "\033[1;36mStatus:\033[0m"; [ "$VERBOSE" -ge 2 ] && echo "(CODE: $_STAT)" || echo ''
   if [ $((_CK+_PB)) -eq 0 ]; then
     _RETVAL=1
     echo "- '$SC_NAME' is not active; Settings are clean."
