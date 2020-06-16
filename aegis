@@ -981,7 +981,7 @@ _status() {
 status_term() {
   _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
 
-  echo -ne "\033[1;36mStatus:\033[0m"; [ "$VERBOSE" -ge 2 ] && echo "(CODE: $_STAT)" || echo ''
+  echo -ne '\033[1;36mStatus:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_STAT)" || echo ''
   if [ $((_CK+_PB)) -eq 0 ]; then
     _RETVAL=1
     echo "- '$SC_NAME' is not active; Settings are clean."
@@ -998,7 +998,7 @@ status_term() {
   fi
   
   if [ $_PB -ne 0 ]; then
-    echo -e "\033[1;31mErrors:\033[0m (CODE: $_PB)"
+    echo -ne '\033[1;31mErrors:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_PB)" || echo ''
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
@@ -1018,7 +1018,7 @@ status_term() {
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo -e "\033[1;35mWarnings:\033[0m (CODE: $_WN)"
+    echo -ne '\033[1;35mWarnings:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_WN)" || echo ''
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo -e "\033[35m- blocklist set is different than file.\033[0m";;
       $WN_BL_FILE_MISS) echo -e "\033[35m- blocklist is set but file is missing.\033[0m";;
@@ -1045,7 +1045,7 @@ status_term() {
  
   [ "$VERBOSE" ] || return 0
 
-  echo -e "\033[1;36mDetailed status:\033[0m (CODE: $_CK)"
+  echo -ne '\033[1;36mDetailed status:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_CK)" || echo ''
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
