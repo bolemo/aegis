@@ -1176,8 +1176,8 @@ status_term() {
 
 status_raw() {
   _status; _STAT=$?
-  echo "$_IPT"
-  exit $_STAT
+  echo "$_STAT '$_IPT'"
+  exit 0
 }
 #---------------------------- END _STATUS ----------------------------
 
