@@ -1173,6 +1173,12 @@ status_term() {
     done
   fi
 }
+
+status_raw() {
+  _status; _STAT=$?
+  echo "$_IPT"
+  exit $_STAT
+}
 #---------------------------- END _STATUS ----------------------------
 
 print_help() {
@@ -1190,9 +1196,11 @@ print_help() {
   echo -e " \033[1;35mlog\033[0m        - displays log"
   echo -e " \033[1;35mupgrade\033[0m    - downloads and installs latest version"
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
-  echo -e " \033[1;36m-v\033[0m          - verbose mode"
-  echo -e " \033[1;36m-q\033[0m          - quiet mode"
-  echo -e " \033[1;36m-html\033[0m       - sends output to router's web: http://routerlogin.net/bolemo/$SC_NAME.htm"
+  echo -e " \033[1;36m-v\033[0m          - verbose mode (level 1)"
+  echo -e " \033[1;36m-vv\033[0m         - verbose mode (level 2)"
+  echo -e " \033[1;36m-vvv\033[0m        - verbose mode (level 3)"
+  echo -e " \033[1;36m-q\033[0m          - quiet mode (no output)"
+#  echo -e " \033[1;36m-html\033[0m       - sends output to router's web: http://routerlogin.net/bolemo/$SC_NAME.htm"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
@@ -1223,15 +1231,15 @@ ARGS=" $* "
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
-[ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
+#[ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
 
 [ "$QUIET" ] && exec>/dev/null
 
-if [ "$_HTML" ]; then
-  echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
-  echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
-  exec>>$TMP_HTML
-fi
+#if [ "$_HTML" ]; then
+#  echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
+#  echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
+#  exec>>$TMP_HTML
+#fi
 
 pre_init
 
@@ -1249,12 +1257,15 @@ case "$PARAM" in
   'info') info ;;
   'log') print_log ;;
   'upgrade') upgrade ;;
+  # calls for outside helpers (html)
+  '_status') status_raw ;;
+  
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
 
-if [ "$_HTML" ]; then
-  /bin/sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $TMP_HTML>>$_HTML
-  /bin/rm -f $TMP_HTML
-fi
+#if [ "$_HTML" ]; then
+#  /bin/sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $TMP_HTML>>$_HTML
+#  /bin/rm -f $TMP_HTML
+#fi
 
 exit $_RETVAL
