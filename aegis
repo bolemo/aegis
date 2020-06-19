@@ -1225,7 +1225,7 @@ if [ -z "${ARGS##* %devmode*% *}" ]; then
       eval "$_CMD"
     fi
     if [ -z "${_DEV##*repo=*}" ]; then
-      _REPO="$(echo "$_DEV"|/bin/sed 's/.*git=\([^,$]*\).*/\1/')"
+      _REPO="$(echo "$_DEV"|/bin/sed 's/.*repo=\([^,$]*\).*/\1/')"
       SC_DEV_REPO="$SC_BASE_REPO/$_REPO"
       echo "Using git path: '$SC_DEV_REPO'"
     fi
