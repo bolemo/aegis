@@ -1215,8 +1215,6 @@ _RETVAL=0
 
 ARGS=" $* "
 
-cmd: \nargs: ${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}
-
 if [ -z "${ARGS##* %devmode*% *}" ]; then
   DEVMODE=1
   _CMD=$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode\([^%]*\)%[^%]*/\1/'
