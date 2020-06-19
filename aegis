@@ -1227,6 +1227,8 @@ ARGS=" $* "
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 if [ -z "${ARGS##* --devmode*}" ]; then
   DEVMODE=1
+  _CMD=$(echo "$ARGS"|/bin/sed "s/ --devmode'\([^']*\)'/\1/")
+  echo "$_CMD"
 fi
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
