@@ -925,7 +925,7 @@ _status() {
         4)                                                                       _CK=$((_CK+CK_IPT_TUN));;
         0)                                                                       _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
         *)                                                                       _PB=$((_PB+CK_IPT_TUN))
-                                                                                 _PB=$((_PB+PB_IPT_IFO));;
+                                                [ $((_PB&PB_IPT_IFO)) -eq 0 ] && _PB=$((_PB+PB_IPT_IFO));;
       esac
 #      if [ "$_CT" = 4 ]; then                                                      _CK=$((_CK+CK_IPT_TUN))
 #      elif [ "$_CT" = 0 ]; then                                                    _PB=$((_PB+CK_IPT_TUN))
@@ -939,13 +939,13 @@ _status() {
       4)                                                                         _CK=$((_CK+CK_IPT_WAN));;
       0)                                                                         _PB=$((_PB+CK_IPT_WAN));;
       *)                                                                         _PB=$((_PB+CK_IPT_WAN))
-                                                                                 _PB=$((_PB+PB_IPT_WAN));;
+                                                [ $((_PB&PB_IPT_IFO)) -eq 0 ] && _PB=$((_PB+PB_IPT_IFO));;
     esac
 #    if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_WAN))
 #    elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO))
 #    fi
     # checking if old rules exists or if corrupted
-    [ $_TCT -ne 0 ] && _PB=$((_PB+PB_IPT_IFO))
+    [ $_TCT -ne 0 ] && [ $((_PB&PB_IPT_IFO)) -eq 0 ] && _PB=$((_PB+PB_IPT_IFO))
   fi
 
   # DEEPER CHECK
