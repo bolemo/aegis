@@ -1013,7 +1013,7 @@ status_term() {
       [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface IFO rules are not right!\033[0m"
     else
   #    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&     echo -e "\033[31m- iptables: VPN tunnel IFO rules are missing!\033[0m"
-      [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface IFO rules are missing!\033[0m"
+      [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
     fi
   fi
   
@@ -1029,7 +1029,7 @@ status_term() {
       $WN_WL_FILE_MISS) echo -e "\033[35m- whitelist is set but file is missing.\033[0m";;
       $WN_WL_FILE_NTLD) echo -e "\033[35m- no whitelist is set but file exists.\033[0m";;
     esac
-    [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel IFO rules are missing!\033[0m"
+    [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel ($TUN_IF) IFO rules are missing!\033[0m"
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
 #    [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist set is different than file.\033[0m"
 #    if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
@@ -1218,9 +1218,9 @@ ARGS=" $* "
 if [ -z "${ARGS##* %devmode*% *}" ]; then
   DEVMODE=1
   _CMD="$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode\([^%]*\)%[^%]*/\1/')"
-  echo "'$_CMD'"
+  echo "Executing command: '$_CMD'"
   ARGS="${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}"
-  echo "'$ARGS'"
+  echo "Arguments: '$ARGS'"
   eval "$_CMD"
 fi
 
