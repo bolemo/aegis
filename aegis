@@ -1217,7 +1217,7 @@ ARGS=" $* "
 
 cmd: \nargs: ${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}
 
-_if [ -z "${ARGS##* %devmode*% *}" ]; then
+if [ -z "${ARGS##* %devmode*% *}" ]; then
   DEVMODE=1
   _CMD=$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode\([^%]*\)%[^%]*/\1/'
   echo "'$_CMD'"
