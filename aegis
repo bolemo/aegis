@@ -514,7 +514,7 @@ clean_path() {
 BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
 SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
 SC_MAIN_REPO="$SC_BASE_REPO/master"
-SC_DEV_REPO="$SC_BASE_REPO/Dev2"
+SC_DEV_REPO="$SC_BASE_REPO/dev"
 
 last_avail_version() {
   /usr/bin/wget -qO- "$SC_MAIN_REPO/version"
@@ -1222,10 +1222,12 @@ if [ -z "${ARGS##* %devmode*% *}" ]; then
     if [ -z "${_DEV##*cmd=*}" ]; then
       _CMD="$(echo "$_DEV"|/bin/sed 's/.*cmd=\([^,$]*\).*/\1/')"
       echo "Executing command: '$_CMD'"
+      eval "$_CMD"
     fi
-    if [ -z "${_DEV##*git=*}" ]; then
-      _GIT="$(echo "$_DEV"|/bin/sed 's/.*git=\([^,$]*\).*/\1/')"
-      echo "Using git path: '$_GIT'"
+    if [ -z "${_DEV##*repo=*}" ]; then
+      _REPO="$(echo "$_DEV"|/bin/sed 's/.*git=\([^,$]*\).*/\1/')"
+      SC_DEV_REPO="$SC_BASE_REPO/$_REPO"
+      echo "Using git path: '$SC_DEV_REPO'"
     fi
   fi
   DEVMODE=1
