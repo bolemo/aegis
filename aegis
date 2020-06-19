@@ -1214,10 +1214,15 @@ _RETVAL=0
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
 ARGS=" $* "
-_if [ -z "${ARGS##* --devmode*}" ]; then
+
+cmd: \nargs: ${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}
+
+_if [ -z "${ARGS##* %devmode*% *}" ]; then
   DEVMODE=1
-  _CMD=$(echo "$ARGS"|/bin/sed "s/ --devmode%\([^%]*\)%/\1/")
-  echo "$_CMD"
+  _CMD=$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode\([^%]*\)%[^%]*/\1/'
+  echo "'$_CMD'"
+  ARGS="${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}"
+  echo "'$ARGS'"
 fi
 
 PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
