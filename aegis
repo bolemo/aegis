@@ -1047,7 +1047,7 @@ status_term() {
 
   echo -ne '\033[1;36mDetailed status:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_CK)" || echo ''
   echo "- WAN interface is '$WAN_IF'"
-  [ "$TUN_IF" ] && echo "- VPN tunnel is '$TUN_IF'" || "- no VPN tunnel found."
+  [ "$TUN_IF" ] && echo "- VPN tunnel is '$TUN_IF'" || echo "- no VPN tunnel found."
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
