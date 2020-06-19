@@ -1216,14 +1216,19 @@ _RETVAL=0
 ARGS=" $* "
 
 if [ -z "${ARGS##* %devmode*% *}" ]; then
+  if [ "${ARGS##* %devmode% *}" ]; then
+    _DEV="$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode \([^%]*\)%[^%]*/\1/')"
+    if [ -z "${_DEV##*cmd=*}" ]; then
+      _CMD="$(echo "$_DEV"|/bin/sed 's/.*cmd=\([^,$]*\).*/\1/')"
+      echo "Executing command: '$_CMD'"
+    fi
+    if [ -z "${_DEV##*git=*}" ]; then
+      _GIT="$(echo "$_DEV"|/bin/sed 's/.*git=\([^,$]*\).*/\1/')"
+      echo "Using git path: '$_GIT'"
+  fi
   DEVMODE=1
-  _CMD="$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode .*cmd=\([^,%]*\)%[^,%]*/\1/')"
-  _GIT="$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode .*git=\([^,%]*\)%[^,%]*/\1/')"
-  echo "Executing command: '$_CMD'"
-  echo "Using git path: '$_GIT'"
   ARGS="${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}"
   echo "Arguments: '$ARGS'"
-#  eval "$_CMD"
 fi
 
 PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*//g')"
