@@ -1217,10 +1217,11 @@ ARGS=" $* "
 
 if [ -z "${ARGS##* %devmode*% *}" ]; then
   DEVMODE=1
-  _CMD=$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode\([^%]*\)%[^%]*/\1/'
+  _CMD="$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode\([^%]*\)%[^%]*/\1/')"
   echo "'$_CMD'"
   ARGS="${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}"
   echo "'$ARGS'"
+  eval "$_CMD"
 fi
 
 PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*//g')"
