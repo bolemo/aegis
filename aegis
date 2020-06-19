@@ -1213,6 +1213,13 @@ _RETVAL=0
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm
 
+ARGS=" $* "
+_if [ -z "${ARGS##* --devmode*}" ]; then
+  DEVMODE=1
+  _CMD=$(echo "$ARGS"|/bin/sed "s/ --devmode%\([^%]*\)%/\1/")
+  echo "$_CMD"
+fi
+
 PARAM="$(echo "$*" | /bin/sed 's/-[[:alpha:]=]*//g')"
 case $(echo "$PARAM"|/usr/bin/wc -w) in
   0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
@@ -1220,16 +1227,10 @@ case $(echo "$PARAM"|/usr/bin/wc -w) in
   *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
 esac
 
-ARGS=" $* "
 [ -z "${ARGS##* -v *}" ] && VERBOSE=1
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
-if [ -z "${ARGS##* --devmode*}" ]; then
-  DEVMODE=1
-  _CMD=$(echo "$ARGS"|/bin/sed "s/ --devmode'\([^']*\)'/\1/")
-  echo "$_CMD"
-fi
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
