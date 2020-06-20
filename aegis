@@ -801,6 +801,7 @@ CK_IPT_LOG=512    # CK ..
 PB_IPT_IFO=512    # .. PB
 CK_IPT_TUN=1024   # CK PB
 CK_IPT_WAN=2048   # CK PB
+PB_IPT_WAN_MISS=4096 # .. PB
 
 #WN_DIFF_BL=1
 #WN_FILE_BL=2
@@ -818,6 +819,8 @@ WN_TUN_MISS=16      # . x . . . .
 WN_LOG_DIFF=32      # x . . . . .
 
 CK_MASK=4095 #12 bits
+PB_MASK=8191 #13 bits
+WN_MASK=63   #6 bits
 
 _status() {
   _CK=0; _WN=0; _PB=0
@@ -924,8 +927,7 @@ _status() {
       case "$_CT" in
         4)                                                                       _CK=$((_CK+CK_IPT_TUN));;
         0)                                                                       _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
-        *)                                                                       _PB=$((_PB+CK_IPT_TUN))
-                                                [ $((_PB&PB_IPT_IFO)) -eq 0 ] && _PB=$((_PB+PB_IPT_IFO));;
+        *)                                                                       _PB=$((_PB+CK_IPT_TUN));;
       esac
 #      if [ "$_CT" = 4 ]; then                                                      _CK=$((_CK+CK_IPT_TUN))
 #      elif [ "$_CT" = 0 ]; then                                                    _PB=$((_PB+CK_IPT_TUN))
@@ -937,15 +939,14 @@ _status() {
     _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$WAN_IF"); _TCT=$((_TCT-_CT))
     case "$_CT" in
       4)                                                                         _CK=$((_CK+CK_IPT_WAN));;
-      0)                                                                         _PB=$((_PB+CK_IPT_WAN));;
-      *)                                                                         _PB=$((_PB+CK_IPT_WAN))
-                                                [ $((_PB&PB_IPT_IFO)) -eq 0 ] && _PB=$((_PB+PB_IPT_IFO));;
+      0)                                                                         _PB=$((_PB+PB_IPT_WAN_MISS));;
+      *)                                                                         _PB=$((_PB+CK_IPT_WAN));;
     esac
 #    if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_WAN))
 #    elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO))
 #    fi
     # checking if old rules exists or if corrupted
-    [ $_TCT -ne 0 ] && [ $((_PB&PB_IPT_IFO)) -eq 0 ] && _PB=$((_PB+PB_IPT_IFO))
+    [ $_TCT -ne 0 ] &&                                                           _PB=$((_PB+PB_IPT_IFO))
   fi
 
   # DEEPER CHECK
@@ -974,12 +975,12 @@ _status() {
   fi
   
   # calculating return value
-  _RET=$((_CK+(_PB<<12)+(_WN<<24)))
+  _RET=$((_CK+(_PB<<12)+(_WN<<25)))
   return $_RET
 }
 
 status_term() {
-  _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&CK_MASK)); _WN=$(((_STAT>>24)&CK_MASK))
+  _status; _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
 
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then
@@ -1008,13 +1009,10 @@ status_term() {
     [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: engine chains are not right!\033[0m"
     [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo -e "\033[31m- iptables: WAN gateway bypass rules are not right!\033[0m"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: whitelist rules are not right!\033[0m"
-    if [ $((_PB&PB_IPT_IFO)) -ne 0 ]; then echo -e "\033[31m- iptables: engine IFO rules are not right!\033[0m"
-      [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&     echo -e "\033[31m- iptables: VPN tunnel IFO rules are not right!\033[0m"
-      [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface IFO rules are not right!\033[0m"
-    else
-  #    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&     echo -e "\033[31m- iptables: VPN tunnel IFO rules are missing!\033[0m"
-      [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&     echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
-    fi
+    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo -e "\033[31m- iptables: VPN tunnel IFO rules are corrupted!\033[0m"
+    [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo -e "\033[31m- iptables: WAN interface IFO rules are corrupted!\033[0m"
+    [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: engine IFO rules are corrupted (likely leftover from old interface)!\033[0m"
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
@@ -1233,7 +1231,7 @@ if [ -z "${ARGS##* %devmode*% *}" ]; then
     fi
   fi
   DEVMODE=1
-  ARGS="${ARGS%* %devmode*% *} ${ARGS#* %devmode*% *}"
+  ARGS="${ARGS% %devmode*% *} ${ARGS#* %devmode*% }"
   echo "Arguments: '$ARGS'"
 fi
 
