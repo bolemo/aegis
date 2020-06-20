@@ -787,20 +787,20 @@ info() {
 
 #---------------------------- _STATUS ----------------------------
 # STATUS VARS
-CK_FWS=1          # CK PB
-CK_PM=2           # CK PB
-CK_IPS_BL=4       # CK PB
-CK_IPS_WL=8       # CK PB
-CK_WG_IN_BL=16    # CK ..
-PB_WG_SNE=16      # .. PB
-CK_WG_BP=32       # CK PB
-CK_IPT_CH=64      # CK PB
-CK_IPT_WG=128     # CK PB
-CK_IPT_WL=256     # CK PB
-CK_IPT_LOG=512    # CK ..
-PB_IPT_IFO=512    # .. PB
-CK_IPT_TUN=1024   # CK PB
-CK_IPT_WAN=2048   # CK PB
+CK_FWS=1             # CK PB
+CK_PM=2              # CK PB
+CK_IPS_BL=4          # CK PB
+CK_IPS_WL=8          # CK PB
+CK_WG_IN_BL=16       # CK ..
+PB_WG_SNE=16         # .. PB
+CK_WG_BP=32          # CK PB
+CK_IPT_CH=64         # CK PB
+CK_IPT_WG=128        # CK PB
+CK_IPT_WL=256        # CK PB
+CK_IPT_LOG=512       # CK ..
+PB_IPT_IFO=512       # .. PB
+CK_IPT_TUN=1024      # CK PB
+CK_IPT_WAN=2048      # CK PB
 PB_IPT_WAN_MISS=4096 # .. PB
 
 #WN_DIFF_BL=1
@@ -1044,8 +1044,8 @@ status_term() {
   [ "$VERBOSE" ] || return 0
 
   echo -ne '\033[1;36mDetailed status:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_CK)" || echo ''
-  echo "- WAN interface is '$WAN_IF'"
-  [ "$TUN_IF" ] && echo "- VPN tunnel is '$TUN_IF'" || echo "- no VPN tunnel found."
+  echo "- Active WAN interface is '$WAN_IF'."
+  [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
