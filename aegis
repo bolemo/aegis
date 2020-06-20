@@ -382,7 +382,7 @@ engine_start() {
 #    esac
   fi
   
-  echo -e "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<10)))" > "$INFO_FILE"
+  echo -ne "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<10))) $WAN_IF $TUN_IF" > "$INFO_FILE"
 }
 
 ###############################################
@@ -1012,7 +1012,7 @@ status_term() {
     [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo -e "\033[31m- iptables: VPN tunnel IFO rules are corrupted!\033[0m"
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo -e "\033[31m- iptables: WAN interface IFO rules are corrupted!\033[0m"
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: engine IFO rules are corrupted (likely leftover from old interface)!\033[0m"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra engine IFO rules were found (likely from an old interface)!\033[0m"
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
@@ -1070,7 +1070,8 @@ status_term() {
   # Status file
   echo -ne "\033[1;36m'$SC_NAME' engine last launch report:\033[0m"
   if [ -r "$INFO_FILE" ]; then
-    INFO=$(cat "$INFO_FILE")
+    read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
+#    INFO=$(cat "$INFO_FILE")
     INFO_FROM=$((INFO&INFO_FROM_MASK))
     INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
     INFO_IPT=$(((INFO>>10)&INFO_IPT_MASK))
@@ -1081,6 +1082,8 @@ status_term() {
       $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
     esac
     echo "- engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+    [ "$INFO_WAN" ] && echo "- WAN interface found was '$INFO_WAN'." || echo '- No WAN interface was found!'
+    [ "$INFO_TUN" ] && echo "- VPN tunnel found was '$INFO_TUN'." || echo '- No VPN tunnel was found.'
     case $((INFO_IPS&INFO_IPS_BL_MASK)) in
       0) echo '! blocklist file was not found!' ;;
       $INFO_IPS_BL_SAME) echo '- ipset: blocklist was already set and identical to file.' ;;
