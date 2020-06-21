@@ -1,7 +1,7 @@
 #! /bin/sh
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 command -v iprange>/dev/null 2>&1 || [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.2.0"
+SC_VERS="0.0.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
@@ -524,8 +524,10 @@ upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
   echo "- Version installed: $SC_VERS"
   if [ "$DEVMODE" ]; then
-    echo "- Devmode on, force downloading dev version..."
+    echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
+    UPGRADE_VER=$(/usr/bin/wget -qO- "$SC_DEV_REPO/version")
+    [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";exit 1; }
   else
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)"
@@ -540,7 +542,8 @@ upgrade() {
       >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
       exit 1
     fi
-    UPGRADE_URL="UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME""
+    UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
+    UPGRADE_VER="$SC_LAST_VERS"
   fi
   if [ ! "$DEVMODE" ]; then
     echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
@@ -553,7 +556,7 @@ upgrade() {
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$DL_PATH"
+    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; s/SC_VERS="[^"]"/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
     \/bin/mv "$DL_PATH" "$SC_NICEPATH"
     /bin/chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
