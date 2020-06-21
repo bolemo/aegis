@@ -556,7 +556,7 @@ upgrade() {
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; s/SC_VERS="[^"]"/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
+    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; s/SC_VERS="[^"]*"/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
     \/bin/mv "$DL_PATH" "$SC_NICEPATH"
     /bin/chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
