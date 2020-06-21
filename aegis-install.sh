@@ -1,6 +1,7 @@
 #!/bin/sh
 AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/master'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
+AEGIS_VER_URL="$AEGIS_REPO/version"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
 SELF_PATH="$(pwd -P)"
 
@@ -48,12 +49,12 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/www" ] || mkdir "$BASE_DIR/bolemo/www"
 
 echo "Downloading and installing aegis..."
-if wget -qO "/opt/bolemo/scripts/aegis" "$AEGIS_SCP_URL" && 
-
-  /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$AEGIS_SCP_VER'"/' "$DL_PATH"
-
-  then chmod +x "/opt/bolemo/scripts/aegis"
-  else >&2 echo 'Could not download aegis!'; exit 1
+VERS="$(wget -qO- "$AEGIS_VER_URL")"
+if [ "$VERS" ] && wget -qO "/opt/bolemo/scripts/aegis" '/tmp/aegis_dl.tmp'; then
+  sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$VERS'"/' '/tmp/aegis_dl.tmp'
+  \mv '/tmp/aegis_dl.tmp' '/opt/bolemo/scripts/aegis'
+  chmod +x "/opt/bolemo/scripts/aegis"
+else >&2 echo 'Could not download aegis!'; exit 1
 fi
 
 if [ -e "/opt/bolemo/etc/aegis.sources" ]
