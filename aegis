@@ -120,7 +120,6 @@ _set_ipt_for_if_pos() {
     if [ "$_CT" ] && [ "$_CT" -ne 0 ]; then
       # something is messed up with rules; deleting what is left
       echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#      iptables -S 2>/dev/null|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       _RET=$INFO_IPT_IF_PBM
     else
       _RET=$INFO_IPT_IF_NEW
@@ -228,14 +227,11 @@ engine_start() {
   fi
 
   get_ipt
-#  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
   [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC" 2>/dev/null
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST" 2>/dev/null
-#  iptables -L "$IPTBL_SRC" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC"
-#  iptables -L "$IPTBL_DST" >/dev/null 2>/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST"
 
   if [ "$_WG" ]; then
     # apply wan gateway whitelist
@@ -246,27 +242,16 @@ engine_start() {
       iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
     fi
-#    if ! iptables -S "$IPTBL_SRC" $_POS|/bin/grep -qF -- "$IPSET_WG_NAME"; then
-#      iptables -S "$IPTBL_SRC" 2>/dev/null|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#      iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
-#      NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
-#    fi
     _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WG_NAME/=")"
     if [ "$_WG_POS" != "$_POS" ]; then
       [ "$_WG_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
     fi
-#    if ! iptables -S "$IPTBL_DST" $_POS|/bin/grep -qF -- "$IPSET_WG_NAME"; then
-#      iptables -S "$IPTBL_DST" 2>/dev/null|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
-#      NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
-#    fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WG))
   else
     #Removing any trace of WAN gateway bypass if any
     echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#    iptables -S 2>/dev/null|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     ipset -q destroy "$IPSET_WG_NAME" && _IPS=$((_IPS+INFO_IPS_WG_DEL))
     _POS=0
   fi
@@ -280,27 +265,16 @@ engine_start() {
       iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
-#    if ! iptables -S "$IPTBL_SRC" $_POS|/bin/grep -qF -- "$IPSET_WL_NAME"; then
-#      iptables -S "$IPTBL_SRC" 2>/dev/null|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#      iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
-#      NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
-#    fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
-#    if ! iptables -S "$IPTBL_DST" $_POS|/bin/grep -qF -- "$IPSET_WL_NAME"; then
-#      iptables -S "$IPTBL_DST" 2>/dev/null|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#      iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
-#      NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
-#    fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   else
     #Removing any trace of whitelist if any
     echo "$_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#    iptables -S 2>/dev/null|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
@@ -312,22 +286,12 @@ engine_start() {
       iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
     fi
-#    if ! iptables -S "$IPTBL_SRC" $_POS|/bin/grep -qF -- "-j LOG"; then
-#      iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-#      iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
-#      NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
-#    fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
       [ "$_LOG_POS" ] && iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
-#    if ! iptables -S "$IPTBL_DST" $_POS|/bin/grep -qF -- "-j LOG"; then
-#      iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-#      iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
-#      NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
-#    fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
   else
     iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
@@ -344,18 +308,10 @@ engine_start() {
     [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     iptables -I "$IPTBL_DST" $_POS -j DROP
   fi
-#  [ "${_IPT_SRC##*-j DROP*}" ] && iptables -A "$IPTBL_SRC" -j DROP
-#  [ "${_IPT_DST##*-j DROP*}" ] && iptables -A "$IPTBL_DST" -j DROP
-#  case "$_IPT_SRC" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_SRC" -j DROP;; esac
-#  case "$_IPT_DST" in *"-j DROP"*) :;; *) iptables -A "$IPTBL_DST" -j DROP;; esac
-#  iptables -S "$IPTBL_SRC"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_SRC" -j DROP
-#  iptables -S "$IPTBL_DST"|/bin/grep -qF -- "-j DROP" || iptables -A "$IPTBL_DST" -j DROP
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|eval $_GREP)"
-#  _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|/bin/grep -v "\($WAN_IF\|$TUN_IF\)")"
-#  _IPT_IFO="$(iptables -S 2>/dev/null|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|/bin/grep -v "\($WAN_IF\|$TUN_IF\)")"
   if [ "$_IPT_IFO" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$_IPT_IFO"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
@@ -365,21 +321,11 @@ engine_start() {
   # creating the required iptables rules for wan interface
   _set_ipt_for_if_pos "$WAN_IF" 1
   NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WAN_SHIFT)))
-#  case $? in
-#    2) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_PBM)) ;;
-#    1) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_NEW)) ;;
-#    0) NFO_IPT=$((NFO_IPT+INFO_IPT_WAN_KEEP)) ;;
-#  esac
   
   # creating the required iptables rules for vpn tunnel interface (if needed)
   if [ "$TUN_IF" ]; then
     _set_ipt_for_if_pos "$TUN_IF" 2
     NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TUN_SHIFT)))
-#    case $? in
-#      2) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_PBM)) ;;
-#      1) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_NEW)) ;;
-#      0) NFO_IPT=$((NFO_IPT+INFO_IPT_TUN_KEEP)) ;;
-#    esac
   fi
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<10))) $WAN_IF $TUN_IF" > "$INFO_FILE"
@@ -806,12 +752,6 @@ CK_IPT_TUN=1024      # CK PB
 CK_IPT_WAN=2048      # CK PB
 PB_IPT_WAN_MISS=4096 # .. PB
 
-#WN_DIFF_BL=1
-#WN_FILE_BL=2
-#WN_DIFF_WL=4
-#WN_FILE_WL=8
-#WN_LOG=16
-
 WN_BL_FILE_DIFF=1   # . . . . _ x
 WN_BL_FILE_MISS=2   # . . . . x _
 WN_BL_FILE_NTLD=3   # . . . . x x
@@ -861,7 +801,6 @@ _status() {
   fi
 
   # CHECK IPTABLES
-#  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   get_ipt
   # -- SRC CHAIN
   _S_CK=0
@@ -872,8 +811,6 @@ _status() {
     if [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then
-#        echo "$_S_IPT"|/bin/grep -qF -- "$WAN_IF" ||                                 _S_PB=$((_S_PB+CK_IPT_WG))
-#        case "$_S_IPT" in *"$WAN_IF"*) : ;; *) _S_PB=$((_S_PB+CK_IPT_WG)) ;; esac
         if [ -z "${_S_IPT##*$WAN_IF*}" ]; then                                   _S_CK=$((_S_CK+CK_IPT_WG))
         else                                                                     _S_PB=$((_S_PB+CK_IPT_WG))
         fi
@@ -898,8 +835,6 @@ _status() {
     if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then
-#        echo "$_D_IPT"|/bin/grep -qF -- "$WAN_IF" ||                             _D_PB=$((_D_PB+CK_IPT_WG))
-#        case "$_D_IPT" in *"$WAN_IF"*) : ;; *)  ;; esac
         if [ -z "${_D_IPT##*$WAN_IF*}" ]; then                                   _D_CK=$((_D_CK+CK_IPT_WG))
         else                                                                     _D_PB=$((_D_PB+CK_IPT_WG))
         fi
@@ -936,11 +871,6 @@ _status() {
         0)                                                                       _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
         *)                                                                       _PB=$((_PB+CK_IPT_TUN));;
       esac
-#      if [ "$_CT" = 4 ]; then                                                      _CK=$((_CK+CK_IPT_TUN))
-#      elif [ "$_CT" = 0 ]; then                                                    _PB=$((_PB+CK_IPT_TUN))
-#      elif [ "$_CT" != 0 ]; then                                                   _PB=$((_PB+CK_IPT_TUN))
-#                                                                                   _PB=$((_PB+PB_IPT_IFO))
-#      fi
     fi
     # checking WAN interface rules
     _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$WAN_IF"); _TCT=$((_TCT-_CT))
@@ -949,9 +879,6 @@ _status() {
       0)                                                                         _PB=$((_PB+PB_IPT_WAN_MISS));;
       *)                                                                         _PB=$((_PB+CK_IPT_WAN));;
     esac
-#    if [ "$_CT" = 4 ]; then _CK=$((_CK+CK_IPT_WAN))
-#    elif [ "$_CT" != 0 ]; then _PB=$((_PB+CK_IPT_WAN)); _PB=$((_PB+PB_IPT_IFO))
-#    fi
     # checking if old rules exists or if corrupted
     [ $_TCT -ne 0 ] &&                                                           _PB=$((_PB+PB_IPT_IFO))
   fi
@@ -1036,16 +963,6 @@ status_term() {
     esac
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel ($TUN_IF) IFO rules are missing!\033[0m"
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
-#    [ $((_WN&WN_DIFF_BL)) -ne 0 ] &&  echo -e "\033[35m- blocklist set is different than file.\033[0m"
-#    if [ $((_WN&WN_FILE_BL)) -ne 0 ]; then
-#      [ $((_CK&CK_IPS_BL)) -ne 0 ] && echo -e "\033[35m- blocklist is set but file is missing.\033[0m" ||
-#                                      echo -e "\033[35m- no blocklist is set but file exists.\033[0m"
-#    fi
-#    [ $((_WN&WN_DIFF_WL)) -ne 0 ] &&  echo -e "\033[35m- whitelist set is different than file.\033[0m"
-#    if [ $((_WN&WN_FILE_WL)) -ne 0 ]; then
-#      [ $((_CK&CK_IPS_WL)) -ne 0 ] && echo -e "\033[35m- whitelist is set but file is missing.\033[0m" ||
-#                                      echo -e "\033[35m- no whitelist is set but file exists.\033[0m"
-#    fi
   fi
  
   [ "$VERBOSE" ] || return 0
@@ -1078,7 +995,6 @@ status_term() {
   echo -ne "\033[1;36m'$SC_NAME' engine last launch report:\033[0m"
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
-#    INFO=$(cat "$INFO_FILE")
     INFO_FROM=$((INFO&INFO_FROM_MASK))
     INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
     INFO_IPT=$(((INFO>>10)&INFO_IPT_MASK))
@@ -1169,7 +1085,6 @@ status_term() {
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
-#    _IPT="$(iptables -S 2>/dev/null|/bin/grep -F -- "$SC_ABR")"
     [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
@@ -1208,7 +1123,6 @@ print_help() {
   echo -e " \033[1;36m-vv\033[0m         - verbose mode (level 2)"
   echo -e " \033[1;36m-vvv\033[0m        - verbose mode (level 3)"
   echo -e " \033[1;36m-q\033[0m          - quiet mode (no output)"
-#  echo -e " \033[1;36m-html\033[0m       - sends output to router's web: http://routerlogin.net/bolemo/$SC_NAME.htm"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
@@ -1259,15 +1173,8 @@ esac
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
-#[ -z "${ARGS##* -html *}" ] && _HTML="$WWW_PATH/$SC_NAME.htm"
 
 [ "$QUIET" ] && exec>/dev/null
-
-#if [ "$_HTML" ]; then
-#  echo -e '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">\n<title>aegis page</title>\n<pre>'>$_HTML
-#  echo -e "Time: $(/bin/date +'%Y-%m-%d %X')\nCommand: $0 $@\nOutput:\n">>$_HTML
-#  exec>>$TMP_HTML
-#fi
 
 pre_init
 
@@ -1290,10 +1197,5 @@ case "$PARAM" in
   
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
-
-#if [ "$_HTML" ]; then
-#  /bin/sed 's/[[:cntrl:]]\[\([^m]*\)m//g' $TMP_HTML>>$_HTML
-#  /bin/rm -f $TMP_HTML
-#fi
 
 exit $_RETVAL
