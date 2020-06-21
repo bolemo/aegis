@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.1.5
+1.2.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -33,7 +33,7 @@ Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to che
 If aegis was set and running before a router reboot, it should be back automatically after the reboot.
 
 ### Cron job
-You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning (or local time if using Kamoj's addon).
+You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning (or local time if using Kamoj's addon).
 
 ### What does install procedure do
 ***1) If installed on external drive, it will:***
@@ -90,10 +90,10 @@ The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
 ### Custom blocklist
-Since version 3.1, you can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.custom-blacklist.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis update`, it will integrate your custom list to the master blocklist.
+Since version 3.1, you can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis update`, it will integrate your custom list to the master blocklist.
 
 ### Custom whitelist
-Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.custom-whitelist.netset` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
+Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
 
 ## Web interface
 Each time an aegis command is done with the option `-html`, the output is sent to a page accessible here: http://routerlogin.net/bolemo/aegis.htm
