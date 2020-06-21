@@ -88,8 +88,8 @@ INFO_IPT_TUN_PBM=24576     # . x x . . . . . . . . . . . . .
 INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
 
 status() {
-  /opt/bolemo/scripts/aegis _status|read WAN_IF TUN_IF
-  _STAT=$?; _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
+  /opt/bolemo/scripts/aegis _status|read _STAT WAN_IF TUN_IF
+  _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo "- '$SC_NAME' is not active; Settings are clean."
