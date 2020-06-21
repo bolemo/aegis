@@ -48,7 +48,10 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/www" ] || mkdir "$BASE_DIR/bolemo/www"
 
 echo "Downloading and installing aegis..."
-if wget -qO "/opt/bolemo/scripts/aegis" "$AEGIS_SCP_URL"
+if wget -qO "/opt/bolemo/scripts/aegis" "$AEGIS_SCP_URL" && 
+
+  /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$AEGIS_SCP_VER'"/' "$DL_PATH"
+
   then chmod +x "/opt/bolemo/scripts/aegis"
   else >&2 echo 'Could not download aegis!'; exit 1
 fi
