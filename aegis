@@ -101,7 +101,7 @@ get_ipt() {
 }
 
 ipset_list_members() {
-  ipset -L "$1"|/bin/sed -n '/Members:/,$p'|/usr/bin/tail -n+2
+  ipset -q -L "$1"|/bin/sed -n '/Members:/,$p'|/usr/bin/tail -n+2
 }
 
 diff_ipset_file() {
