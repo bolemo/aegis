@@ -1100,7 +1100,7 @@ status_term() {
 }
 
 status_raw() {
-  _status; echo "$? '$WAN_IF ' '$TUN_IF ' '$(count_ip_in_ipset $IPSET_BL_NAME) ' $(count_ip_in_ipset $IPSET_WL_NAME) '"; exit 0
+  _status; echo "$? '$WAN_IF' '$TUN_IF' '$(count_ip_in_ipset $IPSET_BL_NAME)' $(count_ip_in_ipset $IPSET_WL_NAME)'"; exit 0
 }
 #---------------------------- END _STATUS ----------------------------
 
