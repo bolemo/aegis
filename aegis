@@ -245,7 +245,7 @@ engine_start() {
     _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WG_NAME/=")"
     if [ "$_WG_POS" != "$_POS" ]; then
       [ "$_WG_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WG))
