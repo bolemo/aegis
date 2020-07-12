@@ -922,7 +922,7 @@ status_term() {
     echo "- '$SC_NAME' is not active; Settings are clean."
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
     _RETVAL=0
-    echo -ne "- \033[1m'$SC_NAME' is set and active\033[0m"
+    echo -ne "- \033[1;32m'$SC_NAME' is set and active\033[0m"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -e ".\n- Filtering $(count_ip_in_ipset $IPSET_BL_NAME) IP adresses."
