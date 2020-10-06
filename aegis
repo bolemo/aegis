@@ -1200,7 +1200,7 @@ case "$PARAM" in
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
-  'log') [ -z "${ARGS##* -n[ 0-9] *}" ] && _PL=$(echo "$ARGS"|/usr/bin/sed 's/ -n *\([0-9]+\) /\1/') || _PL=''; print_log $_PL ;;
+  'log') [ -z "${ARGS##* -n=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -n=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   'upgrade') upgrade ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
