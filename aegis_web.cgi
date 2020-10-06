@@ -91,19 +91,21 @@ status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo 'Status:'
+  echo '<h1>Status:</h1>'
+  echo '<ul>'
   if [ $((_CK+_PB)) -eq 0 ]; then
-    echo "- '$SC_NAME' is not active; Settings are clean."
+    echo "<li>- '$SC_NAME' is not active; Settings are clean.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-    echo -n "- '$SC_NAME' is set and active"
+    echo -n "<li>- '$SC_NAME' is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-    echo -e ".\n- Filtering $BL_NB IP adresses."
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $WL_NB IP adresses."
+    echo -ne '.</li>\n<li>- Filtering $BL_NB IP adresses.</li>"
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>- Bypassing $WL_NB IP adresses.</li>"
   else
     _RETVAL=2
-    echo -e "- \033[1;31mSomething is not right!\033[0m"
+    echo "<li>- <strong>Something is not right!</strong></li>"
   fi
+  echo '</ul>'
   
   if [ $_PB -ne 0 ]; then
     echo -ne '\033[1;31mErrors:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_PB)" || echo ''
