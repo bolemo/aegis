@@ -1134,7 +1134,7 @@ print_help() {
   echo -e " \033[1;36m-vvv\033[0m        - verbose mode (level 3)"
   echo -e " \033[1;36m-q\033[0m          - quiet mode (no output)"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m - when used with restart, load_set or update, will enable/disable logging"
-  echo -e " \033[1;36m-lines=\033[0mN - when used with log, will display N lines (N to be substituted by the number of lines to show)"
+  echo -e " \033[1;36m-lines=\033[0mN    - when used with log, will display N lines (N to be substituted by the number of lines to show)"
   echo -e " \033[1;36m-rm-symlink\033[0m - when used with clean, removes the symlink /usr/bin/$SC_NAME"
 }
 
