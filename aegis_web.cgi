@@ -1,143 +1,60 @@
 #!/bin/sh
-
-# STATUS VARS
-CK_FWS=1             # CK PB
-CK_PM=2              # CK PB
-CK_IPS_BL=4          # CK PB
-CK_IPS_WL=8          # CK PB
-CK_WG_IN_BL=16       # CK ..
-PB_WG_SNE=16         # .. PB
-CK_WG_BP=32          # CK PB
-CK_IPT_CH=64         # CK PB
-CK_IPT_WG=128        # CK PB
-CK_IPT_WL=256        # CK PB
-CK_IPT_LOG=512       # CK ..
-PB_IPT_IFO=512       # .. PB
-CK_IPT_TUN=1024      # CK PB
-CK_IPT_WAN=2048      # CK PB
-PB_IPT_WAN_MISS=4096 # .. PB
-WN_BL_FILE_DIFF=1   # . . . . _ x
-WN_BL_FILE_MISS=2   # . . . . x _
-WN_BL_FILE_NTLD=3   # . . . . x x
-WN_WL_FILE_DIFF=4   # . . _ x . .
-WN_WL_FILE_MISS=8   # . . x _ . .
-WN_WL_FILE_NTLD=12  # . . x x . .
-WN_TUN_MISS=16      # . x . . . .
-WN_LOG_DIFF=32      # x . . . . .
-CK_MASK=4095 #12 bits
-PB_MASK=8191 #13 bits
-WN_MASK=63   #6 bits
-
-# INFO FROM (2 bits)
-INFO_FROM_MASK=3
-INFO_FROM_FWS=1       # _ x
-INFO_FROM_PM=2        # x _
-INFO_FROM_SC=3        # x x
-
-# INFO IPSET (8 bits)
-INFO_IPS_MASK=255
-                      # . . . . . . _ _  PBM, BL FILE MISSING
-INFO_IPS_BL_SAME=1    # . . . . . . _ x  KEEP
-INFO_IPS_BL_MISS=2    # . . . . . . x _  KEEP
-INFO_IPS_BL_LOAD=3    # . . . . . . x x
-INFO_IPS_BL_MASK=3    # . . . . . . x x
-
-INFO_IPS_WL_SAME=4    # . . . _ . x . .  SAME => KEEP
-INFO_IPS_WL_KEEP=8    # . . . _ x . . .  KEEP
-INFO_IPS_WL_LOAD=16   # . . . x _ _ . .
-INFO_IPS_WL_SWAP=20   # . . . x _ x . . = RELOAD
-INFO_IPS_WL_DEL=24    # . . . x x _ . . => was there, was deleted
-                      # . . . _ _ _ . . => was not there, was not loaded
-INFO_IPS_WL_MASK=28   # . . . x x x . .
-
-INFO_IPS_WG_ADD=32    # _ _ x . . . . . => IN BL
-INFO_IPS_WG_KEEP=64   # _ x _ . . . . . => IN BK
-INFO_IPS_WG_DEL=128   # x _ _ . . . . .
-INFO_IPS_WG_MASK=224  # x x x . . . . .
-                      # _ _ _ . . . . . => was not there, was not loaded
-
-# INFO IPTABLES (16 bits)
-INFO_IPT_MASK=65535
-INFO_IPT_SRC_KEEP=1        # . . . . . . . . . . . . . . . x (or NEW)
-INFO_IPT_DST_KEEP=2        # . . . . . . . . . . . . . . x . (or NEW)
-INFO_IPT_WG=4              # . . . . . . . . . . . . . x . .
-INFO_IPT_WG_SRC_NEW=8      # . . . . . . . . . . . . x . . . (or KEEP)
-INFO_IPT_WG_DST_NEW=16     # . . . . . . . . . . . x . . . . (or KEEP)
-INFO_IPT_WL=32             # . . . . . . . . . . x . . . . .
-INFO_IPT_WL_SRC_NEW=64     # . . . . . . . . . x . . . . . . (or KEEP)
-INFO_IPT_WL_DST_NEW=128    # . . . . . . . . x . . . . . . . (or KEEP)
-INFO_IPT_LOG=256           # . . . . . . . x . . . . . . . .
-INFO_IPT_LOG_SRC_NEW=512   # . . . . . . x . . . . . . . . . (or KEEP)
-INFO_IPT_LOG_DST_NEW=1024  # . . . . . x . . . . . . . . . . (or KEEP)
-
-
-INFO_IPT_IF_NEW=1  # _ x
-INFO_IPT_IF_KEEP=2 # x _
-INFO_IPT_IF_PBM=3  # x x
-
-INFO_IPT_WAN_SHIFT=11
-INFO_IPT_WAN_NEW=2048      # . . . _ x . . . . . . . . . . .
-INFO_IPT_WAN_KEEP=4096     # . . . x _ . . . . . . . . . . .
-INFO_IPT_WAN_PBM=6144      # . . . x x . . . . . . . . . . .
-
-INFO_IPT_TUN_SHIFT=13
-INFO_IPT_TUN_NEW=8192      # . _ x . . . . . . . . . . . . .
-INFO_IPT_TUN_KEEP=16384    # . x _ . . . . . . . . . . . . .
-INFO_IPT_TUN_PBM=24576     # . x x . . . . . . . . . . . . .
-
-INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
+eval "$(aegis _env)"
 
 status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo '<h1>Status:</h1>'
+  echo '<h2>Status:</h2>'
   echo '<ul>'
   if [ $((_CK+_PB)) -eq 0 ]; then
-    echo "<li>- '$SC_NAME' is not active; Settings are clean.</li>"
+    echo "<li>'$SC_NAME' is not active; Settings are clean.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-    echo -n "<li>- '$SC_NAME' is set and active"
+    echo -n "<li>'$SC_NAME' is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-    echo -ne '.</li>\n<li>- Filtering $BL_NB IP adresses.</li>"
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>- Bypassing $WL_NB IP adresses.</li>"
+    echo -ne '.</li>\n<li>Filtering $BL_NB IP adresses.</li>"
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
   else
-    _RETVAL=2
-    echo "<li>- <strong>Something is not right!</strong></li>"
+    echo "<li><strong>Something is not right!</strong></li>"
   fi
   echo '</ul>'
   
   if [ $_PB -ne 0 ]; then
-    echo -ne '\033[1;31mErrors:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_PB)" || echo ''
-    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for $SC_NAME!\033[0m"
-    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for $SC_NAME!\033[0m"
-    [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
-    [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no whitelist is set!\033[0m"
-    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo -e "\033[31m- ipset: a gateway bypass is set but should not!\033[0m"
-    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo -e "\033[31m- ipset: WAN gateway bypass is not set!\033[0m"
-    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: engine chains are not right!\033[0m"
-    [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo -e "\033[31m- iptables: WAN gateway bypass rules are not right!\033[0m"
-    [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: whitelist rules are not right!\033[0m"
-    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo -e "\033[31m- iptables: VPN tunnel IFO rules are corrupted!\033[0m"
-    [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo -e "\033[31m- iptables: WAN interface IFO rules are corrupted!\033[0m"
-    [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra engine IFO rules were found (likely from an old interface)!\033[0m"
+    echo '<h2>Errors:</h2>'
+    echo '<ul>'
+    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
+    [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
+    [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo "<li>ipset: no blocklist is set!</li>"
+    [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo "<li>ipset: no whitelist is set!</li>"
+    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo "<li>ipset: a gateway bypass is set but should not!</li>"
+    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo "<li>ipset: WAN gateway bypass is not set!</li>"
+    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo "<li>iptables: engine chains are not right!</li>"
+    [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo "<li>iptables: WAN gateway bypass rules are not right!</li>"
+    [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo "<li>iptables: whitelist rules are not right!</li>"
+    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo "<li>iptables: VPN tunnel IFO rules are corrupted!</li>"
+    [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo "<li>iptables: WAN interface IFO rules are corrupted!</li>"
+    [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo "<li>iptables: WAN interface ($WAN_IF) IFO rules are missing!</li>"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra engine IFO rules were found (likely from an old interface)!</li>"
+    echo '</ul>'
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo -ne '\033[1;35mWarnings:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_WN)" || echo ''
+    echo '<h2>Warnings:</h2>'
+    echo '<ul>'
     case "$((_WN&WN_BL_FILE_NTLD))" in
-      $WN_BL_FILE_DIFF) echo -e "\033[35m- blocklist set is different than file.\033[0m";;
-      $WN_BL_FILE_MISS) echo -e "\033[35m- blocklist is set but file is missing.\033[0m";;
-      $WN_BL_FILE_NTLD) echo -e "\033[35m- no blocklist is set but file exists.\033[0m";;
+      $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
+      $WN_BL_FILE_MISS) echo "<li>blocklist is set but file is missing.</li>";;
+      $WN_BL_FILE_NTLD) echo "<li>no blocklist is set but file exists.</li>";;
     esac
     case "$((_WN&WN_WL_FILE_NTLD))" in
-      $WN_WL_FILE_DIFF) echo -e "\033[35m- whitelist set is different than file.\033[0m";;
-      $WN_WL_FILE_MISS) echo -e "\033[35m- whitelist is set but file is missing.\033[0m";;
-      $WN_WL_FILE_NTLD) echo -e "\033[35m- no whitelist is set but file exists.\033[0m";;
+      $WN_WL_FILE_DIFF) echo "<li>whitelist set is different than file.</li>";;
+      $WN_WL_FILE_MISS) echo "<li>whitelist is set but file is missing.</li>";;
+      $WN_WL_FILE_NTLD) echo "<li>no whitelist is set but file exists.</li>";;
     esac
-    [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel ($TUN_IF) IFO rules are missing!\033[0m"
-    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
+    [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
+    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
+    echo '</ul>'
   fi
  
   [ "$VERBOSE" ] || return 0
@@ -271,3 +188,5 @@ status() {
     done
   fi
 }
+
+status
