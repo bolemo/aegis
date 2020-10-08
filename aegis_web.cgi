@@ -13,7 +13,7 @@ status() {
     echo -n "<li>'$SC_NAME' is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-    echo -ne '.</li>\n<li>Filtering $BL_NB IP adresses.</li>"
+    echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
   else
     echo "<li><strong>Something is not right!</strong></li>"
