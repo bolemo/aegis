@@ -3,11 +3,12 @@
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
 if [ $1 ] && [ $1 = '_env' ]; then
-   IFS=;while read LINE
-   do [ "$LINE" = ': ENV EOF' ] && break; echo "$LINE"
+   IFS=;_NULL='>/dev/null';while read LINE
+   do case "$LINE" in; ': ENV EOF') && break;; ': ENV BEGIN') _ECHO='';; *) echo "$LINE" $_NULL;; esac
    done<$0
    exit
 fi
+: ENV BEGIN
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 command -v iprange>/dev/null 2>&1 || [ -e /root/.profile ] && source /root/.profile
