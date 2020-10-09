@@ -89,7 +89,6 @@ status() {
     INFO_FROM=$((INFO&INFO_FROM_MASK))
     INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
     INFO_IPT=$(((INFO>>10)&INFO_IPT_MASK))
-    echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
