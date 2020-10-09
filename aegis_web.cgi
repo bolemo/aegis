@@ -8,9 +8,9 @@ status() {
   echo '<h2>Status:</h2>'
   echo '<ul>'
   if [ $((_CK+_PB)) -eq 0 ]; then
-    echo "<li>'$SC_NAME' is not active; Settings are clean.</li>"
+    echo "<li>Aegis is not active; Settings are clean.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-    echo -n "<li>'$SC_NAME' is set and active"
+    echo -n "<li>Aegis is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
