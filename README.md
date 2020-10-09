@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.2.0
+1.2.2
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -67,11 +67,11 @@ To upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
-* `restart` - setup ipset and iptables then restarts internal firewall
-* `update_set` - generates `aegis-blocklist.netset` from servers in `aegis.sources`
-* `load_set` - loads `aegis-blocklist.netset` into ipset then restarts internal firewall
-* `update` - update_set then load_set [probably what you want to use]
-* `clean` - clean ipset and iptables rules from setup created by this script
+* `restart` - restarts internal firewall and aegis engine
+* `update_set` - updates set from servers in `aegis.sources`
+* `load_set` - reloads aegis engine with last generated set
+* `update` - updates set then reloads aegis engine with it [probably what you want to use]
+* `clean` - removes aegis engine from internal firewall and restarts it
 * `help` - displays help
 * `info` - displays info on this script
 * `status` - displays status
@@ -79,9 +79,12 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `upgrade` - download and install latest version
 
 ### Options:
-* `-v` - verbose mode
-* `-html` - sends output to router's web: http://routerlogin.net/bolemo/aegis.htm
+* `-v` - verbose mode (level 1)
+* `-vv` - verbose mode (level 2)
+* `-vvv` - verbose mode (level 3)
+* `-q` - quiet mode (no output)
 * `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
+* `-lines=`N - when used with log, will display N lines (N being the number of lines to show)
 * `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
 
 ## Blocklists
