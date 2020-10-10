@@ -77,7 +77,7 @@ status() {
   
   echo '<ul class="collapsibleList">'
 
-  echo '<li><h3><label for="detailed-status">Details status:</label><input type="checkbox" id="detailed-status" /></h3>'
+  echo '<li><label for="detailed-status">Details status:</label><input type="checkbox" id="detailed-status" />'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
