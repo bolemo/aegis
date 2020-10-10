@@ -171,13 +171,13 @@ status() {
   echo '</ul>'
     
   if [ $((_CK+_PB)) -ne 0 ]; then
-    echo -e "\033[1;36miptables:\033[0m"
     echo '<h3>Router rules:</h3>'
     echo '<ul>'
     echo '<li><h4>iptables:</h4>'
     echo '<ul>'
     [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/<\/li>/'
     echo '</ul></li>'
+    echo '<li><h4>ipset:</h4><ul>'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
@@ -185,11 +185,11 @@ status() {
         "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
         *) _NAME="$_SET" ;;
       esac
-      echo "<li><h4>ipset '$_NAME':</h4>"
-      echo "<ul>"
+      echo "<li><h5>$_NAME:</h5><ul>"
       ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/<\/li>/'
-      echo '</ul></li></ul>'
+      echo '</ul></li>'
     done
+    echo '</ul></li></ul>'
   fi
 }
 
