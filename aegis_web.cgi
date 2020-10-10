@@ -169,12 +169,15 @@ status() {
     echo "<li>No status file found.</li>"
   fi
   echo '</ul>'
-  
-  [ "$VERBOSE" -lt 3 ] && return 0
-  
+    
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
-    [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
+    echo '<h3>Router rules:</h3>'
+    echo '<ul>'
+    echo '<li><h4>iptables:</h4>'
+    echo '<ul>'
+    [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/</li>/'
+    echo '</ul></li>'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
@@ -182,8 +185,10 @@ status() {
         "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
         *) _NAME="$_SET" ;;
       esac
-      echo -e "\033[1;36mipset '$_NAME':\033[0m"
-      ipset -L -t $_SET|/bin/sed 's/^/- /'
+      echo "<li><h4>ipset '$_NAME':</h4>"
+      echo "<ul>"
+      ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/</li>/'
+      echo '</ul></li></ul>'
     done
   fi
 }
