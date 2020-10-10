@@ -176,7 +176,7 @@ status() {
     echo '<ul>'
     echo '<li><h4>iptables:</h4>'
     echo '<ul>'
-    [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/</li>/'
+    [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/<\/li>/'
     echo '</ul></li>'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
@@ -187,7 +187,7 @@ status() {
       esac
       echo "<li><h4>ipset '$_NAME':</h4>"
       echo "<ul>"
-      ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/</li>/'
+      ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/<\/li>/'
       echo '</ul></li></ul>'
     done
   fi
