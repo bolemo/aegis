@@ -175,6 +175,7 @@ status() {
     echo '<ul>'
     echo '<li><h4>iptables:</h4>'
     echo '<ul>'
+    _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
     [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/<\/li>/'
     echo '</ul></li>'
     echo '<li><h4>ipset:</h4><ul>'
