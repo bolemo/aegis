@@ -1,5 +1,23 @@
 #!/bin/sh
+# source environment we need from aegis
 eval "$(aegis _env)"
+
+web_css() {
+  echo '<style>
+.collapsibleList li > input + * {
+ display: none;
+}
+.collapsibleList li > input:checked + * {
+ display: block;
+}
+.collapsibleList li > input {
+ display: none;
+}
+.collapsibleList label {
+ cursor: pointer;
+}
+</style>'
+}
 
 status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
@@ -56,8 +74,10 @@ status() {
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
     echo '</ul>'
   fi
- 
-  echo '<h3>Detailed status:</h3>'
+  
+  echo '<ul class="collapsibleList">'
+
+  echo '<li><h3><label for="detailed-status">Details status:</label><input type="checkbox" id="detailed-status" /></h3>'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
@@ -79,7 +99,7 @@ status() {
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "<li>iptables: VPN tunnel IFO rules are set.</li>"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "<li>iptables: WAN interface IFO rules are set.</li>"
   fi
-  echo '</ul>'
+  echo '</ul></li>'
   
   # Status file
   echo '<h3>Aegis engine last launch report:</h3>'
@@ -192,6 +212,9 @@ status() {
     done
     echo '</ul></li></ul>'
   fi
+  
+  echo '</ul>'
 }
 
+web_css
 status
