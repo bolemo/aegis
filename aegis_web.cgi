@@ -3,7 +3,7 @@
 eval "$(aegis _env)"
 
 web_css() {
-  echo '<style>
+  echo "<style>
 .collapsibleList > li {
  list-style: none;
  margin-left: -1em;
@@ -39,7 +39,7 @@ transition: transform .2s ease-out;
 .collapsibleList > li > input:checked + label::before {
 transform: rotate(90deg) translateX(-3px);
 }
-</style>'
+</style>"
 }
 
 status() {
