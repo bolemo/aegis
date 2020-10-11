@@ -229,7 +229,7 @@ status() {
         "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
         *) _NAME="$_SET" ;;
       esac
-      echo "<li><h5>$_NAME:</h5><ul>"
+      echo "<li>$_NAME:<ul>"
       ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/<\/li>/'
       echo '</ul></li>'
     done
