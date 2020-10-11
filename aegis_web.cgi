@@ -4,17 +4,40 @@ eval "$(aegis _env)"
 
 web_css() {
   echo '<style>
-.collapsibleList li > input + * {
+.collapsibleList > li {
+ list-style: none;
+ margin-left: -1em;
+ margin-bottom: 0.5em;
+}
+.collapsibleList > li > input + label + * {
  display: none;
 }
-.collapsibleList li > input:checked + * {
+.collapsibleList > li > input:checked + label + * {
  display: block;
 }
-.collapsibleList li > input {
+.collapsibleList > li > input {
  display: none;
 }
 .collapsibleList label {
+ display: block;
+ font-weight: bold;
+ font-size: 1.2em;
+ margin-bottom: 0.5em;
  cursor: pointer;
+}
+.collapsibleList label::before {
+content: ' ';
+display: inline-block;
+border-top: 5px solid transparent;
+border-bottom: 5px solid transparent;
+border-left: 5px solid currentColor;
+vertical-align: middle;
+margin-right: .7rem;
+transform: translateY(-2px);
+transition: transform .2s ease-out;
+}
+.collapsibleList > li > input:checked + label::before {
+transform: rotate(90deg) translateX(-3px);
 }
 </style>'
 }
@@ -77,7 +100,7 @@ status() {
   
   echo '<ul class="collapsibleList">'
 
-  echo '<li><label for="detailed-status"><h3>Detailed status:</h3></label><input type="checkbox" id="detailed-status" />'
+  echo '<li><input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
@@ -102,7 +125,7 @@ status() {
   echo '</ul></li>'
   
   # Status file
-  echo '<li><label for="launch-report"><h3>Last Aegis engine launch report:</h3></label><input type="checkbox" id="launch-report" />'
+  echo '<li><input type="checkbox" id="launch-report" /><label for="launch-report">Last Aegis engine launch report</label>'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
@@ -191,14 +214,14 @@ status() {
   echo '</ul></li>'
     
   if [ $((_CK+_PB)) -ne 0 ]; then
-    echo '<li><label for="router-rules"><h3>Detailed Aegis router rules:</h3></label><input type="checkbox" id="router-rules" />'
+    echo '<li><input type="checkbox" id="router-rules" /><label for="router-rules">Detailed Aegis router rules</label>'
     echo '<ul>'
-    echo '<li><h4>iptables:</h4>'
+    echo '<li><strong>iptables:</strong>'
     echo '<ul>'
     _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
     [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/<\/li>/'
     echo '</ul></li>'
-    echo '<li><h4>ipset:</h4><ul>'
+    echo '<li><strong>ipset:</strong><ul>'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
