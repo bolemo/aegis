@@ -77,7 +77,7 @@ status() {
   
   echo '<ul class="collapsibleList">'
 
-  echo '<li><label for="detailed-status">Details status:</label><input type="checkbox" id="detailed-status" />'
+  echo '<li><label for="detailed-status"><h3>Detailed status:</h3></label><input type="checkbox" id="detailed-status" />'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
@@ -102,7 +102,7 @@ status() {
   echo '</ul></li>'
   
   # Status file
-  echo '<h3>Aegis engine last launch report:</h3>'
+  echo '<li><label for="launch-report"><h3>Last Aegis engine launch report:</h3></label><input type="checkbox" id="launch-report" />'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
@@ -188,10 +188,10 @@ status() {
   else
     echo "<li>No status file found.</li>"
   fi
-  echo '</ul>'
+  echo '</ul></li>'
     
   if [ $((_CK+_PB)) -ne 0 ]; then
-    echo '<h3>Router rules:</h3>'
+    echo '<li><label for="router-rules"><h3>Detailed Aegis router rules:</h3></label><input type="checkbox" id="router-rules" />'
     echo '<ul>'
     echo '<li><h4>iptables:</h4>'
     echo '<ul>'
@@ -210,7 +210,7 @@ status() {
       ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/<\/li>/'
       echo '</ul></li>'
     done
-    echo '</ul></li></ul>'
+    echo '</ul></li></ul></li>'
   fi
   
   echo '</ul>'
