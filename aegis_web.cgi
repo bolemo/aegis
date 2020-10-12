@@ -15,7 +15,7 @@ h3.error + ul { background-color:#ffe9e6; }
 h3.warning { background-color:Orange; }
 h3.warning + ul { background-color:#fff6e6; }
 h3.more + input + label { background-color:Violet; }
-h3.more + inout + label + ul { background-color:#fce9fc; }
+h3.more + input + label + ul { background-color:#fce9fc; }
 h3.collapsibleList { display: none; }
 h3.collapsibleList + input { display: none; }
 h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
@@ -58,10 +58,9 @@ status() {
   fi
   echo '</ul>'
   
-#  if [ $_PB -ne 0 ]; then
+  if [ $_PB -ne 0 ]; then
     echo '<h3 class="error">Errors</h3>'
     echo '<ul>'
-echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo "<li>ipset: no blocklist is set!</li>"
@@ -76,12 +75,11 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo "<li>iptables: WAN interface ($WAN_IF) IFO rules are missing!</li>"
     [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra engine IFO rules were found (likely from an old interface)!</li>"
     echo '</ul>'
- # fi
+  fi
   
-#  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
+  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo '<h3 class="warning">Warnings</h3>'
     echo '<ul>'
-echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
       $WN_BL_FILE_MISS) echo "<li>blocklist is set but file is missing.</li>";;
@@ -95,7 +93,7 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
     echo '</ul>'
-#  fi
+  fi
   
   echo '<h3 class="more collapsibleList"></h3>'
   echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
