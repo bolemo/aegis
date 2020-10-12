@@ -96,7 +96,7 @@ status() {
     echo '</ul>'
   fi
   
-  echo '<h3 class="more collapsibleList"></h3>'
+  echo '<h3 class="more collapsibleList">Detailed status</h3>'
   echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
@@ -121,7 +121,7 @@ status() {
   echo '</ul>'
   
   # Status file
-  echo '<h3 class="more collapsibleList"></h3>'
+  echo '<h3 class="more collapsibleList">Last Aegis engine launch report</h3>'
   echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last Aegis engine launch report</label>'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
