@@ -235,6 +235,7 @@ status() {
   fi
 }
 
+# MAIN
 echo "<!DOCTYPE html>
 <html>
 <head>
