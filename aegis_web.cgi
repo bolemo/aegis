@@ -5,14 +5,15 @@ eval "$(aegis _env)"
 web_css() {
   echo "<style>
 body { font-family: Arial, Helvetica, sans-serif; }
-.running { background-color:#b3e6c9; }
-.off { background-color:LightGrey; }
-.error { background-color:Tomato; }
-.errorLight { background-color:#ffe9e6; }
-.warning { background-color:Orange; }
-.warningLight { background-color:#fff6e6; }
-.more { background-color:Violet; }
-.moreLight { background-color:#fce9fc; }
+#status.running { background-color:#b3e6c9; }
+#status.off { background-color:LightGrey; }
+#status.error { background-color:#ffa899; }
+h3.error { background-color:Tomato; }
+h3.error + ul { background-color:#ffe9e6; }
+h3.warning { background-color:Orange; }
+h3.warning + ul { background-color:#fff6e6; }
+label.more { background-color:Violet; }
+label.more + ul { background-color:#fce9fc; }
 h3 { padding-left: 1em; margin: 0; }
 h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
 .collapsibleList > li { list-style: none; margin-left: -2.5em; margin-bottom: 0.5em; }
@@ -42,24 +43,24 @@ status() {
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
   echo '<h2>Aegis Status:</h2>'
   if [ $((_CK+_PB)) -eq 0 ]; then
-    echo '<ul class="off">'
+    echo '<ul id="status" class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-    echo '<ul class="running">'
+    echo '<ul id="status" class="running">'
     echo -n "<li>Aegis is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
   else
-    echo '<ul class="errorLight">'
+    echo '<ul id="status" class="error">'
     echo "<li><strong>Something is not right!</strong></li>"
   fi
   echo '</ul>'
   
 #  if [ $_PB -ne 0 ]; then
     echo '<h3 class="error">Errors</h3>'
-    echo '<ul class="errorLight">'
+    echo '<ul>'
 echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
@@ -79,7 +80,7 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
   
 #  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo '<h3 class="warning">Warnings</h3>'
-    echo '<ul class="warningLight">'
+    echo '<ul>'
 echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
@@ -99,7 +100,7 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
   echo '<ul class="collapsibleList">'
 
   echo '<li><input type="checkbox" id="detailed-status" /><label class="more" for="detailed-status">Detailed status</label>'
-  echo '<ul class="moreLight">'
+  echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
   # dates
