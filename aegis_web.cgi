@@ -98,10 +98,10 @@ status() {
   echo '<h3 class="more collapsibleList"></h3>'
   echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
   echo '<ul>'
+  echo "<li>This status was generated: $(/bin/date +'%Y-%m-%d %X') (router time)</li>"
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
   # dates
-  echo "<li>Actual router time: $(/bin/date +'%Y-%m-%d %X')</li>"
   [ -e "$BL_FILE" ] && echo "<li>Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
   [ -e "$WL_FILE" ] && echo "<li>Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
   if [ $_CK -ne 0 ]; then
@@ -235,5 +235,13 @@ status() {
   fi
 }
 
-web_css
-status
+echo "<!DOCTYPE html>
+<html>
+<head>
+<title>Aegis status</title>
+$(web_css)
+</head>
+<body>
+$(status)
+</body>
+</html>"
