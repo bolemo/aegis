@@ -5,10 +5,12 @@ eval "$(aegis _env)"
 web_css() {
   echo "<style>
 body { font-family: Arial, Helvetica, sans-serif; }
+.running { background-color:MediumSeaGreen; }
+.off { background-color:LightGrey; }
 .error { background-color:Tomato; }
 .warning { background-color:Orange; }
-.more { background-color:MediumSeaGreen; }
-.collapsibleList > li { list-style: none; margin-left: -2em; margin-bottom: 0.5em; }
+.more { background-color:Violet; }
+.collapsibleList > li { list-style: none; padding-left: 1em; margin-left: -2em; margin-bottom: 0.5em; }
 .collapsibleList > li > input + label + * { display: none; }
 .collapsibleList > li > input:checked + label + * { display: block; }
 .collapsibleList > li > input { display: none; }
@@ -33,16 +35,18 @@ status() {
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
   echo '<h2>Aegis Status:</h2>'
-  echo '<ul>'
   if [ $((_CK+_PB)) -eq 0 ]; then
+    echo '<ul class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
+    echo '<ul class="running">'
     echo -n "<li>Aegis is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
   else
+    echo '<ul class="error">'
     echo "<li><strong>Something is not right!</strong></li>"
   fi
   echo '</ul>'
@@ -67,7 +71,7 @@ status() {
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo '<h3 class="error">Warnings:</h3>'
+    echo '<h3 class="warning">Warnings:</h3>'
     echo '<ul>'
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
@@ -111,7 +115,7 @@ status() {
   echo '</ul></li>'
   
   # Status file
-  echo '<li><input type="checkbox" id="launch-report" /><label for="launch-report">Last Aegis engine launch report</label>'
+  echo '<li><input type="checkbox" id="launch-report" /><label class="more" for="launch-report">Last Aegis engine launch report</label>'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
@@ -200,7 +204,7 @@ status() {
   echo '</ul></li>'
     
   if [ $((_CK+_PB)) -ne 0 ]; then
-    echo '<li><input type="checkbox" id="router-rules" /><label for="router-rules">Detailed Aegis router rules</label>'
+    echo '<li><input type="checkbox" id="router-rules" /><label class="more" for="router-rules">Detailed Aegis router rules</label>'
     echo '<ul>'
     echo '<li><strong>iptables:</strong>'
     echo '<ul>'
