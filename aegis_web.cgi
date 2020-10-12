@@ -8,21 +8,21 @@ body { font-family: Arial, Helvetica, sans-serif; }
 #status.running { background-color:#b3e6c9; }
 #status.off { background-color:LightGrey; }
 #status.error { background-color:#ffa899; }
+h3 { padding-left: 1em; margin: 0; }
+h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
 h3.error { background-color:Tomato; }
 h3.error + ul { background-color:#ffe9e6; }
 h3.warning { background-color:Orange; }
 h3.warning + ul { background-color:#fff6e6; }
-label.more { background-color:Violet; }
-label.more + ul { background-color:#fce9fc; }
-h3 { padding-left: 1em; margin: 0; }
-h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
-.collapsibleList > li { list-style: none; margin-left: -2.5em; margin-bottom: 0.5em; }
-.collapsibleList > li > input + label + * { display: none; }
-.collapsibleList > li > input:checked + label + * { display: block; }
-.collapsibleList > li > input { display: none; }
-.collapsibleList > li > ul { padding-top: 0.5em; }
-.collapsibleList label { display: block; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
-.collapsibleList label::before {
+h3.more + input + label { background-color:Violet; }
+h3.more + inout + label + ul { background-color:#fce9fc; }
+h3.collapsibleList { display: none; }
+h3.collapsibleList + input { display: none; }
+h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
+h3.collapsibleList + input:checked + label { margin-bottom: 0; }
+h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
+h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
+h3.collapsibleList + input + label::before {
 content: ' ';
 display: inline-block;
 border-top: 5px solid transparent;
@@ -33,7 +33,7 @@ margin-right: .7rem;
 transform: translateY(-2px);
 transition: transform .2s ease-out;
 }
-.collapsibleList > li > input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
+h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
 </style>"
 }
 
@@ -97,9 +97,8 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     echo '</ul>'
 #  fi
   
-  echo '<ul class="collapsibleList">'
-
-  echo '<li><input type="checkbox" id="detailed-status" /><label class="more" for="detailed-status">Detailed status</label>'
+  echo '<h3 class="more collapsibleList"></h3>'
+  echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
@@ -121,10 +120,11 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "<li>iptables: VPN tunnel IFO rules are set.</li>"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "<li>iptables: WAN interface IFO rules are set.</li>"
   fi
-  echo '</ul></li>'
+  echo '</ul>'
   
   # Status file
-  echo '<li><input type="checkbox" id="launch-report" /><label class="more" for="launch-report">Last Aegis engine launch report</label>'
+  echo '<h3 class="more collapsibleList"></h3>'
+  echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last Aegis engine launch report</label>'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
@@ -210,10 +210,11 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
   else
     echo "<li>No status file found.</li>"
   fi
-  echo '</ul></li>'
+  echo '</ul>'
     
   if [ $((_CK+_PB)) -ne 0 ]; then
-    echo '<li><input type="checkbox" id="router-rules" /><label class="more" for="router-rules">Detailed Aegis router rules</label>'
+    echo '<h3 class="more collapsibleList"></h3>'
+    echo '<input type="checkbox" id="router-rules" /><label for="router-rules">Detailed Aegis router rules</label>'
     echo '<ul>'
     echo '<li><strong>iptables:</strong>'
     echo '<ul>'
@@ -232,10 +233,8 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
       ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/<\/li>/'
       echo '</ul></li>'
     done
-    echo '</ul></li></ul></li>'
+    echo '</ul></li></ul>'
   fi
-  
-  echo '</ul>'
 }
 
 web_css
