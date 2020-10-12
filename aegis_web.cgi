@@ -10,7 +10,7 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .error { background-color:Tomato; }
 .warning { background-color:Orange; }
 .more { background-color:Violet; }
-.collapsibleList > li { list-style: none; padding-left: 1em; margin-left: -2.5em; margin-bottom: 0.5em; }
+.collapsibleList > li { list-style: none; margin-left: -2.5em; margin-bottom: 0.5em; }
 .collapsibleList > li > input + label + * { display: none; }
 .collapsibleList > li > input:checked + label + * { display: block; }
 .collapsibleList > li > input { display: none; }
@@ -52,7 +52,7 @@ status() {
   echo '</ul>'
   
 #  if [ $_PB -ne 0 ]; then
-    echo '<h3 class="error">Errors:</h3>'
+    echo '<h3 class="error"> Errors</h3>'
     echo '<ul>'
 echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
@@ -72,7 +72,7 @@ echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
  # fi
   
 #  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo '<h3 class="warning">Warnings:</h3>'
+    echo '<h3 class="warning"> Warnings</h3>'
     echo '<ul>'
 echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     case "$((_WN&WN_BL_FILE_NTLD))" in
