@@ -10,11 +10,11 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .error { background-color:Tomato; }
 .warning { background-color:Orange; }
 .more { background-color:Violet; }
-.collapsibleList > li { list-style: none; padding-left: 1em; margin-left: -2em; margin-bottom: 0.5em; }
+.collapsibleList > li { list-style: none; padding-left: 1em; margin-left: -2.5em; margin-bottom: 0.5em; }
 .collapsibleList > li > input + label + * { display: none; }
 .collapsibleList > li > input:checked + label + * { display: block; }
 .collapsibleList > li > input { display: none; }
-.collapsibleList label { display: block; font-weight: bold; font-size: 1.2em; margin-bottom: 0.5em; cursor: pointer; }
+.collapsibleList label { display: block; font-weight: bold; font-size: 1.2em; padding-left: 1em; margin-bottom: 0.5em; cursor: pointer; }
 .collapsibleList label::before {
 content: ' ';
 display: inline-block;
@@ -51,9 +51,10 @@ status() {
   fi
   echo '</ul>'
   
-  if [ $_PB -ne 0 ]; then
+#  if [ $_PB -ne 0 ]; then
     echo '<h3 class="error">Errors:</h3>'
     echo '<ul>'
+echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo "<li>ipset: no blocklist is set!</li>"
@@ -68,11 +69,12 @@ status() {
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo "<li>iptables: WAN interface ($WAN_IF) IFO rules are missing!</li>"
     [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra engine IFO rules were found (likely from an old interface)!</li>"
     echo '</ul>'
-  fi
+ # fi
   
-  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
+#  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo '<h3 class="warning">Warnings:</h3>'
     echo '<ul>'
+echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
       $WN_BL_FILE_MISS) echo "<li>blocklist is set but file is missing.</li>";;
@@ -86,7 +88,7 @@ status() {
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
     echo '</ul>'
-  fi
+#  fi
   
   echo '<ul class="collapsibleList">'
 
