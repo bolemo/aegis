@@ -42,7 +42,7 @@ status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo "<h2>Aegis Status <span style="color: DarkGrey; font-weight: normal;">@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
+  echo "<h2>Aegis Status <span style='color: DarkGrey; font-weight: normal;'>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
