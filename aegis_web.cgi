@@ -5,9 +5,10 @@ eval "$(aegis _env)"
 web_css() {
   echo "<style>
 body { font-family: Arial, Helvetica, sans-serif; }
-#status.running { background-color:#b3e6c9; }
-#status.off { background-color:LightGrey; }
-#status.error { background-color:#ffa899; }
+#status.running { background-color:#b3e6c9; border: solid 1em MediumSeaGreen; }
+#status.off { background-color:LightGrey; border: solid 1em DarkGrey; }
+#status.error { background-color:#ffa899; border: solid 1em Tomato; }
+#status li { margin-left: -1em; }
 h3 { padding-left: 1em; margin: 0; }
 h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
 h3.error { background-color:Tomato; }
@@ -41,7 +42,7 @@ status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo '<h2>Aegis Status:</h2>'
+  echo "<h2>Aegis Status @ $(/bin/date +'%Y-%m-%d %X') (router time)</h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
@@ -98,7 +99,6 @@ status() {
   echo '<h3 class="more collapsibleList"></h3>'
   echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
   echo '<ul>'
-  echo "<li>This status was generated: $(/bin/date +'%Y-%m-%d %X') (router time)</li>"
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
   # dates
