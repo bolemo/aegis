@@ -5,8 +5,7 @@ eval "$(aegis _env)"
 web_css() {
   echo "<style>
 body { font-family: Arial, Helvetica, sans-serif; }
-.running { background-color:MediumSeaGreen; }
-.runningLight { background-color:#ecf9f2; }
+.running { background-color:#b3e6c9; }
 .off { background-color:LightGrey; }
 .error { background-color:Tomato; }
 .errorLight { background-color:#ffe9e6; }
@@ -14,12 +13,14 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .warningLight { background-color:#fff6e6; }
 .more { background-color:Violet; }
 .moreLight { background-color:#fce9fc; }
-h3 { padding-left: 1em; }
+h3 { padding-left: 1em; margin: 0; }
+h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
 .collapsibleList > li { list-style: none; margin-left: -2.5em; margin-bottom: 0.5em; }
 .collapsibleList > li > input + label + * { display: none; }
 .collapsibleList > li > input:checked + label + * { display: block; }
 .collapsibleList > li > input { display: none; }
-.collapsibleList label { display: block; font-weight: bold; font-size: 1.2em; padding-left: 1em; margin-bottom: 0.5em; cursor: pointer; }
+.collapsibleList > li > ul { padding-top: 0.5em; }
+.collapsibleList label { display: block; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
 .collapsibleList label::before {
 content: ' ';
 display: inline-block;
@@ -44,7 +45,7 @@ status() {
     echo '<ul class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-    echo '<ul class="runningLight">'
+    echo '<ul class="running">'
     echo -n "<li>Aegis is set and active"
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
