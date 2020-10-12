@@ -4,27 +4,15 @@ eval "$(aegis _env)"
 
 web_css() {
   echo "<style>
-.collapsibleList > li {
- list-style: none;
- margin-left: -1em;
- margin-bottom: 0.5em;
-}
-.collapsibleList > li > input + label + * {
- display: none;
-}
-.collapsibleList > li > input:checked + label + * {
- display: block;
-}
-.collapsibleList > li > input {
- display: none;
-}
-.collapsibleList label {
- display: block;
- font-weight: bold;
- font-size: 1.2em;
- margin-bottom: 0.5em;
- cursor: pointer;
-}
+body { font-family: Arial, Helvetica, sans-serif; }
+.error { background-color:Tomato; }
+.warning { background-color:Orange; }
+.more { background-color:MediumSeaGreen; }
+.collapsibleList > li { list-style: none; margin-left: -2em; margin-bottom: 0.5em; }
+.collapsibleList > li > input + label + * { display: none; }
+.collapsibleList > li > input:checked + label + * { display: block; }
+.collapsibleList > li > input { display: none; }
+.collapsibleList label { display: block; font-weight: bold; font-size: 1.2em; margin-bottom: 0.5em; cursor: pointer; }
 .collapsibleList label::before {
 content: ' ';
 display: inline-block;
@@ -36,9 +24,7 @@ margin-right: .7rem;
 transform: translateY(-2px);
 transition: transform .2s ease-out;
 }
-.collapsibleList > li > input:checked + label::before {
-transform: rotate(90deg) translateX(-3px);
-}
+.collapsibleList > li > input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
 </style>"
 }
 
@@ -46,7 +32,7 @@ status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo '<h2>Status:</h2>'
+  echo '<h2>Aegis Status:</h2>'
   echo '<ul>'
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo "<li>Aegis is not active; Settings are clean.</li>"
@@ -62,7 +48,7 @@ status() {
   echo '</ul>'
   
   if [ $_PB -ne 0 ]; then
-    echo '<h3>Errors:</h3>'
+    echo '<h3 class="error">Errors:</h3>'
     echo '<ul>'
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
@@ -81,7 +67,7 @@ status() {
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo '<h3>Warnings:</h3>'
+    echo '<h3 class="error">Warnings:</h3>'
     echo '<ul>'
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
@@ -100,7 +86,7 @@ status() {
   
   echo '<ul class="collapsibleList">'
 
-  echo '<li><input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
+  echo '<li><input type="checkbox" id="detailed-status" /><label class="more" for="detailed-status">Detailed status</label>'
   echo '<ul>'
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
