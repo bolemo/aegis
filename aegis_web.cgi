@@ -209,30 +209,6 @@ status() {
     echo "<li>No status file found.</li>"
   fi
   echo '</ul>'
-    
-  if [ $((_CK+_PB)) -ne 0 ]; then
-    echo '<h3 class="more collapsibleList"></h3>'
-    echo '<input type="checkbox" id="router-rules" /><label for="router-rules">Detailed Aegis router rules</label>'
-    echo '<ul>'
-    echo '<li><strong>iptables:</strong>'
-    echo '<ul>'
-    _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
-    [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/bin/sed 's/^/<li>iptables / ; s/$/<\/li>/'
-    echo '</ul></li>'
-    echo '<li><strong>ipset:</strong><ul>'
-    ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
-      case "$_SET" in
-        "$IPSET_BL_NAME") _NAME='blocklist' ;;
-        "$IPSET_WL_NAME") _NAME='whitelist' ;;
-        "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
-        *) _NAME="$_SET" ;;
-      esac
-      echo "<li>$_NAME:<ul>"
-      ipset -L -t $_SET|/bin/sed 's/^/<li> / ; s/$/<\/li>/'
-      echo '</ul></li>'
-    done
-    echo '</ul></li></ul>'
-  fi
 }
 
 # MAIN
