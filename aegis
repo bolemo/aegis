@@ -374,7 +374,8 @@ _pm() {
 : ENV START
 # ---------------------------------------------
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
-SC_PATH="$(cd "$(\ls -l "$SC_NICEPATH"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
+#SC_PATH="$(cd "$(\ls -l "$SC_NICEPATH"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
+SC_PATH="$(readlink -fn $SC_NICEPATH)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.blacklist"
 CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.whitelist"
