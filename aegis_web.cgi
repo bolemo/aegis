@@ -1,6 +1,6 @@
 #!/bin/sh
 # source environment we need from aegis
-eval "$(aegis _env)"
+eval "$(/opt/bolemo/scripts/aegis _env)"
 
 web_css() {
   echo "<style>
