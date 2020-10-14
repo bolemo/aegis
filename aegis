@@ -3,7 +3,7 @@
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
 if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
-  do case "$LINE" in ': ENV START') _ECHO=1;; ': ENV STOP') _ECHO='';; ': ENV EOF') break;; 'SC_PATH='*) eval "$LINE"; echo "SC_PATH='$SC_PATH'";; *) [ $_ECHO ] && echo "$LINE";; esac
+  do case "$LINE" in ': ENV START') _ECHO=1;; ': ENV STOP') _ECHO='';; ': ENV EOF') break;; SC_PATH*) echo "SC_PATH='$(cd "$(\ls -l"$0"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)'";; *) [ $_ECHO ] && echo "$LINE";; esac
   done<$0; exit; fi
 # ---------------------------------------------
 : ENV START
