@@ -1,42 +1,8 @@
 #!/bin/sh
+[ $QUERY_STRING ] && CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\)/\1/') || CMD=$1
+
 # source environment we need from aegis
 eval "$(/opt/bolemo/scripts/aegis _env)"
-
-web_css() {
-  echo "<style>
-body { font-family: Arial, Helvetica, sans-serif; }
-#status.running { background-color:#b3e6c9; border: solid 1em MediumSeaGreen; }
-#status.off { background-color:LightGrey; border: solid 1em DarkGrey; }
-#status.error { background-color:#ffa899; border: solid 1em Tomato; }
-#status li { margin-left: -1em; }
-h3 { padding-left: 1em; margin: 0; }
-h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
-h3.error { background-color:Tomato; }
-h3.error + ul { background-color:#ffe9e6; }
-h3.warning { background-color:Orange; }
-h3.warning + ul { background-color:#fff6e6; }
-h3.more + input + label { background-color:Violet; }
-h3.more + input + label + ul { background-color:#fce9fc; }
-h3.collapsibleList { display: none; }
-h3.collapsibleList + input { display: none; }
-h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
-h3.collapsibleList + input:checked + label { margin-bottom: 0; }
-h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
-h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
-h3.collapsibleList + input + label::before {
-content: ' ';
-display: inline-block;
-border-top: 5px solid transparent;
-border-bottom: 5px solid transparent;
-border-left: 5px solid currentColor;
-vertical-align: middle;
-margin-right: .7rem;
-transform: translateY(-2px);
-transition: transform .2s ease-out;
-}
-h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
-</style>"
-}
 
 status() {
   set -- $(/opt/bolemo/scripts/aegis _status)
@@ -212,13 +178,8 @@ status() {
 }
 
 # MAIN
-echo "<!DOCTYPE html>
-<html>
-<head>
-<title>Aegis status</title>
-$(web_css)
-</head>
-<body>
-$(status)
-</body>
-</html>"
+case $CMD in
+  info) info;;
+  status) status;;
+esac
+return
