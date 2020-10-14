@@ -1,5 +1,6 @@
 #! /bin/sh
 # ----------- ENVIRONMENT VARIABLES -----------
+_SELF=$0
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
 if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
@@ -373,7 +374,7 @@ _pm() {
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
-SC_PATH="$(cd "$(\ls -l "$0"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
+SC_PATH="$(cd "$(\ls -l "$_SELF"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.blacklist"
