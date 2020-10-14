@@ -370,6 +370,9 @@ _pm() {
 #    ADDITIONNAL GLOBALS NEEDED WHEN NOT CALLED FROM FIREWALL-START
 #
 ###############################################
+# ---------------------------------------------
+: ENV START
+# ---------------------------------------------
 SC_PATH="$(cd "$(\ls -l "$0"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
@@ -388,6 +391,9 @@ if echo "$SC_PATH"|/bin/grep -q '^/tmp/mnt/'; then
 else
   EXT_DRIVE=''
 fi
+# ---------------------------------------------
+: ENV STOP
+# ---------------------------------------------
 
 ###############################################
 #
