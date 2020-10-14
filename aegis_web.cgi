@@ -177,6 +177,11 @@ status() {
   echo '</ul>'
 }
 
+info() {
+echo "version $SC_VERS<br />"
+  [ "$EXT_DRIVE" ] && echo 'external drive' || echo 'internal drive'
+}
+
 # MAIN
 case $CMD in
   info) info;;
