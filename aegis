@@ -1232,6 +1232,9 @@ case "$PARAM" in
   'upgrade') upgrade ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
+  '_restart') VERBOSE=1; init; fw_restart ;;
+  '_update') VERBOSE=1; init; set_ipset ;;
+  '_clean') VERBOSE=1; clean ;;
   
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
