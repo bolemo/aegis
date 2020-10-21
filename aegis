@@ -477,6 +477,9 @@ clean_path() {
 #    FUNCTIONS DEPENDING ON BOLEMO GIT REPO
 #
 ###############################################
+# ---------------------------------------------
+: ENV START
+# ---------------------------------------------
 BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
 SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
 SC_MAIN_REPO="$SC_BASE_REPO/master"
@@ -485,6 +488,10 @@ SC_DEV_REPO="$SC_BASE_REPO/dev"
 last_avail_version() {
   /usr/bin/wget -qO- "$SC_MAIN_REPO/version"
 }
+
+# ---------------------------------------------
+: ENV STOP
+# ---------------------------------------------
 
 upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
