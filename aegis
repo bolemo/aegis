@@ -493,6 +493,32 @@ last_avail_version() {
 : ENV STOP
 # ---------------------------------------------
 
+do_upgrade() {
+echo "- Downloading:"
+  DL_PATH="/tmp/$SC_NAME.dl"
+  _PROG='--show-progress';
+  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
+  echo -ne "\033[35m"
+  if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
+    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
+    \/bin/mv "$DL_PATH" "$SC_NICEPATH"
+    /bin/chmod +x "$SC_NICEPATH"
+    echo -e "\033[0m- Script installed to $SC_NICEPATH"
+  else
+    echo -ne "\033[0m"
+    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
+    /bin/rm -f "$DL_PATH"
+    exit 1
+  fi
+
+  exit 0
+}
+
+_upgrade() {
+  UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"; UPGRADE_VER="$SC_LAST_VERS"
+  do_upgrade
+}
+
 upgrade() {
   echo -e "\033[1;36mUpgrading:\033[0m"
   echo "- Version installed: $SC_VERS"
@@ -522,25 +548,7 @@ upgrade() {
     echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
     case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
   fi
-  echo "- Downloading:"
-
-  DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress';
-  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
-    \/bin/mv "$DL_PATH" "$SC_NICEPATH"
-    /bin/chmod +x "$SC_NICEPATH"
-    echo -e "\033[0m- Script installed to $SC_NICEPATH"
-  else
-    echo -ne "\033[0m"
-    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
-    /bin/rm -f "$DL_PATH"
-    exit 1
-  fi
-
-  exit 0
+  do_upgrade
 }
 
 # get default sources list (from bolemo github)
@@ -1242,6 +1250,7 @@ case "$PARAM" in
   '_restart') VERBOSE=1; init; fw_restart ;;
   '_update') VERBOSE=1; init; update_iplist; set_ipset ;;
   '_clean') VERBOSE=1; clean ;;
+  '_upgrade') _upgrade ;;
   
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
