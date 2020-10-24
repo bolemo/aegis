@@ -1302,7 +1302,7 @@ case "$PARAM" in
   'info') info ;;
   'log') [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   'upgrade') upgrade ;;
-  'web') [ -z "${ARGS##* install *}" ] && install_web; [ -z "${ARGS##* remove *}" ] && clean_web ;;
+  'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
   '_restart') VERBOSE=1; init; fw_restart ;;
