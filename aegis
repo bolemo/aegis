@@ -579,6 +579,14 @@ check_web() {
 }
 
 install_web() {
+  if [ ! UPGRADE_URL ]; then
+    if [ "$DEVMODE" ]; then
+      echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
+      UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
+    else
+      UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
+    fi
+  fi
   echo "- Downloading web compagnon:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _PROG='--show-progress';
