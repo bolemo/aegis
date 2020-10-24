@@ -510,7 +510,7 @@ echo "- Downloading:"
     /bin/rm -f "$DL_PATH"
     exit 1
   fi
-
+  [ check_web ] && install_web
   exit 0
 }
 
@@ -564,6 +564,58 @@ get_def_srclst() {
       exit 1
     fi
   fi
+}
+
+###############################################
+#
+#    AEGIS WEB FUNCTIONS
+#
+###############################################
+check_web() {
+  [ -s "/www/bolemo" ] || return 1
+  [ -f "/www/bolemo/aegis.htm" ] || return 1
+  [ -x "/www/bolemo/cgi-bin/aegis_web.cgi" ] || return 1
+  return 0
+}
+
+install_web() {
+  echo "- Downloading web compagnon:"
+  DL_PATH="/tmp/$SC_NAME.dl"
+  _PROG='--show-progress';
+  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
+  echo -ne "\033[35m"
+  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm"; then
+    \/bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
+    echo -e "\033[0m- Web compagnon htm file installed to $WWW_PATH/$SC_NAME.htm"
+  else
+    echo -ne "\033[0m"
+    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
+    /bin/rm -f "$DL_PATH"
+    exit 1
+  fi
+  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
+    \/bin/mv "$DL_PATH" "$WWW_PATH/cgi/bin/${SC_NAME}_web.cgi"
+    /bin/chmod +x "$WWW_PATH/cgi/bin/${SC_NAME}_web.cgi"
+    echo -e "\033[0m- Web compagnon cgi file installed to $WWW_PATH/cgi/bin/${SC_NAME}_web.cgi"
+  else
+    echo -ne "\033[0m"
+    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
+    /bin/rm -f "$DL_PATH"
+    exit 1
+  fi
+  if ! check_web; then
+    [ -d "$WWW_PATH" ] && mkdir "$WWW_PATH"
+    [ -d "$WWW_PATH/cgi-bin" ] && mkdir "$WWW_PATH/cgi-bin"
+    /bin/rm -f "/www/bolemo" 2>/dev/null
+    /bin/ln -s "$WWW_PATH" /www/bolemo
+    echo "- Web compagnon paths were repaired."
+  fi
+  exit 0
+}
+
+clean_web() {
+  /bin/rm -f "/www/bolemo" 2>/dev/null
+  /bin/rm -f "$WWW_PATH/${SC_NAME}*" 2>/dev/null
 }
 
 ###############################################
@@ -672,6 +724,7 @@ clean() {
   clean_firewall_start
   clean_postmount
   [ "$RM_SYMLINK" ] && check_path && clean_path
+  [ "$RM_WEB" ] && check_web && clean_web
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
@@ -777,6 +830,8 @@ info() {
   fi
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
+  # check web compagnon
+  [ check_web ] && echo '- Web compagnon is installed.' || echo '- Web compagnon is not installed.'
 }
 
 #---------------------------- _STATUS ----------------------------
@@ -1226,6 +1281,7 @@ esac
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
+[ -z "${ARGS##* -rm-web *}" ] && RM_WEB=1
 
 [ "$QUIET" ] && exec>/dev/null
 
@@ -1245,6 +1301,7 @@ case "$PARAM" in
   'info') info ;;
   'log') [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   'upgrade') upgrade ;;
+  'web') [ -z "${ARGS##* install *}" ] && install_web; [ -z "${ARGS##* remove *}" ] clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
   '_restart') VERBOSE=1; init; fw_restart ;;
