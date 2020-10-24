@@ -568,7 +568,7 @@ get_def_srclst() {
 
 ###############################################
 #
-#    AEGIS WEB FUNCTIONS
+#    AEGIS WEB RELATED FUNCTIONS
 #
 ###############################################
 check_web() {
@@ -593,6 +593,7 @@ install_web() {
     /bin/rm -f "$DL_PATH"
     exit 1
   fi
+  echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
     \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
