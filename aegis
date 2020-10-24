@@ -623,8 +623,9 @@ install_web() {
 }
 
 clean_web() {
-#  /bin/rm -f "/www/bolemo" 2>/dev/null
-  /bin/rm -f "$WWW_PATH/${SC_NAME}*" 2>/dev/null
+  /bin/rm -f "$WWW_PATH/$SC_NAME.htm" 2>/dev/null
+  /bin/rm -f "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi" 2>/dev/null
+  [ "$VERBOSE" ] && echo "- Web Compagnon was removed."
 }
 
 ###############################################
