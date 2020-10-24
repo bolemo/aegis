@@ -579,7 +579,7 @@ check_web() {
 }
 
 install_web() {
-  if [ ! UPGRADE_URL ]; then
+  if [ ! "$UPGRADE_URL" ]; then
     if [ "$DEVMODE" ]; then
       echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
       UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
