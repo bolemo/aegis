@@ -623,7 +623,7 @@ install_web() {
 }
 
 clean_web() {
-  /bin/rm -f "/www/bolemo" 2>/dev/null
+#  /bin/rm -f "/www/bolemo" 2>/dev/null
   /bin/rm -f "$WWW_PATH/${SC_NAME}*" 2>/dev/null
 }
 
