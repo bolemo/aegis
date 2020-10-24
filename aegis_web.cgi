@@ -1,14 +1,23 @@
 #!/bin/sh
-[ $QUERY_STRING ] && CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\)/\1/') || CMD=$1
+if [ $QUERY_STRING ]; then
+  CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
+  ARG=$(echo "$QUERY_STRING"|/bin/sed 's/.*arg=\([^&]*\)/\1/')
+else
+  CMD=$1
+  ARG=$2
+fi
 
-# source environment we need from aegis
-eval "$(/opt/bolemo/scripts/aegis _env)"
+aegis_env() {
+  # source environment we need from aegis
+  eval "$(/opt/bolemo/scripts/aegis _env)"
+}
 
 status() {
+  aegis_env
   set -- $(/opt/bolemo/scripts/aegis _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo "<h2>Aegis Status <span style='color: DarkGrey; font-weight: normal;'>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
+  echo "<h2>Status <span style='color: DarkGrey; font-weight: normal;'>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
@@ -167,8 +176,7 @@ status() {
     elif [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -ne 0 ]; then echo "<li>iptables: WAN interface IFO rules were set.</li>"
     elif [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -ne 0 ]; then echo "<li>iptables: WAN interface IFO rules were kept.</li>"
     fi
-    if [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq $INFO_IPT_TUN_PBM ]; then echo "<li>iptables: VPN tunnel IFO rules had to be reset.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were set.</li>"
+    if [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq $INFO_IPT_TUN_PBM ]; then echo "<li>iptables: VPN tunnel IFO rules had to be reset.</li>"    elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were set.</li>"
     elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were kept.</li>"
     fi
   else
@@ -178,13 +186,107 @@ status() {
 }
 
 info() {
-echo "version $SC_VERS<br />"
-  [ "$EXT_DRIVE" ] && echo 'external drive' || echo 'internal drive'
+  aegis_env
+  _JSON="{\"version\":\"$SC_VERS\""
+  [ "$EXT_DRIVE" ] && _JSON="$_JSON, \"location\":\"external\"" || _JSON="$_JSON, \"location\":\"internal\""
+  SC_LAST_VERS="$(last_avail_version)";
+  if [ "$SC_LAST_VERS" ]; then
+    _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
+    _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
+    if [ $_LOC_VERS -eq $_REM_VERS ]; then _VSTAT=0
+    elif [ $_LOC_VERS -lt $_REM_VERS ]; then _VSTAT=1
+    else _VSTAT=2
+    fi
+  else _VSTAT=3
+  fi
+  _JSON="$_JSON, \"newVersion\":\"$SC_LAST_VERS\", \"versionStatus\":$_VSTAT}"
+  echo "$_JSON"
+}
+
+command() {
+  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log=on' || _LOG='-log=off'
+  case $ARG in
+    restart*) _CMD="aegis _restart $_LOG" ;;
+    update*) _CMD="aegis _update $_LOG" ;;
+    stop*) _CMD="aegis _clean" ;;
+    upgrade) _CMD="aegis _upgrade" ;;
+    'upgrade-restart') _CMD="aegis _upgrade"
+      [ "$(nvram get aegis_log)" = "1" ] && _LOG2='on' || _LOG2='off'
+      _ARG2="restart:$_LOG2" ;;
+  esac
+  eval "/opt/bolemo/scripts/$_CMD"|/bin/sed "s/$(printf '\r')//g ; s/[[:cntrl:]]\[\([^m]*\)m//g ; /^[[:space:]]*$/d"
+  if [ $? = 0 ]; then echo "Success!"; else echo "A problem was encountered."; exit 1; fi;
+  if [ $_ARG2 ]; then ARG="$_ARG2"; _ARG2=''; command; fi;
+}
+
+# _getLog max lines,  key name in syslog, start timestamp, wan interface name, vpn interface name
+_getLog() {
+  _LOG=''
+  _KEY=$1
+  _MAX=$2
+  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) )) || _BT=$3
+  _ST=$4
+  _WIF=$5
+  _TIF=$6
+  _MD5=$7
+  _CKMD5=$_MD5
+  /bin/grep -F $_KEY /var/log/log-message | /usr/bin/tail -n$_MAX | { IFS=;while read -r LINE; do
+    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
+    [ $_TS -lt $_ST ] && continue
+    if [ $_TS -eq $_ST ] && [ $_CKMD5 ]; then
+       LINE_MD5=$(echo $LINE|/usr/bin/md5sum -)
+       [ -z "${LINE_MD5##*$_MD5*}" ] && _CKMD5=''
+       continue
+    fi
+    _LT=$((_BT+_TS))
+    _PT="$(/bin/date -d $_LT -D %s +"%F %T")"
+    case $LINE in
+      *"IN=$_WIF"*)
+        _LOG="<p class='incoming wan'><span class='timestamp'>$_PT</span> $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) SPT=\([^ ]*\) DPT=\([^ ]*\) .*/Blocked <span class='if'>WAN<\/span> <span class='dir'>incoming<\/span> \3 connection from remote IP <span class='remote'>\1:\4<\/span> to local IP <span class='local'>\2:\5<\/span>/')</p>$_LOG"
+        ;;
+      *"OUT=$_WIF"*)
+        _LOG="<p class='outgoing wan'><span class='timestamp'>$_PT</span> $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) SPT=\([^ ]*\) DPT=\([^ ]*\) .*/Blocked <span class='if'>WAN<\/span> <span class='dir'>outgoing<\/span> \3 connection to remote IP <span class='remote'>\2:\5<\/span> from local IP <span class='local'>\1:\4<\/span>/')</p>$_LOG"
+        ;;
+      *"IN=$_TIF"*)
+        _LOG="<p class='incoming vpn'><span class='timestamp'>$_PT</span> $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) SPT=\([^ ]*\) DPT=\([^ ]*\) .*/Blocked <span class='if'>VPN<\/span> <span class='dir'>incoming<\/span> \3 connection from remote IP <span class='remote'>\1:\4<\/span> to local IP <span class='local'>\2:\5<\/span>/')</p>$_LOG"
+        ;;
+      *"OUT=$_TIF"*)
+        _LOG="<p class='outgoing vpn'><span class='timestamp'>$_PT</span> $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) SPT=\([^ ]*\) DPT=\([^ ]*\) .*/Blocked <span class='if'>VPN<\/span> <span class='dir'>outgoing<\/span> \3 connection to remote IP <span class='remote'>\2:\5<\/span> from local IP <span class='local'>\1:\4<\/span>/')</p>$_LOG"
+        ;;
+    esac
+    _LINE=$LINE
+  done
+  [ $_TIF ] || _TIF="''"
+  [ $_LINE ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
+  echo "$_KEY $_MAX $_BT $_TS $_WIF $_TIF $_MD5">/tmp/aegis_web
+  echo "$_LOG"
+  }
+}
+
+log() {
+  aegis_env
+  case $ARG in
+    ''|*[!0-9]*) LEN=100 ;;
+    *) if [ $ARG -lt 1 ]; then LEN=1
+       elif [ $ARG -gt 200 ]; then LEN=200
+       else LEN=$ARG
+       fi ;;
+  esac
+  echo '<div id="logbox">'
+  _getLog $SC_NAME $LEN 0 0 $WAN_IF $TUN_IF
+  echo '</div>'
+}
+
+refreshLog() {
+  _getLog $(cat /tmp/aegis_web)
 }
 
 # MAIN
 case $CMD in
   info) info;;
   status) status;;
+  command) command;;
+  log) log;;
+  refresh_log) refreshLog;;
 esac
-return
+exit 0
