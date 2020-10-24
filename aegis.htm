@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Aegis</title>
+<style>
+html, body { margin: 0; padding: 0; border: none; width: calc(100% + 1px); background-color: white; }
+body { height: 100vh; width: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
+section { box-sizing: border-box; display: flex; flex-direction: column; height: inherit; max-height: 100vh; }
+section > * { box-sizing: border-box; }
+#header, #menu { width: calc(100% + 1px); }
+#header { color: white; background: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(47,79,79,1) 100%); padding: 0.5em 1em; border: 1px solid rgb(47.79.79); margin-bottom: -1px; }
+#header h1 { line-height: 0.5em; height: 0.5em; color: rgba(255, 255, 255, 0.8); float: left; margin: 0.5em 0; }
+#header #by { float: left; color: rgba(255, 255, 255, 0.5); line-height: 2.5em; height: 1em; font-size: 0.8em; margin: 0.5em 0 0 0.5em; font-family: Bradley Hand, cursive; }
+#info { color: rgba(255, 255, 255, 0.9); float: right; font-size: 0.8em; }
+#menu { background: linear-gradient(180deg, rgba(47,79,79,0.7) 0%, rgba(47,79,79,0.3) 100%); padding: 0 0 0 0.5em; }
+#menu > input { display: none; }
+#menu > input + label { background: linear-gradient(180deg, rgb(47,79,79) 0%, rgb(99,123,123) 100%); border-radius: 0 0 0.5em 0.5em; margin-left: 0.3em; padding: 0.3em 0.5em; color: white; font-size: 1em; text-align: center; text-decoration: none; display: block; width: fit-content; float: left; }
+#menu > input:checked + label { border-radius: 0.5em 0.5em 0 0; background: linear-gradient(180deg, rgb(203,211,211) 0%, rgb(255,255,255) 100%); color: darkSlateGrey; }
+#menu > #menu-upgrade + label { display: none; background: linear-gradient(180deg, rgb(47,79,79) 0%, rgb(255,0,0) 100%); }
+#menu > #menu-upgrade:checked + label { background: linear-gradient(180deg, rgb(203,211,211) 0%, rgb(255,255,255) 100%); color: red; }
+#ctrl > * { display: none; }
+#ctrl-log, #ctrl-command, #ctrl-upgrade { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
+#vers-message { font-size: 1.5em; font-weight: bold; color: red; margin-bottom: 0.2em; }
+#ctrl-log input { margin-left: 1em; }
+#main { display: flex; align-items: stretch; width: 100%; flex-grow: 1; overflow: hidden; max-height: inherit; }
+#main > * { box-sizing: border-box; max-height: inherit; width: 100%; padding: 0 0.5em; display: none; }
+#main .scroll { overflow: auto; padding-top: 0.35em; }
+#main .scroll:before {
+    content: ' ';
+    width: calc(100% + 1px);
+    height: 0.6em;
+    position: absolute;
+    margin: -0.35em 0 0 -0.5em;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+#status.running { background-color:#b3e6c9; border: solid 1em MediumSeaGreen; }
+#status.off { background-color:LightGrey; border: solid 1em DarkGrey; }
+#status.error { background-color:#ffa899; border: solid 1em Tomato; }
+#status li { margin-left: -1em; }
+h2 { font-variant: all-small-caps slashed-zero; margin: 0; }
+h3 { padding-left: 1em; margin: 0; }
+h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
+h3.error { background-color:Tomato; }
+h3.error + ul { background-color:#ffe9e6; }
+h3.warning { background-color:Orange; }
+h3.warning + ul { background-color:#fff6e6; }
+h3.more + input + label { background-color:Violet; }
+h3.more + input + label + ul { background-color:#fce9fc; }
+h3.collapsibleList { display: none; }
+h3.collapsibleList + input { display: none; }
+h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
+h3.collapsibleList + input:checked + label { margin-bottom: 0; }
+h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
+h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
+h3.collapsibleList + input + label::before {
+content: ' ';
+display: inline-block;
+border-top: 5px solid transparent;
+border-bottom: 5px solid transparent;
+border-left: 5px solid currentColor;
+vertical-align: middle;
+margin-right: .7rem;
+transform: translateY(-2px);
+transition: transform .2s ease-out;
+}
+h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
+#main-command, #main-upgrade { font-family: monospace; min-width: max-content; }
+#logbox { font-family: monospace; line-height: 1.1em; min-width: max-content; }
+#logbox p { margin: 0 0.5em 0 0; }
+#logbox.incoming p.incoming { display: none; }
+#logbox.outgoing p.outgoing { display: none; }
+#logbox.wan p.wan { display: none; }
+#logbox.vpn p.vpn { display: none; }
+#logbox p .timestamp { color: #666; }
+#logbox p.wan .if { font-weight: bold; color: green; }
+#logbox p.vpn .if { font-weight: bold; color: purple; }
+#logbox p.incoming .dir { font-weight: bold; color: red; }
+#logbox p.outgoing .dir { font-weight: bold; color: blue; }
+#logbox p .remote { font-weight: bold; color: red; }
+#logbox p .local { font-weight: bold; color: blue; }
+</style>
+<script>
+var activeMenu;
+var logMaxLen = 200;
+function aegis(cmd, dst, arg, pos, callback) {
+   if (dst !== undefined) {
+     var dstElem = document.getElementById(dst);
+     if (pos === undefined) dstElem.textContent = 'Loading ' + cmd + '...';
+   }
+   if (arg === undefined) { arg=''; } else { arg='&arg='+arg; }
+   var url='/bolemo/cgi-bin/aegis_web.cgi?cmd='+cmd+arg;
+   var xhttp;
+   var xhttpOutput;
+   xhttp=new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+     if (this.readyState == 4) {
+       switch (this.status) {
+         case 500:
+           xhttpOutput = this.responseText.substring(47);
+           break;
+         case 200:
+           xhttpOutput = this.responseText;
+           break;
+         default:
+           xhttpOutput = 'Error loading ' + cmd + ': code ' + this.status;
+       }
+       if (dst !== undefined) {
+         if (pos === undefined) {
+           dstElem.innerHTML = xhttpOutput;
+         } else {
+           dstElem.insertAdjacentHTML(pos, xhttpOutput);
+         }
+         var callbackParam = undefined;
+       } else {
+         var callbackParam = xhttpOutput;
+       }
+       if (callback instanceof Function) callback(callbackParam);
+     }
+   };
+   xhttp.open("GET", url, true);
+   xhttp.send();
+}
+function showMenu(item, visible) {
+   if (visible == true) { var display = "block"; } else { var display = "none"; }
+   document.querySelector("#menu-"+item+" + label").style.display=display;
+}
+function displayFor(item) {
+   activeMenu=item;
+   document.querySelectorAll("#ctrl > *, #main > *").forEach(elem => elem.style.display="none");
+   document.getElementById("ctrl-"+item).style.display="block";
+   document.getElementById("main-"+item).style.display="block";
+}
+function infoCallback(jsonData) {
+   var _info = JSON.parse(jsonData);
+   document.getElementById("info").innerHTML = 'version '+_info.version+'<br />'+_info.location+' drive';
+   switch (_info.versionStatus) {
+     case 0:
+             break;
+     case 2: break; //current version is higher than latest one!
+     case 1: var message = 'Aegis version '+_info.newVersion+' is available!'
+             document.getElementById("vers-message").innerHTML = message;
+             showMenu('upgrade', true);
+             break;
+     case 3: break; //error checking version!
+   }
+   infoTimer = setTimeout(function() { aegis('info', undefined, undefined, undefined, infoCallback); }, 300000);
+}
+function info() {
+   aegis('info', undefined, undefined, undefined, infoCallback);
+}
+function status() {
+   displayFor('status');
+   aegis('status', 'main-status');
+}
+function command() {
+   displayFor('command');
+   document.getElementById("main-command").innerHTML = '';
+}
+function logPost() {
+   if (activeMenu != 'log') return;
+   var logboxElem = document.getElementById("logbox");
+   var logboxLines = logboxElem.children.length;
+   if (logboxLines > logMaxLen) {
+     var diff = logboxLines-logMaxLen;
+     var i;
+     for (i=0; i<diff; i++) {
+       logboxElem.removeChild(logboxElem.lastElementChild);
+     }
+   }
+   logTimer = setTimeout(function() { if (activeMenu == 'log') { aegis('refresh_log', 'logbox', logMaxLen, 'afterbegin', logPost); } }, 10000);
+}
+function log() {
+   displayFor('log');
+   aegis('log', 'main-log', logMaxLen, undefined, logPost);
+}
+function logFilter() {
+   var logboxElem = document.getElementById("logbox");
+   var logFilterIncoming = document.getElementById("log-filter-incoming");
+   var logFilterOutgoing = document.getElementById("log-filter-outgoing");
+   var logFilterWan = document.getElementById("log-filter-wan");
+   var logFilterVpn = document.getElementById("log-filter-vpn");
+   if (logFilterIncoming.checked == false) { logboxElem.classList.add('incoming'); } else { logboxElem.classList.remove('incoming'); }
+   if (logFilterOutgoing.checked == false) { logboxElem.classList.add('outgoing'); } else { logboxElem.classList.remove('outgoing'); }
+   if (logFilterWan.checked == false) { logboxElem.classList.add('wan'); } else { logboxElem.classList.remove('wan'); }
+   if (logFilterVpn.checked == false) { logboxElem.classList.add('vpn'); } else { logboxElem.classList.remove('vpn'); }
+}
+function sendCommand() {
+   var cmdCmd = document.getElementById("command-cmd").value;
+   var cmdLog = document.getElementById("command-log").value;
+   aegis('command', 'main-command', cmdCmd+':'+cmdLog);
+}
+function showCommandLog(value) {
+   switch (value) {
+      case 'stop': var displayVal = true;
+        break;
+      default: var displayVal = false;
+   }
+   document.getElementById("command-log").disabled=displayVal;
+}
+function upgrade() {
+   displayFor('upgrade');
+   document.getElementById("main-upgrade").innerHTML = '';
+}
+function upgradeCallback() {
+   var mainUpgradeElem = document.getElementById("main-upgrade");
+   if (mainUpgradeElem.innerHTML.slice(-9).slice(0,8) == "Success!") {
+     mainUpgradeElem.insertAdjacentHTML('beforeend', 'Reloading page in 5 seconds...');
+     setTimeout(function() { window.location.reload(); }, 5000);
+   }
+}
+function doUpgrade() {
+   var upgradeCmd = document.getElementById("vers-cmd").value;
+   aegis('command', 'main-upgrade', upgradeCmd, undefined, upgradeCallback);
+}
+</script>
+</head>
+<body>
+<section>
+<div id="header">
+  <h1>AEGIS</h1>
+  <div id="by">by bolemo</div>
+  <div id="info"></div>
+  <div style="clear: both; height: 0;">&nbsp;</div>
+</div>
+<div id="menu">
+  <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
+  <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
+  <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
+  <input type="radio" name="menu" id="menu-upgrade" onclick="upgrade();"><label for="menu-upgrade">UPGRADE</label>
+</div>
+<div id="ctrl">
+  <div id="ctrl-status"></div>
+  <div id="ctrl-command">
+    COMMAND: 
+    <select id="command-cmd" name="commandCmd" onchange="showCommandLog(this.value);">
+      <option value="update" selected>UPDATE SET THEN RELOAD AEGIS ENGINE</option>
+      <option value="restart">RESTART INTERNAL FIREWALL WITH AEGIS ENGINE</option>
+      <option value="stop">RESTART INTERNAL FIREWALL WITHOUT AEGIS ENGINE</option>
+    </select>
+    <select id="command-log" name="commandLog">
+      <option value="on">WITH LOGGING ENABLED</option>
+      <option value="off">WITH LOGGING DISABLED</option>
+    </select>
+    <input type="submit" value="Submit" onclick="sendCommand();" />
+  </div>
+  <div id="ctrl-log">
+    SHOW:
+    <input type="checkbox" name="logFilter" checked id="log-filter-incoming" onclick="logFilter();" /><label for="log-filter-incoming">INCOMING</label>
+    <input type="checkbox" name="logFilter" checked id="log-filter-outgoing" onclick="logFilter();" /><label for="log-filter-outgoing">OUTGOING</label>
+    <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
+    <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
+  </div>
+  <div id="ctrl-upgrade">
+    <div id="vers-message"></div>
+    <select id="vers-cmd" name="versCmd">
+      <option value="upgrade">UPGRADE (WITHOUT RESTARTING AEGIS ENGINE)</option>
+      <option value="upgrade-restart" selected>UPGRADE THEN (RE)START AEGIS ENGINE</option>
+    </select>
+    <input type="submit" value="Submit" onclick="doUpgrade();" />
+  </div>
+</div>
+<div id="main">
+  <div id="main-status" class="scroll"></div>
+  <pre id="main-command" class="scroll"></pre>
+  <div id="main-log" class="scroll"></div>
+  <pre id="main-upgrade" class="scroll"></pre>
+</div>
+</section>
+</body>
+</html>
+<script>info(); status();</script>
