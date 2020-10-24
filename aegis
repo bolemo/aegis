@@ -510,7 +510,7 @@ echo "- Downloading:"
     /bin/rm -f "$DL_PATH"
     exit 1
   fi
-  [ check_web ] && install_web
+  check_web && install_web
   exit 0
 }
 
@@ -572,8 +572,8 @@ get_def_srclst() {
 #
 ###############################################
 check_web() {
-  [ -s "/www/bolemo" ] || return 1
-  [ -f "/www/bolemo/aegis.htm" ] || return 1
+  [ -L "/www/bolemo" ] || return 1
+  [ -e "/www/bolemo/aegis.htm" ] || return 1
   [ -x "/www/bolemo/cgi-bin/aegis_web.cgi" ] || return 1
   return 0
 }
@@ -840,7 +840,7 @@ info() {
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
   # check web compagnon
-  [ check_web ] && echo '- Web compagnon is installed.' || echo '- Web compagnon is not installed.'
+  check_web && echo '- Web compagnon is installed.' || echo '- Web compagnon is not installed.'
 }
 
 #---------------------------- _STATUS ----------------------------
