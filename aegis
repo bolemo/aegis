@@ -594,9 +594,9 @@ install_web() {
     exit 1
   fi
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
-    \/bin/mv "$DL_PATH" "$WWW_PATH/cgi/bin/${SC_NAME}_web.cgi"
-    /bin/chmod +x "$WWW_PATH/cgi/bin/${SC_NAME}_web.cgi"
-    echo -e "\033[0m- Web compagnon cgi file installed to $WWW_PATH/cgi/bin/${SC_NAME}_web.cgi"
+    \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+    /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+    echo -e "\033[0m- Web compagnon cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   else
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
