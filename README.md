@@ -102,7 +102,7 @@ Since version 3.1, you can have your own custom black list of IPs or netsets (IP
 Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
 
 ## Web Companion
-Since version 1.2.5, aegis can install a Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
+Since version 1.2.5, aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
 To remove it, simply run `aegis web -remove`, or while using the command `aegis clean`, add the `-rm-web` option.
 Once installed, thr Web Companion is accessible here: http://routerlogin.net/bolemo/aegis.htm
 
