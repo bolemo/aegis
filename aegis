@@ -587,14 +587,14 @@ install_web() {
       UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
     fi
   fi
-  echo "- Downloading web compagnon:"
+  echo "- Downloading Web Compagnon:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _PROG='--show-progress';
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm"; then
     \/bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
-    echo -e "\033[0m- Web compagnon htm file installed to $WWW_PATH/$SC_NAME.htm"
+    echo -e "\033[0m- Web Compagnon htm file installed to $WWW_PATH/$SC_NAME.htm"
   else
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
@@ -605,7 +605,7 @@ install_web() {
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
     \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-    echo -e "\033[0m- Web compagnon cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+    echo -e "\033[0m- Web Compagnon cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   else
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
@@ -617,7 +617,7 @@ install_web() {
     [ -d "$WWW_PATH/cgi-bin" ] && mkdir "$WWW_PATH/cgi-bin"
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -s "$WWW_PATH" /www/bolemo
-    echo "- Web compagnon paths were repaired."
+    echo "- Web Compagnon paths were repaired."
   fi
   exit 0
 }
@@ -841,7 +841,7 @@ info() {
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
   # check web compagnon
-  check_web && echo '- Web compagnon is installed.' || echo '- Web compagnon is not installed.'
+  check_web && echo '- Web Compagnon is installed.' || echo '- Web Compagnon is not installed.'
 }
 
 #---------------------------- _STATUS ----------------------------
