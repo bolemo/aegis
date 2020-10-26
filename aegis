@@ -568,9 +568,10 @@ get_def_srclst() {
 
 ###############################################
 #
-#    AEGIS WEB RELATED FUNCTIONS
+#    WEB COMPANION RELATED FUNCTIONS
 #
 ###############################################
+WEB_NAME='Web Companion'
 check_web() {
   [ -L "/www/bolemo" ] || return 1
   [ -e "/www/bolemo/aegis.htm" ] || return 1
@@ -587,14 +588,14 @@ install_web() {
       UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
     fi
   fi
-  echo "- Downloading Web Compagnon:"
+  echo "- Downloading $WEB_NAME:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _PROG='--show-progress';
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm"; then
     \/bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
-    echo -e "\033[0m- Web Compagnon htm file installed to $WWW_PATH/$SC_NAME.htm"
+    echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   else
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
@@ -605,7 +606,7 @@ install_web() {
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
     \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-    echo -e "\033[0m- Web Compagnon cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+    echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   else
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
@@ -617,7 +618,7 @@ install_web() {
     [ -d "$WWW_PATH/cgi-bin" ] && mkdir "$WWW_PATH/cgi-bin"
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -s "$WWW_PATH" /www/bolemo
-    echo "- Web Compagnon paths were repaired."
+    echo "- $WEB_NAME paths were repaired."
   fi
   exit 0
 }
@@ -625,7 +626,7 @@ install_web() {
 clean_web() {
   /bin/rm -f "$WWW_PATH/$SC_NAME.htm" 2>/dev/null
   /bin/rm -f "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi" 2>/dev/null
-  [ "$VERBOSE" ] && echo "- Web Compagnon was removed."
+  [ "$VERBOSE" ] && echo "- $WEB_NAME was removed."
 }
 
 ###############################################
@@ -841,7 +842,7 @@ info() {
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
   # check web compagnon
-  check_web && echo '- Web Compagnon is installed.' || echo '- Web Compagnon is not installed.'
+  check_web && echo '- $WEB_NAME is installed.' || echo '- $WEB_NAME is not installed.'
 }
 
 #---------------------------- _STATUS ----------------------------
@@ -1235,8 +1236,8 @@ print_help() {
   echo -e " \033[1;35mstatus\033[0m       - displays status"
   echo -e " \033[1;35mlog\033[0m          - displays log"
   echo -e " \033[1;35mupgrade\033[0m      - downloads and installs latest version"
-  echo -e " \033[1;35mweb -install\033[0m - downloads and installs the Web Compagnon"
-  echo -e " \033[1;35mweb -remove\033[0m  - removes the Web Compagnon"
+  echo -e " \033[1;35mweb -install\033[0m - downloads and installs $WEB_NAME"
+  echo -e " \033[1;35mweb -remove\033[0m  - removes $WEB_NAME"
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
   echo -e " \033[1;36m-v\033[0m           - verbose mode (level 1)"
   echo -e " \033[1;36m-vv\033[0m          - verbose mode (level 2)"
@@ -1245,7 +1246,7 @@ print_help() {
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m  - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-lines=\033[0mN     - when used with log, will display N lines (N being the number of lines to show)"
   echo -e " \033[1;36m-rm-symlink\033[0m  - when used with clean, removes the symlink /usr/bin/$SC_NAME"
-  echo -e " \033[1;36m-rm-web\033[0m      - when used with clean, removes the Web Compagnon"
+  echo -e " \033[1;36m-rm-web\033[0m      - when used with clean, removes $WEB_NAME"
 }
 
 ###############################################
