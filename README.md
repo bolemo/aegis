@@ -13,7 +13,7 @@ It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunn
 * It is not mandatory, but it is strongly recommanded to have iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
 * The script can be installed either on the router internal memory (no extra USB drive required) or an external (USB) drive (like the one on which you may have installed Entware). If installed on external drive (recommanded), it will survive firmware upgrades and factory resets.
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
-* If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is nit needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
+* If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is not needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
 
 ## Install
 You can install either on external (USB) drive or internal memory.
@@ -77,6 +77,8 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `status` - displays status
 * `log` - displays log
 * `upgrade` - download and install latest version
+* `web -install` - downloads and installs the Web Companion
+* `web -remove`  - removes the Web Companion
 
 ### Options:
 * `-v` - verbose mode (level 1)
@@ -86,6 +88,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
 * `-lines=`N - when used with log, will display N lines (N being the number of lines to show)
 * `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
+* `-rm-web` - when used with clean, removes the Web Companion
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
@@ -98,11 +101,14 @@ Since version 3.1, you can have your own custom black list of IPs or netsets (IP
 ### Custom whitelist
 Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
 
-## Web interface
-Each time an aegis command is done with the option `-html`, the output is sent to a page accessible here: http://routerlogin.net/bolemo/aegis.htm
-The cron job for an update could call `/bin/sh /opt/bolemo/scripts/aegis update -html` or `/bin/sh /opt/bolemo/scripts/aegis update -v -html`.
-Also, a cron job called every 10 minutes, or hour... could call `/bin/sh /opt/bolemo/scripts/aegis status -html` or `/bin/sh /opt/bolemo/scripts/aegis status -v -html`.
-In the future, I would like to be able to have the page call aegis to refresh itself.
+## Web Companion
+Since version 1.2.5, aegis can install a Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
+To remove it, simply run `aegis web -remove`, or while using the command `aegis clean`, add the `-rm-web` option.
+Once installed, thr Web Companion is accessible here: http://routerlogin.net/bolemo/aegis.htm
+
+If the Web Companion is installed, it will automatically get upgraded when aegis is upgraded from the command `aegis upgrade`.
+
+The former `-html` option is not supported since the Web Companion is available.
 
 ## Logging
 ### Enable logging
