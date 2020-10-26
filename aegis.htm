@@ -90,10 +90,10 @@ log-pt:before { color: darkgrey; content: ':'; }
   100% { background: none; }
 }
 #logbox p.new { animation: highlight 1s; }
-#main-log > .overlay { display: none; box-sizing: border-box; position: fixed; z-index: 9999; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0,0,0,0.8); border: 0.5em solid black; border-radius: 0.5em; color: white; }
+#main-log > .overlay { display: none; box-sizing: border-box; position: fixed; z-index: 9999; top: 50%; left: 50%; transform: translate(-50%, -50%); width: fit-content; background-color: rgba(0,0,0,0.8); border: 0.5em solid black; border-radius: 0.5em; color: white; }
 #main-log > .overlay > .title { width: inherited; background: black; padding-bottom: 0.25em; text-align: center; font-weight: bold; font-size: 1em; }
-#main-log > .overlay > .message { padding: 0.25em 0.5em; font-size: 0.8em; }
-#main-log > .overlay > .message p { margin: 0; }
+#main-log > .overlay > .message { padding: 0.25em 0.5em; overflow: auto; }
+#main-log > .overlay > .message p { width: max-content; margin: 0 1em 0 0; }
 #main-log > .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: darkSlateGrey; border: 1px solid #444; border-radius: 0.2em; box-shadow: 5px 5px 5px #eee; text-shadow:none; }
 </style>
 <script>
