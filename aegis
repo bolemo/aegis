@@ -708,11 +708,19 @@ print_log() {
   /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T" 2>/dev/null)" || _PT="$(/bin/date -d @$((_BT+_TS)) +"%F %T")"
-    if echo $LINE | /bin/grep -qF "IN=$WAN_IF"; then
-        echo -e "$_PT: $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) .*/Blocked \\033[1;35mincoming\\033[0m \\033[1m\3\\033[0m connection from remote IP \\033[1;35m\1\\033[0m to local IP \\033[1;33m\2\\033[0m/')"
-    else
-        echo -e "$_PT: $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) .*/Blocked \\033[1;33moutgoing\\033[0m \\033[1m\3\\033[0m connection to remote IP \\033[1;35m\2\\033[0m from local IP \\033[1;33m\1\\033[0m/')\033[0m"
-    fi
+
+    _1=${LINE#* SRC=}; _SRC=${_1%% *}
+    _1=${LINE#* DST=}; _DST=${_1%% *}
+    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ $_PROTO = 47 ] && _PROTO='GRE'
+    _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
+    _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
+
+    case $LINE in
+      *"IN=$_WIF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"OUT=$_WIF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"IN=$_TIF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"OUT=$_TIF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+    esac
   done
 }
 
