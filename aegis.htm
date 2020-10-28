@@ -80,11 +80,11 @@ h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) tr
 #logbox p.vpn log-if { font-weight: bold; color: purple; }
 #logbox p.incoming log-dir { font-weight: bold; color: red; }
 #logbox p.outgoing log-dir { font-weight: bold; color: blue; }
-#logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; }
+#logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-lip { font-weight: bold; color: blue; }
 log-pt:before { color: darkgrey; content: ':'; }
-#logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; }
-#logbox p log-lip + log-pt { color: blue; text-decoration: underline; text-decoration-style: dotted; }
+#logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
+#logbox p log-lip + log-pt { color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 @keyframes highlight {
   0% { background: yellow; }
   100% { background: none; }
@@ -94,7 +94,7 @@ log-pt:before { color: darkgrey; content: ':'; }
 #main-log > .overlay > .title { width: inherited; background: black; padding-bottom: 0.25em; text-align: center; font-weight: bold; font-size: 1em; }
 #main-log > .overlay > .message { padding: 0.25em 0.5em; overflow: auto; }
 #main-log > .overlay > .message p { width: max-content; margin: 0 1em 0 0; }
-#main-log > .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: darkSlateGrey; border: 1px solid #444; border-radius: 0.2em; box-shadow: 5px 5px 5px #eee; text-shadow:none; }
+#main-log > .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: #718787; border: 0.2em solid #bfc9c9; border-radius: 0.4em; text-shadow: none; cursor: pointer; }
 </style>
 <script>
 var activeMenu;
