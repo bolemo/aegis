@@ -851,7 +851,7 @@ info() {
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
   # check web compagnon
-  check_web && echo '- $WEB_NAME is installed.' || echo '- $WEB_NAME is not installed.'
+  check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
 }
 
 #---------------------------- _STATUS ----------------------------
