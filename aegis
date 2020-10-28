@@ -707,7 +707,7 @@ print_log() {
   _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) ))
   /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
-    _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")"
+    _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T" 2>/dev/null)" || _PT="$(/bin/date -d @$((_BT+_TS)) +"%F %T")"
     if echo $LINE | /bin/grep -qF "IN=$WAN_IF"; then
         echo -e "$_PT: $(echo "$LINE"|/bin/sed -e 's/.* SRC=\([^ ]*\) DST=\([^ ]*\) .* PROTO=\([^ ]*\) .*/Blocked \\033[1;35mincoming\\033[0m \\033[1m\3\\033[0m connection from remote IP \\033[1;35m\1\\033[0m to local IP \\033[1;33m\2\\033[0m/')"
     else
