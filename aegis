@@ -705,9 +705,10 @@ print_log() {
   echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
   _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) ))
+  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
   /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
-    _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T" 2>/dev/null)" || _PT="$(/bin/date -d @$((_BT+_TS)) +"%F %T")"
+    [ $_DATE_D ] && _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")" || _PT="$(/bin/date -d @$((_BT+_TS)) +"%F %T")"
 
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
