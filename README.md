@@ -6,14 +6,14 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.1.4
+1.2.5
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
 * It is not mandatory, but it is strongly recommanded to have iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
 * The script can be installed either on the router internal memory (no extra USB drive required) or an external (USB) drive (like the one on which you may have installed Entware). If installed on external drive (recommanded), it will survive firmware upgrades and factory resets.
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
-* If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is nit needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
+* If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is not needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
 
 ## Install
 You can install either on external (USB) drive or internal memory.
@@ -33,7 +33,7 @@ Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to che
 If aegis was set and running before a router reboot, it should be back automatically after the reboot.
 
 ### Cron job
-You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 GMT in the morning (or local time if using Kamoj's addon).
+You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning (or local time if using Kamoj's addon).
 
 ### What does install procedure do
 ***1) If installed on external drive, it will:***
@@ -67,22 +67,28 @@ To upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
-* `restart` - setup ipset and iptables then restarts internal firewall
-* `update_set` - generates `aegis-blocklist.netset` from servers in `aegis.sources`
-* `load_set` - loads `aegis-blocklist.netset` into ipset then restarts internal firewall
-* `update` - update_set then load_set [probably what you want to use]
-* `clean` - clean ipset and iptables rules from setup created by this script
+* `restart` - restarts internal firewall and aegis engine
+* `update_set` - updates set from servers in `aegis.sources`
+* `load_set` - reloads aegis engine with last generated set
+* `update` - updates set then reloads aegis engine with it [probably what you want to use]
+* `clean` - removes aegis engine from internal firewall and restarts it
 * `help` - displays help
 * `info` - displays info on this script
 * `status` - displays status
 * `log` - displays log
 * `upgrade` - download and install latest version
+* `web -install` - downloads and installs the Web Companion
+* `web -remove`  - removes the Web Companion
 
 ### Options:
-* `-v` - verbose mode
-* `-html` - sends output to router's web: http://routerlogin.net/bolemo/aegis.htm
+* `-v` - verbose mode (level 1)
+* `-vv` - verbose mode (level 2)
+* `-vvv` - verbose mode (level 3)
+* `-q` - quiet mode (no output)
 * `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
+* `-lines=`N - when used with log, will display N lines (N being the number of lines to show)
 * `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
+* `-rm-web` - when used with clean, removes the Web Companion
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
@@ -90,16 +96,19 @@ The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
 ### Custom blocklist
-Since version 3.1, you can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.custom-blacklist.netset` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis update`, it will integrate your custom list to the master blocklist.
+Since version 3.1, you can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis update`, it will integrate your custom list to the master blocklist.
 
 ### Custom whitelist
-Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.custom-whitelist.netset` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
+Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
 
-## Web interface
-Each time an aegis command is done with the option `-html`, the output is sent to a page accessible here: http://routerlogin.net/bolemo/aegis.htm
-The cron job for an update could call `/bin/sh /opt/bolemo/scripts/aegis update -html` or `/bin/sh /opt/bolemo/scripts/aegis update -v -html`.
-Also, a cron job called every 10 minutes, or hour... could call `/bin/sh /opt/bolemo/scripts/aegis status -html` or `/bin/sh /opt/bolemo/scripts/aegis status -v -html`.
-In the future, I would like to be able to have the page call aegis to refresh itself.
+## Web Companion
+Since version 1.2.5, aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
+To remove it, simply run `aegis web -remove`, or while using the command `aegis clean`, add the `-rm-web` option.
+Once installed, thr Web Companion is accessible here: http://routerlogin.net/bolemo/aegis.htm
+
+If the Web Companion is installed, it will automatically get upgraded when aegis is upgraded from the command `aegis upgrade`.
+
+The former `-html` option is not supported since the Web Companion is available.
 
 ## Logging
 ### Enable logging
