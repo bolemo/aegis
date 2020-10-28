@@ -232,6 +232,7 @@ _getLog() {
   _TIF=$6
   _MD5=$7
   _CKMD5=$_MD5
+  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
   /bin/grep -F $_KEY /var/log/log-message | /usr/bin/tail -n$_MAX | { IFS=;while read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     [ $_TS -lt $_ST ] && continue
@@ -241,7 +242,7 @@ _getLog() {
        continue
     fi
     _LT=$((_BT+_TS))
-    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>"
+    [ $_DATE_D ] && _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>" || _PT="<log-ts>$(/bin/date -d @$_LT +"%F %T")</log-ts>"
 
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
