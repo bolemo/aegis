@@ -50,8 +50,8 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 
 echo "Downloading and installing aegis..."
 VERS="$(wget -qO- "$AEGIS_VER_URL")"
-if [ "$VERS" ] && wget -qO "/opt/bolemo/scripts/aegis" '/tmp/aegis_dl.tmp'; then
-  sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$VERS'"/' '/tmp/aegis_dl.tmp'
+if [ "$VERS" ] && wget -qO '/tmp/aegis_dl.tmp' "$AEGIS_SCP_URL"; then
+  sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,8s/^SC_VERS="[^"]*"$/SC_VERS="'$VERS'"/' '/tmp/aegis_dl.tmp'
   \mv '/tmp/aegis_dl.tmp' '/opt/bolemo/scripts/aegis'
   chmod +x "/opt/bolemo/scripts/aegis"
 else >&2 echo 'Could not download aegis!'; exit 1

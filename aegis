@@ -9,8 +9,8 @@ if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
 : ENV START
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-command -v iprange>/dev/null 2>&1 || [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.2.5"
+command -v iprange>/dev/null 2>&1 || { [ -e /root/.profile ] && source /root/.profile; }
+SC_VERS="1.2.8"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
@@ -500,7 +500,7 @@ echo "- Downloading:"
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,5s/^SC_VERS="[^"]*"$/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
+    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,8s/^SC_VERS="[^"]*"$/SC_VERS="'$UPGRADE_VER'"/' "$DL_PATH"
     \/bin/mv "$DL_PATH" "$SC_NICEPATH"
     /bin/chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
@@ -580,6 +580,8 @@ check_web() {
 }
 
 install_web() {
+  [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null
+  [ -d "$WWW_PATH/cgi-bin" ] || mkdir "$WWW_PATH/cgi-bin"
   if [ -z "$UPGRADE_URL" ]; then
     if [ "$DEVMODE" ]; then
       echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
@@ -614,10 +616,8 @@ install_web() {
     exit 1
   fi
   if ! check_web; then
-    [ -d "$WWW_PATH" ] && mkdir "$WWW_PATH"
-    [ -d "$WWW_PATH/cgi-bin" ] && mkdir "$WWW_PATH/cgi-bin"
     /bin/rm -f "/www/bolemo" 2>/dev/null
-    /bin/ln -s "$WWW_PATH" /www/bolemo
+    /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
     echo "- $WEB_NAME paths were repaired."
   fi
   exit 0
@@ -659,8 +659,6 @@ count_ip_in_ipset() {
 pre_init() {
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
-  [ -d "$ROOT_DIR/www" ] || /bin/mkdir "$ROOT_DIR/www" 2>/dev/null
-  [ -d '/www/bolemo' ] || /bin/ln -sfn "$ROOT_DIR/www" '/www/bolemo' 2>/dev/null
 }
 
 init() {
@@ -851,7 +849,7 @@ info() {
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
   # check web compagnon
-  check_web && echo '- $WEB_NAME is installed.' || echo '- $WEB_NAME is not installed.'
+  check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
 }
 
 #---------------------------- _STATUS ----------------------------
