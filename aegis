@@ -659,6 +659,8 @@ count_ip_in_ipset() {
 pre_init() {
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
+  [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null		
+  [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
 }
 
 init() {
