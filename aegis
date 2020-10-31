@@ -486,7 +486,8 @@ SC_MAIN_REPO="$SC_BASE_REPO/master"
 SC_DEV_REPO="$SC_BASE_REPO/dev"
 
 last_avail_version() {
-  /usr/bin/wget -qO- "$SC_MAIN_REPO/version"
+  [ "$DEVMODE" ] && VERSION_URL="$SC_DEV_REPO/version" || VERSION_URL="$SC_MAIN_REPO/version"
+  /usr/bin/wget -qO- "$VERSION_URL"
 }
 
 # ---------------------------------------------
