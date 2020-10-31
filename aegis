@@ -10,7 +10,7 @@ if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 command -v iprange>/dev/null 2>&1 || { [ -e /root/.profile ] && source /root/.profile; }
-SC_VERS="1.2.8"
+SC_VERS="1.2.9"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
@@ -486,7 +486,8 @@ SC_MAIN_REPO="$SC_BASE_REPO/master"
 SC_DEV_REPO="$SC_BASE_REPO/dev"
 
 last_avail_version() {
-  /usr/bin/wget -qO- "$SC_MAIN_REPO/version"
+  [ "$DEVMODE" ] && VERSION_URL="$SC_DEV_REPO/version" || VERSION_URL="$SC_MAIN_REPO/version"
+  /usr/bin/wget -qO- "$VERSION_URL"
 }
 
 # ---------------------------------------------
@@ -659,6 +660,8 @@ count_ip_in_ipset() {
 pre_init() {
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
+  [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null		
+  [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
 }
 
 init() {
