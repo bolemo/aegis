@@ -282,8 +282,8 @@ _getLog() {
     esac
     _LINE=$LINE
   done
-  [ $_TIF ] || _TIF="''"
-  [ $_LINE ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
+  [ "$_TIF" ] || _TIF="''"
+  [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
   echo "$_KEY $_MAX $_BT $_TS $_WIF $_TIF $_MD5">/tmp/aegis_web
   echo "$_LOG"
   }
