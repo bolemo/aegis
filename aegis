@@ -650,6 +650,16 @@ count_ip_in_ipset() {
   fi
 }
 
+name_from_ip() {
+  while read -r LINE; do
+    if [ -z ${LINE##$1*} ]; then echo "${LINE##* } ($1)"; return; break; fi;
+  done < /tmp/dhcpd_hostlist
+  while read -r LINE; do
+    if [ -z ${LINE##$1*} ]; then echo "${LINE##* } ($1)"; return; break; fi;
+  done < /tmp/hosts
+  echo "$1"
+}
+
 ###############################################
 #
 #    INIT FUNCTIONS
@@ -717,11 +727,17 @@ print_log() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
 
+    _RNM="$(nvram get Device_name)"
+    if [ -z ${LINE##* OUT= *} ]
+      then [ "$_DST" = '255.255.255.255' ] && _DST="BROADCAST ($_DST)" || _DST="$_RNM ($_DST)"
+      else _DST="$(_nameForIp $_DST)"; [ -z ${LINE##* IN= *} ] && _SRC="$_RNM ($_SRC)" || _SRC="$(_nameForIp $_SRC)"
+    fi
+
     case $LINE in
-      *"IN=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"IN=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
+      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
+      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_DST$_DPT\\033[0m to local IP \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
+      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_SRC$_SPT\\033[0m from local IP \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
     esac
   done
 }
