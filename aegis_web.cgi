@@ -223,10 +223,10 @@ command() {
 
 _nameForIp() {
   while read -r LINE; do
-    if [ -z ${LINE##$1*} ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/dhcpd_hostlist
   while read -r LINE; do
-    if [ -z ${LINE##$1*} ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/hosts
   echo "$1"
 }
@@ -261,9 +261,9 @@ _getLog() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
 
-    if [ -z ${LINE##* OUT= *} ]
+    if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-      else _DST="$(_nameForIp $_DST)"; [ -z ${LINE##* IN= *} ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
+      else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
     fi
 
     case $LINE in
