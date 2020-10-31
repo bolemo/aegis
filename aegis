@@ -729,7 +729,7 @@ print_log() {
     _RNM="$(nvram get Device_name)"
     if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="BROADCAST ($_DST)" || _DST="$_RNM ($_DST)"
-      else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM ($_SRC)" || _SRC="$(_nameForIp $_SRC)"
+      else _DST="$(name_from_ip $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM ($_SRC)" || _SRC="$(name_from_ip $_SRC)"
     fi
 
     case $LINE in
