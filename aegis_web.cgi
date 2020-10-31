@@ -223,10 +223,10 @@ command() {
 
 _nameForIp() {
   while read -r LINE; do
-    if [ -z ${LINE##$1*} ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/dhcpd_hostlist
   while read -r LINE; do
-    if [ -z ${LINE##$1*} ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/hosts
   echo "$1"
 }
@@ -244,7 +244,7 @@ _getLog() {
   _TIF=$6
   _MD5=$7
   _CKMD5=$_MD5
-  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
+#  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
   /bin/grep -F $_KEY /var/log/log-message | /usr/bin/tail -n$_MAX | { IFS=;while read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     [ $_TS -lt $_ST ] && continue
@@ -254,16 +254,16 @@ _getLog() {
        continue
     fi
     _LT=$((_BT+_TS))
-    [ $_DATE_D ] && _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>" || _PT="<log-ts>$(/bin/date -d @$_LT +"%F %T")</log-ts>"
+    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>" # || _PT="<log-ts>$(/bin/date -d @$_LT +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
     _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ $_PROTO = 47 ] && _PROTO='GRE'
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
 
-    if [ -z ${LINE##* OUT= *} ]
+    if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-      else _DST="$(_nameForIp $_DST)"; [ -z ${LINE##* IN= *} ] && _SRC="$_RNM<small> ($_DST)</small>" || _SRC="$(_nameForIp $_SRC)"
+      else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
     fi
 
     case $LINE in
@@ -274,10 +274,10 @@ _getLog() {
         _LOG="<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to <log-rip>$_DST</log-rip>$_DPT (remote) from <log-lip>$_SRC</log-lip>$_SPT (local)</p>$_LOG"
         ;;
       *"IN=$_TIF"*)
-        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from <log-rip>$_SRC</log-rip>$_SPT (remote) to <log-lip>$_DST</log-lip>$_DPT (local)</p>$_LOG"
+        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from <log-rip>$_DST</log-rip>$_DPT (remote) to <log-lip>$_SRC</log-lip>$_SPT (local)</p>$_LOG"
         ;;
       *"OUT=$_TIF"*)
-        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to <log-rip>$_DST</log-rip>$_DPT (remote) from <log-lip>$_SRC</log-lip>$_SPT (local)</p>$_LOG"
+        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to <log-rip>$_SRC</log-rip>$_SPT (remote) from <log-lip>$_DST</log-lip>$_DPT (local)</p>$_LOG"
         ;;
     esac
     _LINE=$LINE

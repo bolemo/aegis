@@ -10,7 +10,7 @@ if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 command -v iprange>/dev/null 2>&1 || { [ -e /root/.profile ] && source /root/.profile; }
-SC_VERS="1.2.9"
+SC_VERS="1.3.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
@@ -650,6 +650,16 @@ count_ip_in_ipset() {
   fi
 }
 
+name_from_ip() {
+  while read -r LINE; do
+    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
+  done < /tmp/dhcpd_hostlist
+  while read -r LINE; do
+    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
+  done < /tmp/hosts
+  echo "$1"
+}
+
 ###############################################
 #
 #    INIT FUNCTIONS
@@ -706,10 +716,9 @@ print_log() {
   echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
   _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) ))
-  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
   /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
-    [ $_DATE_D ] && _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")" || _PT="$(/bin/date -d @$((_BT+_TS)) +"%F %T")"
+    _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")"
 
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
@@ -717,11 +726,17 @@ print_log() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
 
+    _RNM="$(nvram get Device_name)"
+    if [ -z "${LINE##* OUT= *}" ]
+      then [ "$_DST" = '255.255.255.255' ] && _DST="BROADCAST ($_DST)" || _DST="$_RNM ($_DST)"
+      else _DST="$(name_from_ip $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM ($_SRC)" || _SRC="$(name_from_ip $_SRC)"
+    fi
+
     case $LINE in
       *"IN=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
       *"OUT=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_DST$_DPT\\033[0m to local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_SRC$_SPT\\033[0m from local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
     esac
   done
 }
