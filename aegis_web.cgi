@@ -262,22 +262,22 @@ _getLog() {
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
 
     if [ -z "${LINE##* OUT= *}" ]
-      then _LNM='router'; [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-      else _DST="$(_nameForIp $_DST)"; if [ -z "${LINE##* IN= *}" ]; then _LNM='router'; _SRC="$_RNM<small> ($_SRC)</small>" else _LNM='LAN'; _SRC="$(_nameForIp $_SRC)"; fi
+      then _LNM='router: '; [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
+      else _DST="$(_nameForIp $_DST)"; if [ -z "${LINE##* IN= *}" ]; then _LNM='router: '; _SRC="$_RNM<small> ($_SRC)</small>"; else _LNM='LAN: '; _SRC="$(_nameForIp $_SRC)"; fi
     fi
 
     case $LINE in
       *"IN=$_WIF"*)
-        _LOG="<p class='new incoming wan'>$_PT Blocked <log-dir>incoming</log-dir> <log-if>WAN</log-if> to $_LNM $_PROTO packet from <log-rip>$_SRC</log-rip>$_SPT to <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
+        _LOG="<p class='new incoming wan'>$_PT Blocked <log-dir>incoming</log-dir> $_PROTO packet from <log-if>WAN</log-if>: <log-rip>$_SRC</log-rip>$_SPT to $_LNM<log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
         ;;
       *"OUT=$_WIF"*)
-        _LOG="<p class='new outgoing wan'>$_PT Blocked <log-dir>outgoing</log-dir> $_LNM to <log-if>WAN</log-if> $_PROTO packet to <log-rip>$_DST</log-rip>$_DPT from <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
+        _LOG="<p class='new outgoing wan'>$_PT Blocked <log-dir>outgoing</log-dir> $_PROTO packet to <log-if>WAN</log-if>: <log-rip>$_DST</log-rip>$_DPT from $_LNM<log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
         ;;
       *"IN=$_TIF"*)
-        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-dir>incoming</log-dir> <log-if>VPN</log-if> to $_LNM $_PROTO packet from <log-rip>$_SRC</log-rip>$_SPT to <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
+        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-dir>incoming</log-dir> $_PROTO packet from <log-if>VPN</log-if>: <log-rip>$_SRC</log-rip>$_SPT to $_LNM<log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
         ;;
       *"OUT=$_TIF"*)
-        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-dir>outgoing</log-dir> $_LNM to <log-if>VPN</log-if> $_PROTO packet to <log-rip>$_DST</log-rip>$_DPT from <log-lip>$_SEC</log-lip>$_SPT</p>$_LOG"
+        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-dir>outgoing</log-dir> $_PROTO packet to <log-if>VPN</log-if>: <log-rip>$_DST</log-rip>$_DPT from $_LNM<log-lip>$_SEC</log-lip>$_SPT</p>$_LOG"
         ;;
     esac
     _LINE=$LINE
