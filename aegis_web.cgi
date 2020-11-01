@@ -277,7 +277,7 @@ _getLog() {
         _LOG="<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from <log-rip>$_SRC</log-rip>$_SPT (remote) to <log-lip>$_DST</log-lip>$_DPT (local)</p>$_LOG"
         ;;
       *"OUT=$_TIF"*)
-        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to <log-rip>$_DST</log-rip>$_DPT (remote) from <log-lip>$_SEC</log-lip>$_SPT (local)</p>$_LOG"
+        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to <log-rip>$_DST</log-rip>$_DPT (remote) from <log-lip>$_SRC</log-lip>$_SPT (local)</p>$_LOG"
         ;;
     esac
     _LINE=$LINE
