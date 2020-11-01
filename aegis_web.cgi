@@ -10,6 +10,10 @@ fi
 aegis_env() {
   # source environment we need from aegis
   eval "$(/opt/bolemo/scripts/aegis _env)"
+# R. Gerrits quick fix -------------------------------
+  set -- $(/opt/bolemo/scripts/aegis _status)
+  eval "WAN_IF=$2; TUN_IF=$3"
+# ----------------------------------------------------
 }
 
 status() {
