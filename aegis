@@ -34,7 +34,7 @@ if ifconfig wg0 >/dev/null 2>/dev/null; then
   TUN_IF='wg0'
 else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
-  [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev }; TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
+  [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 
 # INFO FROM (2 bits)
