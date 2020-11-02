@@ -32,12 +32,9 @@ WAN_NM="$(nvram get wan_netmask)"
 if ifconfig wg0 >/dev/null 2>/dev/null; then
   # WireGuard
   TUN_IF='wg0'
-elif ps -w|/bin/grep -vE 'grep|server_tap|server_tun'|/bin/grep -qF -- '/usr/sbin/openvpn --dev'; then
-  # Open VPN client
-  TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun'|/bin/sed -n -- 's/.*openvpn --dev \([[:alnum:]]*\).*/\1/p')"
 else
-  # No tunneling
-  TUN_IF=''
+  TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
+  [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev }; TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 
 # INFO FROM (2 bits)
