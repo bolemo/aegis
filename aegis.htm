@@ -80,6 +80,7 @@ h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) tr
 #logbox p.vpn log-if { font-weight: bold; color: purple; }
 #logbox p.incoming log-dir { font-weight: bold; color: red; }
 #logbox p.outgoing log-dir { font-weight: bold; color: blue; }
+#logbox p log-ptl { underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-lip { font-weight: bold; color: blue; }
 log-pt:before { color: darkgrey; content: ':'; }
@@ -249,6 +250,7 @@ function setIpInfoClick() {
       elem=window.event? event.srcElement: elem.target;
       if (elem.tagName == "LOG-RIP") getIpInfo(elem.innerHTML);
       if (elem.tagName == "LOG-PT") { var win = window.open("https://www.speedguide.net/port.php?port="+elem.innerHTML, '_blank'); win.focus(); }
+      if (elem.tagNale == "LOG-PTL") { var win = window.open("https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml", '_blank'); win.focus(); }
    }
 }
 function sendCommand() {
