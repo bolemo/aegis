@@ -16,7 +16,7 @@ SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
-[ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
+[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_WG_NAME="${SC_ABR}_wg"
@@ -26,8 +26,8 @@ BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(nvram get wan_ifname)"
-WAN_GW="$(nvram get wan_gateway)"
-WAN_NM="$(nvram get wan_netmask)"
+WAN_GW="$(/bin/nvram get wan_gateway)"
+WAN_NM="$(/bin/nvram get wan_netmask)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
   # WireGuard
@@ -742,11 +742,11 @@ set_log_state() {
   if [ "$LOG_ACT" ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
-      /bin/nvram set aegis_log=1; /bin/nvram commit
+      /bin/nvram set ${SC_ABR}_log=1; /bin/nvram commit
       IPTBL_LOGGING=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
-      /bin/nvram unset aegis_log; /bin/nvram commit
+      /bin/nvram unset ${SC_ABR}_log; /bin/nvram commit
       IPTBL_LOGGING=''
     fi
   fi
@@ -767,7 +767,7 @@ clean() {
   ipset -q destroy "$IPSET_TMP"
   [ "$VERBOSE" ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
-  nvram unset log_firewall_blocklist
+  /bin/nvram unset ${SC_ABR}_log; /bin/nvram commit
   [ "$VERBOSE" ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
