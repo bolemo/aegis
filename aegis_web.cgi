@@ -223,10 +223,10 @@ command() {
 
 _nameForIp() {
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/dhcpd_hostlist
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/hosts
   echo "$1"
 }
