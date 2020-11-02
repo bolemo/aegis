@@ -2,7 +2,7 @@
 # ----------- ENVIRONMENT VARIABLES -----------
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
-if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
+if [ "$1" = '_env' ]; then IFS=;while read -r LINE
   do case "$LINE" in ': ENV START') _ECHO=1;; ': ENV STOP') _ECHO='';; ': ENV EOF') break;; *) [ $_ECHO ] && echo "$LINE";; esac
   done<$0; exit; fi
 # ---------------------------------------------
@@ -10,7 +10,7 @@ if [ $1 ] && [ $1 = '_env' ]; then IFS=;while read LINE
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 command -v iprange>/dev/null 2>&1 || { [ -e /root/.profile ] && source /root/.profile; }
-SC_VERS="1.3.3"
+SC_VERS="1.3.4"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
@@ -32,12 +32,9 @@ WAN_NM="$(nvram get wan_netmask)"
 if ifconfig wg0 >/dev/null 2>/dev/null; then
   # WireGuard
   TUN_IF='wg0'
-elif ps -w|/bin/grep -vE 'grep|server_tap|server_tun'|/bin/grep -qF -- '/usr/sbin/openvpn --dev'; then
-  # Open VPN client
-  TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun'|/bin/sed -n -- 's/.*openvpn --dev \([[:alnum:]]*\).*/\1/p')"
 else
-  # No tunneling
-  TUN_IF=''
+  TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
+  [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 
 # INFO FROM (2 bits)
@@ -733,10 +730,10 @@ print_log() {
     fi
 
     case $LINE in
-      *"IN=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote IP \\033[1;35m$_SRC$_SPT\\033[0m to local IP \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote IP \\033[1;35m$_DST$_DPT\\033[0m from local IP \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"IN=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote: \\033[1;35m$_SRC$_SPT\\033[0m to local: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote: \\033[1;35m$_DST$_DPT\\033[0m from local: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote: \\033[1;35m$_SRC$_SPT\\033[0m to local: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote: \\033[1;35m$_DST$_DPT\\033[0m from local: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
     esac
   done
 }
