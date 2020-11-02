@@ -16,7 +16,7 @@ SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
-[ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
+[ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_WG_NAME="${SC_ABR}_wg"
@@ -723,7 +723,7 @@ print_log() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
 
-    _RNM="$(nvram get Device_name)"
+    _RNM="$(/bin/nvram get Device_name)"
     if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="BROADCAST ($_DST)" || _DST="$_RNM ($_DST)"
       else _DST="$(name_from_ip $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM ($_SRC)" || _SRC="$(name_from_ip $_SRC)"
@@ -742,11 +742,11 @@ set_log_state() {
   if [ "$LOG_ACT" ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
-      nvram set aegis_log=1
-      IPTBL_LOGGING='y'
+      /bin/nvram set aegis_log=1; /bin/nvram commit
+      IPTBL_LOGGING=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
-      nvram unset aegis_log
+      /bin/nvram unset aegis_log; /bin/nvram commit
       IPTBL_LOGGING=''
     fi
   fi
