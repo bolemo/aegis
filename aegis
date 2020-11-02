@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then IFS=;while read -r LINE
 : ENV START
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-command -v iprange>/dev/null 2>&1 || { [ -e /root/.profile ] && source /root/.profile; }
+! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
 SC_VERS="1.3.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
@@ -381,7 +381,7 @@ TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
-# Check if scriot is installed on USB
+# Check if script is installed on USB
 if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then
   PM_DIR="${SC_PATH%${SC_PATH#/tmp/mnt/*/}}autorun/scripts"
   PM_FILE="$PM_DIR/post-mount.sh"
