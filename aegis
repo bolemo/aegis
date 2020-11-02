@@ -9,14 +9,14 @@ if [ "$1" = '_env' ]; then IFS=;while read -r LINE
 : ENV START
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-command -v iprange>/dev/null 2>&1 || { [ -e /root/.profile ] && source /root/.profile; }
-SC_VERS="1.3.4"
+! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
+SC_VERS="1.3.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(command -v iprange)"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
-[ "$(nvram get aegis_log)" = "1" ] && IPTBL_LOGGING='y' || IPTBL_LOGGING=''
+[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_WG_NAME="${SC_ABR}_wg"
@@ -25,9 +25,9 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
-ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(nvram get wan_ifname)"
-WAN_GW="$(nvram get wan_gateway)"
-WAN_NM="$(nvram get wan_netmask)"
+ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
+WAN_GW="$(/bin/nvram get wan_gateway)"
+WAN_NM="$(/bin/nvram get wan_netmask)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
   # WireGuard
@@ -146,18 +146,18 @@ _set_ipt_for_if_pos() {
 
 engine_start() {
   NFO_FROM=$1
-  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD='y'
+  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
   NFO_IPS=0; NFO_IPT=0;
   # creating ipset blocklist if needed
   if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
     # an ipset blocklist is already loaded
     if [ -r "$BL_FILE" ]; then
-      [ "$_RELOAD_WTD" ] && _RELOAD='y'
+      [ "$_RELOAD_WTD" ] && _RELOAD=1
       # checking if ipset and file are identical
       if diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE"
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
-        else _RELOAD='y'
+        else _RELOAD=1
       fi
     else
       # blocklist file is missing!
@@ -185,7 +185,7 @@ engine_start() {
   
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then
-    _WG='y'
+    _WG=1
     NFO_IPS=$((NFO_IPS+INFO_IPS_BL_WGW))
     if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
       # Calculate WAN_RANGE (IP & CIDR)
@@ -208,12 +208,12 @@ engine_start() {
   if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     # ipset whitelist is already in place
     if [ -r "$WL_FILE" ]; then
-      _WL='y'
-      [ "$_RELOAD_WTD" ] && _RELOAD='y' || _RELOAD=''
+      _WL=1
+      [ "$_RELOAD_WTD" ] && _RELOAD=1 || _RELOAD=''
       # checking if ipset and file are identical
       if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
-        else _RELOAD='y'
+        else _RELOAD=1
       fi
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
@@ -230,7 +230,7 @@ engine_start() {
   else
     if [ -r "$WL_FILE" ]; then
       # netset file exists, so creating whitelist ipset from it
-      _WL='y'
+      _WL=1
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(/bin/sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
     fi
@@ -381,11 +381,11 @@ TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
-# Check if scriot is installed on USB
-if echo "$SC_PATH"|/bin/grep -q '^/tmp/mnt/'; then
-  PM_DIR="$(echo "$SC_PATH"|/bin/sed "s|\(/tmp/mnt/[[:alnum:]]*\)/.*|\1|")/autorun/scripts"
+# Check if script is installed on USB
+if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then
+  PM_DIR="${SC_PATH%${SC_PATH#/tmp/mnt/*/}}autorun/scripts"
   PM_FILE="$PM_DIR/post-mount.sh"
-  EXT_DRIVE='y'
+  EXT_DRIVE=1
 else
   EXT_DRIVE=''
 fi
@@ -649,10 +649,10 @@ count_ip_in_ipset() {
 
 name_from_ip() {
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
   done < /tmp/dhcpd_hostlist
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
   done < /tmp/hosts
   echo "$1"
 }
@@ -719,11 +719,11 @@ print_log() {
 
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ $_PROTO = 47 ] && _PROTO='GRE'
+    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
 
-    _RNM="$(nvram get Device_name)"
+    _RNM="$(/bin/nvram get Device_name)"
     if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="BROADCAST ($_DST)" || _DST="$_RNM ($_DST)"
       else _DST="$(name_from_ip $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM ($_SRC)" || _SRC="$(name_from_ip $_SRC)"
@@ -742,11 +742,11 @@ set_log_state() {
   if [ "$LOG_ACT" ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
-      nvram set aegis_log=1
-      IPTBL_LOGGING='y'
+      /bin/nvram set ${SC_ABR}_log=1; /bin/nvram commit
+      IPTBL_LOGGING=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
-      nvram unset aegis_log
+      /bin/nvram unset ${SC_ABR}_log; /bin/nvram commit
       IPTBL_LOGGING=''
     fi
   fi
@@ -767,7 +767,7 @@ clean() {
   ipset -q destroy "$IPSET_TMP"
   [ "$VERBOSE" ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
-  nvram unset log_firewall_blocklist
+  /bin/nvram unset ${SC_ABR}_log; /bin/nvram commit
   [ "$VERBOSE" ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 

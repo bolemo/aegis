@@ -227,10 +227,10 @@ command() {
 
 _nameForIp() {
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/dhcpd_hostlist
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
   done < /tmp/hosts
   echo "$1"
 }
@@ -261,7 +261,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>" # || _PT="<log-ts>$(/bin/date -d @$_LT +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ $_PROTO = 47 ] && _PROTO='GRE'
+    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
 
@@ -272,16 +272,16 @@ _getLog() {
 
     case $LINE in
       *"IN=$_WIF"*)
-        _LOG="<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
+        _LOG="<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
         ;;
       *"OUT=$_WIF"*)
-        _LOG="<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
+        _LOG="<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
         ;;
       *"IN=$_TIF"*)
-        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
+        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
         ;;
       *"OUT=$_TIF"*)
-        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
+        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
         ;;
     esac
     _LINE=$LINE
