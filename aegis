@@ -649,10 +649,10 @@ count_ip_in_ipset() {
 
 name_from_ip() {
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
   done < /tmp/dhcpd_hostlist
   while read -r LINE; do
-    if [ -z "${LINE##$1*}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
+    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* } ($1)"; return; break; fi;
   done < /tmp/hosts
   echo "$1"
 }
