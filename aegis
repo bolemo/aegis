@@ -146,18 +146,18 @@ _set_ipt_for_if_pos() {
 
 engine_start() {
   NFO_FROM=$1
-  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD='y'
+  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
   NFO_IPS=0; NFO_IPT=0;
   # creating ipset blocklist if needed
   if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
     # an ipset blocklist is already loaded
     if [ -r "$BL_FILE" ]; then
-      [ "$_RELOAD_WTD" ] && _RELOAD='y'
+      [ "$_RELOAD_WTD" ] && _RELOAD=1
       # checking if ipset and file are identical
       if diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE"
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
-        else _RELOAD='y'
+        else _RELOAD=1
       fi
     else
       # blocklist file is missing!
@@ -185,7 +185,7 @@ engine_start() {
   
   # checking if WAN gateway is in blocklist
   if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then
-    _WG='y'
+    _WG=1
     NFO_IPS=$((NFO_IPS+INFO_IPS_BL_WGW))
     if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
       # Calculate WAN_RANGE (IP & CIDR)
@@ -208,12 +208,12 @@ engine_start() {
   if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     # ipset whitelist is already in place
     if [ -r "$WL_FILE" ]; then
-      _WL='y'
-      [ "$_RELOAD_WTD" ] && _RELOAD='y' || _RELOAD=''
+      _WL=1
+      [ "$_RELOAD_WTD" ] && _RELOAD=1 || _RELOAD=''
       # checking if ipset and file are identical
       if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
-        else _RELOAD='y'
+        else _RELOAD=1
       fi
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
@@ -230,7 +230,7 @@ engine_start() {
   else
     if [ -r "$WL_FILE" ]; then
       # netset file exists, so creating whitelist ipset from it
-      _WL='y'
+      _WL=1
       echo -e "create $IPSET_WL_NAME hash:net family inet\n$(/bin/sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
     fi
@@ -385,7 +385,7 @@ FWS_FILE="$FWS_DIR/firewall-start.sh"
 if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then
   PM_DIR="${SC_PATH%${SC_PATH#/tmp/mnt/*/}}autorun/scripts"
   PM_FILE="$PM_DIR/post-mount.sh"
-  EXT_DRIVE='y'
+  EXT_DRIVE=1
 else
   EXT_DRIVE=''
 fi
