@@ -231,11 +231,11 @@ _nameForIp() {
   echo "$1"
 }
 
-_nameForLogLine() {
-  [ "$2" = 'dst' ] && _SHIFT=4 || _SHIFT=22
-  _MAC="$(echo $1 | awk 'match($0, /MAC=[^ ]*/) {print substr($0, RSTART+$_SHIFT, 17)}')"
-  echo "$_MAC"
-}
+#_nameForLogLine() {
+#  [ "$2" = 'dst' ] && _SHIFT=4 || _SHIFT=22
+#  _MAC="$(echo $1 | awk 'match($0, /MAC=[^ ]*/) {print substr($0, RSTART+$_SHIFT, 17)}')"
+#  echo "$_MAC"
+#}
 
 # _getLog key name in syslog, max lines,  start timestamp, wan interface name, vpn interface name
 _getLog() {
@@ -267,7 +267,7 @@ _getLog() {
 
     if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-      else _DST="$(_nameForLogLine "$LINE" dst )"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForLogLine "$LINE" src)"
+      else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
     fi
 
     case $LINE in
