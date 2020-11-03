@@ -13,7 +13,7 @@ command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 SC_VERS="1.3.6"
 SC_NAME="aegis"
 SC_ABR="aegis"
-IPR_BIN="$(command -v iprange)"
+IPR_BIN="$(/usr/bin/which iprange)"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 [ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
