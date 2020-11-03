@@ -231,10 +231,15 @@ _nameForIp() {
   echo "$1"
 }
 
+_nameForLogLine() {
+  [ "$2" = 'dst' ] && _SHIFT=4 || _SHIFT=22
+  _MAC="$(echo $1 | awk 'match($0, /MAC=[^ ]*/) {print substr($0, RSTART+$_SHIFT, 17)}')"
+  echo "$_MAC"
+}
+
 # _getLog key name in syslog, max lines,  start timestamp, wan interface name, vpn interface name
 _getLog() {
-#  _WIP="$(nvram get wan_ipaddr)"
-  _RNM="$(nvram get Device_name)"
+  _RNM="$(/bin/nvram get Device_name)"
   _LOG=''
   _KEY=$1
   _MAX=$2
@@ -244,7 +249,6 @@ _getLog() {
   _TIF=$6
   _MD5=$7
   _CKMD5=$_MD5
-#  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
   /bin/grep -F $_KEY /var/log/log-message | /usr/bin/tail -n$_MAX | { IFS=;while read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     [ $_TS -lt $_ST ] && continue
@@ -254,7 +258,7 @@ _getLog() {
        continue
     fi
     _LT=$((_BT+_TS))
-    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>" # || _PT="<log-ts>$(/bin/date -d @$_LT +"%F %T")</log-ts>"
+    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
     _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
@@ -263,7 +267,7 @@ _getLog() {
 
     if [ -z "${LINE##* OUT= *}" ]
       then [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-      else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
+      else _DST="$(_nameForLogLine "$LINE" dst )"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForLogLine "$LINE" src)"
     fi
 
     case $LINE in
