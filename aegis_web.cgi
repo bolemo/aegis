@@ -222,20 +222,10 @@ command() {
 }
 
 _nameForIp() {
-  while read -r LINE; do
-    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
-  done < /tmp/dhcpd_hostlist
-  while read -r LINE; do
-    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
-  done < /tmp/hosts
-  echo "$1"
+  _NAME="$(awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
+  [ -z "$_NAME" ] && _NAME="$(awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
+  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<small> ($1)</small>"
 }
-
-#_nameForLogLine() {
-#  [ "$2" = 'dst' ] && _SHIFT=4 || _SHIFT=22
-#  _MAC="$(echo $1 | awk 'match($0, /MAC=[^ ]*/) {print substr($0, RSTART+$_SHIFT, 17)}')"
-#  echo "$_MAC"
-#}
 
 # _getLog key name in syslog, max lines,  start timestamp, wan interface name, vpn interface name
 _getLog() {
