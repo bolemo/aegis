@@ -226,19 +226,14 @@ command() {
 }
 
 _nameForIp() {
-  while read -r LINE; do
-    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
-  done < /tmp/dhcpd_hostlist
-  while read -r LINE; do
-    if [ -z "${LINE##$1 *}" ]; then echo "${LINE##* }<small> ($1)</small>"; return; break; fi;
-  done < /tmp/hosts
-  echo "$1"
+  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
+  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
+  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<small> ($1)</small>"
 }
 
 # _getLog key name in syslog, max lines,  start timestamp, wan interface name, vpn interface name
 _getLog() {
-#  _WIP="$(nvram get wan_ipaddr)"
-  _RNM="$(nvram get Device_name)"
+  _RNM="$(/bin/nvram get Device_name)"
   _LOG=''
   _KEY=$1
   _MAX=$2
@@ -248,7 +243,6 @@ _getLog() {
   _TIF=$6
   _MD5=$7
   _CKMD5=$_MD5
-#  /bin/date -d 0 -D %s>/dev/null 2>&1 && _DATE_D=1 || _DATE_D=''
   /bin/grep -F $_KEY /var/log/log-message | /usr/bin/tail -n$_MAX | { IFS=;while read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     [ $_TS -lt $_ST ] && continue
@@ -258,7 +252,7 @@ _getLog() {
        continue
     fi
     _LT=$((_BT+_TS))
-    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>" # || _PT="<log-ts>$(/bin/date -d @$_LT +"%F %T")</log-ts>"
+    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
     _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
