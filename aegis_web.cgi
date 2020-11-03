@@ -222,8 +222,8 @@ command() {
 }
 
 _nameForIp() {
-  _NAME="$(awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
-  [ -z "$_NAME" ] && _NAME="$(awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
+  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
+  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
   [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<small> ($1)</small>"
 }
 
