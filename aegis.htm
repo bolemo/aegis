@@ -190,6 +190,7 @@ function logPost() {
 }
 var firstLog = true;
 function log() {
+   var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send();
    hideIpInfo();
    displayFor('log');
    if (firstLog) {
