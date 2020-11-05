@@ -145,7 +145,7 @@ function showMenu(item, visible) {
 }
 function displayFor(item) {
    activeMenu=item;
-   clearTimeout(logTimer);
+   clearTimeout(logTimer); clearTimeout(devTimer);
    document.querySelectorAll("#ctrl > *, #main > *").forEach(elem => elem.style.display="none");
    document.getElementById("ctrl-"+item).style.display="block";
    document.getElementById("main-"+item).style.display="block";
@@ -178,6 +178,12 @@ function command() {
    document.getElementById("main-command").innerHTML = '';
 }
 var logTimer;
+var devTimer; var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true);
+function refreshNgDevList() {
+   if (activeMenu != 'log') return;
+   ngDev.send();
+   devTimer = setTimeout(refreshNgDevList, 60000);
+}
 function logPost() {
    if (activeMenu != 'log') return;
    var logboxElem = document.getElementById("logbox");
@@ -195,7 +201,7 @@ function logPost() {
 }
 var firstLog = true;
 function log() {
-   var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send();
+   ngDev.send();
    hideIpInfo();
    displayFor('log');
    if (firstLog) {
