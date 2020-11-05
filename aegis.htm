@@ -202,9 +202,9 @@ function logPost() {
 }
 var firstLog = true;
 function log() {
-   sendNgReq();
    hideIpInfo();
    displayFor('log');
+   refreshNgDevList();
    if (firstLog) {
      firstLog = false;
      document.getElementById("logbox").innerHTML="Retrieving Aegis log...";
