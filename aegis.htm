@@ -179,10 +179,9 @@ function command() {
 }
 var logTimer;
 var devTimer;
-function sendNgReq() { var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send(); }
 function refreshNgDevList() {
    if (activeMenu != 'log') return;
-   sendNgReq();
+   var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send();
    devTimer = setTimeout(refreshNgDevList, 60000);
 }
 function logPost() {
