@@ -227,10 +227,9 @@ _nameForIp() {
   [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<small> ($1)</small>"
 }
 
-# _getLog key name in syslog, max lines,  start timestamp, wan interface name, vpn interface name
+# _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
-  _LOG=''
   _KEY=$1
   _MAX=$2
   [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) )) || _BT=$3
@@ -238,48 +237,33 @@ _getLog() {
   _WIF=$5
   _TIF=$6
   _MD5=$7
-  _CKMD5=$_MD5
-  /bin/grep -F $_KEY /var/log/log-message | /usr/bin/tail -n$_MAX | { IFS=;while read -r LINE; do
+  unset _NST
+  unset _LINE
+  /usr/bin/awk 'match($0,/'$_KEY'/) {a[i++]=$0} END {stop=(i<'$_MAX')?0:i-'$_MAX'; for (j=i-1; j>=stop;) print a[j--] }' /var/log/log-message | { IFS=;while read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
-    [ $_TS -lt $_ST ] && continue
-    if [ $_TS -eq $_ST ] && [ $_CKMD5 ]; then
-       LINE_MD5=$(echo $LINE|/usr/bin/md5sum -)
-       [ -z "${LINE_MD5##*$_MD5*}" ] && _CKMD5=''
-       continue
-    fi
-    _LT=$((_BT+_TS))
-    _PT="<log-ts>$(/bin/date -d $_LT -D %s +"%F %T")</log-ts>"
+    [ -z "$_NST" ] && _NST=$_TS
+    [ $_TS -lt $_ST ] && break
+    [ $_TS -eq $_ST ] && echo $LINE|/usr/bin/md5sum -|/bin/grep -Fq $_MD5 && break
+    [ -z "$_LINE" ] && _LINE=$LINE
+    _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
     _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
-
-    if [ -z "${LINE##* OUT= *}" ]
+    if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
       then [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
       else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
     fi
-
     case $LINE in
-      *"IN=$_WIF"*)
-        _LOG="<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
-        ;;
-      *"OUT=$_WIF"*)
-        _LOG="<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
-        ;;
-      *"IN=$_TIF"*)
-        _LOG="<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>$_LOG"
-        ;;
-      *"OUT=$_TIF"*)
-        _LOG="<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>$_LOG"
-        ;;
+      *"IN=$_WIF"*) echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
+      *"OUT=$_WIF"*) echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
+      *"IN=$_TIF"*) echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
+      *"OUT=$_TIF"*) echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
     esac
-    _LINE=$LINE
   done
-  [ "$_TIF" ] || _TIF="''"
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
-  echo "$_KEY $_MAX $_BT $_TS $_WIF $_TIF $_MD5">/tmp/aegis_web
-  echo "$_LOG"
+  echo "$_KEY $_MAX $_BT $_NST $_WIF '$_TIF' $_MD5">/tmp/aegis_web
   }
 }
 
