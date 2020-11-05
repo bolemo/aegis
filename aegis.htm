@@ -86,11 +86,16 @@ h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) tr
 log-pt:before { color: darkgrey; content: ':'; }
 #logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-lip + log-pt { color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-@keyframes highlight {
-  0% { background: yellow; }
+@keyframes highlight-red {
+  0% { background: #f88; }
   100% { background: none; }
 }
-#logbox p.new { animation: highlight 1s; }
+@keyframes highlight-blue {
+  0% { background: #88f; }
+  100% { background: none; }
+}
+#logbox p.incoming.new { animation: highlight-red 1s; }
+#logbox p.outgoing.new { animation: highlight-blue 1s; }
 #main-log > .overlay { display: none; box-sizing: border-box; position: fixed; z-index: 9999; top: 50%; left: 50%; transform: translate(-50%, -50%); width: fit-content; background-color: rgba(0,0,0,0.8); border: 0.5em solid black; border-radius: 0.5em; color: white; }
 #main-log > .overlay > .title { width: inherited; background: black; padding-bottom: 0.25em; text-align: center; font-weight: bold; font-size: 1em; }
 #main-log > .overlay > .message { padding: 0.25em 0.5em; overflow: auto; }
