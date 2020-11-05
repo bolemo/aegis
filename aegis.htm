@@ -178,10 +178,11 @@ function command() {
    document.getElementById("main-command").innerHTML = '';
 }
 var logTimer;
-var devTimer; var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true);
+var devTimer;
+function sendNgReq() { var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send(); }
 function refreshNgDevList() {
    if (activeMenu != 'log') return;
-   ngDev.send();
+   sendNgReq();
    devTimer = setTimeout(refreshNgDevList, 60000);
 }
 function logPost() {
@@ -201,7 +202,7 @@ function logPost() {
 }
 var firstLog = true;
 function log() {
-   ngDev.send();
+   sendNgReq();
    hideIpInfo();
    displayFor('log');
    if (firstLog) {
