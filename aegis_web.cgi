@@ -303,7 +303,7 @@ proto_info() {
   _TITLE="PROTOCOL $(echo "$_DATA"|/usr/bin/cut -d, -f2)"
   [ -z "$(echo "$_DATA"|/usr/bin/cut -d, -f4)" ] || _PREMSG="<p><u>It is an IPv6 Extension Header</u></p>"
   _MESSAGE="$_PREMSG<p>$(echo "$_DATA"|/usr/bin/cut -d, -f3)</p>"
-  echo "{\"title\"=\"$_TITLE\",\"message\"=\"$_MESSAGE\"}"
+  echo "{\"title\":\"$_TITLE\",\"message\":\"$_MESSAGE\"}"
 }
 
 # MAIN
