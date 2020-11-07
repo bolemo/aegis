@@ -257,7 +257,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="$(sed $((_PROTO+2))q;d $wcPRT_PTH | cut -d, -f2)" || _PROTO="[protocol $_PROTO]"; }
+    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="$(sed "$((_PROTO+2))q;d" $wcPRT_PTH | cut -d, -f2)" || _PROTO="[protocol $_PROTO]"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
