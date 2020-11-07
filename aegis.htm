@@ -221,7 +221,6 @@ function logFilter() {
 }
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+arg;
-alert(url);
    var ptlInfoReq = new XMLHttpRequest();
    ptlInfoReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
      var ptlInfo = JSON.parse(this.responseText);
