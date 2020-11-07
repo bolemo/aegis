@@ -8,9 +8,10 @@ else
 fi
 
 init() {
-  [ -r /www/bolemo/protocol-numbers.csv ] && [ $(/bin/date -d $(($(date +%s)-$(date -r /www/bolemo/protocol-numbers.csv +%s))) -D %s +%s) -gt 1296000 ] && return
+  [ -d /www/bolemo/aegis_data ] && mkdir /www/bolemo/aegis_data 2>/dev/null
+  [ -r /www/bolemo/aegis_data/net-protocols.csv ] && [ $(/bin/date -d $(($(date +%s)-$(date -r /www/bolemo/aegis_data/net-protocols.csv +%s))) -D %s +%s) -gt 1296000 ] && return
   
-  wget -qO- https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv|
+  wget -qO- /www/bolemo/aegis_data/net-protocols.csv|
   /usr/bin/awk -v RS='"[^"]*"' -v ORS= '{gsub(/,/, "\\&#44;", RT); gsub(/[\n[:space:]]+/, " ", RT); print $0 RT}'|
   /usr/bin/awk -F, 'NR>1 {gsub(/"{2}/, "\\&#34;"); gsub(/"/, ""); gsub(/ \(deprecated\)/, "", $2); if ($1 ~ /-/) {split($1,a,"-"); for (i=a[1]; i<=a[2]; i++) {b=($2=="")?"[protocol "i"]":$2"("i")"; print i","b","$3","$4}} else {b=($2=="")?"[protocol "$1"]":$2"("$1")"; print $1","b","$3","$4}}' \
   >/www/bolemo/protocol-numbers.csv
