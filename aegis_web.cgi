@@ -300,9 +300,9 @@ refreshLog() {
 
 proto_info() {
   _DATA="$(sed "$((ARG+2))q;d" $wcPRT_PTH)"
-  _TITLE="PROTOCOL $(/usr/bin/cut -d, -f2)"
-  [ -z "$(/usr/bin/cut -d, -f4)" ] || _PREMSG="<p><u>It is an IPv6 Extension Header</u></p>"
-  _MESSAGE="$_PREMSG<p>$(/usr/bin/cut -d, -f3)</p>"
+  _TITLE="PROTOCOL $(echo "$_DATA"|/usr/bin/cut -d, -f2)"
+  [ -z "$(echo "$_DATA"|/usr/bin/cut -d, -f4)" ] || _PREMSG="<p><u>It is an IPv6 Extension Header</u></p>"
+  _MESSAGE="$_PREMSG<p>$(echo "$_DATA"|/usr/bin/cut -d, -f3)</p>"
   echo "{\"title\"=\"$_TITLE\",\"message\"=\"$_MESSAGE\"}"
 }
 
