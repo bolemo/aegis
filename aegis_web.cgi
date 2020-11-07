@@ -18,8 +18,8 @@ init() {
 }
 
 uninstall() {
-  /bin/rm -f /tmp/aegis_web >/dev/null 2>&1
-  /bin/rm -rf $wcDAT_DIR >/dev/null 2>&1
+  /bin/rm -f /tmp/aegis_web 2>/dev/null
+  /bin/rm -rf $wcDAT_DIR 2>/dev/null
 }
 
 aegis_env() {
