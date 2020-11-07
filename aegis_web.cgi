@@ -1,7 +1,7 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
 wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
-wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="wcDAT_DIR/net-protocols.csv"
+wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
