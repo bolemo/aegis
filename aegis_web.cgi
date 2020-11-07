@@ -1,5 +1,6 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
+wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="wcDAT_DIR/net-protocols.csv"
 
 if [ $QUERY_STRING ]; then
@@ -13,12 +14,12 @@ fi
 init() {
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -gt 1296000 ] && return
   [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR 2>/dev/null
-  wget -qO- https://raw.githubusercontent.com/bolemo/aegis/dev/data/net-protocols.csv > $wcPRT_PTH
+  /usr/bin/wget -qO- $wcPRT_URL > $wcPRT_PTH
 }
 
 uninstall() {
-  [ -e /tmp/aegis_web ] && rm -rf /tmp/aegis_web >/dev/null 2>&1
-  [ -d "$wcDAT_DIR" ] && rm -rf $wcDAT_DIR >/dev/null 2>&1
+  /bin/rm -f /tmp/aegis_web >/dev/null 2>&1
+  /bin/rm -rf $wcDAT_DIR >/dev/null 2>&1
 }
 
 aegis_env() {
