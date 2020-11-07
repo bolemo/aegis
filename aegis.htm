@@ -296,7 +296,7 @@ function doUpgrade() {
 }
 </script>
 </head>
-<body>
+<body onLoad="initCgi(); setIpInfoClick(); info(); status();">
 <section>
 <div id="header">
   <h1>AEGIS</h1>
@@ -350,4 +350,3 @@ function doUpgrade() {
 </section>
 </body>
 </html>
-<script>initCgi(); setIpInfoClick(); info(); status();</script>
