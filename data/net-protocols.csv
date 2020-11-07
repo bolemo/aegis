@@ -1,3 +1,4 @@
+Decimal,Keyword,Protocol,IPv6 Extension Header
 0,HOPOPT[0],IPv6 Hop-by-Hop Option,Y
 1,ICMP[1],Internet Control Message,
 2,IGMP[2],Internet Group Management,
