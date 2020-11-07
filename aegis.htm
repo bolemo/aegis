@@ -272,7 +272,7 @@ function setIpInfoClick() {
       elem=window.event? event.srcElement: elem.target;
       if (elem.tagName == "LOG-RIP") getIpInfo(elem.innerHTML);
       if (elem.tagName == "LOG-PT") { var win = window.open("https://www.speedguide.net/port.php?port="+elem.innerHTML, '_blank'); win.focus(); }
-      if (elem.tagName == "LOG-PTL") getProtoInfo(elem.value);
+      if (elem.tagName == "LOG-PTL") getProtoInfo(elem.getAttribute('value'));
    }
 }
 function sendCommand() {
