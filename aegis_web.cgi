@@ -263,7 +263,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="$(sed "$((_PROTO+2))q;d" $wcPRT_PTH | cut -d, -f2)" || _PROTO="[protocol $_PROTO]"; }
+    _1=${LINE#* PROTO=}; _PROTOVAL=${_1%% *}; [ -z "${_PROTOVAL##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_PROTOVAL\">$(sed "$((_PROTOVAL+2))q;d" $wcPRT_PTH | cut -d, -f2)</log-ptl>" || _PROTO="<log-ptl value=\"$_PROTOVAL\">[protocol $_PROTOVAL]</log-ptl>"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
@@ -271,10 +271,10 @@ _getLog() {
       else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
     fi
     case $LINE in
-      *"IN=$_WIF"*) echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> packet with protocol: <log-ptl>$_PROTO</log-ptl>, from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
-      *"OUT=$_WIF"*) echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> packet with protocol: <log-ptl>$_PROTO</log-ptl>, to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
-      *"IN=$_TIF"*) echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> packet with protocol: <log-ptl>$_PROTO</log-ptl>, from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
-      *"OUT=$_TIF"*) echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> packet with protocol: <log-ptl>$_PROTO</log-ptl>, to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
+      *"IN=$_WIF"*) echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> packet with protocol: $_PROTO, from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
+      *"OUT=$_WIF"*) echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> packet with protocol: $_PROTO, to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
+      *"IN=$_TIF"*) echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> packet with protocol: $_PROTO, from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
+      *"OUT=$_TIF"*) echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> packet with protocol: $_PROTO, to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
     esac
   done
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
