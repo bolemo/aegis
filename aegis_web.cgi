@@ -1,4 +1,7 @@
 #!/bin/sh
+wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
+wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="wcDAT_DIR/net-protocols.csv"
+
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
   ARG=$(echo "$QUERY_STRING"|/bin/sed 's/.*arg=\([^&]*\)/\1/')
@@ -8,23 +11,19 @@ else
 fi
 
 init() {
-  [ -d /www/bolemo/aegis_data ] && mkdir /www/bolemo/aegis_data 2>/dev/null
-  [ -r /www/bolemo/aegis_data/net-protocols.csv ] && [ $(/bin/date -d $(($(date +%s)-$(date -r /www/bolemo/aegis_data/net-protocols.csv +%s))) -D %s +%s) -gt 1296000 ] && return
-  
-  wget -qO- /www/bolemo/aegis_data/net-protocols.csv|
-  /usr/bin/awk -v RS='"[^"]*"' -v ORS= '{gsub(/,/, "\\&#44;", RT); gsub(/[\n[:space:]]+/, " ", RT); print $0 RT}'|
-  /usr/bin/awk -F, 'NR>1 {gsub(/"{2}/, "\\&#34;"); gsub(/"/, ""); gsub(/ \(deprecated\)/, "", $2); if ($1 ~ /-/) {split($1,a,"-"); for (i=a[1]; i<=a[2]; i++) {b=($2=="")?"[protocol "i"]":$2"("i")"; print i","b","$3","$4}} else {b=($2=="")?"[protocol "$1"]":$2"("$1")"; print $1","b","$3","$4}}' \
-  >/www/bolemo/protocol-numbers.csv
+  [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -gt 1296000 ] && return
+  [ -d "$wcDAT_DIR" ] && mkdir $wcDAT_DIR 2>/dev/null
+  wget -qO- https://raw.githubusercontent.com/bolemo/aegis/dev/data/net-protocols.csv > $wcPRT_PTH
 }
 
 aegis_env() {
   # source environment we need from aegis
-  eval "$(/opt/bolemo/scripts/aegis _env)"
+  eval "$(wcAEGIS_BIN _env)"
 }
 
 status() {
   aegis_env
-  set -- $(/opt/bolemo/scripts/aegis _status)
+  set -- $(wcAEGIS_BIN _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
   echo "<h2>Status <span style='color: DarkGrey; font-weight: normal;'>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
@@ -258,7 +257,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
+    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="$(sed $((_PROTO+2))q;d $wcPRT_PTH | cut -d, -f2)" || _PROTO="[protocol $_PROTO]"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
