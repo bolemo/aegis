@@ -221,11 +221,12 @@ function logFilter() {
 }
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+arg;
+alert(url);
    var ptlInfoReq = new XMLHttpRequest();
    ptlInfoReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-     var prtApi = JSON.parse(this.responseText);
-     document.querySelector("#main-log > .overlay > .title").innerHTML=prtApi.title;
-     document.querySelector("#main-log > .overlay > .message").innerHTML=prtApi.message;
+     var ptlInfo = JSON.parse(this.responseText);
+     document.querySelector("#main-log > .overlay > .title").innerHTML=ptlInfo.title;
+     document.querySelector("#main-log > .overlay > .message").innerHTML=ptlInfo.message;
      document.querySelector("#main-log > .overlay").style.display="block";
    } }
    ptlInfoReq.open("GET", url, true);
