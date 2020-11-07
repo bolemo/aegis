@@ -14,7 +14,8 @@ NR>1 {
 }' |
 /usr/bin/sort -n |
 /usr/bin/awk -F, '
-function p(){printf("%s,%s,%s,%s\n",f[1],f[2]?f[2]"["f[1]"]":f[1],f[3],f[4])}
+function p(){printf("%s,%s,%s,%s\n",f[1],f[2]?f[2]"("f[1]")":f[1],f[3],f[4])}
 NR>1 {if ($1==f[1]) {$2=f[2]"/"$2;$3=f[3]"/"$3} else {p()}}
 {f[1]=$1;f[2]=$2;f[3]=$3;f[4]=$4}
-END {p()}'
+END {p()}' \
+>net-protocols.csv
