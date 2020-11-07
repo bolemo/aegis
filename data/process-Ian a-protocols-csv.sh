@@ -1,4 +1,5 @@
 #!/bin/sh
+echo "Decimal,Keyword,Protocol,IPv6 Extension Header"
 wget -qO- https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv |
 /usr/bin/awk -v RS='"[^"]*"' -v ORS= '{gsub(/,/, "\\&#44;", RT); gsub(/[\n[:space:]]+/, " ", RT); print $0 RT}' |
 /usr/bin/awk -F, '
