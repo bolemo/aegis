@@ -12,8 +12,13 @@ fi
 
 init() {
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -gt 1296000 ] && return
-  [ -d "$wcDAT_DIR" ] && mkdir $wcDAT_DIR 2>/dev/null
+  [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR 2>/dev/null
   wget -qO- https://raw.githubusercontent.com/bolemo/aegis/dev/data/net-protocols.csv > $wcPRT_PTH
+}
+
+uninstall() {
+  [ -e /tmp/aegis_web ] && rm -rf /tmp/aegis_web >/dev/null 2>&1
+  [ -d "$wcDAT_DIR" ] && rm -rf $wcDAT_DIR >/dev/null 2>&1
 }
 
 aegis_env() {
@@ -300,5 +305,6 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  uninstall) uninstall;;
 esac
 exit 0
