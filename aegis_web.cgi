@@ -263,7 +263,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTOVAL=${_1%% *}; [ -z "${_PROTOVAL##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_PROTOVAL\">$(sed "$((_PROTOVAL+2))q;d" $wcPRT_PTH | cut -d, -f2)</log-ptl>" || _PROTO="<log-ptl value=\"$_PROTOVAL\">[protocol $_PROTOVAL]</log-ptl>"; }
+    _1=${LINE#* PROTO=}; _PROTOVAL=${_1%% *}; [ -z "${_PROTOVAL##*[!0-9]*}" ] || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_PROTOVAL\">$(sed "$((_PROTOVAL+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f2)</log-ptl>" || _PROTO="<log-ptl value=\"$_PROTOVAL\">[protocol $_PROTOVAL]</log-ptl>"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
@@ -298,6 +298,14 @@ refreshLog() {
   [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
+proto_info() {
+  _DATA="$(sed "$((ARG+2))q;d" $wcPRT_PTH)"
+  _TITLE="PROTOCOL $(/usr/bin/cut -d, -f2)"
+  [ -z "$(/usr/bin/cut -d, -f4)" ] || _PREMSG="<p><u>It is an IPv6 Extension Header</u></p>"
+  _MESSAGE="$_PREMSG<p>$(/usr/bin/cut -d, -f3)</p>"
+  echo "{\"title\"=\"$_TITLE\",\"message\"=\"$_MESSAGE\"}"
+}
+
 # MAIN
 case $CMD in
   init) init;;
@@ -306,6 +314,7 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  proto_info) proto_info;;
   uninstall) uninstall;;
 esac
 exit 0
