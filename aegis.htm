@@ -165,9 +165,8 @@ function infoCallback(jsonData) {
    }
    infoTimer = setTimeout(function() { aegis('info', undefined, undefined, undefined, infoCallback); }, 300000);
 }
-function info() {
-   aegis('info', undefined, undefined, undefined, infoCallback);
-}
+function info() { aegis('info', undefined, undefined, undefined, infoCallback) }
+function initCgi() { aegis('init', undefined, undefined, undefined, undefined) }
 function status() {
    displayFor('status');
    document.getElementById("main-status").innerHTML="Getting Aegis status...";
@@ -351,4 +350,4 @@ function doUpgrade() {
 </section>
 </body>
 </html>
-<script>setIpInfoClick(); info(); status();</script>
+<script>initCgi(); setIpInfoClick(); info(); status();</script>
