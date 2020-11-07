@@ -154,8 +154,7 @@ function infoCallback(jsonData) {
    var _info = JSON.parse(jsonData);
    document.getElementById("info").innerHTML = 'version '+_info.version+'<br />'+_info.location+' drive';
    switch (_info.versionStatus) {
-     case 0:
-             break;
+     case 0: break; //current version is latest
      case 2: break; //current version is higher than latest one!
      case 1: var message = 'Aegis version '+_info.newVersion+' is available!'
              document.getElementById("vers-message").innerHTML = message;
@@ -220,6 +219,18 @@ function logFilter() {
    if (logFilterWan.checked == false) { logboxElem.classList.add('wan'); } else { logboxElem.classList.remove('wan'); }
    if (logFilterVpn.checked == false) { logboxElem.classList.add('vpn'); } else { logboxElem.classList.remove('vpn'); }
 }
+function getProtoInfo(ptl) {
+   var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+arg;
+   var ptlInfoReq = new XMLHttpRequest();
+   ptlInfoReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
+     var prtApi = JSON.parse(this.responseText);
+     document.querySelector("#main-log > .overlay > .title").innerHTML=prtApi.title;
+     document.querySelector("#main-log > .overlay > .message").innerHTML=prtApi.message;
+     document.querySelector("#main-log > .overlay").style.display="block";
+   } }
+   ptlInfoReq.open("GET", url, true);
+   ptlInfoReq.send();
+}
 function getIpInfo(ip) {
    var url='http://ip-api.com/json/'+ip+'?fields=status,message,continent,country,regionName,city,district,isp,org,as,reverse,mobile,proxy,hosting,query';
    var ipApiReq = new XMLHttpRequest();
@@ -261,7 +272,7 @@ function setIpInfoClick() {
       elem=window.event? event.srcElement: elem.target;
       if (elem.tagName == "LOG-RIP") getIpInfo(elem.innerHTML);
       if (elem.tagName == "LOG-PT") { var win = window.open("https://www.speedguide.net/port.php?port="+elem.innerHTML, '_blank'); win.focus(); }
-      if (elem.tagName == "LOG-PTL") { var win = window.open("https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml", '_blank'); win.focus(); }
+      if (elem.tagName == "LOG-PTL") getProtoInfo(elem.value);
    }
 }
 function sendCommand() {
