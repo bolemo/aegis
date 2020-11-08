@@ -263,7 +263,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTOVAL=${_1%% *}; [ -z "${_PROTOVAL##*[!0-9]*}" ] && _PROTO="$_PROTOVAL" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_PROTOVAL\">$(sed "$((_PROTOVAL+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f2)</log-ptl>" || _PROTO="<log-ptl value=\"$_PROTOVAL\">[protocol $_PROTOVAL]</log-ptl>"; }
+    _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
@@ -299,10 +299,12 @@ refreshLog() {
 }
 
 proto_info() {
-  _DATA="$(sed "$((ARG+2))q;d" $wcPRT_PTH)"
-  _TITLE="PROTOCOL $(echo "$_DATA"|/usr/bin/cut -d, -f2)"
-  [ -z "$(echo "$_DATA"|/usr/bin/cut -d, -f4)" ] || _PREMSG="<p><u>It is an IPv6 Extension Header</u></p>"
-  _MESSAGE="$_PREMSG<p>$(echo "$_DATA"|/usr/bin/cut -d, -f3)</p>"
+  [ -r "$wcPRT_PTH" ] || return
+  [ -z "${ARG##*[!0-9]*}" ] && _M='$2' || _M='$1'
+  _DATA="$(/usr/bin/awk -F, 'match ('$_M',/^'$ARG'$/) {print $0; exit}' $wcPRT_PTH)"
+  _TITLE="$(echo "$_DATA"|/usr/bin/cut -d, -f3)"
+  [ -z "$(echo "$_DATA"|/usr/bin/cut -d, -f5)" ] || _PREMSG="<p><u>IPv6 Extension Header</u></p>"
+  _MESSAGE="$_PREMSG<p>$(echo "$_DATA"|/usr/bin/cut -d, -f4)</p>"
   echo "{\"title\":\"$_TITLE\",\"message\":\"$_MESSAGE\"}"
 }
 
