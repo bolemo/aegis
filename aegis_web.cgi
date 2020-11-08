@@ -14,7 +14,7 @@ fi
 init() {
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
   [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR 2>/dev/null
-  /usr/bin/wget -qO- $wcPRT_URL > $wcPRT_PTH
+  /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH 2>/dev/null
 }
 
 uninstall() {
