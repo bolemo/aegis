@@ -223,7 +223,7 @@ function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
    var ptlInfoReq = new XMLHttpRequest();
    ptlInfoReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-     var ptlInfo = JSON.parse(this.responseText);
+     try { var ptlInfo = JSON.parse(this.responseText); } catch (e) { return; }
      document.querySelector("#main-log > .overlay > .title").innerHTML=ptlInfo.title;
      document.querySelector("#main-log > .overlay > .message").innerHTML=ptlInfo.message;
      document.querySelector("#main-log > .overlay").style.display="block";
