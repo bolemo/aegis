@@ -374,8 +374,8 @@ SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 #SC_PATH="$(cd "$(\ls -l "$0"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.blacklist"
-CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.whitelist"
+CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
+CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
@@ -797,8 +797,9 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  if [ -r "$CUST_BL_FILE" ]; then
-    [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist ($CUST_BL_FILE)"
+  if ( for F in "$CUST_BL_FILE"; do test -r $F || exit 1; done; ); then
+#  if [ -r "$CUST_BL_FILE" ]; then
+    [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist(s)..."
     /bin/grep '^[0-9]' "$CUST_BL_FILE"|/bin/sed 's/;.*//' >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
@@ -812,9 +813,9 @@ update_iplist() {
   [ "$VERBOSE" ] && echo "- Done."
 
   # processing whitelist if any
-#  if ( for F in "$CUST_LISTS_DIR/*.whitelist"; do test -r $F || exit 1; done; ); then
-  if [ -r "$CUST_WL_FILE" ]; then
-    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list...\033[0m"
+  if ( for F in "$CUST_WL_FILE"; do test -r $F || exit 1; done; ); then
+#  if [ -r "$CUST_WL_FILE" ]; then
+    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list(s)...\033[0m"
     /bin/grep '^[0-9]' "$CUST_WL_FILE"|/bin/sed 's/;.*//' >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
