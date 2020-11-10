@@ -301,10 +301,14 @@ refreshLog() {
 printList() {
   aegis_env
   case "$ARG" in
-    sources) /bin/cat "$SRC_LIST";;
-    blacklist) /bin/cat "$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
-    whitelist) /bin/cat "$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
+    sources) _LIST="$SRC_LIST";;
+    blacklist) _LIST="$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
+    whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
+  if test -r "$_LIST"
+    then date -r "$_LIST"; /bin/cat "$_LIST"
+    else echo "File does not exist or is empty."
+  fi
 }
 
 saveList() {
