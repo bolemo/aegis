@@ -289,20 +289,10 @@ function showCommandLog(value) {
    }
    document.getElementById("command-log").disabled=displayVal;
 }
-function sources() {
-   displayFor('sources');
-   document.getElementById("main-sources").innerHTML="";
-   aegis('print_list', 'main-sources', 'sources');
-}
-function blacklist() {
-   displayFor('blacklist');
-   document.getElementById("main-blacklist").innerHTML="";
-   aegis('print_list', 'main-blacklist', 'blacklist');
-}
-function whitelist() {
-   displayFor('whitelist');
-   document.getElementById("main-whitelist").innerHTML="";
-   aegis('print_list', 'main-whitelist', 'whitelist');
+function list(list) {
+   displayFor(list);
+   document.getElementById("main-"+list).innerHTML="";
+   aegis('print_list', 'main-'+list, list);
 }
 function upgrade() {
    displayFor('upgrade');
@@ -335,9 +325,9 @@ function doUpgrade() {
   <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
-  <input type="radio" name="menu" id="menu-sources" onclick=""><label for="menu-sources">Blacklists Sources</label>
-  <input type="radio" name="menu" id="menu-blacklist" onclick="blacklist();"><label for="menu-blacklist">Custom Blacklist</label>
-  <input type="radio" name="menu" id="menu-whitelist" onclick=""><label for="menu-whitelist">Custom Whitelist</label>
+  <input type="radio" name="menu" id="menu-sources" onclick="list('souces');"><label for="menu-sources">Blacklists Sources</label>
+  <input type="radio" name="menu" id="menu-blacklist" onclick="list('blacklist');"><label for="menu-blacklist">Custom Blacklist</label>
+  <input type="radio" name="menu" id="menu-whitelist" onclick="list('whitelist');"><label for="menu-whitelist">Custom Whitelist</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
