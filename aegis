@@ -812,6 +812,7 @@ update_iplist() {
   [ "$VERBOSE" ] && echo "- Done."
 
   # processing whitelist if any
+#  if ( for F in "$CUST_LISTS_DIR/*.whitelist"; do test -r $F || exit 1; done; ); then
   if [ -r "$CUST_WL_FILE" ]; then
     [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list...\033[0m"
     /bin/grep '^[0-9]' "$CUST_WL_FILE"|/bin/sed 's/;.*//' >"$TMP_FILE"
