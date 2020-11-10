@@ -289,6 +289,11 @@ function showCommandLog(value) {
    }
    document.getElementById("command-log").disabled=displayVal;
 }
+function blacklist() {
+   displayFor('blacklist');
+   document.getElementById("main-blacklist").innerHTML="";
+   aegis('print-list', 'main-blacklist', 'blacklist');
+}
 function upgrade() {
    displayFor('upgrade');
    document.getElementById("main-upgrade").innerHTML = '';
@@ -321,7 +326,7 @@ function doUpgrade() {
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
   <input type="radio" name="menu" id="menu-sources" onclick=""><label for="menu-sources">Blacklists Sources</label>
-  <input type="radio" name="menu" id="menu-blacklist" onclick=""><label for="menu-blacklist">Custom Blacklist</label>
+  <input type="radio" name="menu" id="menu-blacklist" onclick="blacklist();"><label for="menu-blacklist">Custom Blacklist</label>
   <input type="radio" name="menu" id="menu-whitelist" onclick=""><label for="menu-whitelist">Custom Whitelist</label>
 </div>
 <div id="ctrl">
@@ -346,6 +351,7 @@ function doUpgrade() {
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
   </div>
+  <div id="ctrl-blacklist"></div>
   <div id="ctrl-upgrade">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
@@ -359,6 +365,7 @@ function doUpgrade() {
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
+  <textarea id="main-blacklist"></textarea>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
