@@ -298,7 +298,16 @@ refreshLog() {
   [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
-proto_info() {
+printList() {
+  aegis_env
+  case "$ARG" in
+    sources) /bin/cat "$SRC_LIST";;
+    blacklist) /bin/cat "$(sed 's/\*//' "$CUST_BL_FILE")";;
+    whitelist) /bin/cat "$(sed 's/\*//' "$CUST_WL_FILE")";;
+  esac
+}
+
+protoInfo() {
   [ -r "$wcPRT_PTH" ] || return
   [ -z "${ARG##*[!0-9]*}" ] && _M='$2' || _M='$1'
   _DATA="$(/usr/bin/awk -F, 'match ('$_M',/^'$ARG'$/) {print $0; exit}' $wcPRT_PTH)"
@@ -316,7 +325,8 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
-  proto_info) proto_info;;
+  print_list) printList;;
+  proto_info) protoInfo;;
   uninstall) uninstall;;
 esac
 exit 0
