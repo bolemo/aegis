@@ -247,7 +247,7 @@ _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
   _KEY=$1
   _MAX=$2
-  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) )) || _BT=$3
+  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$3
   _ST=$4
   _WIF=$5
   _TIF=$6
