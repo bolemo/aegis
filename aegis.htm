@@ -297,13 +297,15 @@ function doList(list) {
    aegis("print_list", "main-"+list, list);
 }
 function sendList(list) {
-   var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
-   var saveListReq = new XMLHttpRequest();
-   saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-       if (this.responseText == 0) { alert ("Saved "+list+" successfully."); } else { alert ("Problem saving "+list+"!"); }
-   } }
-   saveListReq.open("POST", url, true);
-   saveListReq.send(document.getElementById("main-"+list).innerHTML);
+   if (confirm("Are you sure you want to save "+list+"?")) {
+      var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
+      var saveListReq = new XMLHttpRequest();
+      saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
+         if (this.responseText == 0) { alert ("Saved "+list+" successfully."); } else { alert ("Problem saving "+list+"!"); }
+      } }
+      saveListReq.open("POST", url, true);
+      saveListReq.send(document.getElementById("main-"+list).innerHTML);
+   } else { alert ("Saved of "+list+" cancelled!"); }
 }
 function upgrade() {
    displayFor('upgrade');
