@@ -289,10 +289,20 @@ function showCommandLog(value) {
    }
    document.getElementById("command-log").disabled=displayVal;
 }
+function sources() {
+   displayFor('sources');
+   document.getElementById("main-sources").innerHTML="";
+   aegis('print_list', 'main-sources', 'sources');
+}
 function blacklist() {
    displayFor('blacklist');
    document.getElementById("main-blacklist").innerHTML="";
    aegis('print_list', 'main-blacklist', 'blacklist');
+}
+function whitelist() {
+   displayFor('whitelist');
+   document.getElementById("main-whitelist").innerHTML="";
+   aegis('print_list', 'main-whitelist', 'whitelist');
 }
 function upgrade() {
    displayFor('upgrade');
@@ -351,7 +361,9 @@ function doUpgrade() {
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
   </div>
+  <div id="ctrl-sources"></div>
   <div id="ctrl-blacklist"></div>
+  <div id="ctrl-whitelist"></div>
   <div id="ctrl-upgrade">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
@@ -365,7 +377,9 @@ function doUpgrade() {
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
+  <textarea id="main-sources"></textarea>
   <textarea id="main-blacklist"></textarea>
+  <textarea id="main-whitelist"></textarea>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
