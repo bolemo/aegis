@@ -296,6 +296,14 @@ function doList(list) {
    document.getElementById("main-"+list).innerHTML="";
    aegis("print_list", "main-"+list, list);
 }
+function sendList(list) {
+   var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
+   var saveListReq = new XMLHttpRequest();
+   saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
+   } }
+   saveListReq.open("POST", url, true);
+   saveListReq.send(document.getElementById("main-"+list).innerHTML);
+}
 function upgrade() {
    displayFor('upgrade');
    document.getElementById("main-upgrade").innerHTML = '';
@@ -353,9 +361,9 @@ function doUpgrade() {
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
   </div>
-  <div id="ctrl-sources" class="list"></div>
-  <div id="ctrl-blacklist" class="list"></div>
-  <div id="ctrl-whitelist" class="list"></div>
+  <div id="ctrl-sources" class="list"><input type="button" value="RELOAD" onclick="doList('sources');" /><input type="button" value="SAVE" onclick="sendList('sources');" /></div>
+  <div id="ctrl-blacklist" class="list"><input type="button" value="RELOAD" onclick="doList('blacklist');" /><input type="button" value="SAVE" onclick="sendList('blacklist');" /></div>
+  <div id="ctrl-whitelist" class="list"><input type="button" value="RELOAD" onclick="doList('whitelist');" /><input type="button" value="SAVE" onclick="sendList('whitelist');" /></div>
   <div id="ctrl-upgrade">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
