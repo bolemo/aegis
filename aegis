@@ -800,7 +800,8 @@ update_iplist() {
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
 #  if [ -r "$CUST_BL_FILE" ]; then
     [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist(s)..."
-    /bin/grep -h '^[0-9]' $CUST_BL_FILE|/bin/sed 's/;.*//' >>"$TMP_FILE"
+    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_BL_FILE >>"$TMP_FILE"
+#    /bin/grep -h '^[0-9]' $CUST_BL_FILE|/bin/sed 's/;.*//' >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
     [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
@@ -816,7 +817,8 @@ update_iplist() {
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
 #  if [ -r "$CUST_WL_FILE" ]; then
     [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list(s)...\033[0m"
-    /bin/grep -h '^[0-9]' $CUST_WL_FILE|/bin/sed 's/;.*//' >"$TMP_FILE"
+    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
+#    /bin/grep -h '^[0-9]' $CUST_WL_FILE|/bin/sed 's/;.*//' >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
