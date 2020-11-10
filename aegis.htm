@@ -316,10 +316,13 @@ function doUpgrade() {
   <div style="clear: both; height: 0;">&nbsp;</div>
 </div>
 <div id="menu">
+  <input type="radio" name="menu" id="menu-upgrade" onclick="upgrade();"><label for="menu-upgrade">UPGRADE</label>
   <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
-  <input type="radio" name="menu" id="menu-upgrade" onclick="upgrade();"><label for="menu-upgrade">UPGRADE</label>
+  <input type="radio" name="menu" id="menu-sources" onclick=""><label for="menu-sources">Blacklist Sources</label>
+  <input type="radio" name="menu" id="menu-blacklist" onclick=""><label for="menu-blacklist">Custom Blacklist</label>
+  <input type="radio" name="menu" id="menu-whitelist" onclick=""><label for="menu-whitelist">Custom Whitelist</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
