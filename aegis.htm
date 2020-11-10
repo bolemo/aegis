@@ -294,7 +294,11 @@ function showCommandLog(value) {
 function doList(list) {
    displayFor(list);
    document.getElementById("main-"+list).innerHTML="";
-   aegis("print_list", "main-"+list, list);
+//   aegis("print_list", "main-"+list, list);
+   aegis("print_list", undefined, list, undefined, function(val) {
+//       val.split('\n')[0];
+       document.getElementById("main-"+list).innerHTML="val";
+   });
 }
 function sendList(list) {
    if (confirm("Are you sure you want to save "+list+"?")) {
