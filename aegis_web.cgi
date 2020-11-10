@@ -307,6 +307,10 @@ printList() {
   esac
 }
 
+saveList() {
+   cat >/tmp/TEST_$ARG
+}
+
 protoInfo() {
   [ -r "$wcPRT_PTH" ] || return
   [ -z "${ARG##*[!0-9]*}" ] && _M='$2' || _M='$1'
@@ -326,6 +330,7 @@ case $CMD in
   log) log;;
   refresh_log) refreshLog;;
   print_list) printList;;
+  save_list) saveList;;
   proto_info) protoInfo;;
   uninstall) uninstall;;
 esac
