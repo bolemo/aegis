@@ -295,7 +295,7 @@ function showCommandLog(value) {
 function doList(list) {
    displayFor(list);
    document.getElementById("main-"+list).innerHTML="";
-//   aegis("print_list", "main-"+list, list);
+   document.getElementById(list+"-info").innerHTML="";
    aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById(list+"-info").innerHTML=val.split('\n')[0];
        document.getElementById("main-"+list).innerHTML=val.substring(val.indexOf("\n") + 1);
