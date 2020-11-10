@@ -18,7 +18,7 @@ section > * { box-sizing: border-box; }
 #menu > input:checked + label { border-radius: 0.5em 0.5em 0 0; background: linear-gradient(180deg, rgb(203,211,211) 0%, rgb(255,255,255) 100%); color: darkSlateGrey; }
 #menu > #menu-upgrade + label { display: none; background: linear-gradient(180deg, rgb(47,79,79) 0%, rgb(255,0,0) 100%); }
 #menu > #menu-upgrade:checked + label { background: linear-gradient(180deg, rgb(203,211,211) 0%, rgb(255,255,255) 100%); color: red; }
-#ctrl > * { display: none; }
+#ctrl > * { display: none; margin-left: 1em; }
 #ctrl-log, #ctrl-command, #ctrl-upgrade { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
 #vers-message { font-size: 1.5em; font-weight: bold; color: red; margin-bottom: 0.2em; }
 #ctrl-log input { margin-left: 1em; }
@@ -307,6 +307,7 @@ function sendList(list) {
       var saveListReq = new XMLHttpRequest();
       saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
          if (this.responseText == 0) { alert ("Saved "+list+" successfully."); } else { alert ("Problem saving "+list+"!"); }
+         doList(list);
       } }
       saveListReq.open("POST", url, true);
       saveListReq.send(document.getElementById("main-"+list).innerHTML);
