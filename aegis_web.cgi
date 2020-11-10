@@ -302,8 +302,8 @@ printList() {
   aegis_env
   case "$ARG" in
     sources) /bin/cat "$SRC_LIST";;
-    blacklist) /bin/cat "$(sed 's/\*//' "$CUST_BL_FILE")";;
-    whitelist) /bin/cat "$(sed 's/\*//' "$CUST_WL_FILE")";;
+    blacklist) /bin/cat "$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
+    whitelist) /bin/cat "$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
 }
 
