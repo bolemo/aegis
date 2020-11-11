@@ -10,7 +10,7 @@ if [ "$1" = '_env' ]; then IFS=;while read -r LINE
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.3.7"
+SC_VERS="1.3.8"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -249,13 +249,13 @@ engine_start() {
     _WG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WG_NAME/=")"
     if [ "$_WG_POS" != "$_POS" ]; then
       [ "$_WG_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j ACCEPT
+      iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
     fi
     _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WG_NAME/=")"
     if [ "$_WG_POS" != "$_POS" ]; then
       [ "$_WG_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j ACCEPT
+      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WG))
@@ -272,13 +272,13 @@ engine_start() {
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j ACCEPT
+      iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j ACCEPT
+      iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
@@ -374,8 +374,8 @@ SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 #SC_PATH="$(cd "$(\ls -l "$0"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-CUST_BL_FILE="$ROOT_DIR/etc/$SC_NAME.blacklist"
-CUST_WL_FILE="$ROOT_DIR/etc/$SC_NAME.whitelist"
+CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
+CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 TMP_FILE="/tmp/$SC_NAME.tmp"
 TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
@@ -623,6 +623,7 @@ install_web() {
 
 clean_web() {
   /bin/rm -f "$WWW_PATH/$SC_NAME.htm" 2>/dev/null
+  eval "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi uninstall" 2>/dev/null
   /bin/rm -f "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi" 2>/dev/null
   [ "$VERBOSE" ] && echo "- $WEB_NAME was removed."
 }
@@ -708,7 +709,7 @@ print_log() {
   echo -e "\033[1;36mLog:\033[0m"
   echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
-  _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) ))
+  _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")"
@@ -796,9 +797,11 @@ update_iplist() {
     [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
-  if [ -r "$CUST_BL_FILE" ]; then
-    [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist ($CUST_BL_FILE)"
-    /bin/grep '^[0-9]' "$CUST_BL_FILE"|/bin/sed 's/;.*//' >>"$TMP_FILE"
+  if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
+#  if [ -r "$CUST_BL_FILE" ]; then
+    [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist(s)..."
+    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_BL_FILE >>"$TMP_FILE"
+#    /bin/grep -h '^[0-9]' $CUST_BL_FILE|/bin/sed 's/;.*//' >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
     [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
@@ -811,9 +814,11 @@ update_iplist() {
   [ "$VERBOSE" ] && echo "- Done."
 
   # processing whitelist if any
-  if [ -r "$CUST_WL_FILE" ]; then
-    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list...\033[0m"
-    /bin/grep '^[0-9]' "$CUST_WL_FILE"|/bin/sed 's/;.*//' >"$TMP_FILE"
+  if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
+#  if [ -r "$CUST_WL_FILE" ]; then
+    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list(s)...\033[0m"
+    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
+#    /bin/grep -h '^[0-9]' $CUST_WL_FILE|/bin/sed 's/;.*//' >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then

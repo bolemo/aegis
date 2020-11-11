@@ -1,4 +1,8 @@
 #!/bin/sh
+wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
+wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
+wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
+
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
   ARG=$(echo "$QUERY_STRING"|/bin/sed 's/.*arg=\([^&]*\)/\1/')
@@ -7,14 +11,25 @@ else
   ARG=$2
 fi
 
+init() {
+  [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
+  [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR 2>/dev/null
+  /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH 2>/dev/null
+}
+
+uninstall() {
+  /bin/rm -f /tmp/aegis_web 2>/dev/null
+  /bin/rm -rf $wcDAT_DIR 2>/dev/null
+}
+
 aegis_env() {
   # source environment we need from aegis
-  eval "$(/opt/bolemo/scripts/aegis _env)"
+  eval "$($wcAEGIS_BIN _env)"
 }
 
 status() {
   aegis_env
-  set -- $(/opt/bolemo/scripts/aegis _status)
+  set -- $($wcAEGIS_BIN _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
   echo "<h2>Status <span style='color: DarkGrey; font-weight: normal;'>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
@@ -232,7 +247,7 @@ _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
   _KEY=$1
   _MAX=$2
-  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(cat /proc/uptime|/usr/bin/cut -d. -f1) )) || _BT=$3
+  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$3
   _ST=$4
   _WIF=$5
   _TIF=$6
@@ -248,7 +263,7 @@ _getLog() {
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _PROTO=${_1%% *}; [ -z "${_PROTO##*[!0-9]*}" ] || _PROTO="[protocol $_PROTO]"
+    _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
@@ -256,10 +271,10 @@ _getLog() {
       else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
     fi
     case $LINE in
-      *"IN=$_WIF"*) echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
-      *"OUT=$_WIF"*) echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
-      *"IN=$_TIF"*) echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> <log-ptl>$_PROTO</log-ptl> packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
-      *"OUT=$_TIF"*) echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> <log-ptl>$_PROTO</log-ptl> packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
+      *"IN=$_WIF"*) echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
+      *"OUT=$_WIF"*) echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
+      *"IN=$_TIF"*) echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
+      *"OUT=$_TIF"*) echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
     esac
   done
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
@@ -283,12 +298,59 @@ refreshLog() {
   [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
+printList() {
+  aegis_env
+  case "$ARG" in
+    sources) _LIST="$SRC_LIST";;
+    blacklist) _LIST="$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
+    whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
+  esac
+  if test -s "$_LIST"
+    then echo -n "<u>File:</u> $_LIST, <u>last modified:</u> "; date -r "$_LIST"; /bin/sed '/^[[:space:]]*$/d' "$_LIST"
+    else echo "<u>File:</u> $_LIST does not exist or is empty."
+  fi
+}
+
+saveList() {
+  aegis_env
+  _READ=`/bin/sed '/^[[:space:]]*$/d'`
+  case "$ARG" in
+    sources) _LIST="$SRC_LIST";;
+    blacklist) _LIST="$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
+    whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
+  esac
+  if [ -z "$_READ" ]; then
+    [ -e "$_LIST" ] && { rm -f "$_LIST" 2>/dev/null; echo $?; return; }
+    echo 0
+  elif [ "$(/bin/cat $_LIST)" = "$_READ" ]; then
+    echo 0
+  else
+    echo "$_READ" >"$_LIST"
+    [ "$(/bin/cat $_LIST)" = "$_READ" ] && echo 0 || echo 1
+  fi
+}
+
+protoInfo() {
+  [ -r "$wcPRT_PTH" ] || return
+  [ -z "${ARG##*[!0-9]*}" ] && _M='$2' || _M='$1'
+  _DATA="$(/usr/bin/awk -F, 'match ('$_M',/^'$ARG'$/) {print $0; exit}' $wcPRT_PTH)"
+  _TITLE="$(echo "$_DATA"|/usr/bin/cut -d, -f3)"
+  [ -z "$(echo "$_DATA"|/usr/bin/cut -d, -f5)" ] || _PREMSG="<p><u>IPv6 Extension Header</u></p>"
+  _MESSAGE="$_PREMSG<p>$(echo "$_DATA"|/usr/bin/cut -d, -f4)</p>"
+  echo "{\"title\":\"$_TITLE\",\"message\":\"$_MESSAGE\"}"
+}
+
 # MAIN
 case $CMD in
+  init) init;;
   info) info;;
   status) status;;
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  print_list) printList;;
+  save_list) saveList;;
+  proto_info) protoInfo;;
+  uninstall) uninstall;;
 esac
 exit 0
