@@ -331,9 +331,23 @@ function doUpgrade() {
    document.getElementById("main-upgrade").innerHTML="Processing Aegis upgrade...";
    aegis('command', 'main-upgrade', upgradeCmd, undefined, upgradeCallback);
 }
+function ready() {
+   initCgi(); setIpInfoClick(); info();
+   switch (window.location.hash) {
+       case 'command': command(); break;
+       case 'log': log(); break;
+       case 'sources': doList('sources'); break;
+       case 'blacklist': doList('blacklist'); break;
+       case 'whitelist': doList('whitelist'); break;
+       case 'status':
+       default:
+           status();
+           break;
+   }
+}
 </script>
 </head>
-<body onLoad="initCgi(); setIpInfoClick(); info(); status();">
+<body onLoad="ready();">
 <section>
 <div id="header">
   <h1>AEGIS</h1>
