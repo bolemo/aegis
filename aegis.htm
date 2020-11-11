@@ -149,6 +149,8 @@ function showMenu(item, visible) {
 function displayFor(item) {
    activeMenu=item;
    clearTimeout(logTimer); clearTimeout(devTimer);
+   document.title="Aegis - "+item;
+   document.location.href=document.location.href+"#"+item;
    document.querySelectorAll("#ctrl > *, #main > *").forEach(elem => elem.style.display="none");
    document.getElementById("ctrl-"+item).style.display="block";
    document.getElementById("main-"+item).style.display="block";
