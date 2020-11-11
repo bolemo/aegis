@@ -370,9 +370,9 @@ function doUpgrade() {
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
   </div>
-  <div id="ctrl-sources" class="list"><input type="button" value="RELOAD" onclick="doList('sources');" /><input type="button" value="SAVE" onclick="sendList('sources');" /><div id="sources-info"></div></div>
-  <div id="ctrl-blacklist" class="list"><input type="button" value="RELOAD" onclick="doList('blacklist');" /><input type="button" value="SAVE" onclick="sendList('blacklist');" /><div id="blacklist-info"></div></div>
-  <div id="ctrl-whitelist" class="list"><input type="button" value="RELOAD" onclick="doList('whitelist');" /><input type="button" value="SAVE" onclick="sendList('whitelist');" /><div id="whitelist-info"></div></div>
+  <div id="ctrl-sources" class="list"><input type="button" value="Reload Sources" onclick="doList('sources');" /><input type="button" value="Save Sources" onclick="sendList('sources');" /><div id="sources-info"></div></div>
+  <div id="ctrl-blacklist" class="list"><input type="button" value="Reload Blacklist" onclick="doList('blacklist');" /><input type="button" value="Save Blacklist" onclick="sendList('blacklist');" /><div id="blacklist-info"></div></div>
+  <div id="ctrl-whitelist" class="list"><input type="button" value="Reload Whitelist" onclick="doList('whitelist');" /><input type="button" value="Save Whitelist" onclick="sendList('whitelist');" /><div id="whitelist-info"></div></div>
   <div id="ctrl-upgrade">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
