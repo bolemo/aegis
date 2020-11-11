@@ -306,20 +306,20 @@ printList() {
     whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
   if test -s "$_LIST"
-    then echo -n "File last modified: "; date -r "$_LIST"; /bin/cat "$_LIST"
+    then echo -n "File last modified: "; date -r "$_LIST"; /bin/sed '/^[[:space:]]*$/d' "$_LIST"
     else echo "File does not exist or is empty."
   fi
 }
 
 saveList() {
   aegis_env
-  _READ=`/bin/cat`
+  _READ=`/bin/sed '/^[[:space:]]*$/d'`
   case "$ARG" in
     sources) _LIST="$SRC_LIST";;
     blacklist) _LIST="$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
     whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
-  if [ -z "$(echo "$_READ"|/bin/sed '/^[[:space:]]*$/d')" ]; then
+  if [ -z "$_READ" ]; then
     [ -e "$_LIST" ] && { rm -f "$_LIST" 2>/dev/null; echo $?; return; }
     echo 0
   elif [ "$(/bin/cat $_LIST)" = "$_READ" ]; then
