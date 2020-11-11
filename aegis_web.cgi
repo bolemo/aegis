@@ -322,7 +322,7 @@ saveList() {
   if [ -z "$(echo "$_READ"|/bin/sed '/^[[:space:]]*$/d')" ]; then
     [ -e "$_LIST" ] && { rm -f "$_LIST" 2>/dev/null; echo $?; return; }
     echo 0
-  else if [ "$(/bin/cat $_LIST)" = "$_READ" ]
+  elif [ "$(/bin/cat $_LIST)" = "$_READ" ]; then
     echo 0
   else
     echo "$_READ" >"$_LIST"
