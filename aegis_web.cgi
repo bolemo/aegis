@@ -305,7 +305,7 @@ printList() {
     blacklist) _LIST="$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
     whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
-  if test -r "$_LIST"
+  if test -s "$_LIST"
     then echo -n "File last modified: "; date -r "$_LIST"; /bin/cat "$_LIST"
     else echo "File does not exist or is empty."
   fi
@@ -313,12 +313,19 @@ printList() {
 
 saveList() {
   aegis_env
+  _READ=`/bin/cat`
   case "$ARG" in
-    sources) /bin/cat >"$SRC_LIST";;
-    blacklist) /bin/cat >"$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
-    whitelist) /bin/cat >"$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
+    sources) _LIST="$SRC_LIST";;
+    blacklist) _LIST="$(echo "$CUST_BL_FILE"|sed 's/\*//')";;
+    whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
-   echo "$?"
+  if [ -z "$_READ" ]; then
+    [ -e "$_LIST" ] && { rm -f "$_LIST" 2>/dev/null; echo $?; }
+    echo 0
+  else
+    echo "$_READ" >"$_LIST"
+    [ "$(/bin/cat $_LIST)" == "$_READ" ] && echo 0 || echo 1
+  fi
 }
 
 protoInfo() {
