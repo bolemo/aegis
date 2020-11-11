@@ -324,7 +324,7 @@ saveList() {
     echo 0
   else
     echo "$_READ" >"$_LIST"
-    [ "$(/bin/cat $_LIST)" == "$_READ" ] && echo 0 || echo 1
+    [ "$(/bin/cat $_LIST)" = "$_READ" ] && echo 0 || echo 1
   fi
 }
 
