@@ -306,7 +306,7 @@ function sendList(list) {
       var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
       var saveListReq = new XMLHttpRequest();
       saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-         if (this.responseText != 0) alert ("Problem saving "+list+"!");
+         if (this.responseText != 0) { alert ("Problem saving "+list+"!"); }
          doList(list);
       } }
       saveListReq.open("POST", url, true);
