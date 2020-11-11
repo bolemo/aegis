@@ -306,8 +306,8 @@ printList() {
     whitelist) _LIST="$(echo "$CUST_WL_FILE"|sed 's/\*//')";;
   esac
   if test -s "$_LIST"
-    then echo -n "File: $_LIST, last modified: "; date -r "$_LIST"; /bin/sed '/^[[:space:]]*$/d' "$_LIST"
-    else echo "File: $_LIST, does not exist or is empty."
+    then echo -n "<u>File:</u> $_LIST, <u>last modified:</u> "; date -r "$_LIST"; /bin/sed '/^[[:space:]]*$/d' "$_LIST"
+    else echo "<u>File:</u> $_LIST does not exist or is empty."
   fi
 }
 
