@@ -97,11 +97,11 @@ You can find a lot of lists on internet. One great source are the lists from Fir
 
 ### Custom blocklists
 You can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis update`, it will integrate your custom list to the master blocklist.
-You can have several custom black lists, beside aegis.blacklist, any file named aegis-*.blacklist (* being whatever alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+You can have several custom black lists, beside aegis.blacklist, any file named aegis-*[SOMETHING]*.blacklist (*[SOMETHING]* being whatever alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ### Custom whitelists
 Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
-You can have several custom white lists, beside aegis.whitelist, any file named aegis-*.whitelist (* being whatever alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+You can have several custom white lists, beside aegis.whitelist, any file named aegis-*[SOMETHING]*.whitelist (*[SOMETHING]* being whatever alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ## Web Companion
 Since version 1.2.5, aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
