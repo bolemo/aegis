@@ -294,11 +294,11 @@ function showCommandLog(value) {
 }
 function doList(list) {
    displayFor(list);
-   document.getElementById("main-"+list).innerHTML="";
+   document.getElementById("main-"+list).value="";
    document.getElementById(list+"-info").innerHTML="";
    aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById(list+"-info").innerHTML=val.split('\n')[0];
-       document.getElementById("main-"+list).innerHTML=val.substring(val.indexOf("\n") + 1);
+       document.getElementById("main-"+list).value=val.substring(val.indexOf("\n") + 1);
    });
 }
 function sendList(list) {
@@ -306,11 +306,11 @@ function sendList(list) {
       var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
       var saveListReq = new XMLHttpRequest();
       saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-         if (this.responseText == 0) { alert ("Saved "+list+" successfully."); } else { alert ("Problem saving "+list+"!"); }
+         if (this.responseText != 0) alert ("Problem saving "+list+"!");
          doList(list);
       } }
       saveListReq.open("POST", url, true);
-      saveListReq.send(document.getElementById("main-"+list).innerHTML);
+      saveListReq.send(document.getElementById("main-"+list).value);
    } else { alert ("Saved of "+list+" cancelled!"); }
 }
 function upgrade() {
