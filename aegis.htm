@@ -152,6 +152,7 @@ function displayFor(item) {
    document.title="Aegis - "+item;
    document.location.href=window.location.href.split('#')[0]+"#"+item;
    document.querySelectorAll("#ctrl > *, #main > *").forEach(elem => elem.style.display="none");
+   document.getElementById("menu-"+item).checked=true;
    document.getElementById("ctrl-"+item).style.display="block";
    document.getElementById("main-"+item).style.display="block";
 }
@@ -334,12 +335,12 @@ function doUpgrade() {
 function ready() {
    initCgi(); setIpInfoClick(); info();
    switch (window.location.hash) {
-       case 'command': command(); break;
-       case 'log': log(); break;
-       case 'sources': doList('sources'); break;
-       case 'blacklist': doList('blacklist'); break;
-       case 'whitelist': doList('whitelist'); break;
-       case 'status':
+       case '#command': command(); break;
+       case '#log': log(); break;
+       case '#sources': doList('sources'); break;
+       case '#blacklist': doList('blacklist'); break;
+       case '#whitelist': doList('whitelist'); break;
+       case '#status':
        default:
            status();
            break;
