@@ -370,13 +370,13 @@ function ready() {
   <div id="ctrl-command">
     COMMAND: 
     <select id="command-cmd" name="commandCmd" onchange="showCommandLog(this.value);">
-      <option value="update" selected>UPDATE SET THEN RELOAD AEGIS ENGINE</option>
-      <option value="restart">RESTART INTERNAL FIREWALL WITH AEGIS ENGINE</option>
-      <option value="stop">RESTART INTERNAL FIREWALL WITHOUT AEGIS ENGINE</option>
+      <option value="update" selected>UPDATE — update set, then reload aegis engine</option>
+      <option value="restart">RESTART — restart internal firewall with aegis engine</option>
+      <option value="stop">CLEAN / STOP — restart internal firewall without aegis engine</option>
     </select>
     <select id="command-log" name="commandLog">
-      <option value="on">WITH LOGGING ENABLED</option>
-      <option value="off">WITH LOGGING DISABLED</option>
+      <option value="on">with logging ENABLED</option>
+      <option value="off">with logging DISABLED</option>
     </select>
     <input type="submit" value="Submit" onclick="sendCommand();" />
   </div>
