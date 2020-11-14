@@ -206,7 +206,7 @@ status() {
   echo '<input type="checkbox" id="expert-status" /><label for="expert-status">Expert</label>'
   echo '<ul>'
   echo '<li>iptables:</li>'
-    [ -z "$_IPT" ] && echo "<p>- no $SC_NAME rules are set.</p>" || echo "$_IPT</p>"|/bin/sed 's/^/<p>- iptables /'
+    [ -z "$_IPT" ] && echo "<p>- no $SC_NAME rules are set.</p>" || echo "$_IPT<br />"|/bin/sed 's/^/- iptables /'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
@@ -215,7 +215,7 @@ status() {
         *) _NAME="$_SET" ;;
       esac
       echo "<li>ipset '$_NAME':</li>"
-      ipset -L -t $_SET|/usr/bin/awk '{print "<p>- " $0 "</p>"}'
+      ipset -L -t $_SET|/usr/bin/awk '{print "- " $0 "<br />"}'
     done
     echo '</ul>'
 }
