@@ -202,7 +202,7 @@ status() {
   
   # Debug
   _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
-  echo '<h3 class="more collapsibleList">Debug</h3>'
+  echo '<h3 class="debug collapsibleList">Debug</h3>'
   echo '<input type="checkbox" id="debug-status" /><label for="debug-status">Debug</label>'
   echo "<ul><li>status codes: $_STAT/$WAN_IF/$TUN_IF/$BL_NB-$WL_NB</li>"
   echo "<li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>"
