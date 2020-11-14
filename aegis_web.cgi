@@ -200,24 +200,27 @@ status() {
   fi
   echo '</ul>'
   
-  # Expert
+  # Debug
   _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
-  echo '<h3 class="more collapsibleList">Expert</h3>'
-  echo '<input type="checkbox" id="expert-status" /><label for="expert-status">Expert</label>'
-  echo '<ul>'
-  echo '<li>iptables:</li>'
-    [ -z "$_IPT" ] && echo "<p>- no $SC_NAME rules are set.</p>" || echo "$_IPT<br />"|/bin/sed 's/^/- iptables /'
-    ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
-      case "$_SET" in
-        "$IPSET_BL_NAME") _NAME='blocklist' ;;
-        "$IPSET_WL_NAME") _NAME='whitelist' ;;
-        "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
-        *) _NAME="$_SET" ;;
-      esac
-      echo "<li>ipset '$_NAME':</li>"
-      ipset -L -t $_SET|/usr/bin/awk '{print "- " $0 "<br />"}'
-    done
+  echo '<h3 class="more collapsibleList">Debug</h3>'
+  echo '<input type="checkbox" id="debug-status" /><label for="debug-status">Debug</label>'
+  echo "<ul><li>status codes: $_STAT/$WAN_IF/$TUN_IF/$BL_NB-$WL_NB</li>"
+  echo "<li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>"
+  echo '<li>iptables engine rules:</li><ul>'
+  [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
+  echo '</ul><li>ipset engine sets:</li><ul>'
+  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
+    case "$_SET" in
+      "$IPSET_BL_NAME") _NAME='blocklist' ;;
+      "$IPSET_WL_NAME") _NAME='whitelist' ;;
+      "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
+      *) _NAME="$_SET" ;;
+    esac
+    echo "<li>$_NAME:</li><ul>"
+    ipset -L -t $_SET|/usr/bin/awk '{print "<li>" $0 "</li>"}'
     echo '</ul>'
+  done
+  echo '</ul></ul>'
 }
 
 info() {
