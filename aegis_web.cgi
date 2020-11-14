@@ -201,10 +201,11 @@ status() {
   echo '</ul>'
   
   # Expert
+  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   echo '<h3 class="more collapsibleList">Expert</h3>'
   echo '<input type="checkbox" id="expert-status" /><label for="expert-status">Expert</label>'
   echo '<ul>'
-  echo -e "\033[1;36miptables:\033[0m"
+  echo -e "<li>iptables:</li>"
     [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
