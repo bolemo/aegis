@@ -1,1 +1,2 @@
 [ "$(ping -4 -c 1 -s 1 -W 1 -I brwan $ADDR 2>&1 >/dev/null)" = 'ping: sendto: Operation not permitted' ] && echo blocked
+ipset -q test aegis_bl $IP && echo is in aegis_bl
