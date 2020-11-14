@@ -205,8 +205,8 @@ status() {
   echo '<h3 class="more collapsibleList">Expert</h3>'
   echo '<input type="checkbox" id="expert-status" /><label for="expert-status">Expert</label>'
   echo '<ul>'
-  echo -e "<li>iptables:</li>"
-    [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
+  echo '<li>iptables:</li>'
+    [ -z "$_IPT" ] && echo "<p>- no $SC_NAME rules are set.</p>" || echo "$_IPT</p>"|/bin/sed 's/^/<p>- iptables /'
     ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
@@ -214,8 +214,8 @@ status() {
         "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
         *) _NAME="$_SET" ;;
       esac
-      echo -e "\033[1;36mipset '$_NAME':\033[0m"
-      ipset -L -t $_SET|/bin/sed 's/^/- /'
+      echo "<li>ipset '$_NAME':</li>"
+      ipset -L -t $_SET|/usr/bin/awk '{print "<p>- " $0 "</p>"}'
     done
     echo '</ul>'
 }
