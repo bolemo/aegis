@@ -323,8 +323,7 @@ refreshLog() {
 checkIp() {
   aegis_env
   IP="$ARG"
-  echo "/bin/ping -4 -c 1 -s 1 -W 1 -I $WAN_IF $IP 2>&1 >/dev/null"
-  [ "$(/bin/ping -4 -c 1 -s 1 -W 1 -I $WAN_IF $IP 2>&1 >/dev/null)" = 'ping: sendto: Operation not permitted' ] \
+  [ "$(/bin/ping -c 1 -s 1 $IP 2>&1 >/dev/null)" = 'ping: sendto: Operation not permitted' ] \
     && echo "IP address $IP is blocked by the router.<br />" \
     || echo "IP address $IP is not blocked by the router.<br />"
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
