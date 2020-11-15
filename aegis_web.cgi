@@ -320,6 +320,19 @@ refreshLog() {
   [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
+checkIp() {
+  aegis_env
+  IP="$ARG"
+  [ "$(ping -4 -c 1 -s 1 -W 1 -I $WAN_IF $IP 2>&1 >/dev/null)" = 'ping: sendto: Operation not permitted' ] \
+    && echo "IP address $IP is blocked by the router." \
+    || echo "IP address $IP is not blocked by the router."
+  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
+    "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis blocklist." ;;
+    "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis whitelist." ;;
+    "$IPSET_WG_NAME") ipset -q test $IPSET_WG_NAME $IP && echo "IP address $IP is whitelisted because in Aegis WAN Gateway" ;;
+  esac; done
+}
+
 printList() {
   aegis_env
   case "$ARG" in
@@ -370,6 +383,7 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  check) checkIp;;
   print_list) printList;;
   save_list) saveList;;
   proto_info) protoInfo;;
