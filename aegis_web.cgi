@@ -325,7 +325,7 @@ refreshLog() {
 checkIp() {
   aegis_env
   IP="$ARG"
-  /usr/bin/traceroute -q 1 -w 1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted' \
+  /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted' \
     && echo "IP address $IP is blocked by the router.<br />" \
     || echo "IP address $IP is not blocked by the router.<br />"
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
