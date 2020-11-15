@@ -331,6 +331,7 @@ checkIp() {
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist.<br />" ;;
     "$IPSET_WG_NAME") ipset -q test $IPSET_WG_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist because in WAN Gateway.<br />" ;;
   esac; done
+  echo "---"
 }
 
 printList() {
