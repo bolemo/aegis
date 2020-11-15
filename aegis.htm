@@ -289,10 +289,10 @@ function doTest() {
    if(ipSctnArr.length === 4) {
       var ipToTest = ipSctnArr.every(function(ipSctn) { return parseInt(ipSctn,10) >=0 && parseInt(ipSctn,10) <= 255; });
       alert(ipToTest);
-   } else alert(ipToTest + 'is not a valid IP Address!');
+   } else { alert(ipToTest + 'is not a valid IP Address!'); }
 }
 function test() {
-   displayFor(test);
+   displayFor('test');
 }
 function sendCommand() {
    var cmdCmd = document.getElementById("command-cmd").value;
