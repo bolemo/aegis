@@ -289,7 +289,7 @@ function ipTest(ip) { return (typeof(ip) === 'string') && (ip.match(/\d{1,3}\.\d
 function testIp() {
    var ipToTest = document.getElementById("check-ip").value;
    if (ipTest(ipToTest)) {
-      aegis('check', 'main-check', ipToTest);
+      aegis('check', 'main-check', ipToTest, 'afterbegin');
    } else { alert(ipToTest + 'is not a valid IP Address!'); }
 }
 function check() {
