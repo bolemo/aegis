@@ -286,7 +286,7 @@ function setIpInfoClick() {
 }
 function testIp() {
    var ipToTest = document.getElementById("check-ip").value;
-   if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipToTest)) {
+   if (/^(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(ipToTest)) {
       alert(ipToTest);
    } else { alert(ipToTest + 'is not a valid IP Address!'); }
 }
