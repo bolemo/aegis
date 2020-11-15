@@ -22,6 +22,7 @@ section > * { box-sizing: border-box; }
 #ctrl > .show { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
 #vers-message { font-size: 1.5em; font-weight: bold; color: red; margin-bottom: 0.2em; }
 #ctrl-log input { margin-left: 1em; }
+#ctrl-check > #check-ip { font-family: monospace; font-size: 1em; border: 1px black; outline: none; box-shadow: none; resize: none; }
 #ctrl > .list > * { display: inline; margin-right: 1em; }
 #log-filter-incoming + label { color: red; }
 #log-filter-outgoing + label { color: blue; }
@@ -61,15 +62,15 @@ h3.collapsibleList + input:checked + label { margin-bottom: 0; }
 h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
 h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
 h3.collapsibleList + input + label::before {
-content: ' ';
-display: inline-block;
-border-top: 5px solid transparent;
-border-bottom: 5px solid transparent;
-border-left: 5px solid currentColor;
-vertical-align: middle;
-margin-right: .7rem;
-transform: translateY(-2px);
-transition: transform .2s ease-out;
+    content: ' ';
+    display: inline-block;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 5px solid currentColor;
+    vertical-align: middle;
+    margin-right: .7rem;
+    transform: translateY(-2px);
+    transition: transform .2s ease-out;
 }
 h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
 #main-command, #main-upgrade { font-family: monospace; min-width: max-content; }
@@ -284,9 +285,14 @@ function setIpInfoClick() {
       if (elem.tagName == "LOG-PTL") getProtoInfo(elem.getAttribute('value'));
    }
 }
+ipTest(ip) {
+  if (typeof(ip) !== 'string') return false;
+  if (!ip.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)) return false;
+  return ip.split('.').filter(octect => octect >= 0 && octect <= 255).length === 4;
+}
 function testIp() {
    var ipToTest = document.getElementById("check-ip").value;
-   if (/^(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(ipToTest)) {
+   if (ipTest(ipToTest)) {
       alert(ipToTest);
    } else { alert(ipToTest + 'is not a valid IP Address!'); }
 }
