@@ -284,6 +284,16 @@ function setIpInfoClick() {
       if (elem.tagName == "LOG-PTL") getProtoInfo(elem.getAttribute('value'));
    }
 }
+function doTest() {
+   var ipSctnArr = document.getElementById("test-ip").value.split(".");
+   if(ipSctnArr.length === 4) {
+      var ipToTest = ipSctnArr.every(function(ipSctn) { return parseInt(ipSctn,10) >=0 && parseInt(ipSctn,10) <= 255; });
+      alert(ipToTest);
+   } else alert(ipToTest + 'is not a valid IP Address!');
+}
+function test() {
+   displayFor(test);
+}
 function sendCommand() {
    var cmdCmd = document.getElementById("command-cmd").value;
    var cmdLog = document.getElementById("command-log").value;
@@ -364,6 +374,7 @@ function ready() {
   <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
+  <input type="radio" name="menu" id="menu-test" onclick="test();"><label for="menu-test">CHECK</label>
   <input type="radio" name="menu" id="menu-sources" onclick="doList('sources');"><label for="menu-sources">Blacklists Sources</label>
   <input type="radio" name="menu" id="menu-blacklist" onclick="doList('blacklist');"><label for="menu-blacklist">Custom Blacklist</label>
   <input type="radio" name="menu" id="menu-whitelist" onclick="doList('whitelist');"><label for="menu-whitelist">Custom Whitelist</label>
@@ -386,7 +397,7 @@ function ready() {
   <div id="ctrl-test" class="show">
     <label for="test-ip">CHECK IP:</label>
     <input type="text" id="test-ip" name="test-ip" required minlength="7" maxlength="15" size="15" />
-    <input type="submit" value="Submit" onclick="" />
+    <input type="submit" value="Submit" onclick="doTest();" />
   </div>
   <div id="ctrl-log" class="show">
     SHOW:
@@ -411,6 +422,7 @@ function ready() {
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
+  <div id="main-test" class="scroll"></div>
   <textarea id="main-sources" class="list"></textarea>
   <textarea id="main-blacklist" class="list"></textarea>
   <textarea id="main-whitelist" class="list"></textarea>
