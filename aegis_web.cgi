@@ -204,7 +204,9 @@ status() {
   _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
   echo '<h3 class="debug collapsibleList">Debug</h3>'
   echo '<input type="checkbox" id="debug-status" /><label for="debug-status">Debug</label>'
-  echo "<ul><li>status codes: $_STAT/$WAN_IF/$TUN_IF/$BL_NB-$WL_NB</li>"
+  echo "<ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>"
+  echo "<li>aegis info: $SC_NAME $SC_VERS-$([ "$EXT_DRIVE" ] && echo 'int' || echo 'ext')</li>"
+  echo "<li>status codes: $_STAT/$WAN_IF/$TUN_IF/$BL_NB-$WL_NB</li>"
   echo "<li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>"
   echo '<li>iptables engine rules:</li><ul>'
   [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
