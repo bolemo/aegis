@@ -127,7 +127,8 @@ function aegis(cmd, dst, arg, pos, callback) {
            xhttpOutput = this.responseText;
            break;
          default:
-           xhttpOutput = 'Error loading ' + cmd + ': code ' + this.status;
+           alert('Error loading ' + cmd + ': code ' + this.status);
+           xhttpOutput = '';
        }
        if (dst !== undefined) {
          if (pos === undefined) {
