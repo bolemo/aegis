@@ -323,13 +323,13 @@ refreshLog() {
 checkIp() {
   aegis_env
   IP="$ARG"
-  /usr/bin/traceroute -q 1 -w 1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -F 'sendto: Operation not permitted' \
+  /usr/bin/traceroute -q 1 -w 1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted' \
     && echo "IP address $IP is blocked by the router.<br />" \
     || echo "IP address $IP is not blocked by the router.<br />"
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
-    "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis blocklist.<br />" ;;
-    "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis whitelist.<br />" ;;
-    "$IPSET_WG_NAME") ipset -q test $IPSET_WG_NAME $IP && echo "IP address $IP is whitelisted because in Aegis WAN Gateway.<br />" ;;
+    "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis Engine blacklist.<br />" ;;
+    "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist.<br />" ;;
+    "$IPSET_WG_NAME") ipset -q test $IPSET_WG_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist because in WAN Gateway.<br />" ;;
   esac; done
 }
 
