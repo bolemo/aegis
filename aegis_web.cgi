@@ -32,7 +32,7 @@ status() {
   set -- $($wcAEGIS_BIN _status)
   eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
   _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
-  echo "<h2>Status <span style='color: DarkGrey; font-weight: normal;'>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
+  echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
     echo "<li>Aegis is not active; Settings are clean.</li>"
@@ -199,6 +199,30 @@ status() {
     echo "<li>No status file found.</li>"
   fi
   echo '</ul>'
+  
+  # Debug
+  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+  echo '<h3 class="debug collapsibleList">Debug</h3>'
+  echo '<input type="checkbox" id="debug-status" /><label for="debug-status">Debug</label>'
+  echo "<ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>"
+  echo "<li>aegis info: $SC_NAME $SC_VERS-$([ "$EXT_DRIVE" ] && echo 'ext' || echo 'int')</li>"
+  echo "<li>status codes: $_STAT/$WAN_IF/$TUN_IF/$BL_NB-$WL_NB</li>"
+  echo "<li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>"
+  echo '<li>iptables engine rules:</li><ul>'
+  [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
+  echo '</ul><li>ipset engine sets:</li><ul>'
+  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
+    case "$_SET" in
+      "$IPSET_BL_NAME") _NAME='blocklist' ;;
+      "$IPSET_WL_NAME") _NAME='whitelist' ;;
+      "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
+      *) _NAME="$_SET" ;;
+    esac
+    echo "<li>$_NAME:</li><ul>"
+    ipset -L -t $_SET|/usr/bin/awk '{print "<li>" $0 "</li>"}'
+    echo '</ul>'
+  done
+  echo '</ul></ul>'
 }
 
 info() {
@@ -239,7 +263,7 @@ command() {
 _nameForIp() {
   _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
   [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
-  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<small> ($1)</small>"
+  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
 }
 
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
@@ -266,16 +290,25 @@ _getLog() {
     _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
-    if [ -z "${LINE##* OUT= *}" ] # if IN or OUT are empty, it is the router, else find device name
-      then [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-      else _DST="$(_nameForIp $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM<small> ($_SRC)</small>" || _SRC="$(_nameForIp $_SRC)"
-    fi
     case $LINE in
-      *"IN=$_WIF"*) echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
-      *"OUT=$_WIF"*) echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
-      *"IN=$_TIF"*) echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>" ;;
-      *"OUT=$_TIF"*) echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>" ;;
+      *"IN=$_WIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
+      *"IN=$_WIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
+      *"IN= OUT=$_WIF"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
+      *"OUT=$_WIF"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
+      *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
+      *"IN=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
+      *"IN= OUT=$_TIF"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
+      *"OUT=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
     esac
+    echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
   echo "$_KEY $_MAX $_BT $_NST $_WIF '$_TIF' $_MD5">/tmp/aegis_web
@@ -296,6 +329,20 @@ log() {
 
 refreshLog() {
   [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
+}
+
+checkIp() {
+  aegis_env
+  IP="$ARG"
+  /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted' \
+    && echo "IP address $IP is blocked by the router.<br />" \
+    || echo "IP address $IP is not blocked by the router.<br />"
+  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
+    "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis Engine blacklist.<br />" ;;
+    "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist.<br />" ;;
+    "$IPSET_WG_NAME") ipset -q test $IPSET_WG_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist because in WAN Gateway.<br />" ;;
+  esac; done
+  echo "---<br />"
 }
 
 printList() {
@@ -348,6 +395,7 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  check) checkIp;;
   print_list) printList;;
   save_list) saveList;;
   proto_info) protoInfo;;

@@ -19,10 +19,10 @@ section > * { box-sizing: border-box; }
 #menu > #menu-upgrade + label { display: none; background: linear-gradient(180deg, rgb(47,79,79) 0%, rgb(255,0,0) 100%); }
 #menu > #menu-upgrade:checked + label { background: linear-gradient(180deg, rgb(203,211,211) 0%, rgb(255,255,255) 100%); color: red; }
 #ctrl > * { display: none; }
-#ctrl-log, #ctrl-command, #ctrl-upgrade { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
+#ctrl > .show { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
 #vers-message { font-size: 1.5em; font-weight: bold; color: red; margin-bottom: 0.2em; }
 #ctrl-log input { margin-left: 1em; }
-#ctrl > .list { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
+#ctrl-tools > #check-ip { font-family: monospace; font-size: 1.1em; border: 1px solid black; outline: none; box-shadow: none; resize: none; }
 #ctrl > .list > * { display: inline; margin-right: 1em; }
 #log-filter-incoming + label { color: red; }
 #log-filter-outgoing + label { color: blue; }
@@ -44,6 +44,7 @@ section > * { box-sizing: border-box; }
 #status.error { background-color:#ffa899; border: solid 1em Tomato; }
 #status li { margin-left: -1em; }
 h2 { font-variant: all-small-caps slashed-zero; margin: 0; }
+h2 span { color:Grey; font-weight: normal; }
 h3 { padding-left: 1em; margin: 0; }
 h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
 h3.error { background-color:Tomato; }
@@ -52,6 +53,8 @@ h3.warning { background-color:Orange; }
 h3.warning + ul { background-color:#fff6e6; }
 h3.more + input + label { background-color:Violet; }
 h3.more + input + label + ul { background-color:#fce9fc; }
+h3.debug + input + label { background-color:LightGrey; color:#555; }
+h3.debug + input + label + ul { background-color:#e9e9e9; }
 h3.collapsibleList { display: none; }
 h3.collapsibleList + input { display: none; }
 h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
@@ -59,32 +62,46 @@ h3.collapsibleList + input:checked + label { margin-bottom: 0; }
 h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
 h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
 h3.collapsibleList + input + label::before {
-content: ' ';
-display: inline-block;
-border-top: 5px solid transparent;
-border-bottom: 5px solid transparent;
-border-left: 5px solid currentColor;
-vertical-align: middle;
-margin-right: .7rem;
-transform: translateY(-2px);
-transition: transform .2s ease-out;
+    content: ' ';
+    display: inline-block;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 5px solid currentColor;
+    vertical-align: middle;
+    margin-right: .7rem;
+    transform: translateY(-2px);
+    transition: transform .2s ease-out;
 }
 h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
 #main-command, #main-upgrade { font-family: monospace; min-width: max-content; }
-#logbox { font-family: monospace; line-height: 1.1em; min-width: max-content; }
-#logbox p { margin: 0 0.5em 0 0; }
+#logbox { display:table; font-family: "Andale Mono", AndaleMono, monospace; font-size: 0.85em; line-height: 1.1em; min-width: max-content; }
+#logbox p { margin: 0 0.5em 0 0; display: table-row; }
 #logbox.incoming p.incoming { display: none; }
 #logbox.outgoing p.outgoing { display: none; }
 #logbox.wan p.wan { display: none; }
 #logbox.vpn p.vpn { display: none; }
+#logbox p > * { display: table-cell; padding-right: 0.5em; }
+#logbox q { quotes: "(" ")"; letter-spacing: -1.5px; font-weight: normal; }
 #logbox log-ts { color: #666; }
+log-ts + log-lbl::after { content: 'Blocked'; }
 #logbox p.wan log-if { font-weight: bold; color: green; }
+p.wan log-if::after { content: 'WAN'; }
 #logbox p.vpn log-if { font-weight: bold; color: purple; }
+p.vpn log-if::after { content: 'VPN'; }
 #logbox p.incoming log-dir { font-weight: bold; color: red; }
+p.incoming log-dir::after { content: 'INCOMING'; }
 #logbox p.outgoing log-dir { font-weight: bold; color: blue; }
+p.outgoing log-dir::after { content: 'OUTGOING'; }
 #logbox p log-ptl { text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-#logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-#logbox p log-lip { font-weight: bold; color: blue; }
+p log-ptl::after { display: inline-block; margin-left: 0.5em; content: 'packet'; text-decoration: none; }
+#logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
+log-rll, log-lll { text-align: right; }
+p.incoming log-rll::before { content: 'from '; }
+p.incoming log-lll::before { content: 'to '; }
+p.outgoing log-rll::before { content: 'to '; }
+p.outgoing log-lll::before { content: 'from '; }
+p log-rll::after, p log-lll::after { content: ':'; }
+#logbox p log-lip { font-weight: bold; color: blue; padding-right: 0px; }
 log-pt:before { color: darkgrey; content: ':'; }
 #logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-lip + log-pt { color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
@@ -124,7 +141,8 @@ function aegis(cmd, dst, arg, pos, callback) {
            xhttpOutput = this.responseText;
            break;
          default:
-           xhttpOutput = 'Error loading ' + cmd + ': code ' + this.status;
+           alert('Error loading ' + cmd + ': code ' + this.status);
+           xhttpOutput = '';
        }
        if (dst !== undefined) {
          if (pos === undefined) {
@@ -281,6 +299,16 @@ function setIpInfoClick() {
       if (elem.tagName == "LOG-PTL") getProtoInfo(elem.getAttribute('value'));
    }
 }
+function ipTest(ip) { return (typeof(ip) === 'string') && (ip.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)) && (ip.split('.').filter(octet => octet >= 0 && octet <= 255).length === 4); }
+function testIp() {
+   var ipToTest = document.getElementById("check-ip").value;
+   if (ipTest(ipToTest)) {
+      aegis('check', 'main-tools', ipToTest, 'afterbegin');
+   } else { alert(ipToTest + 'is not a valid IP Address!'); }
+}
+function tools() {
+   displayFor('tools');
+}
 function sendCommand() {
    var cmdCmd = document.getElementById("command-cmd").value;
    var cmdLog = document.getElementById("command-log").value;
@@ -337,13 +365,13 @@ function ready() {
    switch (window.location.hash) {
        case '#command': command(); break;
        case '#log': log(); break;
+       case '#tools': tools(); break;
        case '#sources': doList('sources'); break;
        case '#blacklist': doList('blacklist'); break;
        case '#whitelist': doList('whitelist'); break;
        case '#status':
        default:
-           status();
-           break;
+           status(); break;
    }
 }
 </script>
@@ -361,36 +389,42 @@ function ready() {
   <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
+  <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-sources" onclick="doList('sources');"><label for="menu-sources">Blacklists Sources</label>
   <input type="radio" name="menu" id="menu-blacklist" onclick="doList('blacklist');"><label for="menu-blacklist">Custom Blacklist</label>
   <input type="radio" name="menu" id="menu-whitelist" onclick="doList('whitelist');"><label for="menu-whitelist">Custom Whitelist</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
-  <div id="ctrl-command">
+  <div id="ctrl-command" class="show">
     COMMAND: 
     <select id="command-cmd" name="commandCmd" onchange="showCommandLog(this.value);">
-      <option value="update" selected>UPDATE SET THEN RELOAD AEGIS ENGINE</option>
-      <option value="restart">RESTART INTERNAL FIREWALL WITH AEGIS ENGINE</option>
-      <option value="stop">RESTART INTERNAL FIREWALL WITHOUT AEGIS ENGINE</option>
+      <option value="update" selected>UPDATE — update set, then reload aegis engine</option>
+      <option value="restart">RESTART — restart internal firewall with aegis engine</option>
+      <option value="stop">CLEAN / STOP — restart internal firewall without aegis engine</option>
     </select>
     <select id="command-log" name="commandLog">
-      <option value="on">WITH LOGGING ENABLED</option>
-      <option value="off">WITH LOGGING DISABLED</option>
+      <option value="on">with logging ENABLED</option>
+      <option value="off">with logging DISABLED</option>
     </select>
     <input type="submit" value="Submit" onclick="sendCommand();" />
   </div>
-  <div id="ctrl-log">
+  <div id="ctrl-tools" class="show">
+    <label for="check-ip">CHECK IP:</label>
+    <input type="text" id="check-ip" name="check-ip" required minlength="7" maxlength="15" size="15" />
+    <input type="submit" value="Submit" onclick="testIp();" />
+  </div>
+  <div id="ctrl-log" class="show">
     SHOW:
     <input type="checkbox" name="logFilter" checked id="log-filter-incoming" onclick="logFilter();" /><label for="log-filter-incoming">INCOMING</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-outgoing" onclick="logFilter();" /><label for="log-filter-outgoing">OUTGOING</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
   </div>
-  <div id="ctrl-sources" class="list"><input type="button" value="Reload Sources" onclick="doList('sources');" /><input type="button" value="Save Sources" onclick="sendList('sources');" /><div id="sources-info"></div></div>
-  <div id="ctrl-blacklist" class="list"><input type="button" value="Reload Blacklist" onclick="doList('blacklist');" /><input type="button" value="Save Blacklist" onclick="sendList('blacklist');" /><div id="blacklist-info"></div></div>
-  <div id="ctrl-whitelist" class="list"><input type="button" value="Reload Whitelist" onclick="doList('whitelist');" /><input type="button" value="Save Whitelist" onclick="sendList('whitelist');" /><div id="whitelist-info"></div></div>
-  <div id="ctrl-upgrade">
+  <div id="ctrl-sources" class="show list"><input type="button" value="Reload Sources" onclick="doList('sources');" /><input type="button" value="Save Sources" onclick="sendList('sources');" /><div id="sources-info"></div></div>
+  <div id="ctrl-blacklist" class="show list"><input type="button" value="Reload Blacklist" onclick="doList('blacklist');" /><input type="button" value="Save Blacklist" onclick="sendList('blacklist');" /><div id="blacklist-info"></div></div>
+  <div id="ctrl-whitelist" class="show list"><input type="button" value="Reload Whitelist" onclick="doList('whitelist');" /><input type="button" value="Save Whitelist" onclick="sendList('whitelist');" /><div id="whitelist-info"></div></div>
+  <div id="ctrl-upgrade" class="show">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
       <option value="upgrade">UPGRADE (WITHOUT RESTARTING AEGIS ENGINE)</option>
@@ -403,6 +437,7 @@ function ready() {
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
+  <div id="main-tools" class="scroll"></div>
   <textarea id="main-sources" class="list"></textarea>
   <textarea id="main-blacklist" class="list"></textarea>
   <textarea id="main-whitelist" class="list"></textarea>

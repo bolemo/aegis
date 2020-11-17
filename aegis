@@ -10,7 +10,7 @@ if [ "$1" = '_env' ]; then IFS=;while read -r LINE
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.3.8"
+SC_VERS="1.3.9"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -313,10 +313,10 @@ engine_start() {
     [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     iptables -I "$IPTBL_SRC" $_POS -j DROP
   fi
-  _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j DROP/=")"
+  _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
-    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    iptables -I "$IPTBL_DST" $_POS -j DROP
+    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    iptables -I "$IPTBL_DST" $_POS -j REJECT --reject-with icmp-port-unreachable
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
@@ -720,17 +720,17 @@ print_log() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
 
-    _RNM="$(/bin/nvram get Device_name)"
-    if [ -z "${LINE##* OUT= *}" ]
-      then [ "$_DST" = '255.255.255.255' ] && _DST="BROADCAST ($_DST)" || _DST="$_RNM ($_DST)"
-      else _DST="$(name_from_ip $_DST)"; [ -z "${LINE##* IN= *}" ] && _SRC="$_RNM ($_SRC)" || _SRC="$(name_from_ip $_SRC)"
-    fi
-
     case $LINE in
-      *"IN=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;35mincoming\\033[0m $_PROTO packet from remote: \\033[1;35m$_SRC$_SPT\\033[0m to local: \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked WAN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote: \\033[1;35m$_DST$_DPT\\033[0m from local: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"IN=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;35mincoming\\033[0m $_PROTO packet from remote: \\033[1;35m$_SRC$_SPT\\033[0m to local: \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked VPN \\033[1;33moutgoing\\033[0m $_PROTO packet to remote: \\033[1;35m$_DST$_DPT\\033[0m from local: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"IN=$WAN_IF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
+         echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"IN=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
+      *"IN= OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
+      *"IN=$TUN_IF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
+         echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"IN=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
+      *"IN= OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
     esac
   done
 }
@@ -973,7 +973,7 @@ _status() {
   _D_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _D_CK=$((_D_CK+CK_IPT_CH))
+    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j REJECT/=')" = $_LL ]; then           _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then
         if [ -z "${_D_IPT##*$WAN_IF*}" ]; then                                   _D_CK=$((_D_CK+CK_IPT_WG))
@@ -1040,9 +1040,10 @@ _status() {
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # LOG
-    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&               _WN=$((_WN+WN_LOG_DIFF))
-    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                        _WN=$((_WN+WN_LOG_DIFF))
-    fi
+    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if [ "$IPTBL_LOGGING" ]
+      then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
+      else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
+    fi fi
     # CH, IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_CH))
 #    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
