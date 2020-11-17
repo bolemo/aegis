@@ -291,7 +291,7 @@ _getLog() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     case $LINE in
-      *"IN=$_WIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM=""
+      *"IN=$_WIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
          _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
       *"IN=$_WIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
          _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
@@ -299,7 +299,7 @@ _getLog() {
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
       *"OUT=$_WIF"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
-      *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM=""
+      *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
          _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
       *"IN=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
          _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
