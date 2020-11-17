@@ -313,10 +313,10 @@ engine_start() {
     [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     iptables -I "$IPTBL_SRC" $_POS -j DROP
   fi
-  _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j DROP/=")"
+  _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
-    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    iptables -I "$IPTBL_DST" $_POS -j DROP
+    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    iptables -I "$IPTBL_DST" $_POS -j REJECT
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
@@ -973,7 +973,7 @@ _status() {
   _D_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _D_CK=$((_D_CK+CK_IPT_CH))
+    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j REJECT/=')" = $_LL ]; then           _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
       if [ "$(echo "$_D_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then
         if [ -z "${_D_IPT##*$WAN_IF*}" ]; then                                   _D_CK=$((_D_CK+CK_IPT_WG))
