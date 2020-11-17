@@ -723,14 +723,14 @@ print_log() {
     case $LINE in
       *"IN=$WAN_IF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
          echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"IN=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"IN=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
       *"IN= OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
       *"IN=$TUN_IF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
          echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"IN=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+      *"IN=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
       *"IN= OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
     esac
   done
 }
