@@ -1040,9 +1040,10 @@ _status() {
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # LOG
-    if [ "$IPTBL_LOGGING" ]; then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&               _WN=$((_WN+WN_LOG_DIFF))
-    else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                        _WN=$((_WN+WN_LOG_DIFF))
-    fi
+    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if [ "$IPTBL_LOGGING" ]
+      then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
+      else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
+    fi fi
     # CH, IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_CH))
 #    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
