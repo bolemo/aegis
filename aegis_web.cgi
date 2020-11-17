@@ -263,7 +263,7 @@ command() {
 _nameForIp() {
   _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
   [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
-  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<small> ($1)</small>"
+  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
 }
 
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
@@ -291,31 +291,24 @@ _getLog() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     case $LINE in
-      *"IN=$_WIF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-         echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>"
-         ;;
-      *"IN=$_WIF"*) _DST="$(_nameForIp $_DST)"
-         echo "<p class='new incoming wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>"
-         ;;
-      *"IN= OUT=$_WIF"*) _SRC="$_RNM<small> ($_SRC)</small>"
-         echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>"
-         ;;
-      *"OUT=$_WIF"*) _SRC="$(_nameForIp $_SRC)"
-         echo "<p class='new outgoing wan'>$_PT Blocked <log-if>WAN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>"
-         ;;
-      *"IN=$_TIF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DST="<i>BROADCAST</i><small> ($_DST)</small>" || _DST="$_RNM<small> ($_DST)</small>"
-         echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>"
-         ;;
-      *"IN=$_TIF"*) _DST="$(_nameForIp $_DST)"
-         echo "<p class='new incoming vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>incoming</log-dir> $_PROTO packet from remote: <log-rip>$_SRC</log-rip>$_SPT, to local: <log-lip>$_DST</log-lip>$_DPT</p>"
-         ;;
-      *"IN= OUT=$_TIF"*) _SRC="$_RNM<small> ($_SRC)</small>"
-         echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>"
-         ;;
-      *"OUT=$_TIF"*) _SRC="$(_nameForIp $_SRC)"
-         echo "<p class='new outgoing vpn'>$_PT Blocked <log-if>VPN</log-if> <log-dir>outgoing</log-dir> $_PROTO packet to remote: <log-rip>$_DST</log-rip>$_DPT, from local: <log-lip>$_SRC</log-lip>$_SPT</p>"
-         ;;
+      *"IN=$_WIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM=""
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
+      *"IN=$_WIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
+      *"IN= OUT=$_WIF"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
+      *"OUT=$_WIF"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
+      *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM=""
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
+      *"IN=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
+         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
+      *"IN= OUT=$_TIF"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
+      *"OUT=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
+         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
     esac
+    echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
   echo "$_KEY $_MAX $_BT $_NST $_WIF '$_TIF' $_MD5">/tmp/aegis_web
