@@ -14,6 +14,7 @@ SC_VERS="1.4.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
+IPT_COM='iptables' # -t mangle'
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 [ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
@@ -107,7 +108,7 @@ INFO_IPT_IFO_PBM=32768     # x . . . . . . . . . . . . . . .
 ###############################################
 
 get_ipt() {
-  _IPT="$(iptables -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+  _IPT="$($IPT_COM -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
 }
 
 ipset_list_members() {
@@ -129,15 +130,15 @@ _set_ipt_for_if_pos() {
   if [ "$_CT" -ne 4 ]; then
     if [ "$_CT" ] && [ "$_CT" -ne 0 ]; then
       # something is messed up with rules; deleting what is left
-      echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
       _RET=$INFO_IPT_IF_PBM
     else
       _RET=$INFO_IPT_IF_NEW
     fi
-    iptables -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    iptables -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-    iptables -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    iptables -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+    $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+    $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+    $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
+    $IPT_COM -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
   else
     _RET=$INFO_IPT_IF_KEEP
   fi
@@ -239,29 +240,29 @@ engine_start() {
   get_ipt
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
-  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || iptables -N "$IPTBL_SRC" 2>/dev/null
+  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_COM -N "$IPTBL_SRC" 2>/dev/null
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
-  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || iptables -N "$IPTBL_DST" 2>/dev/null
+  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_COM -N "$IPTBL_DST" 2>/dev/null
 
   if [ "$_WG" ]; then
     # apply wan gateway whitelist
     _POS=1
     _WG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WG_NAME/=")"
     if [ "$_WG_POS" != "$_POS" ]; then
-      [ "$_WG_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j RETURN
+      [ "$_WG_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      $IPT_COM -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
     fi
     _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WG_NAME/=")"
     if [ "$_WG_POS" != "$_POS" ]; then
-      [ "$_WG_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j RETURN
+      [ "$_WG_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      $IPT_COM -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WG))
   else
     #Removing any trace of WAN gateway bypass if any
-    echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     ipset -q destroy "$IPSET_WG_NAME" && _IPS=$((_IPS+INFO_IPS_WG_DEL))
     _POS=0
   fi
@@ -271,20 +272,20 @@ engine_start() {
     _POS=$((1+_POS)) 
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
-      [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j RETURN
+      [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      $IPT_COM -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
-      [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      iptables -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j RETURN
+      [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      $IPT_COM -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   else
     #Removing any trace of whitelist if any
-    echo "$_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
@@ -292,31 +293,31 @@ engine_start() {
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
-      [ "$_LOG_POS" ] && iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      iptables -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
+      [ "$_LOG_POS" ] && $IPT_COM -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      $IPT_COM -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
-      [ "$_LOG_POS" ] && iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      iptables -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
+      [ "$_LOG_POS" ] && $IPT_COM -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      $IPT_COM -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
   else
-    iptables -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-    iptables -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    $IPT_COM -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    $IPT_COM -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
   _POS=$((1+_POS))
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
-    [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    iptables -I "$IPTBL_SRC" $_POS -j DROP
+    [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_SRC" $_POS -j DROP
   fi
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
-    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    iptables -I "$IPTBL_DST" $_POS -j REJECT --reject-with icmp-port-unreachable
+    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_DST" $_POS -j REJECT --reject-with icmp-port-unreachable
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
@@ -324,7 +325,7 @@ engine_start() {
   _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|eval $_GREP)"
   if [ "$_IPT_IFO" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
-    echo "$_IPT_IFO"|/bin/sed 's/^-A/iptables -D/'|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_IFO"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     NFO_IPT=$((NFO_IPT+INFO_IPT_IFO_PBM))
   fi
   
