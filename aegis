@@ -317,7 +317,7 @@ engine_start() {
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $_POS -j REJECT --reject-with icmp-port-unreachable
+    $IPT_COM -I "$IPTBL_DST" $_POS -j REJECT --reject-with icmp-host-prohibited
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
