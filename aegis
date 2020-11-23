@@ -116,7 +116,7 @@ get_inet() {
 }
 
 ipset_list_members() {
-  ipset -q -L "$1"|/bin/sed -n '/Members:/,$p'|/usr/bin/tail -n+2
+  ipset -q -L "$1"|/usr/bin/awk 'NR==1,/Members:/ {next};NF'
 }
 
 diff_ipset_file() {
