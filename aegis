@@ -111,6 +111,10 @@ get_ipt() {
   _IPT="$($IPT_COM -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
 }
 
+get_inet() {
+  /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}'
+}
+
 ipset_list_members() {
   ipset -q -L "$1"|/bin/sed -n '/Members:/,$p'|/usr/bin/tail -n+2
 }
