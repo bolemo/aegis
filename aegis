@@ -132,16 +132,17 @@ _set_ipt_bypass_for_if_pos() { # Bypass for interface inet $1=iface, $2=pos
   _RET=0
   _BP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-s $_INET -i $1 -j RETURN/=")"
   if [ "$_BP_POS" != "$2" ]; then
-    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/" 2>/dev/null|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     $IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -j RETURN
     _RET=$INFO_IPT_WG_SRC_NEW
   fi
   _BP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-d $_INET -o $1 -j RETURN/=")"
   if [ "$_BP_POS" != "$2" ]; then
-    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/" 2>/dev/null|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     $IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -j RETURN
     _RET=$((_RET+INFO_IPT_WG_DST_NEW))
   fi
+  return $_RET
 }
 
 _set_ipt_for_if_pos() {
@@ -247,9 +248,9 @@ engine_start() {
 ##### EXPERIMENTAL
 
   # Applying WAN Network Range Bypass
-  _POS=1; _NFO_IPT_WBY=_set_ipt_bypass_for_if_pos $WAN_IF $_POS
+  _POS=1; _set_ipt_bypass_for_if_pos $WAN_IF $_POS; _NFO_IPT_WBY=$?
   # Applying TUN Network Range Bypass (if applicable)
-  [ "$TUN_IF" ] && { _POS=$((1+_POS)); _NFO_IPT_TBY=_set_ipt_bypass_for_if_pos $TUN_IF $_POS; } || _NFO_IPT_TBY=0
+  [ "$TUN_IF" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_pos $TUN_IF $_POS; _NFO_IPT_TBY=$? } || _NFO_IPT_TBY=0
   # Putting Bypass Status into NFO_IPT
   NFO_IPT=$((NFO_IPT+_NFO_IPT_WBY+_NFO_IPT_TBY))
     
