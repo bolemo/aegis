@@ -111,7 +111,7 @@ get_ipt() {
   _IPT="$($IPT_COM -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
 }
 
-get_inet() {
+inet_for_if() {
   /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}'
 }
 
@@ -247,6 +247,25 @@ engine_start() {
   [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_COM -N "$IPTBL_SRC" 2>/dev/null
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_COM -N "$IPTBL_DST" 2>/dev/null
+
+##### EXPERIMENTAL
+
+  WAN_INET=$(inet_for_if $WAN_IF)
+  _POS=1
+  _WG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-s $WAN_INET -i $WAN_IF -j RETURN/=")"
+  if [ "$_WG_POS" != "$_POS" ]; then
+    echo "$_IPT_SRC"|/bin/grep -F -- "-i $WAN_IF -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_SRC" $_POS -s $WAN_INET -i $WAN_IF -j RETURN
+    NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
+  fi
+  _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-d $WAN_INET -o $WAN_IF -j RETURN/=")"
+  if [ "$_WG_POS" != "$_POS" ]; then
+    echo "$_IPT_DST"|/bin/grep -F -- "-o $WAN_IF -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_DST" $_POS -d $WAN_INET -o $WAN_IF -j RETURN
+    NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
+  fi
+    
+##### END EXPERIMENTAL
 
   if [ "$_WG" ]; then
     # apply wan gateway whitelist
