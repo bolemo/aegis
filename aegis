@@ -127,6 +127,23 @@ diff_ipset_file() {
   return $?
 }
 
+_set_ipt_bypass_for_if_pos() { # Bypass for interface inet $1=iface, $2=pos
+  _INET=$(inet_for_if $1)
+  _RET=0
+  _BP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-s $_INET -i $1 -j RETURN/=")"
+  if [ "$_BP_POS" != "$2" ]; then
+    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -j RETURN
+    _RET=$INFO_IPT_WG_SRC_NEW
+  fi
+  _BP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-d $_INET -o $1 -j RETURN/=")"
+  if [ "$_BP_POS" != "$2" ]; then
+    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -j RETURN
+    _RET=$((_RET+INFO_IPT_WG_DST_NEW))
+  fi
+}
+
 _set_ipt_for_if_pos() {
   _IF="$1"
   _POS=$2
@@ -188,27 +205,6 @@ engine_start() {
     fi
   fi
   
-  # checking if WAN gateway is in blocklist
-  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q test "$IPSET_BL_NAME" "$WAN_GW"; then
-    _WG=1
-    NFO_IPS=$((NFO_IPS+INFO_IPS_BL_WGW))
-    if ! ipset -q test "$IPSET_WG_NAME" "$WAN_GW"; then
-      # Calculate WAN_RANGE (IP & CIDR)
-      _CIDR=0
-      for _OCTET in $(echo "$WAN_NM"| sed 's/\./ /g'); do
-        _BINBITS=$(echo "obase=2; ibase=10; ${_OCTET}"| /usr/bin/bc | /bin/sed 's/0//g')
-        let _CIDR+=${#_BINBITS}
-      done
-      WAN_RANGE="$WAN_GW/$_CIDR"
-      ipset -q create "$IPSET_WG_NAME" hash:net family inet
-      ipset -q flush "$IPSET_WG_NAME"
-      ipset -q add "$IPSET_WG_NAME" "$WAN_RANGE"
-      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_ADD))
-    else
-      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_KEEP))
-    fi
-  fi
-  
   # creating ipset whitelist if needed
   if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
     # ipset whitelist is already in place
@@ -250,45 +246,26 @@ engine_start() {
 
 ##### EXPERIMENTAL
 
-  WAN_INET=$(inet_for_if $WAN_IF)
-  _POS=1
-  _WG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-s $WAN_INET -i $WAN_IF -j RETURN/=")"
-  if [ "$_WG_POS" != "$_POS" ]; then
-    echo "$_IPT_SRC"|/bin/grep -F -- "-i $WAN_IF -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $_POS -s $WAN_INET -i $WAN_IF -j RETURN
-    NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
-  fi
-  _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-d $WAN_INET -o $WAN_IF -j RETURN/=")"
-  if [ "$_WG_POS" != "$_POS" ]; then
-    echo "$_IPT_DST"|/bin/grep -F -- "-o $WAN_IF -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $_POS -d $WAN_INET -o $WAN_IF -j RETURN
-    NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
-  fi
+  # Applying WAN Network Range Bypass
+  _POS=1; _NFO_IPT_WBY=_set_ipt_bypass_for_if_pos $WAN_IF $_POS
+  # Applying TUN Network Range Bypass (if applicable)
+  [ "$TUN_IF" ] && { _POS=$((1+_POS)); _NFO_IPT_TBY=_set_ipt_bypass_for_if_pos $TUN_IF $_POS; } || _NFO_IPT_TBY=0
+  # Putting Bypass Status into NFO_IPT
+  NFO_IPT=$((NFO_IPT+_NFO_IPT_WBY+_NFO_IPT_TBY))
     
 ##### END EXPERIMENTAL
 
-  if [ "$_WG" ]; then
-    # apply wan gateway whitelist
-    _POS=1
-    _WG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WG_NAME/=")"
-    if [ "$_WG_POS" != "$_POS" ]; then
-      [ "$_WG_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      $IPT_COM -I "$IPTBL_SRC" $_POS -i $WAN_IF -m set --match-set "$IPSET_WG_NAME" src -j RETURN
-      NFO_IPT=$((NFO_IPT+INFO_IPT_WG_SRC_NEW))
-    fi
-    _WG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WG_NAME/=")"
-    if [ "$_WG_POS" != "$_POS" ]; then
-      [ "$_WG_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      $IPT_COM -I "$IPTBL_DST" $_POS -o $WAN_IF -m set --match-set "$IPSET_WG_NAME" dst -j RETURN
-      NFO_IPT=$((NFO_IPT+INFO_IPT_WG_DST_NEW))
-    fi
-    NFO_IPT=$((NFO_IPT+INFO_IPT_WG))
-  else
-    #Removing any trace of WAN gateway bypass if any
-    echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    ipset -q destroy "$IPSET_WG_NAME" && _IPS=$((_IPS+INFO_IPS_WG_DEL))
-    _POS=0
-  fi
+#    NEED TO CLEAN UP VARS AND CONSTS AND ARRANGE NFO FOR TUN
+#    #Removing any trace of WAN gateway bypass if any
+#    echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+#    ipset -q destroy "$IPSET_WG_NAME" && _IPS=$((_IPS+INFO_IPS_WG_DEL))
+#    _POS=0
+#   _WG=1
+#    NFO_IPS=$((NFO_IPS+INFO_IPS_BL_WGW))
+#     "$WAN_GW";
+#     "$WAN_NM"
+#      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_ADD))  
+#      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_KEEP))
 
   if [ "$_WL" ]; then
     # apply whitelist
