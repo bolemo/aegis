@@ -250,7 +250,7 @@ engine_start() {
   # Applying WAN Network Range Bypass
   _POS=1; _set_ipt_bypass_for_if_pos $WAN_IF $_POS; _NFO_IPT_WBY=$?
   # Applying TUN Network Range Bypass (if applicable)
-  [ "$TUN_IF" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_pos $TUN_IF $_POS; _NFO_IPT_TBY=$? } || _NFO_IPT_TBY=0
+  [ "$TUN_IF" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_pos $TUN_IF $_POS; _NFO_IPT_TBY=$?; } || _NFO_IPT_TBY=0
   # Putting Bypass Status into NFO_IPT
   NFO_IPT=$((NFO_IPT+_NFO_IPT_WBY+_NFO_IPT_TBY))
     
