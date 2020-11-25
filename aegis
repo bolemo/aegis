@@ -141,13 +141,13 @@ _set_ipt_bypass_for_if_pos() { # Bypass for interface inet $1=iface, $2=pos
   _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $_INET -i $1 -j RETURN"|cut -d: -f1)"
   if [ "$_BP_POS" != "$2" ]; then
     echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -j RETURN
+    $IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -j RETURN -m comment --comment "inet bypass"
     _RET=$INFO_IPT_IB_SRC_NEW
   fi
   _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $_INET -o $1 -j RETURN"|cut -d: -f1)"
   if [ "$_BP_POS" != "$2" ]; then
     echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -j RETURN
+    $IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -j RETURN -m comment --comment "inet bypass"
     _RET=$((_RET+INFO_IPT_IB_DST_NEW))
   fi
   return $_RET
@@ -891,21 +891,35 @@ info() {
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
+#CK_FWS=1             # CK PB
+#CK_PM=2              # CK PB
+#CK_IPS_BL=4          # CK PB
+#CK_IPS_WL=8          # CK PB
+#CK_WG_IN_BL=16       # CK ..
+#PB_WG_SNE=16         # .. PB
+#CK_WG_BP=32          # CK PB
+#CK_IPT_CH=64         # CK PB
+#CK_IPT_WG=128        # CK PB
+#CK_IPT_WL=256        # CK PB
+#CK_IPT_LOG=512       # CK ..
+#PB_IPT_IFO=512       # .. PB
+#CK_IPT_TUN=1024      # CK PB
+#CK_IPT_WAN=2048      # CK PB
+#PB_IPT_WAN_MISS=4096 # .. PB
+
 CK_FWS=1             # CK PB
 CK_PM=2              # CK PB
 CK_IPS_BL=4          # CK PB
 CK_IPS_WL=8          # CK PB
-CK_WG_IN_BL=16       # CK ..
-PB_WG_SNE=16         # .. PB
-CK_WG_BP=32          # CK PB
-CK_IPT_CH=64         # CK PB
-CK_IPT_WG=128        # CK PB
-CK_IPT_WL=256        # CK PB
-CK_IPT_LOG=512       # CK ..
-PB_IPT_IFO=512       # .. PB
-CK_IPT_TUN=1024      # CK PB
-CK_IPT_WAN=2048      # CK PB
-PB_IPT_WAN_MISS=4096 # .. PB
+CK_IPT_CH=16         # CK PB
+CK_IPT_WAN_BP=32     # CK PB
+CK_IPT_TUN_BP=64     # CK PB
+CK_IPT_WL=128        # CK PB
+CK_IPT_LOG=256       # CK ..
+PB_IPT_IFO=256       # .. PB
+CK_IPT_TUN=512       # CK PB
+CK_IPT_WAN=1024      # CK PB
+PB_IPT_WAN_MISS=2048 # .. PB
 
 WN_BL_FILE_DIFF=1   # . . . . _ x
 WN_BL_FILE_MISS=2   # . . . . x _
@@ -916,8 +930,8 @@ WN_WL_FILE_NTLD=12  # . . x x . .
 WN_TUN_MISS=16      # . x . . . .
 WN_LOG_DIFF=32      # x . . . . .
 
-CK_MASK=4095 #12 bits
-PB_MASK=8191 #13 bits
+CK_MASK=2047 #11 bits
+PB_MASK=4095 #12 bits
 WN_MASK=63   #6 bits
 
 # ---------------------------------------------
@@ -951,30 +965,30 @@ _status() {
   elif [ -r "$WL_FILE" ]; then                                                   _WN=$((_WN+WN_WL_FILE_NTLD))
   fi
 
-  # CHECK WAN GATEWAY
-#  if [ "$WAN_GW" != '0.0.0.0' ] && ipset -q -T "$IPSET_BL_NAME" "$WAN_GW"; then  _CK=$((_CK+CK_WG_IN_BL))
-#    if ipset -q -T "$IPSET_WG_NAME" "$WAN_GW"; then                              _CK=$((_CK+CK_WG_BP))
-#    else                                                                         _PB=$((_PB+CK_WG_BP))
-#    fi
-#  elif ipset -q -n -L "$IPSET_WG_NAME">/dev/null; then                           _PB=$((_PB+PB_WG_SNE))
-#  fi
-
   # CHECK IPTABLES
   get_ipt
   # -- SRC CHAIN
   _S_CK=0
   _S_PB=0
   _S_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
+  _WAN_INET=$(inet_for_if $WAN_IF)
+  [ "$TUN_IF" ] && _TUN_INET=$(inet_for_if $TUN_IF)
   if [ "$_S_IPT" ]; then
     _LL=$(echo "$_S_IPT"|/usr/bin/wc -l)
     if [ "$(echo "$_S_IPT"|/bin/sed -n '/-j DROP/=')" = $_LL ]; then             _S_CK=$((_S_CK+CK_IPT_CH))
       _CL=1 # current line
-  #    if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WG_NAME/=")" = $_CL ]; then
-  #      if [ -z "${_S_IPT##*$WAN_IF*}" ]; then                                   _S_CK=$((_S_CK+CK_IPT_WG))
-  #      else                                                                     _S_PB=$((_S_PB+CK_IPT_WG))
-  #      fi
-  #      _CL=2
-  #    fi
+      if [ "$(echo "$_S_IPT"|/bin/grep -nF -- "-s $_WAN_INET -i $WAN_IF -j RETURN"|cut -d: -f1)" = $_CL ]; then
+                                                                                 _S_CK=$((_S_CK+CK_IPT_WAN_BP))
+      else                                                                       _S_PB=$((_S_PB+CK_IPT_WAN_BP))
+      fi
+      _CL=2
+      if [ "$(echo "$_S_IPT"|/bin/grep -nF -- "-s $_TUN_INET -i $TUN_IF -j RETURN"|cut -d: -f1)" = $_CL ]; then
+          if [ "$TUN_IF" ]; then                                                 _S_CK=$((_S_CK+CK_IPT_TUN_BP))
+          else                                                                   _S_PB=$((_S_PB+CK_IPT_TUN_BP))
+          fi
+          _CL=3
+      elif [ "$TUN_IF" ]; then                                                   _S_PB=$((_S_PB+CK_IPT_TUN_BP))
+      fi
       if [ "$(echo "$_S_IPT"|/bin/sed -n "/$IPSET_WL_NAME/=")" = $_CL ]; then    _S_CK=$((_S_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
