@@ -59,44 +59,47 @@ INFO_IPS_WL_DEL=24    # x x _ . . => was there, was deleted
                       # _ _ _ . . => was not there, was not loaded
 INFO_IPS_WL_MASK=28   # x x x . .
 
-# INFO IPTABLES (17 bits)
-INFO_IPT_MASK=131071
-INFO_IPT_SRC_KEEP=1        # . . . . . . . . . . . . . . . . x (or NEW)
-INFO_IPT_DST_KEEP=2        # . . . . . . . . . . . . . . . x . (or NEW)
+# INFO IPTABLES (18 bits)
+INFO_IPT_MASK=262143
+INFO_IPT_SRC_KEEP=1        # . . . . . . . . . . . . . . . . . x (or NEW)
+INFO_IPT_DST_KEEP=2        # . . . . . . . . . . . . . . . . x . (or NEW)
+
+INFO_IPT_IB_PBM=4          # . . . . . . . . . . . . . . . x . .
 
 INFO_IPT_IB_SRC_NEW=1 # . x
 INFO_IPT_IB_DST_NEW=2 # x .
 
-INFO_IPT_WB_SHIFT=2
-INFO_IPT_WB_SRC_NEW=4      # . . . . . . . . . . . . . . x . . (or KEEP)
-INFO_IPT_WB_DST_NEW=8      # . . . . . . . . . . . . . x . . . (or KEEP)
+INFO_IPT_WB_SHIFT=3
+INFO_IPT_WB_SRC_NEW=8      # . . . . . . . . . . . . . . x . . . (or KEEP)
+INFO_IPT_WB_DST_NEW=16     # . . . . . . . . . . . . . x . . . . (or KEEP)
 
-INFO_IPT_TB_SHIFT=4
-INFO_IPT_TB_SRC_NEW=16     # . . . . . . . . . . . . x . . . . (or KEEP)
-INFO_IPT_TB_DST_NEW=32     # . . . . . . . . . . . x . . . . . (or KEEP)
-INFO_IPT_WL=64             # . . . . . . . . . . x . . . . . .
-INFO_IPT_WL_SRC_NEW=128    # . . . . . . . . . x . . . . . . . (or KEEP)
-INFO_IPT_WL_DST_NEW=256    # . . . . . . . . x . . . . . . . . (or KEEP)
-INFO_IPT_LOG=512           # . . . . . . . x . . . . . . . . .
-INFO_IPT_LOG_SRC_NEW=1024  # . . . . . . x . . . . . . . . . . (or KEEP)
-INFO_IPT_LOG_DST_NEW=2048  # . . . . . x . . . . . . . . . . . (or KEEP)
+INFO_IPT_TB_SHIFT=5
+INFO_IPT_TB_SRC_NEW=32     # . . . . . . . . . . . . x . . . . . (or KEEP)
+INFO_IPT_TB_DST_NEW=64     # . . . . . . . . . . . x . . . . . . (or KEEP)
+
+INFO_IPT_WL=128            # . . . . . . . . . . x . . . . . . .
+INFO_IPT_WL_SRC_NEW=256    # . . . . . . . . . x . . . . . . . . (or KEEP)
+INFO_IPT_WL_DST_NEW=512    # . . . . . . . . x . . . . . . . . . (or KEEP)
+INFO_IPT_LOG=1024          # . . . . . . . x . . . . . . . . . .
+INFO_IPT_LOG_SRC_NEW=2048  # . . . . . . x . . . . . . . . . . . (or KEEP)
+INFO_IPT_LOG_DST_NEW=4096  # . . . . . x . . . . . . . . . . . . (or KEEP)
 
 
 INFO_IPT_IF_NEW=1  # _ x
 INFO_IPT_IF_KEEP=2 # x _
 INFO_IPT_IF_PBM=3  # x x
 
-INFO_IPT_WAN_SHIFT=12
-INFO_IPT_WAN_NEW=4096      # . . . _ x . . . . . . . . . . . .
-INFO_IPT_WAN_KEEP=8192     # . . . x _ . . . . . . . . . . . .
-INFO_IPT_WAN_PBM=12288     # . . . x x . . . . . . . . . . . .
+INFO_IPT_WAN_SHIFT=13
+INFO_IPT_WAN_NEW=8192      # . . . _ x . . . . . . . . . . . . .
+INFO_IPT_WAN_KEEP=16384    # . . . x _ . . . . . . . . . . . . .
+INFO_IPT_WAN_PBM=24576     # . . . x x . . . . . . . . . . . . .
 
-INFO_IPT_TUN_SHIFT=14
-INFO_IPT_TUN_NEW=16384     # . _ x . . . . . . . . . . . . . .
-INFO_IPT_TUN_KEEP=32768    # . x _ . . . . . . . . . . . . . .
-INFO_IPT_TUN_PBM=49152     # . x x . . . . . . . . . . . . . .
+INFO_IPT_TUN_SHIFT=15
+INFO_IPT_TUN_NEW=32768     # . _ x . . . . . . . . . . . . . . .
+INFO_IPT_TUN_KEEP=65536    # . x _ . . . . . . . . . . . . . . .
+INFO_IPT_TUN_PBM=98304     # . x x . . . . . . . . . . . . . . .
 
-INFO_IPT_IFO_PBM=65536     # x . . . . . . . . . . . . . . . .
+INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . .
 
 # ---------------------------------------------
 : ENV STOP
@@ -244,13 +247,21 @@ engine_start() {
   fi
 
   get_ipt
+  #Define grep to find inaccurate ifaces (used for clean-ups)
+  [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
   [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_COM -N "$IPTBL_SRC" 2>/dev/null
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_COM -N "$IPTBL_DST" 2>/dev/null
 
-##### EXPERIMENTAL
+  # checking and cleaning anything that is not WAN_IF or TUN_IF in SRC/DST chains
+  _IPT_UCH="$(echo "$_IPT"|eval $_GREP|/bin/grep -- "-A ${SC_ABR}_... -[sd] [0-9./]\+ -[io] [[:alnum:]]\+ -j RETURN")"
+  if [ "$_IPT_UCH" ]; then
+    # we have some unwanted rules (likely old WAN_IF or TUN_IF)
+    echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    NFO_IPT=$((NFO_IPT+INFO_IPT_IB_PBM))
+  fi
 
   # Applying WAN Network Range Bypass
   _set_ipt_bypass_for_if_pos $WAN_IF 1; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT)))
@@ -260,8 +271,6 @@ engine_start() {
   else _POS=1
   fi
     
-##### END EXPERIMENTAL
-
 #    NEED TO CLEAN UP VARS AND CONSTS AND ARRANGE NFO FOR TUN
 #    #Removing any trace of WAN gateway bypass if any
 #    echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
@@ -328,7 +337,6 @@ engine_start() {
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
-  [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|eval $_GREP)"
   if [ "$_IPT_IFO" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
@@ -1185,6 +1193,7 @@ status_term() {
       then echo '- iptables: engine outbound chain was set.'
       else echo '- iptables: engine outbound chain was already set.'
     fi
+    [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '- iptables: some irrelevant bypass rules had to be removed.'
 #    if [ $((INFO_IPT & INFO_IPT_WB)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WB_SRC_NEW)) -ne 0 ]
         then echo '- iptables: inbound WAN network range bypass rules were set.'
@@ -1195,7 +1204,7 @@ status_term() {
         else echo '- iptables: outbound WAN network range bypass rules were kept.'
       fi
 #    fi
-#    if [ $((INFO_IPT & INFO_IPT_TB)) -ne 0 ]; then
+    if [ "$INFO_TUN" ]; then
       if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
         then echo '- iptables: inbound VPN network range bypass rules were set.'
         else echo '- iptables: inbound VPN network range bypass rules were kept.'
@@ -1204,7 +1213,7 @@ status_term() {
         then echo '- iptables: outbound VPN network range bypass rules were set.'
         else echo '- iptables: outbound VPN network range bypass rules were kept.'
       fi
-#    fi
+    fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
         then echo '- iptables: inbound whitelist rules were set.'
