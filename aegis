@@ -137,12 +137,14 @@ _set_ipt_bypass_for_if_pos() { # Bypass for interface inet $1=iface, $2=pos
   _RET=0
   _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $_INET -i $1 -j RETURN"|cut -d: -f1)"
   if [ "$_BP_POS" != "$2" ]; then
-    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done����$IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -j RETURN
+    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -j RETURN
     _RET=$INFO_IPT_IB_SRC_NEW
   fi
   _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $_INET -o $1 -j RETURN"|cut -d: -f1)"
   if [ "$_BP_POS" != "$2" ]; then
-    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done����$IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -j RETURN
+    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    $IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -j RETURN
     _RET=$((_RET+INFO_IPT_IB_DST_NEW))
   fi
   return $_RET
