@@ -167,10 +167,10 @@ _set_ipt_for_if_pos() {
     fi
 #    $IPT_COM -I PREROUTING $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
 #    $IPT_COM -I POSTROUTING $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-    $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-    $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-    $IPT_COM -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
+    $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_SRC"
+    $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_DST"
+    $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_SRC"
+    $IPT_COM -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_DST"
   else
     _RET=$INFO_IPT_IF_KEEP
   fi
@@ -258,7 +258,7 @@ engine_start() {
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_COM -N "$IPTBL_DST" 2>/dev/null
 
   # checking and cleaning anything that is not WAN_IF or TUN_IF in SRC/DST chains
-  _IPT_UCH="$(echo "$_IPT"|eval $_GREP|/bin/grep -- "-A ${SC_ABR}_... -[sd] [0-9./]\+ -[io] [[:alnum:]]\+ -j RETURN")"
+  _IPT_UCH="$(echo "$_IPT"|eval $_GREP|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
   if [ "$_IPT_UCH" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
