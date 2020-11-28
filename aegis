@@ -1135,6 +1135,8 @@ status_term() {
       $WN_WL_FILE_MISS) echo -e "\033[35m- whitelist is set but file is missing.\033[0m";;
       $WN_WL_FILE_NTLD) echo -e "\033[35m- no whitelist is set but file exists.\033[0m";;
     esac
+    [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ] && echo -e "\033[31m- iptables: WAN network range bypass rules are missing!\033[0m"
+    [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo -e "\033[31m- iptables: VPN network range bypass rules are missing!\033[0m"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel ($TUN_IF) IFO rules are missing!\033[0m"
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
   fi
@@ -1153,8 +1155,6 @@ status_term() {
     [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for $SC_NAME."
     [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist is set."
     [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist is set."
-#    [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo "- ipset: WAN gateway is in blocklist."
-#    [ $((_CK&CK_WG_BP)) -ne 0 ] &&    echo "- ipset: WAN gateway bypass is set."
     [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: engine chains are set."
     [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "- iptables: WAN network range bypass rules are set."
     [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "- iptables: VPN network range bypass rules are set."
