@@ -1002,17 +1002,36 @@ _status() {
   # -- DST CHAIN
   _D_CK=0
   _D_PB=0
-  _D_IPT="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
+  _D_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $IPTBL_DST")"
   if [ "$_D_IPT" ]; then
     _LL=$(echo "$_D_IPT"|/usr/bin/wc -l)
-    if [ "$(echo "$_D_IPT"|/bin/sed -n '/-j REJECT/=')" = $_LL ]; then           _D_CK=$((_D_CK+CK_IPT_CH))
+    if [ "$(echo "$_D_IPT"|/bin/grep -F -- '-j REJECT'|/usr/bin/cut -d: -f1)" = $_LL ]; then _D_CK=$((_D_CK+CK_IPT_CH))
       _CL=1 # current line
-      if [ "$(echo "$_D_IPT"|/bin/grep -nF -- "-s $_WAN_INET -i $WAN_IF -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)" = $_CL ]; then
+      
+      echo "$_D_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\""|while read _BPL; do
+        [ "$(echo $_BPL|/usr/bin/cut -d: -f1)" != "$_CL" ] && { _D_PB=$((_D_PB+CK_IPT_CH)); break 2; }
+        case "$_BPL" in
+          *"-d $_WAN_INET -o $WAN_IF"*)
+            if [ $((_D_CK&CK_IPT_WAN_BP)) = 0 ]; then                          _D_CK=$((_D_CK+CK_IPT_WAN_BP))
+            elif [ $((_D_PB&CK_IPT_WAN_BP)) = 0 ]; then                        _D_PB=$((_D_PB+CK_IPT_WAN_BP))
+            fi ;;
+          *"-d $_TUN_INET -o $TUN_IF"*)
+            if [ $((_D_CK&CK_IPT_TUN_BP)) = 0 ]; then                          _D_CK=$((_D_CK+CK_IPT_TUN_BP))
+            elif [ $((_D_PB&CK_IPT_TUN_BP)) = 0 ]; then                        _D_PB=$((_D_PB+CK_IPT_TUN_BP))
+            fi ;;
+          *)
+        esac
+        _CL=$((_CL+1))
+      done
+      
+      
+      
+      if [ "$(echo "$_D_IPT"|/bin/grep -nF -- "-d $_WAN_INET -o $WAN_IF -m comment --comment \"$SC_ABR inet bypass\""|/bin/cut -d: -f1)" = $_CL ]; then
                                                                                  _D_CK=$((_D_CK+CK_IPT_WAN_BP))
       else                                                                       _D_PB=$((_D_PB+CK_IPT_WAN_BP))
       fi
       _CL=2
-      if [ "$(echo "$_D_IPT"|/bin/grep -nF -- "-s $_TUN_INET -i $TUN_IF -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)" = $_CL ]; then
+      if [ "$(echo "$_D_IPT"|/bin/grep -nF -- "-d $_TUN_INET -o $TUN_IF -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)" = $_CL ]; then
           if [ "$TUN_IF" ]; then                                                 _D_CK=$((_D_CK+CK_IPT_TUN_BP))
           else                                                                   _D_PB=$((_D_PB+CK_IPT_TUN_BP))
           fi
