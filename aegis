@@ -1111,8 +1111,6 @@ status_term() {
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no whitelist is set!\033[0m"
-    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo -e "\033[31m- ipset: a gateway bypass is set but should not!\033[0m"
-#    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo -e "\033[31m- ipset: WAN gateway bypass is not set!\033[0m"
     [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: engine chains are not right!\033[0m"
     [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: WAN network range bypass rules are not right!\033[0m"
     [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: VPN network range bypass rules are not right!\033[0m"
