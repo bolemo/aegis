@@ -167,10 +167,10 @@ _set_ipt_for_if_pos() {
     fi
 #    $IPT_COM -I PREROUTING $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
 #    $IPT_COM -I POSTROUTING $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
-    $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_SRC"
-    $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_DST"
-    $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_SRC"
-    $IPT_COM -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "in $SC_ABR blacklist" -j "$IPTBL_DST"
+    $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
+    $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
+    $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
+    $IPT_COM -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
   else
     _RET=$INFO_IPT_IF_KEEP
   fi
@@ -330,12 +330,12 @@ engine_start() {
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $_POS -j DROP
+    $IPT_COM -I "$IPTBL_SRC" $_POS -m comment --comment \"$SC_ABR drop incoming\" -j DROP
   fi
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $_POS -j REJECT --reject-with icmp-admin-prohibited
+    $IPT_COM -I "$IPTBL_DST" $_POS -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
