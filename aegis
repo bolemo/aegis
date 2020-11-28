@@ -912,8 +912,8 @@ CK_PM=2              # CK PB
 CK_IPS_BL=4          # CK PB
 CK_IPS_WL=8          # CK PB
 CK_IPT_CH=16         # CK PB
-CK_IPT_WAN_BP=32     # CK PB
-CK_IPT_TUN_BP=64     # CK PB
+CK_IPT_WAN_BP=32     # CK PB WN
+CK_IPT_TUN_BP=64     # CK PB WN
 CK_IPT_WL=128        # CK PB
 CK_IPT_LOG=256       # CK ..
 PB_IPT_IFO=256       # .. PB
@@ -921,18 +921,20 @@ CK_IPT_TUN=512       # CK PB
 CK_IPT_WAN=1024      # CK PB
 PB_IPT_WAN_MISS=2048 # .. PB
 
-WN_BL_FILE_DIFF=1   # . . . . _ x
-WN_BL_FILE_MISS=2   # . . . . x _
-WN_BL_FILE_NTLD=3   # . . . . x x
-WN_WL_FILE_DIFF=4   # . . _ x . .
-WN_WL_FILE_MISS=8   # . . x _ . .
-WN_WL_FILE_NTLD=12  # . . x x . .
-WN_TUN_MISS=16      # . x . . . .
-WN_LOG_DIFF=32      # x . . . . .
+WN_BL_FILE_DIFF=1   # . . . . . . _ x
+WN_BL_FILE_MISS=2   # . . . . . . x _
+WN_BL_FILE_NTLD=3   # . . . . . . x x
+WN_WL_FILE_DIFF=4   # . . . . _ x . .
+WN_WL_FILE_MISS=8   # . . . . x _ . .
+WN_WL_FILE_NTLD=12  # . . . . x x . .
+WN_TUN_MISS=16      # . . . x . . . .
+# 32 CK_IPT_WAN_BP -> WAN BYPASS MISSING
+# 64 CK_IPT_TUN_BP -> TUN BYPASS MISSING
+WN_LOG_DIFF=128     # x . . . . . . .
 
 CK_MASK=2047 #11 bits
 PB_MASK=4095 #12 bits
-WN_MASK=63   #6 bits
+WN_MASK=255  #8 bits
 
 # ---------------------------------------------
 : ENV EOF
@@ -966,11 +968,11 @@ chain_status() {
             [ $((_CH_PB&CK_IPT_TUN_BP)) = 0 ] &&                                _CH_PB=$((_CH_PB+CK_IPT_TUN_BP))
             ;;
           *) # we found a non matching interface
-            _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2;
+            _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2
+            ;;
         esac
         _CL=$((_CL+1))
-      done
-      IFS=$OLDIFS
+      done; IFS=$OLDIFS
       if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1)" = $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
@@ -1058,7 +1060,9 @@ _status() {
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
     [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                              _PB=$((_PB+CK_PM))
-    # WG: we already have CK_WG_BP, PB_WG_SNE, CK_IPT_WG
+    # BP
+    [ $(((_CK|_PB)&CK_IPT_WAN_BP)) -eq 0 ] &&                                    _WN=$((_WN+CK_IPT_WAN_BP))
+    [ "$TUN_IF" ] && [ $(((_CK|_PB)&CK_IPT_TUN_BP)) -eq 0 ] &&                   _WN=$((_WN+CK_IPT_TUN_BP))
     # WL
     _OK=$((CK_IPS_WL+CK_IPT_WL))
     if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
@@ -1074,8 +1078,6 @@ _status() {
     fi fi
     # CH, IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_CH))
-#    [ $(((_CK&CK_IPT_WAN)+(_PB&CK_IPT_WAN))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_WAN))
-#    [ "$TUN_IF" ] && [ $(((_CK&CK_IPT_TUN)+(_PB&CK_IPT_TUN))) -eq 0 ] &&           _PB=$((_PB+CK_IPT_TUN))
   fi
   
   # calculating return value
