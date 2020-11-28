@@ -291,13 +291,13 @@ engine_start() {
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      $IPT_COM -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -j RETURN
+      $IPT_COM -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      $IPT_COM -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -j RETURN
+      $IPT_COM -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
@@ -330,12 +330,12 @@ engine_start() {
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $_POS -m comment --comment \"$SC_ABR drop incoming\" -j DROP
+    $IPT_COM -I "$IPTBL_SRC" $_POS -m comment --comment "$SC_ABR drop incoming" -j DROP
   fi
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $_POS -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited
+    $IPT_COM -I "$IPTBL_DST" $_POS -m comment --comment "$SC_ABR reject outgoing" -j REJECT --reject-with icmp-admin-prohibited
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
