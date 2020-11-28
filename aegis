@@ -951,6 +951,7 @@ chain_status() {
     if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1)" = $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
       _CL=$_SL # current line
       OLDIFS=$IFS; IFS=$'\n'; for _BPL in "$(echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"")"; do
+        [ -z "$_BPL" ] && break
         [ "$(echo $_BPL|/usr/bin/cut -d: -f1)" != "$_CL" ] && { _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; }
         case "$_BPL" in
           *"$_DIR $_WAN_INET $_PUT $WAN_IF"*) # we have WAN with correct inet
