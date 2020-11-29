@@ -127,6 +127,17 @@ ipset_list_members() {
   ipset -q -L "$1"|/usr/bin/awk 'NR==1,/Members:/ {next};NF'
 }
 
+# EXPERIMENTAL
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d) }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR }
+_cipset_copy_set() { ipset -q -L "$1"|/usr/bin/awk 'NR==1,/Members:/ {next};NF' > "$_CIPSET_DIR/$1" }
+
+diff_ipsets() {
+  [ "$IPR_BIN" ] && iprange --quiet "$1" --diff "$2" || /usr/bin/sort|diff -q "$1" "$2" >/dev/null
+  return $?
+}
+# END EXPERIMENTAL
+
 diff_ipset_file() {
   if [ "$IPR_BIN" ]
     then ipset_list_members "$1"|iprange --quiet - --diff "$2"
@@ -891,22 +902,6 @@ info() {
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
-#CK_FWS=1             # CK PB
-#CK_PM=2              # CK PB
-#CK_IPS_BL=4          # CK PB
-#CK_IPS_WL=8          # CK PB
-#CK_WG_IN_BL=16       # CK ..
-#PB_WG_SNE=16         # .. PB
-#CK_WG_BP=32          # CK PB
-#CK_IPT_CH=64         # CK PB
-#CK_IPT_WG=128        # CK PB
-#CK_IPT_WL=256        # CK PB
-#CK_IPT_LOG=512       # CK ..
-#PB_IPT_IFO=512       # .. PB
-#CK_IPT_TUN=1024      # CK PB
-#CK_IPT_WAN=2048      # CK PB
-#PB_IPT_WAN_MISS=4096 # .. PB
-
 CK_FWS=1             # CK PB
 CK_PM=2              # CK PB
 CK_IPS_BL=4          # CK PB
@@ -1025,9 +1020,7 @@ _status() {
   # -- SRC & DST
   if [ $_S_CK -eq $_D_CK ]; then                                                 _CK=$((_CK+_S_CK))
     if [ $_S_PB -eq $_D_PB ]; then                                               _PB=$((_PB+_S_PB))
-    else
- #     [ $((_S_PB&CK_IPT_WG)) -ne 0 ] || [ $((_D_PB&CK_IPT_WG)) -ne 0 ] &&        _PB=$((_PB+CK_IPT_WG))
-      [ $((_S_PB&CK_IPT_CH)) -ne 0 ] || [ $((_D_PB&CK_IPT_CH)) -ne 0 ] &&        _PB=$((_PB+CK_IPT_CH))
+    else                                                                         _PB=$((_PB+(_S_PB|_D_PB)))
     fi
   else                                                                           _PB=$((_PB+CK_IPT_CH))                                                                           
   fi
@@ -1040,7 +1033,7 @@ _status() {
       _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
       case "$_CT" in
         4)                                                                       _CK=$((_CK+CK_IPT_TUN));;
-        0)                                                                       _WN=$((_WN+WN_TUN_MISS));;#_PB=$((_PB+CK_IPT_TUN));;
+        0)                                                                       _WN=$((_WN+WN_TUN_MISS));;
         *)                                                                       _PB=$((_PB+CK_IPT_TUN));;
       esac
     fi
