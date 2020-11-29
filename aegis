@@ -27,8 +27,6 @@ BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
-#WAN_GW="$(/bin/nvram get wan_gateway)"
-#WAN_NM="$(/bin/nvram get wan_netmask)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
   # WireGuard
@@ -128,7 +126,7 @@ ipset_list_members() {
 }
 
 # EXPERIMENTAL
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d); }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); }
 _cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
