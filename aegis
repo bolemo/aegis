@@ -128,13 +128,24 @@ ipset_list_members() {
 }
 
 # EXPERIMENTAL
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d) }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR }
-_cipset_copy_set() { return "$({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1)" }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d); }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
+_cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
   [ "$IPR_BIN" ] && iprange --quiet "$_CIPSET_DIR/$1" --diff "$2" || /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null
   return $?
 }
+_cipset_swap_set_file() {
+  cat $2 >$_CIPSET_DIR/$1
+  echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l < "$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $IPSET_TMP /" $_CIPSET_DIR/$1)" | ipset restore
+  ipset swap "$1" "$IPSET_TMP"
+  ipset destroy $IPSET_TMP
+}
+_cipset_create_set_file() {
+  cat $2 >$_CIPSET_DIR/$1
+  echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l < "$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
+}
+# NEED TO IMPLEMENT SWAP, CREATE ipset TO COMPARE ACTIVE IPSET (since it was changed, first copy_set is not valid anymore
 # END EXPERIMENTAL
 
 diff_ipset_file() {
@@ -212,16 +223,18 @@ _cipset_init
     fi
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
-      echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
-      ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
-      ipset destroy $IPSET_TMP
+#      echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
+#      ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
+#      ipset destroy $IPSET_TMP
+      _cipset_swap_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     # else keeping existing blocklist
     fi
   else
     if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
-      echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
+#      echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
+      _cipset_create_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     else
     # no netset file, exiting with _IPS=0
@@ -230,21 +243,24 @@ _cipset_init
   fi
   
   # creating ipset whitelist if needed
-  if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
+#  if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
+  if _cipset_copy_set $IPSET_WL_NAME; then
     # ipset whitelist is already in place
     if [ -r "$WL_FILE" ]; then
       _WL=1
       [ "$_RELOAD_WTD" ] && _RELOAD=1 || _RELOAD=''
       # checking if ipset and file are identical
-      if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
+#      if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
+      if _cipset_diff_set_file $IPSET_WL_NAME $WL_FILE
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
         else _RELOAD=1
       fi
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
-        echo -e "create $IPSET_TMP hash:net family inet\n$(/bin/sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
-        ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
-        ipset destroy "$IPSET_TMP"
+        _cipset_swap_set_file $IPSET_WL_NAME $WL_FILE
+#        echo -e "create $IPSET_TMP hash:net family inet\n$(/bin/sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
+#        ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
+#        ipset destroy "$IPSET_TMP"
         NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SWAP))
       else
       # else we want to keep it
@@ -256,7 +272,8 @@ _cipset_init
     if [ -r "$WL_FILE" ]; then
       # netset file exists, so creating whitelist ipset from it
       _WL=1
-      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(/bin/sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
+#      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(/bin/sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
+      _cipset_create_set_file $IPSET_WL_NAME $WL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
     fi
   fi
