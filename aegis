@@ -1012,6 +1012,7 @@ chain_status() {
 
 _status() {
   _CK=0; _WN=0; _PB=0
+  _cipset_init
   
   # CHECK ENVIRONMENT
   # check firewall-start.sh script
@@ -1020,18 +1021,18 @@ _status() {
   [ "$EXT_DRIVE" ] && check_postmount &&                                         _CK=$((_CK+CK_PM))
 
   # CHECK BLOCKLIST (IPS, FILE)
-  if ipset -q -n -L "$IPSET_BL_NAME">/dev/null; then                             _CK=$((_CK+CK_IPS_BL))
+  if _cipset_copy_set $IPSET_BL_NAME; then                                       _CK=$((_CK+CK_IPS_BL))
     if [ -r "$BL_FILE" ]; then
-      diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE" ||                             _WN=$((_WN+WN_BL_FILE_DIFF))
+      _cipset_diff_set_file $IPSET_BL_NAME $BL_FILE ||                           _WN=$((_WN+WN_BL_FILE_DIFF))
     else                                                                         _WN=$((_WN+WN_BL_FILE_MISS))
     fi
   elif [ -r "$BL_FILE" ]; then                                                   _WN=$((_WN+WN_BL_FILE_NTLD))
   fi
 
   # CHECK WHITELIST (IPS, FILE)
-  if ipset -q -n -L "$IPSET_WL_NAME">/dev/null; then                             _CK=$((_CK+CK_IPS_WL))
+  if _cipset_copy_set $IPSET_WL_NAME; then                                       _CK=$((_CK+CK_IPS_WL))
     if [ -r "$WL_FILE" ]; then
-      diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE" ||                             _WN=$((_WN+WN_WL_FILE_DIFF))
+      _cipset_diff_set_file $IPSET_WL_NAME $WL_FILE ||                           _WN=$((_WN+WN_WL_FILE_DIFF))
     else                                                                         _WN=$((_WN+WN_WL_FILE_MISS))
     fi
   elif [ -r "$WL_FILE" ]; then                                                   _WN=$((_WN+WN_WL_FILE_NTLD))
@@ -1083,8 +1084,8 @@ _status() {
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
     [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                              _PB=$((_PB+CK_PM))
     # BP
-    [ $(((_CK|_PB)&CK_IPT_WAN_BP)) -eq 0 ] &&                                    _WN=$((_WN+CK_IPT_WAN_BP))
-    [ "$TUN_IF" ] && [ $(((_CK|_PB)&CK_IPT_TUN_BP)) -eq 0 ] &&                   _WN=$((_WN+CK_IPT_TUN_BP))
+    _cipset_inet_in_bl $_WAN_INET && [ $(((_CK|_PB)&CK_IPT_WAN_BP)) -eq 0 ] &&   _WN=$((_WN+CK_IPT_WAN_BP))
+    [ "$TUN_IF" ] && _cipset_inet_in_bl $_TUN_INET && [ $(((_CK|_PB)&CK_IPT_TUN_BP)) -eq 0 ] && _WN=$((_WN+CK_IPT_TUN_BP))
     # WL
     _OK=$((CK_IPS_WL+CK_IPT_WL))
     if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
@@ -1101,6 +1102,8 @@ _status() {
     # CH, IFO
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_CH))
   fi
+  
+  _cipset_end
   
   # calculating return value
   _RET=$((_CK+(_PB<<12)+(_WN<<25)))
