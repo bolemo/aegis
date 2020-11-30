@@ -143,6 +143,10 @@ _cipset_create_set_file() {
   cat $2 >$_CIPSET_DIR/$1
   echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l < "$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
 }
+_cipset_inet_in_bl() {
+  [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
+  [ -z "$(echo "$1" | iprange "$_CIPSET_DIR/$2" --common - )" ] && return 1 || return 0
+}
 # NEED TO IMPLEMENT SWAP, CREATE ipset TO COMPARE ACTIVE IPSET (since it was changed, first copy_set is not valid anymore
 # END EXPERIMENTAL
 
@@ -154,19 +158,18 @@ diff_ipset_file() {
   return $?
 }
 
-_set_ipt_bypass_for_if_pos() { # Bypass for interface inet $1=iface, $2=pos
-  _INET=$(inet_for_if $1)
+_set_ipt_bypass_for_if_inet_pos() { # Bypass for interface inet $1=iface, $2=inet, $3=pos
   _RET=0
-  _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $_INET -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
-  if [ "$_BP_POS" != "$2" ]; then
+  _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $2 -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
+  if [ "$_BP_POS" != "$3" ]; then
     echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $2 -s $_INET -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
+    $IPT_COM -I "$IPTBL_SRC" $3 -s $2 -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$INFO_IPT_IB_SRC_NEW
   fi
-  _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $_INET -o $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
-  if [ "$_BP_POS" != "$2" ]; then
+  _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $2 -o $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
+  if [ "$_BP_POS" != "$3" ]; then
     echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $2 -d $_INET -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
+    $IPT_COM -I "$IPTBL_DST" $3 -d $2 -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$((_RET+INFO_IPT_IB_DST_NEW))
   fi
   return $_RET
@@ -184,8 +187,6 @@ _set_ipt_for_if_pos() {
     else
       _RET=$INFO_IPT_IF_NEW
     fi
-#    $IPT_COM -I PREROUTING $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -j "$IPTBL_SRC"
-#    $IPT_COM -I POSTROUTING $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -j "$IPTBL_DST"
     $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
     $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
     $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
@@ -275,7 +276,6 @@ _cipset_init
       NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
     fi
   fi
-_cipset_end
 
   get_ipt
   #Define grep to find inaccurate ifaces (used for clean-ups)
@@ -286,21 +286,29 @@ _cipset_end
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_COM -N "$IPTBL_DST" 2>/dev/null
 
-  # checking and cleaning anything that is not WAN_IF or TUN_IF in SRC/DST chains
-  _IPT_UCH="$(echo "$_IPT"|eval $_GREP|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+  WAN_INET=$(inet_for_if $WAN_IF)
+  [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
+  # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
+  if _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; else WAN_INET=''; fi
+  if _cipset_inet_in_bl $TUN_INET; then [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$WAN_IF; else TUN_INET=''; fi
+  [ "$_EXCL_IF" ] && _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")" \
+                  || _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
   if [ "$_IPT_UCH" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
     NFO_IPT=$((NFO_IPT+INFO_IPT_IB_PBM))
   fi
 
-  # Applying WAN Network Range Bypass
-  _set_ipt_bypass_for_if_pos $WAN_IF 1; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT)))
+  _POS=0
+  # Applying WAN Network Range Bypass if needed
+  [ "$WAN_INET" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $WAN_IF $WAN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT))); }
   # Applying TUN Network Range Bypass (if applicable)
-  if [ "$TUN_IF" ]; then _POS=2
-    _set_ipt_bypass_for_if_pos $TUN_IF 2; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT)))
-  else _POS=1
-  fi
+  [ "$TUN_INET" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); }
+
+#  if [ "$TUN_IF" ]; then _POS=2
+#    _set_ipt_bypass_for_if_pos $TUN_IF 2; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT)))
+#  else _POS=1
+#  fi
     
 #    NEED TO CLEAN UP VARS AND CONSTS AND ARRANGE NFO FOR TUN
 #    #Removing any trace of WAN gateway bypass if any
@@ -384,6 +392,8 @@ _cipset_end
     _set_ipt_for_if_pos "$TUN_IF" 2
     NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TUN_SHIFT)))
   fi
+  
+  _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<7))) $WAN_IF $TUN_IF" > "$INFO_FILE"
 }
