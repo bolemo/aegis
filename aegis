@@ -145,7 +145,7 @@ _cipset_create_set_file() {
 }
 _cipset_inet_in_bl() {
   [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
-  [ -z "$(echo "$1" | iprange "$_CIPSET_DIR/$2" --common - )" ] && return 1 || return 0
+  [ -z "$(echo "$1" | iprange "$_CIPSET_DIR/$IPSET_BL_NAME" --common - )" ] && return 1 || return 0
 }
 _cipset_count_set() {
   [ "$IPR_BIN" ] && { $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2; return; }
