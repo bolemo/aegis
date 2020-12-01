@@ -328,7 +328,7 @@ log() {
 }
 
 refreshLog() {
-  [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
+  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
 checkIp() {
