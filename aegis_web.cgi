@@ -30,7 +30,7 @@ aegis_env() {
 status() {
   aegis_env
   set -- $($wcAEGIS_BIN _status)
-  _CK=$1; _PB=$2; _WN=$3; BL_NB=$4; WL_NB=$5; WAN_IF=$6; TUN_IF=$7
+  eval "_CK=$1; _PB=$2; _WN=$3; BL_NB=$4; WL_NB=$5; WAN_IF=$6; TUN_IF=$7"
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
