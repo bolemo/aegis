@@ -30,8 +30,8 @@ aegis_env() {
 status() {
   aegis_env
   set -- $($wcAEGIS_BIN _status)
-  eval "_STAT=$1; WAN_IF=$2; TUN_IF=$3; BL_NB=$4; WL_NB=$5"
-  _CK=$((_STAT&CK_MASK)); _PB=$(((_STAT>>12)&PB_MASK)); _WN=$(((_STAT>>25)&WN_MASK))
+  eval "_CK=$1; _PB=$2; _WN=$3; BL_NB=$4; WL_NB=$5; WAN_IF=$6; TUN_IF=$7"
+  
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
@@ -56,10 +56,9 @@ status() {
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo "<li>ipset: no blocklist is set!</li>"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo "<li>ipset: no whitelist is set!</li>"
-    [ $((_PB&PB_WG_SNE)) -ne 0 ] &&  echo "<li>ipset: a gateway bypass is set but should not!</li>"
-    [ $((_PB&CK_WG_BP)) -ne 0 ] &&   echo "<li>ipset: WAN gateway bypass is not set!</li>"
     [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo "<li>iptables: engine chains are not right!</li>"
-    [ $((_PB&CK_IPT_WG)) -ne 0 ] &&  echo "<li>iptables: WAN gateway bypass rules are not right!</li>"
+    [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo "<li>iptables: WAN network range bypass rules are not right!</li>"
+    [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo "<li>iptables: VPN network range bypass rules are not right!</li>"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo "<li>iptables: whitelist rules are not right!</li>"
     [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo "<li>iptables: VPN tunnel IFO rules are corrupted!</li>"
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo "<li>iptables: WAN interface IFO rules are corrupted!</li>"
@@ -81,6 +80,8 @@ status() {
       $WN_WL_FILE_MISS) echo "<li>whitelist is set but file is missing.</li>";;
       $WN_WL_FILE_NTLD) echo "<li>no whitelist is set but file exists.</li>";;
     esac
+    [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are missing!</li>"
+    [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are missing!</li>"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
     echo '</ul>'
@@ -99,10 +100,9 @@ status() {
     [ $((_CK&CK_PM)) -ne 0 ] &&       echo "<li>'post-mount.sh' is set for $SC_NAME.</li>"
     [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "<li>ipset: blocklist is set.</li>"
     [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "<li>ipset: whitelist is set.</li>"
-    [ $((_CK&CK_WG_IN_BL)) -ne 0 ] && echo "<li>ipset: WAN gateway is in blocklist.</li>"
-    [ $((_CK&CK_WG_BP)) -ne 0 ] &&    echo "<li>ipset: WAN gateway bypass is set.</li>"
     [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "<li>iptables: engine chains are set.</li>"
-    [ $((_CK&CK_IPT_WG)) -ne 0 ] &&   echo "<li>iptables: WAN gateway bypass rules are set.</li>"
+    [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are set.</li>"
+    [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are set.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "<li>iptables: whitelist rules are set.</li>"
     [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "<li>iptables: $SC_NAME logging is on.</li>"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "<li>iptables: VPN tunnel IFO rules are set.</li>"
@@ -117,8 +117,8 @@ status() {
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
     INFO_FROM=$((INFO&INFO_FROM_MASK))
-    INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
-    INFO_IPT=$(((INFO>>10)&INFO_IPT_MASK))
+    INFO_IPS=$(((INFO>>INFO_IPS_SHIFT)&INFO_IPS_MASK))
+    INFO_IPT=$(((INFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
@@ -141,12 +141,6 @@ status() {
       $INFO_IPS_WL_SWAP) echo "<li>ipset: whitelist was updated from file.</li>" ;;
       $INFO_IPS_WL_DEL) echo "<li>ipset: whitelist was unset.</li>" ;;
     esac
-    case $((INFO_IPS&INFO_IPS_WG_MASK)) in
-      0) echo "<li>WAN gateway was not in blocklist set and therefore was not bypassed.</li>" ;;
-      $INFO_IPS_WG_ADD) echo "<li>ipset: WAN gateway was in blocklist and was bypassed.</li>" ;;
-      $INFO_IPS_WG_KEEP) echo "<li>ipset: WAN gateway bypass was already properly set.</li>" ;;
-      $INFO_IPS_WG_DEL) echo "<li>ipset: WAN gateway bypass was unset.</li>" ;;
-    esac
     if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
       then echo "<li>iptables: engine inbound chain was set.</li>"
       else echo "<li>iptables: engine inbound chain was already set.</li>"
@@ -155,15 +149,28 @@ status() {
       then echo "<li>iptables: engine outbound chain was set.</li>"
       else echo "<li>iptables: engine outbound chain was already set.</li>"
     fi
-    if [ $((INFO_IPT & INFO_IPT_WG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WG_SRC_NEW)) -ne 0 ]
-        then echo "<li>iptables: inbound WAN gateway bypass rules were set.</li>"
-        else echo "<li>iptables: inbound WAN gateway bypass rules were kept.</li>"
+    [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '<li>iptables: some irrelevant bypass rules had to be removed.</li>'
+    if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
+      if [ $((INFO_IPT & INFO_IPT_WB_SRC_NEW)) -ne 0 ]
+        then echo '<li>iptables: inbound WAN network range bypass rules were set.</li>'
+        else echo '<li>iptables: inbound WAN network range bypass rules were kept.</li>'
       fi
-      if [ $((INFO_IPT & INFO_IPT_WG_DST_NEW)) -ne 0 ]
-        then echo "<li>iptables: outbound WAN gateway bypass rules were set.</li>"
-        else echo "<li>iptables: outbound WAN gateway bypass rules were kept.</li>"
+      if [ $((INFO_IPT & INFO_IPT_WB_DST_NEW)) -ne 0 ]
+        then echo '<li>iptables: outbound WAN network range bypass rules were set.</li>'
+        else echo '<li>iptables: outbound WAN network range bypass rules were kept.</li>'
       fi
+    else echo '<li>iptables: WAN network range bypass rules were not needed.</li>'
+    fi
+    if [ $((INFO_IPS & INFO_IPS_TB_NDD)) -ne 0 ]; then
+      if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
+        then echo '<li>iptables: inbound VPN network range bypass rules were set.</li>'
+        else echo '<li>iptables: inbound VPN network range bypass rules were kept.</li>'
+      fi
+      if [ $((INFO_IPT & INFO_IPT_TB_DST_NEW)) -ne 0 ]
+        then echo '<li>iptables: outbound VPN network range bypass rules were set.</li>'
+        else echo '<li>iptables: outbound VPN network range bypass rules were kept.</li>'
+      fi
+    else [ "$INFO_TUN" ] && echo '<li>iptables: VPN network range bypass rules were not needed.</li>'
     fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
@@ -328,7 +335,7 @@ log() {
 }
 
 refreshLog() {
-  [ -r /tmp/aegis_web ] && _getLog $(cat /tmp/aegis_web) || log
+  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
 checkIp() {
