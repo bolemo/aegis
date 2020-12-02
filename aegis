@@ -1249,10 +1249,7 @@ _status>/dev/null
 }
 
 status_raw() {
-# NEED TO IMPROVE THIS BETWEEN HERE AND WEB COMPANION
-# echo "$(_status) '$WAN_IF' '$TUN_IF'"
-  set -- $(_status); _BLC=$4; _WLC=$5; _STAT=$(($1+($2<<12)+($3<<25)))
-  echo "'$_STAT' '$WAN_IF' '$TUN_IF' '$_BLC' '$_WLC'"; exit 0
+  echo "$(_status) '$WAN_IF' '$TUN_IF'"; exit 0
 }
 #---------------------------- END _STATUS ----------------------------
 
