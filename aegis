@@ -20,7 +20,6 @@ IPTBL_DST="${SC_ABR}_dst"
 [ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
-IPSET_WG_NAME="${SC_ABR}_wg"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
@@ -315,18 +314,6 @@ _cipset_init
 #    _set_ipt_bypass_for_if_pos $TUN_IF 2; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT)))
 #  else _POS=1
 #  fi
-    
-#    NEED TO CLEAN UP VARS AND CONSTS AND ARRANGE NFO FOR TUN
-#    #Removing any trace of WAN gateway bypass if any
-#    echo "$_IPT"|/bin/grep -F -- "$IPSET_WG_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-#    ipset -q destroy "$IPSET_WG_NAME" && _IPS=$((_IPS+INFO_IPS_WG_DEL))
-#    _POS=0
-#   _WG=1
-#    NFO_IPS=$((NFO_IPS+INFO_IPS_BL_WGW))
-#     "$WAN_GW";
-#     "$WAN_NM"
-#      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_ADD))  
-#      NFO_IPS=$((NFO_IPS+INFO_IPS_WG_KEEP))
 
   if [ "$_WL" ]; then
     # apply whitelist
@@ -823,7 +810,6 @@ clean() {
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
   ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
-  ipset -q destroy "$IPSET_WG_NAME"
   ipset -q destroy "$IPSET_TMP"
   [ "$VERBOSE" ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
@@ -864,7 +850,6 @@ update_iplist() {
 #  if [ -r "$CUST_BL_FILE" ]; then
     [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist(s)..."
     /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_BL_FILE >>"$TMP_FILE"
-#    /bin/grep -h '^[0-9]' $CUST_BL_FILE|/bin/sed 's/;.*//' >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
     [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
@@ -881,7 +866,6 @@ update_iplist() {
 #  if [ -r "$CUST_WL_FILE" ]; then
     [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list(s)...\033[0m"
     /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
-#    /bin/grep -h '^[0-9]' $CUST_WL_FILE|/bin/sed 's/;.*//' >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
@@ -1231,12 +1215,6 @@ _status>/dev/null
       $INFO_IPS_WL_SWAP) echo '- ipset: whitelist was updated from file.' ;;
       $INFO_IPS_WL_DEL) echo '- ipset: whitelist was unset.' ;;
     esac
-  #  case $((INFO_IPS&INFO_IPS_WG_MASK)) in
-  #    0) echo '- WAN gateway was not in blocklist set and therefore was not bypassed.' ;;
-  #    $INFO_IPS_WG_ADD) echo '- ipset: WAN gateway was in blocklist and was bypassed.' ;;
-  #    $INFO_IPS_WG_KEEP) echo '- ipset: WAN gateway bypass was already properly set.' ;;
-  #    $INFO_IPS_WG_DEL) echo '- ipset: WAN gateway bypass was unset.' ;;
-  #  esac
     if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
       then echo "- iptables: engine inbound chain was set."
       else echo "- iptables: engine inbound chain was already set."
