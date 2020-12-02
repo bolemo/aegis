@@ -42,20 +42,22 @@ INFO_FROM_FWS=1       # _ x
 INFO_FROM_PM=2        # x _
 INFO_FROM_SC=3        # x x
 
-# INFO IPSET (5 bits)
-INFO_IPS_MASK=31
-                      # . . . _ _  PBM, BL FILE MISSING
-INFO_IPS_BL_SAME=1    # . . . _ x  KEEP
-INFO_IPS_BL_MISS=2    # . . . x _  KEEP
-INFO_IPS_BL_LOAD=3    # . . . x x
-INFO_IPS_BL_MASK=3    # . . . x x
-INFO_IPS_WL_SAME=4    # _ . x . .  SAME => KEEP
-INFO_IPS_WL_KEEP=8    # _ x . . .  KEEP
-INFO_IPS_WL_LOAD=16   # x _ _ . .
-INFO_IPS_WL_SWAP=20   # x _ x . . = RELOAD
-INFO_IPS_WL_DEL=24    # x x _ . . => was there, was deleted
-                      # _ _ _ . . => was not there, was not loaded
-INFO_IPS_WL_MASK=28   # x x x . .
+# INFO IPSET (7 bits)
+INFO_IPS_MASK=127
+                      # . . . . . _ _  PBM, BL FILE MISSING
+INFO_IPS_BL_SAME=1    # . . . . . _ x  KEEP
+INFO_IPS_BL_MISS=2    # . . . . . x _  KEEP
+INFO_IPS_BL_LOAD=3    # . . . . . x x
+INFO_IPS_BL_MASK=3    # . . . . . x x
+INFO_IPS_WL_SAME=4    # . . _ . x . .  SAME => KEEP
+INFO_IPS_WL_KEEP=8    # . . _ x . . .  KEEP
+INFO_IPS_WL_LOAD=16   # . . x _ _ . .
+INFO_IPS_WL_SWAP=20   # . . x _ x . . = RELOAD
+INFO_IPS_WL_DEL=24    # . . x x _ . . => was there, was deleted
+                      # . . _ _ _ . . => was not there, was not loaded
+INFO_IPS_WL_MASK=28   # . . x x x . .
+INFO_IPS_WB_NDD=32    # . x . . . . .
+INFO_IPS_TB_NDD=64    # x . . . . . .
 
 # INFO IPTABLES (18 bits)
 INFO_IPT_MASK=262143
@@ -293,8 +295,8 @@ _cipset_init
   WAN_INET=$(inet_for_if $WAN_IF)
   [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
-  if _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; else WAN_INET=''; fi
-  if _cipset_inet_in_bl $TUN_INET; then [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$WAN_IF; else TUN_INET=''; fi
+  if _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else WAN_INET=''; fi
+  if _cipset_inet_in_bl $TUN_INET; then [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else TUN_INET=''; fi
   [ "$_EXCL_IF" ] && _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")" \
                   || _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
   if [ "$_IPT_UCH" ]; then
@@ -1244,7 +1246,7 @@ _status>/dev/null
       else echo '- iptables: engine outbound chain was already set.'
     fi
     [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '- iptables: some irrelevant bypass rules had to be removed.'
-#    if [ $((INFO_IPT & INFO_IPT_WB)) -ne 0 ]; then
+    if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WB_SRC_NEW)) -ne 0 ]
         then echo '- iptables: inbound WAN network range bypass rules were set.'
         else echo '- iptables: inbound WAN network range bypass rules were kept.'
@@ -1253,8 +1255,9 @@ _status>/dev/null
         then echo '- iptables: outbound WAN network range bypass rules were set.'
         else echo '- iptables: outbound WAN network range bypass rules were kept.'
       fi
-#    fi
-    if [ "$INFO_TUN" ]; then
+    else echo '- iptables: WAN network range bypass rules were not needed.'
+    fi
+    if [ $((INFO_IPS & INFO_IPS_TB_NDD)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
         then echo '- iptables: inbound VPN network range bypass rules were set.'
         else echo '- iptables: inbound VPN network range bypass rules were kept.'
@@ -1263,6 +1266,7 @@ _status>/dev/null
         then echo '- iptables: outbound VPN network range bypass rules were set.'
         else echo '- iptables: outbound VPN network range bypass rules were kept.'
       fi
+    else [ "$INFO_TUN" ] && echo '- iptables: VPN network range bypass rules were not needed.'
     fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
@@ -1309,7 +1313,6 @@ _status>/dev/null
       case "$_SET" in
         "$IPSET_BL_NAME") _NAME='blocklist' ;;
         "$IPSET_WL_NAME") _NAME='whitelist' ;;
-        "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
         *) _NAME="$_SET" ;;
       esac
       echo -e "\033[1;36mipset '$_NAME':\033[0m"
