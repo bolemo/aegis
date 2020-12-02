@@ -42,6 +42,7 @@ INFO_FROM_PM=2        # x _
 INFO_FROM_SC=3        # x x
 
 # INFO IPSET (7 bits)
+INFO_IPS_SHIFT=2
 INFO_IPS_MASK=127
                       # . . . . . _ _  PBM, BL FILE MISSING
 INFO_IPS_BL_SAME=1    # . . . . . _ x  KEEP
@@ -59,6 +60,7 @@ INFO_IPS_WB_NDD=32    # . x . . . . .
 INFO_IPS_TB_NDD=64    # x . . . . . .
 
 # INFO IPTABLES (18 bits)
+INFO_IPT_SHIFT=9
 INFO_IPT_MASK=262143
 INFO_IPT_SRC_KEEP=1        # . . . . . . . . . . . . . . . . . x (or NEW)
 INFO_IPT_DST_KEEP=2        # . . . . . . . . . . . . . . . . x . (or NEW)
@@ -122,11 +124,6 @@ inet_for_if() {
   fi
 }
 
-ipset_list_members() {
-  ipset -q -L "$1"|/usr/bin/awk 'NR==1,/Members:/ {next};NF'
-}
-
-# EXPERIMENTAL
 _cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); }
 _cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
@@ -151,16 +148,6 @@ _cipset_inet_in_bl() {
 _cipset_count_set() {
   [ "$IPR_BIN" ] && { $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2; return; }
   /bin/grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$_CIPSET_DIR/$1"|/usr/bin/awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
-}
-# NEED TO IMPLEMENT SWAP, CREATE ipset TO COMPARE ACTIVE IPSET (since it was changed, first copy_set is not valid anymore
-# END EXPERIMENTAL
-
-diff_ipset_file() {
-  if [ "$IPR_BIN" ]
-    then ipset_list_members "$1"|iprange --quiet - --diff "$2"
-    else ipset_list_members "$1"|/usr/bin/sort|diff -q - "$2" >/dev/null
-  fi
-  return $?
 }
 
 _set_ipt_bypass_for_if_inet_pos() { # Bypass for interface inet $1=iface, $2=inet, $3=pos
@@ -207,15 +194,13 @@ engine_start() {
   [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
   NFO_IPS=0; NFO_IPT=0;
-_cipset_init
+  _cipset_init
   # creating ipset blocklist if needed
-#  if ipset -q -n list "$IPSET_BL_NAME">/dev/null; then
   if _cipset_copy_set $IPSET_BL_NAME; then
     # an ipset blocklist is already loaded
     if [ -r "$BL_FILE" ]; then
       [ "$_RELOAD_WTD" ] && _RELOAD=1
       # checking if ipset and file are identical
-#      if diff_ipset_file "$IPSET_BL_NAME" "$BL_FILE"
       if _cipset_diff_set_file $IPSET_BL_NAME $BL_FILE
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
         else _RELOAD=1
@@ -227,9 +212,6 @@ _cipset_init
     fi
     if [ "$_RELOAD" ]; then
     # reload is asked for; so need to swap ipset
-#      echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_TMP /" $BL_FILE)" | ipset restore
-#      ipset swap "$IPSET_BL_NAME" "$IPSET_TMP"
-#      ipset destroy $IPSET_TMP
       _cipset_swap_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     # else keeping existing blocklist
@@ -237,7 +219,6 @@ _cipset_init
   else
     if [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
-#      echo -e "create $IPSET_BL_NAME hash:net family inet maxelem $(/usr/bin/wc -l < "$BL_FILE")\n$(/bin/sed "s/^/add $IPSET_BL_NAME /" "$BL_FILE")" | ipset restore
       _cipset_create_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     else
@@ -247,14 +228,12 @@ _cipset_init
   fi
   
   # creating ipset whitelist if needed
-#  if ipset -q -n list "$IPSET_WL_NAME">/dev/null; then
   if _cipset_copy_set $IPSET_WL_NAME; then
     # ipset whitelist is already in place
     if [ -r "$WL_FILE" ]; then
       _WL=1
       [ "$_RELOAD_WTD" ] && _RELOAD=1 || _RELOAD=''
       # checking if ipset and file are identical
-#      if diff_ipset_file "$IPSET_WL_NAME" "$WL_FILE"
       if _cipset_diff_set_file $IPSET_WL_NAME $WL_FILE
         then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
         else _RELOAD=1
@@ -262,9 +241,6 @@ _cipset_init
       if [ "$_RELOAD" ]; then
       # reload is asked for; so need to swap ipset
         _cipset_swap_set_file $IPSET_WL_NAME $WL_FILE
-#        echo -e "create $IPSET_TMP hash:net family inet\n$(/bin/sed "s/^/add $IPSET_TMP /" $WL_FILE)" | ipset restore
-#        ipset swap "$IPSET_WL_NAME" "$IPSET_TMP"
-#        ipset destroy "$IPSET_TMP"
         NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SWAP))
       else
       # else we want to keep it
@@ -276,7 +252,6 @@ _cipset_init
     if [ -r "$WL_FILE" ]; then
       # netset file exists, so creating whitelist ipset from it
       _WL=1
-#      echo -e "create $IPSET_WL_NAME hash:net family inet\n$(/bin/sed "s/^/add $IPSET_WL_NAME /" "$WL_FILE")" | ipset restore
       _cipset_create_set_file $IPSET_WL_NAME $WL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
     fi
@@ -309,11 +284,6 @@ _cipset_init
   [ "$WAN_INET" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $WAN_IF $WAN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT))); }
   # Applying TUN Network Range Bypass (if applicable)
   [ "$TUN_INET" ] && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); }
-
-#  if [ "$TUN_IF" ]; then _POS=2
-#    _set_ipt_bypass_for_if_pos $TUN_IF 2; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT)))
-#  else _POS=1
-#  fi
 
   if [ "$_WL" ]; then
     # apply whitelist
@@ -388,7 +358,7 @@ _cipset_init
   
   _cipset_end
   
-  echo -ne "$((NFO_FROM+(NFO_IPS<<2)+(NFO_IPT<<7))) $WAN_IF $TUN_IF" > "$INFO_FILE"
+  echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
 }
 
 ###############################################
@@ -421,7 +391,6 @@ _pm() {
 : ENV START
 # ---------------------------------------------
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
-#SC_PATH="$(cd "$(\ls -l "$0"|/bin/sed 's/.* \([^ ]*\)\/[^/]*$/\1/')">/dev/null 2>&1; pwd -P)"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
@@ -684,20 +653,6 @@ clean_web() {
 #
 ###############################################
 
-count_ip_in_file() {
-  if [ -x "$IPR_BIN" ]
-    then $IPR_BIN -C "$1"|/usr/bin/cut -d, -f2
-    else /bin/grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$1"|/usr/bin/awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
-  fi
-}
-
-count_ip_in_ipset() {
-  if [ -x "$IPR_BIN" ]
-    then ipset_list_members "$1"|$IPR_BIN -C|/usr/bin/cut -d, -f2
-    else ipset_list_members "$1"|/bin/grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})'|/usr/bin/awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
-  fi
-}
-
 name_from_ip() {
   _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
   [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
@@ -847,7 +802,6 @@ update_iplist() {
     [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
-#  if [ -r "$CUST_BL_FILE" ]; then
     [ "$VERBOSE" ] && echo "- Adding netset from custom blacklist(s)..."
     /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_BL_FILE >>"$TMP_FILE"
   fi
@@ -863,7 +817,6 @@ update_iplist() {
 
   # processing whitelist if any
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
-#  if [ -r "$CUST_WL_FILE" ]; then
     [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list(s)...\033[0m"
     /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
     
@@ -1098,11 +1051,7 @@ _status() {
   
   _cipset_end
   
-  # calculating return value
-#  _RET=$((_CK+(_PB<<12)+(_WN<<25)))
-  
   echo -n "$_CK $_PB $_WN $_BLC $_WLC"
-#  return $_RET
 }
 
 status_term() {
@@ -1190,8 +1139,8 @@ _status>/dev/null
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
     INFO_FROM=$((INFO&INFO_FROM_MASK))
-    INFO_IPS=$(((INFO>>2)&INFO_IPS_MASK))
-    INFO_IPT=$(((INFO>>7)&INFO_IPT_MASK))
+    INFO_IPS=$(((INFO>>INFO_IPS_SHIFT)&INFO_IPS_MASK))
+    INFO_IPT=$(((INFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
     echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
