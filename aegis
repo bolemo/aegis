@@ -18,8 +18,7 @@ IPT_COM='/usr/sbin/iptables'
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc /opt/bolemo/etc/config $1 $SC_ABR$_OPT; }
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
-#[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
-[ "$(sc_conf get log)" = "1" ] && CONF_LOG=1 || CONF_LOG=
+[ "$(sc_conf get log)" = "1" ] && CONF_LOG=1
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
