@@ -35,6 +35,14 @@ else
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 
+# --- EXPERIMENTAL
+#NVRAM_NO_WAN=1    # . . . . x
+#NVRAM_NO_VPN=2    # . . . x .
+#NVRAM_NO_WBP=4    # . . x . .
+#NVRAM_NO_TBP=8    # . x . . .
+#NVRAM_LOG=16      # x . . . .
+# --- END EXPERIMENTAL
+
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
 INFO_FROM_FWS=1       # _ x
@@ -85,7 +93,6 @@ INFO_IPT_LOG=1024          # . . . . . . . x . . . . . . . . . .
 INFO_IPT_LOG_SRC_NEW=2048  # . . . . . . x . . . . . . . . . . . (or KEEP)
 INFO_IPT_LOG_DST_NEW=4096  # . . . . . x . . . . . . . . . . . . (or KEEP)
 
-
 INFO_IPT_IF_NEW=1  # _ x
 INFO_IPT_IF_KEEP=2 # x _
 INFO_IPT_IF_PBM=3  # x x
@@ -100,7 +107,7 @@ INFO_IPT_TUN_NEW=32768     # . _ x . . . . . . . . . . . . . . .
 INFO_IPT_TUN_KEEP=65536    # . x _ . . . . . . . . . . . . . . .
 INFO_IPT_TUN_PBM=98304     # . x x . . . . . . . . . . . . . . .
 
-INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . .
+INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
 
 # ---------------------------------------------
 : ENV STOP
