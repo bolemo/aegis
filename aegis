@@ -19,7 +19,7 @@ BOLEMO_CONF='/sbin/uci -qc /opt/bolemo/etc/config'
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 #[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
-[ "$($BOLEMO_CONF get "$SC_ABR.log")" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
+[ "$($BOLEMO_CONF get "$SC_ABR.log")" = "1" ] && CONF_LOG=1 || CONF_LOG=
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -308,7 +308,7 @@ engine_start() {
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
-  if [ "$IPTBL_LOGGING" ]; then
+  if [ "$CONF_LOG" ]; then
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -745,12 +745,12 @@ set_log_state() {
   if [ "$LOG_ACT" ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
-      /bin/nvram set ${SC_ABR}_log=1; /bin/nvram commit
-      IPTBL_LOGGING=1
+      $BOLEMO_CONF set $SC_ABR.log=1; $BOLEMO_CONF commit $SC_ABR
+      CONF_LOG=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
-      /bin/nvram unset ${SC_ABR}_log; /bin/nvram commit
-      IPTBL_LOGGING=''
+      $BOLEMO_CONF delete $SC_ABR.log; $BOLEMO_CONF commit $SC_ABR
+      CONF_LOG=
     fi
   fi
 }
@@ -769,7 +769,6 @@ clean() {
   ipset -q destroy "$IPSET_TMP"
   [ "$VERBOSE" ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
-  /bin/nvram unset ${SC_ABR}_log; /bin/nvram commit
   [ "$VERBOSE" ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
@@ -1042,7 +1041,7 @@ _status() {
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # LOG
-    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if [ "$IPTBL_LOGGING" ]
+    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if [ "$CONF_LOG" ]
       then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
       else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
     fi fi
