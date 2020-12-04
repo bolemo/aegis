@@ -14,10 +14,12 @@ SC_VERS="1.4.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
-IPT_COM='iptables' # -t mangle'
+IPT_COM='/usr/sbin/iptables'
+BOLEMO_CONF='/sbin/uci -qc /opt/bolemo/etc/config'
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
-[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
+#[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
+[ "$($BOLEMO_CONF get "$SC_ABR.log")" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -34,14 +36,6 @@ else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
-
-# --- EXPERIMENTAL
-#NVRAM_NO_WAN=1    # . . . . x
-#NVRAM_NO_VPN=2    # . . . x .
-#NVRAM_NO_WBP=4    # . . x . .
-#NVRAM_NO_TBP=8    # . x . . .
-#NVRAM_LOG=16      # x . . . .
-# --- END EXPERIMENTAL
 
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
