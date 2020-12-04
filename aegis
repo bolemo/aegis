@@ -489,6 +489,29 @@ clean_path() {
   fi
 }
 
+check_conf() {
+  [ -d "$ROOT_DIR/etc/config" ] || return 1
+  sc_conf get >/dev/null || return 1
+  sc_conf get wan >/dev/null || return 1
+  sc_conf get tun >/dev/null || return 1
+  return 0
+}
+
+set_conf() {
+  [ -d "$ROOT_DIR/etc/config" ] || /bin/mkdir -p "$ROOT_DIR/etc/config" 2>/dev/null
+  uci -qc $ROOT_DIR/etc/config import $SC_ABR << EOF
+package $SC_ABR
+config net-iface 'wan'
+config net-iface 'tun'
+EOF
+  sc_conf commit
+}
+
+clean_conf() {
+  /bin/rm -f "$ROOT_DIR/etc/config/$SC_ABR" >/dev/null 2>&1
+  sc_conf commit
+}
+
 ###############################################
 #
 #    FUNCTIONS DEPENDING ON BOLEMO GIT REPO
@@ -670,6 +693,7 @@ name_from_ip() {
 pre_init() {
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
+  check_conf || set_conf
   [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null		
   [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
 }
@@ -745,7 +769,6 @@ set_log_state() {
   if [ "$LOG_ACT" ]; then
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
-      $BOLEMO_CONF set $SC_ABR.log=1; $BOLEMO_CONF commit $SC_ABR
       sc_conf set log=1; sc_conf commit
       CONF_LOG=1
     else
@@ -760,6 +783,7 @@ clean() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mCleaning...\033[0m"
   clean_firewall_start
   clean_postmount
+  [ "$RM_CONF" ] && check_conf && clean_conf
   [ "$RM_SYMLINK" ] && check_path && clean_path
   [ "$RM_WEB" ] && check_web && clean_web
   /bin/rm -f "$INFO_FILE"
@@ -1277,6 +1301,7 @@ print_help() {
   echo -e " \033[1;36m-q\033[0m           - quiet mode (no output)"
   echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m  - when used with restart, load_set or update, will enable/disable logging"
   echo -e " \033[1;36m-lines=\033[0mN     - when used with log, will display N lines (N being the number of lines to show)"
+  echo -e " \033[1;36m-rm-config\033[0m   - when used with clean, removes the configuration settings"
   echo -e " \033[1;36m-rm-symlink\033[0m  - when used with clean, removes the symlink /usr/bin/$SC_NAME"
   echo -e " \033[1;36m-rm-web\033[0m      - when used with clean, removes $WEB_NAME"
 }
@@ -1326,6 +1351,7 @@ esac
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 [ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
 [ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
+[ -z "${ARGS##* -rm-config *}" ] && RM_CONF=1
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
 [ -z "${ARGS##* -rm-web *}" ] && RM_WEB=1
 
