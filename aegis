@@ -15,11 +15,11 @@ SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
 IPT_COM='/usr/sbin/iptables'
-BOLEMO_CONF='/sbin/uci -qc /opt/bolemo/etc/config'
+sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc /opt/bolemo/etc/config $1 $SC_ABR$_OPT; }
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 #[ "$(/bin/nvram get aegis_log)" = "1" ] && IPTBL_LOGGING=1 || IPTBL_LOGGING=''
-[ "$($BOLEMO_CONF get "$SC_ABR.log")" = "1" ] && CONF_LOG=1 || CONF_LOG=
+[ "$(sc_conf get log)" = "1" ] && CONF_LOG=1 || CONF_LOG=
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -746,10 +746,11 @@ set_log_state() {
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
       $BOLEMO_CONF set $SC_ABR.log=1; $BOLEMO_CONF commit $SC_ABR
+      sc_conf set log=1; sc_conf commit
       CONF_LOG=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
-      $BOLEMO_CONF delete $SC_ABR.log; $BOLEMO_CONF commit $SC_ABR
+      sc_conf delete log; sc_conf commit
       CONF_LOG=
     fi
   fi
