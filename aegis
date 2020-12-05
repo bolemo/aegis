@@ -705,7 +705,7 @@ init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_conf
-    then [ "$VERBOSE" ] && echo "- Configuration system is set."
+    then [ "$VERBOSE" ] && echo "- Configuration file is set."
     else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; exit 1; }
   fi
   if check_firewall_start; then
@@ -1302,7 +1302,7 @@ print_help() {
   echo -e " \033[7;34mDISPLAY LOG OPTIONS\033[0m (to use with \033[1;35mlog\033[0m):"
   echo -e " \033[1;36m-lines=\033[0mN       - will display N lines (N being the number of lines to show)"
   echo -e " \033[7;34mCLEANING OPTIONS\033[0m (to use with \033[1;35mclean\033[0m):"
-  echo -e " \033[1;36m-rm-config\033[0m     - removes the configuration system"
+  echo -e " \033[1;36m-rm-config\033[0m     - removes $SC_NAME configuration file"
   echo -e " \033[1;36m-rm-symlink\033[0m    - removes the symlink /usr/bin/$SC_NAME"
   echo -e " \033[1;36m-rm-web\033[0m        - removes $WEB_NAME"
 }
