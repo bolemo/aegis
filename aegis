@@ -1197,7 +1197,7 @@ _status>/dev/null
         then echo '- iptables: outbound WAN network range bypass rules were set.'
         else echo '- iptables: outbound WAN network range bypass rules were kept.'
       fi
-    else echo '- iptables: WAN network range bypass rules were not needed.'
+    else echo '- iptables: WAN network range bypass rules were not needed or manually skipped.'
     fi
     if [ $((INFO_IPS & INFO_IPS_TB_NDD)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
@@ -1208,7 +1208,7 @@ _status>/dev/null
         then echo '- iptables: outbound VPN network range bypass rules were set.'
         else echo '- iptables: outbound VPN network range bypass rules were kept.'
       fi
-    else [ "$INFO_TUN" ] && echo '- iptables: VPN network range bypass rules were not needed.'
+    else [ "$INFO_TUN" ] && echo '- iptables: VPN network range bypass rules were not needed or manually skipped.'
     fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
