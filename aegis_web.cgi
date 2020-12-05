@@ -357,8 +357,8 @@ checkIp() {
     "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis Engine blacklist.<br />" ;;
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist.<br />" ;;
   esac; done
-  _ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in WAN network range ($(inet_for_if $WAN_IF)).<br />"
-  _ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in VPN network range ($(inet_for_if $TUN_IF)).<br />"
+  _ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF)).<br />"
+  _ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF)).<br />"
   echo "---<br />"
 }
 
