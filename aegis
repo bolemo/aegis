@@ -33,7 +33,7 @@ else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
-sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc /opt/bolemo/etc/config $1 $SC_ABR$_OPT; return $?; }
+sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
 
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
@@ -699,6 +699,10 @@ pre_init() {
 init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
+  if check_conf
+    then [ "$VERBOSE" ] && echo "- Configuration system is set."
+    else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; exit 1; }
+  fi
   if check_firewall_start; then
     [ "$VERBOSE" ] && echo "- 'firewall-start.sh' is in place and ok."
   else
