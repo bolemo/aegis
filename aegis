@@ -1268,28 +1268,34 @@ print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
   echo -e "Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
   echo -e "\033[7mCOMMANDS (use only one):\033[0m"
-  echo -e " \033[1;35mrestart\033[0m      - restarts internal firewall and $SC_NAME engine"
-  echo -e " \033[1;35mupdate_set\033[0m   - updates set from servers in '$SRC_LIST'"
-  echo -e " \033[1;35mload_set\033[0m     - reloads $SC_NAME engine with last generated set"
-  echo -e " \033[1;35mupdate\033[0m       - updates set then reloads $SC_NAME engine with it \033[1;36m[probably what you want to use]\033[0m"
-  echo -e " \033[1;35mclean\033[0m        - removes $SC_NAME engine from internal firewall and restarts it"
-  echo -e " \033[1;35mhelp\033[0m         - displays help (this)"
-  echo -e " \033[1;35minfo\033[0m         - displays info on this script"
-  echo -e " \033[1;35mstatus\033[0m       - displays status"
-  echo -e " \033[1;35mlog\033[0m          - displays log"
-  echo -e " \033[1;35mupgrade\033[0m      - downloads and installs latest version"
-  echo -e " \033[1;35mweb -install\033[0m - downloads and installs $WEB_NAME"
-  echo -e " \033[1;35mweb -remove\033[0m  - removes $WEB_NAME"
+  echo -e " \033[1;35mrestart\033[0m        - restarts internal firewall and $SC_NAME engine"
+  echo -e " \033[1;35mupdate_set\033[0m     - updates set from servers in '$SRC_LIST'"
+  echo -e " \033[1;35mload_set\033[0m       - reloads $SC_NAME engine with last generated set"
+  echo -e " \033[1;35mupdate\033[0m         - updates set then reloads $SC_NAME engine with it \033[1;36m[probably what you want to use]\033[0m"
+  echo -e " \033[1;35mclean\033[0m          - removes $SC_NAME engine from internal firewall and restarts it"
+  echo -e " \033[1;35mhelp\033[0m           - displays help (this)"
+  echo -e " \033[1;35minfo\033[0m           - displays info on this script"
+  echo -e " \033[1;35mstatus\033[0m         - displays status"
+  echo -e " \033[1;35mlog\033[0m            - displays log"
+  echo -e " \033[1;35mupgrade\033[0m        - downloads and installs latest version"
+  echo -e " \033[1;35mweb -install\033[0m   - downloads and installs $WEB_NAME"
+  echo -e " \033[1;35mweb -remove\033[0m    - removes $WEB_NAME"
   echo -e "\033[7mOPTIONS (none, one or more):\033[0m"
-  echo -e " \033[1;36m-v\033[0m           - verbose mode (level 1)"
-  echo -e " \033[1;36m-vv\033[0m          - verbose mode (level 2)"
-  echo -e " \033[1;36m-vvv\033[0m         - verbose mode (level 3)"
-  echo -e " \033[1;36m-q\033[0m           - quiet mode (no output)"
-  echo -e " \033[1;36m-log=on\033[0m/\033[1;36moff\033[0m  - when used with restart, load_set or update, will enable/disable logging"
-  echo -e " \033[1;36m-lines=\033[0mN     - when used with log, will display N lines (N being the number of lines to show)"
-  echo -e " \033[1;36m-rm-config\033[0m   - when used with clean, removes the configuration settings"
-  echo -e " \033[1;36m-rm-symlink\033[0m  - when used with clean, removes the symlink /usr/bin/$SC_NAME"
-  echo -e " \033[1;36m-rm-web\033[0m      - when used with clean, removes $WEB_NAME"
+  echo -e "\033[7;36mGENERAL OPTIONS:\033[0m"
+  echo -e " \033[1;36m-v\033[0m             - verbose mode (level 1)"
+  echo -e " \033[1;36m-vv\033[0m            - verbose mode (level 2)"
+  echo -e " \033[1;36m-vvv\033[0m           - verbose mode (level 3)"
+  echo -e " \033[1;36m-q\033[0m             - quiet mode (no output)"
+  echo -e "\033[7;36mENGINE OPTIONS\033[0m (to use with \033[1;35mrestart\033[0m, \033[1;35mload_set\033[0m or \033[1;35mupdate\033[0m):"
+  echo -e " \033[1;36m-log\033[0m           - will enable logging"
+  echo -e " \033[1;36m-wan_no_bypass\033[0m - will not set the WAN network range bypass"
+  echo -e " \033[1;36m-vpn_no_bypass\033[0m - will not set the VPN network range bypass"
+  echo -e "\033[7;36mDISPLAY LOG OPTIONS\033[0m (to use with \033[1;35mlog\033[0m):"
+  echo -e " \033[1;36m-lines=\033[0mN       - will display N lines (N being the number of lines to show)"
+  echo -e "\033[7;36mCLEANING OPTIONS\033[0m (to use with \033[1;35mclean\033[0m):"
+  echo -e " \033[1;36m-rm-config\033[0m     - removes the configuration system"
+  echo -e " \033[1;36m-rm-symlink\033[0m    - removes the symlink /usr/bin/$SC_NAME"
+  echo -e " \033[1;36m-rm-web\033[0m        - removes $WEB_NAME"
 }
 
 ###############################################
@@ -1335,11 +1341,9 @@ esac
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
-#[ -z "${ARGS##* -log=on *}" ] && LOG_ACT='ON'
-#[ -z "${ARGS##* -log=off *}" ] && LOG_ACT='OFF'
 [ -z "${ARGS##* -log *}" ] && sc_conf set log=1 || sc_conf delete log
 [ -z "${ARGS##* -wan_no_bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
-[ -z "${ARGS##* -tun_no_bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
+[ -z "${ARGS##* -vpn_no_bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
 [ -z "${ARGS##* -rm-config *}" ] && RM_CONF=1
 [ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
 [ -z "${ARGS##* -rm-web *}" ] && RM_WEB=1
