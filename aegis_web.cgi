@@ -339,14 +339,14 @@ refreshLog() {
 
 _ip_in_if_inet() {
   [ -z "$2" ] && return 1
-  _IPC="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
+  _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
   OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
-$1$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
+$1.$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
 EOF
   IFS=$OLDIFS
-  T=$((T3 * 256 ** 3 + T2 * 256 ** 2 + T1 * 256 + T0))
-  S=$((S3 * 256 ** 3 + S2 * 256 ** 2 + S1 * 256 + S0))
-  E=$((E3 * 256 ** 3 + E2 * 256 ** 2 + E1 * 256 + E0))
+  T=$((T3*256**3 + T2*256**2 + T1*256 + T0))
+  S=$((S3*256**3 + S2*256**2 + S1*256 + S0))
+  E=$((E3*256**3 + E2*256**2 + E1*256 + E0))
   [ $T -ge $S -a $T -le $E ] && return 0 || return 1
 }
 
