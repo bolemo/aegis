@@ -250,13 +250,10 @@ info() {
 }
 
 command() {
-  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log=on' || _LOG='-log=off'
+  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log' || _LOG=
   case $ARG in
     restart*) _CMD="aegis _restart $_LOG" ;;
     update*) _CMD="aegis _update $_LOG" ;;
-    'stop-upgrade-restart') _CMD="aegis _clean"
-      [ "$(nvram get aegis_log)" = "1" ] && ARG="$ARG:on" || ARG="$ARG:off"
-      ;;
     stop*) _CMD="aegis _clean" ;;
     upgrade*) _CMD="aegis _upgrade" ;;
   esac
