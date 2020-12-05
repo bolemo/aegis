@@ -344,9 +344,9 @@ _ip_in_if_inet() {
 $1.$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
 EOF
   IFS=$OLDIFS
-  T=$((T3*256**3 + T2*256**2 + T1*256 + T0))
-  S=$((S3*256**3 + S2*256**2 + S1*256 + S0))
-  E=$((E3*256**3 + E2*256**2 + E1*256 + E0))
+  T=$(((T3<<24)+(T2<<16)+(T1<<8)+T0))
+  S=$(((S3<<24)+(S2<<16)+(S1<<8)+S0))
+  E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
   [ $T -ge $S -a $T -le $E ] && return 0 || return 1
 }
 
