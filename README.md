@@ -64,31 +64,38 @@ The `aegis upgrade` command will also show installed and latest version availabl
 To upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`, then `aegis update`
 
 ## Usage
-Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
-
-### Valid commands (only one):
-* `restart` - restarts internal firewall and aegis engine
-* `update_set` - updates set from servers in `aegis.sources`
-* `load_set` - reloads aegis engine with last generated set
-* `update` - updates set then reloads aegis engine with it [probably what you want to use]
-* `clean` - removes aegis engine from internal firewall and restarts it
-* `help` - displays help
-* `info` - displays info on this script
-* `status` - displays status
-* `log` - displays log
-* `upgrade` - download and install latest version
-* `web -install` - downloads and installs the Web Companion
-* `web -remove`  - removes the Web Companion
-
-### Options:
-* `-v` - verbose mode (level 1)
-* `-vv` - verbose mode (level 2)
-* `-vvv` - verbose mode (level 3)
-* `-q` - quiet mode (no output)
-* `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
-* `-lines=`N - when used with log, will display N lines (N being the number of lines to show)
-* `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
-* `-rm-web` - when used with clean, removes the Web Companion
+> Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
+> 
+> ### Valid commands (only one):
+> * `restart` - restarts internal firewall and aegis engine
+> * `update_set` - updates set from servers in `aegis.sources`
+> * `load_set` - reloads aegis engine with last generated set
+> * `update` - updates set then reloads aegis engine with it [probably what you want to use]
+> * `clean` - removes aegis engine from internal firewall and restarts it
+> * `help` - displays help
+> * `info` - displays info on this script
+> * `status` - displays status
+> * `log` - displays log
+> * `upgrade` - download and install latest version
+> * `web -install` - downloads and installs the Web Companion
+> * `web -remove`  - removes the Web Companion
+> 
+> ### Options:
+> #### GENERAL OPTIONS (can be used with any command)
+>> * `-v` - verbose mode (level 1)
+>> * `-vv` - verbose mode (level 2)
+>> * `-vvv` - verbose mode (level 3)
+>> * `-q` - quiet mode (no output)load_set or update):
+> #### ENGINE OPTIONS (to use with `restart`, `load_set` or `update`)
+>> * `-log` - will enable logging
+>> * `-wan_no_bypass` - will not set the WAN network range bypass
+>> * `-vpn_no_bypass` - will not set the VPN network range bypass
+> #### DISPLAY LOG OPTIONS (to use with `log`)
+>> * `-lines=`N - will display N lines (N being the number of lines to show)
+> #### CLEANING OPTIONS (to use with `clean`):
+>> * `-rm-config` - removes the configuration system
+>> * `-rm-symlink` - removes the symlink /usr/bin/aegis
+>> * `-rm-web` - removes Web Companion
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
