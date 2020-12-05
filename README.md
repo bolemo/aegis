@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.3.9
+1.4.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -81,14 +81,21 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `web -remove`  - removes the Web Companion
 
 ### Options:
+#### GENERAL OPTIONS (can be used with any command)
 * `-v` - verbose mode (level 1)
 * `-vv` - verbose mode (level 2)
 * `-vvv` - verbose mode (level 3)
-* `-q` - quiet mode (no output)
-* `-log=on`/`off` - when used with restart, load_set or update, will enable/disable logging
-* `-lines=`N - when used with log, will display N lines (N being the number of lines to show)
-* `-rm-symlink` - when used with clean, removes the symlink `/usr/bin/aegis`
-* `-rm-web` - when used with clean, removes the Web Companion
+* `-q` - quiet mode (no output)load_set or update):
+#### ENGINE OPTIONS (to use with `restart`, `load_set` or `update`)
+* `-log` - will enable logging
+* `-wan_no_bypass` - will not set the WAN network range bypass
+* `-vpn_no_bypass` - will not set the VPN network range bypass
+#### DISPLAY LOG OPTIONS (to use with `log`)
+* `-lines=`N - will display N lines (N being the number of lines to show)
+#### CLEANING OPTIONS (to use with `clean`):
+* `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
+* `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
+* `-rm-web` - removes Web Companion
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
@@ -114,17 +121,15 @@ The former `-html` option is not supported since the Web Companion is available.
 
 ## Logging
 ### Enable logging
-To log activity of aegis and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log=on`).
-You can also use the following command: `nvram set aegis_log=1`; the next time aegis will be restarted, logging will be active until next reboot of the router.
-If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set aegis_log=1` do `nvram commit`.
+To log activity of aegis and see what is blocked, you can use the `-log` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log`).
+This survives internal firewall restarts and router reboots.
+When using `restart`, `load_set` or `update` without the `-log` option, log is disabled.
 
 ### Access the log
-To watch the log, use `aegis log` or `dmesg | grep 'aegis'`.
+To watch the log, use `aegis log`.
 
 ### Disable logging
-To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
-You can also use `nvram unset aegis_log`.
-If you used `nvram commit` after enabling logging, then you need to use `nvram commit` again after using the `-log=off` option or the command `nvram unset aegis_log` to stay disabled after router reboot.
+To stop logging, just use `restart`, `load_set` or `update` using this script without the `-log` option.
 
 ## iprange
 iprange is a great little utility dealing that is now part of the FireHOL project.
