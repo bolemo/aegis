@@ -159,7 +159,7 @@ status() {
         then echo '<li>iptables: outbound WAN network range bypass rules were set.</li>'
         else echo '<li>iptables: outbound WAN network range bypass rules were kept.</li>'
       fi
-    else echo '<li>iptables: WAN network range bypass rules were not needed.</li>'
+    else echo '<li>iptables: WAN network range bypass rules were not needed or manually skipped.</li>'
     fi
     if [ $((INFO_IPS & INFO_IPS_TB_NDD)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
@@ -170,7 +170,7 @@ status() {
         then echo '<li>iptables: outbound VPN network range bypass rules were set.</li>'
         else echo '<li>iptables: outbound VPN network range bypass rules were kept.</li>'
       fi
-    else [ "$INFO_TUN" ] && echo '<li>iptables: VPN network range bypass rules were not needed.</li>'
+    else [ "$INFO_TUN" ] && echo '<li>iptables: VPN network range bypass rules were not needed or manually skipped.</li>'
     fi
     if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
       if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
@@ -222,7 +222,6 @@ status() {
     case "$_SET" in
       "$IPSET_BL_NAME") _NAME='blocklist' ;;
       "$IPSET_WL_NAME") _NAME='whitelist' ;;
-      "$IPSET_WG_NAME") _NAME='wan gateway bypass' ;;
       *) _NAME="$_SET" ;;
     esac
     echo "<li>$_NAME:</li><ul>"
