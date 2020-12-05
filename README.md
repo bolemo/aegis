@@ -93,8 +93,8 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 #### DISPLAY LOG OPTIONS (to use with `log`)
 * `-lines=`N - will display N lines (N being the number of lines to show)
 #### CLEANING OPTIONS (to use with `clean`):
-* `-rm-config` - removes the configuration system
-* `-rm-symlink` - removes the symlink /usr/bin/aegis
+* `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
+* `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
 * `-rm-web` - removes Web Companion
 
 ## Blocklists
@@ -121,17 +121,15 @@ The former `-html` option is not supported since the Web Companion is available.
 
 ## Logging
 ### Enable logging
-To log activity of aegis and see what is blocked, you can use the `-log=on` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log=on`).
-You can also use the following command: `nvram set aegis_log=1`; the next time aegis will be restarted, logging will be active until next reboot of the router.
-If you want logging to stay on after a reboot, after using the `-log=on` option or the command `nvram set aegis_log=1` do `nvram commit`.
+To log activity of aegis and see what is blocked, you can use the `-log` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log`).
+This survives internal firewall restarts and router reboots.
+When using `restart`, `load_set` or `update` without the `-log` option, log is disabled.
 
 ### Access the log
-To watch the log, use `aegis log` or `dmesg | grep 'aegis'`.
+To watch the log, use `aegis log`.
 
 ### Disable logging
-To stop logging, use the `-log=off` option with the parameter `restart`, `load_set` or `update` using this script.
-You can also use `nvram unset aegis_log`.
-If you used `nvram commit` after enabling logging, then you need to use `nvram commit` again after using the `-log=off` option or the command `nvram unset aegis_log` to stay disabled after router reboot.
+To stop logging, just use `restart`, `load_set` or `update` using this script without the `-log` option.
 
 ## iprange
 iprange is a great little utility dealing that is now part of the FireHOL project.
