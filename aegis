@@ -510,8 +510,9 @@ EOF
 }
 
 clean_conf() {
-  /bin/rm -f "$ROOT_DIR/etc/config/$SC_ABR" >/dev/null 2>&1
+  /bin/rm "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
   sc_conf commit
+  [ "$VERBOSE" ] && echo "- '$SC_NAME' configuration file was removed."
 }
 
 ###############################################
