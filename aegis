@@ -2,7 +2,7 @@
 # ----------- ENVIRONMENT VARIABLES -----------
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
-if [ "$1" = '_env' ]; then IFS= while read -r L
+if [ "$1" = '_env' ]; then IFS=; while read -r L
   do case "$L" in ': ENV START') E=1;; ': ENV STOP') E=;; ': ENV EOF') break;; *) [ $E ] && echo "$L";; esac
 done<$0; exit; fi
 # ---------------------------------------------
