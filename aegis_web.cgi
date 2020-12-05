@@ -208,7 +208,7 @@ status() {
   echo '</ul>'
   
   # Debug
-  _IPT="$($IPT_COM -S 2>/dev/null|/bin/grep -F "$SC_ABR")"
+  get_ipt
   echo '<h3 class="debug collapsibleList">Debug</h3>'
   echo '<input type="checkbox" id="debug-status" /><label for="debug-status">Debug</label>'
   echo "<ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>"
@@ -346,8 +346,8 @@ checkIp() {
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
     "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis Engine blacklist.<br />" ;;
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist.<br />" ;;
-    "$IPSET_WG_NAME") ipset -q test $IPSET_WG_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist because in WAN Gateway.<br />" ;;
   esac; done
+ # inet_for_if 
   echo "---<br />"
 }
 
