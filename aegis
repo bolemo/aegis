@@ -15,10 +15,8 @@ SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
 IPT_COM='/usr/sbin/iptables'
-sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc /opt/bolemo/etc/config $1 $SC_ABR$_OPT; }
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
-[ "$(sc_conf get log)" = "1" ] && CONF_LOG=1
 IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
@@ -35,6 +33,7 @@ else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
+sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc /opt/bolemo/etc/config $1 $SC_ABR$_OPT; return $?; }
 
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
@@ -307,7 +306,7 @@ engine_start() {
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
-  if [ "$CONF_LOG" ]; then
+  if sc_conf get log >/dev/null; then
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -769,11 +768,9 @@ set_log_state() {
     if [ "$LOG_ACT" = 'ON' ]; then
       [ "$VERBOSE" ] && echo "- Enabling logging."
       sc_conf set log=1; sc_conf commit
-      CONF_LOG=1
     else
       [ "$VERBOSE" ] && echo "- Disabling logging."
       sc_conf delete log; sc_conf commit
-      CONF_LOG=
     fi
   fi
 }
@@ -1065,7 +1062,7 @@ _status() {
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # LOG
-    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if [ "$CONF_LOG" ]
+    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log >/dev/null
       then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
       else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
     fi fi
