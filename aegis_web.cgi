@@ -337,6 +337,19 @@ refreshLog() {
   [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
 }
 
+_ip_in_if_inet() {
+  [ -z "$2" ] && return 1
+  _IPC="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
+  OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
+$1$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
+EOF
+  IFS=$OLDIFS
+  T=$((T3 * 256 ** 3 + T2 * 256 ** 2 + T1 * 256 + T0))
+  S=$((S3 * 256 ** 3 + S2 * 256 ** 2 + S1 * 256 + S0))
+  E=$((E3 * 256 ** 3 + E2 * 256 ** 2 + E1 * 256 + E0))
+  [ $T -ge $S -a $T -le $E ] && return 0 || return 1
+}
+
 checkIp() {
   aegis_env
   IP="$ARG"
@@ -347,7 +360,8 @@ checkIp() {
     "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis Engine blacklist.<br />" ;;
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis Engine whitelist.<br />" ;;
   esac; done
- # inet_for_if 
+  _ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in WAN network range ($(inet_for_if $WAN_IF)).<br />"
+  _ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in VPN network range ($(inet_for_if $TUN_IF)).<br />"
   echo "---<br />"
 }
 
