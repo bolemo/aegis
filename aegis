@@ -1354,12 +1354,16 @@ esac
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
-[ -z "${ARGS##* -log *}" ] && sc_conf set log=1 || sc_conf delete log
-[ -z "${ARGS##* -wan_no_bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
-[ -z "${ARGS##* -vpn_no_bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
-[ -z "${ARGS##* -rm-config *}" ] && RM_CONF=1
-[ -z "${ARGS##* -rm-symlink *}" ] && RM_SYMLINK=1
-[ -z "${ARGS##* -rm-web *}" ] && RM_WEB=1
+_engine_args() {
+  [ -z "${ARGS##* -log *}" ]           && sc_conf set log=1 || sc_conf delete log
+  [ -z "${ARGS##* -wan_no_bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
+  [ -z "${ARGS##* -vpn_no_bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
+}
+_clean_args() {
+  [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1
+  [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1
+  [ -z "${ARGS##* -rm-web *}" ]        && RM_WEB=1
+}
 
 sc_conf commit
 
@@ -1371,11 +1375,12 @@ if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
 
 case "$PARAM" in
-  'restart') init; fw_restart; [ $VERBOSE ] && status_term ;;
-  'clean') clean; [ $VERBOSE ] && status_term ;;
-  'load_set') init; set_ipset; [ $VERBOSE ] && status_term ;;
+  # engine commands
+    'restart') _engine_args; init; fw_restart; [ $VERBOSE ] && status_term ;;
+    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
+    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
   'update_set') update_iplist ;;
-  'update') init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
+  'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
