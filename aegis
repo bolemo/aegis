@@ -1049,24 +1049,27 @@ _status() {
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
     [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                              _PB=$((_PB+CK_PM))
-    # BP
-    _cipset_inet_in_bl $_WAN_INET && [ $(((_CK|_PB)&CK_IPT_WAN_BP)) -eq 0 ] &&   _WN=$((_WN+CK_IPT_WAN_BP))
-    [ "$TUN_IF" ] && _cipset_inet_in_bl $_TUN_INET && [ $(((_CK|_PB)&CK_IPT_TUN_BP)) -eq 0 ] && _WN=$((_WN+CK_IPT_TUN_BP))
-    # WL
-    _OK=$((CK_IPS_WL+CK_IPT_WL))
-    if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
-      [ $((_CK&CK_IPS_WL)) -eq 0 ] &&                                            _PB=$((_PB+CK_IPS_WL))
-      [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                            _PB=$((_PB+CK_IPT_WL))
-    fi
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
-    # LOG
-    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log >/dev/null
-      then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
-      else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                      _WN=$((_WN+WN_LOG_DIFF))
-    fi fi
-    # CH, IFO
+    # CH
     [ $(((_CK&CK_IPT_CH)+(_PB&CK_IPT_CH))) -eq 0 ] &&                            _PB=$((_PB+CK_IPT_CH))
+    if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then
+      # BP
+      _cipset_inet_in_bl $_WAN_INET && [ $(((_CK|_PB)&CK_IPT_WAN_BP)) -eq 0 ] &&                  _WN=$((_WN+CK_IPT_WAN_BP))
+      [ "$TUN_IF" ] && _cipset_inet_in_bl $_TUN_INET && [ $(((_CK|_PB)&CK_IPT_TUN_BP)) -eq 0 ] && _WN=$((_WN+CK_IPT_TUN_BP))
+      # WL
+      _OK=$((CK_IPS_WL+CK_IPT_WL))
+      if [ $((_CK&_OK)) -ne 0 ] && [ $((_CK&_OK)) -ne $_OK ]; then
+        [ $((_CK&CK_IPS_WL)) -eq 0 ] &&                                                           _PB=$((_PB+CK_IPS_WL))
+        [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                                           _PB=$((_PB+CK_IPT_WL))
+      fi
+      # LOG
+      if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log >/dev/null
+        then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                                     _WN=$((_WN+WN_LOG_DIFF))
+        else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                                     _WN=$((_WN+WN_LOG_DIFF))
+      fi fi
+    fi
+    # IFO
   fi
   
   _cipset_end
