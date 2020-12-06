@@ -14,7 +14,8 @@ SC_VERS="1.4.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
-IPT_COM='/usr/sbin/iptables'
+IPT_COM='iptables'
+IPT_BIN="/usr/sbin/$IPT_COM"
 IPTBL_SRC="${SC_ABR}_src"
 IPTBL_DST="${SC_ABR}_dst"
 IPSET_BL_NAME="${SC_ABR}_bl"
@@ -104,7 +105,7 @@ INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() { _IPT="$($IPT_COM -S 2>/dev/null|/bin/grep -F "$SC_ABR")"; }
+get_ipt() { _IPT="$($IPT_BIN -S 2>/dev/null|/bin/grep -F "$SC_ABR")"; }
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -158,13 +159,13 @@ _set_ipt_bypass_for_if_inet_pos() { # Bypass for interface inet $1=iface, $2=ine
   _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $2 -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
   if [ "$_BP_POS" != "$3" ]; then
     echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $3 -s $2 -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
+    $IPT_BIN -I "$IPTBL_SRC" $3 -s $2 -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$INFO_IPT_IB_SRC_NEW
   fi
   _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $2 -o $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
   if [ "$_BP_POS" != "$3" ]; then
     echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $3 -d $2 -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
+    $IPT_BIN -I "$IPTBL_DST" $3 -d $2 -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$((_RET+INFO_IPT_IB_DST_NEW))
   fi
   return $_RET
@@ -182,10 +183,10 @@ _set_ipt_for_if_pos() {
     else
       _RET=$INFO_IPT_IF_NEW
     fi
-    $IPT_COM -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
-    $IPT_COM -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
-    $IPT_COM -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
-    $IPT_COM -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
+    $IPT_BIN -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
+    $IPT_BIN -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
+    $IPT_BIN -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
+    $IPT_BIN -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
   else
     _RET=$INFO_IPT_IF_KEEP
   fi
@@ -265,9 +266,9 @@ engine_start() {
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
-  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_COM -N "$IPTBL_SRC" 2>/dev/null
+  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_BIN -N "$IPTBL_SRC" 2>/dev/null
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
-  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_COM -N "$IPTBL_DST" 2>/dev/null
+  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_BIN -N "$IPTBL_DST" 2>/dev/null
 
   WAN_INET=$(inet_for_if $WAN_IF)
   [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
@@ -294,13 +295,13 @@ engine_start() {
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      $IPT_COM -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
+      $IPT_BIN -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-      $IPT_COM -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
+      $IPT_BIN -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
@@ -314,31 +315,31 @@ engine_start() {
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
-      [ "$_LOG_POS" ] && $IPT_COM -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      $IPT_COM -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
+      [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      $IPT_BIN -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
-      [ "$_LOG_POS" ] && $IPT_COM -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-      $IPT_COM -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
+      [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      $IPT_BIN -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
   else
-    $IPT_COM -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-    $IPT_COM -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
   fi
   _POS=$((1+_POS))
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_SRC" $_POS -m comment --comment "$SC_ABR drop incoming" -j DROP
+    $IPT_BIN -I "$IPTBL_SRC" $_POS -m comment --comment "$SC_ABR drop incoming" -j DROP
   fi
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
-    $IPT_COM -I "$IPTBL_DST" $_POS -m comment --comment "$SC_ABR reject outgoing" -j REJECT --reject-with icmp-admin-prohibited
+    $IPT_BIN -I "$IPTBL_DST" $_POS -m comment --comment "$SC_ABR reject outgoing" -j REJECT --reject-with icmp-admin-prohibited
   fi
   
   # checking and cleaning anything that is not WAN_IF or TUN_IF in IFO chains
