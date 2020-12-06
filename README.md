@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.4.0
+1.4.1
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -107,11 +107,11 @@ You can have your own custom black list of IPs or netsets (IPs with cidr netmask
 You can have several custom black lists, beside aegis.blacklist, any file named aegis-*[SOMETHING]*.blacklist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ### Custom whitelists
-Since version 3.2, you can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
+You can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
 You can have several custom white lists, beside aegis.whitelist, any file named aegis-*[SOMETHING]*.whitelist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ## Web Companion
-Since version 1.2.5, aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
+Aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
 To remove it, simply run `aegis web -remove`, or while using the command `aegis clean`, add the `-rm-web` option.
 Once installed, thr Web Companion is accessible here: http://routerlogin.net/bolemo/aegis.htm
 
