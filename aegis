@@ -1389,8 +1389,8 @@ case "$PARAM" in
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_restart') VERBOSE=1; init; fw_restart ;;
-  '_update') VERBOSE=1; init; update_iplist; set_ipset ;;
+  '_restart') _engine_args; VERBOSE=1; init; fw_restart ;;
+  '_update') _engine_args; VERBOSE=1; init; update_iplist; set_ipset ;;
   '_clean') VERBOSE=1; clean ;;
   '_upgrade') _upgrade ;;
   
