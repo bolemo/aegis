@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.4.1"
+SC_VERS="1.4.2"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -937,7 +937,10 @@ chain_status() {
     _LL=$((_SL+$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
     if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1)" = $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
       _CL=$_SL # current line
-      OLDIFS=$IFS; IFS=$'\n'; for _BPL in "$(echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"")"; do
+#      OLDIFS=$IFS; IFS=$'\n'; for _BPL in "$(echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"")"; do
+      local _MKTMP="$(/bin/mktemp /tmp/${SC_ABR}_tmp_XXXXXX)"
+      echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"" >$_MKTMP
+      while read -r _BPL; do
         [ -z "$_BPL" ] && break
         [ "$(echo $_BPL|/usr/bin/cut -d: -f1)" != "$_CL" ] && { _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; }
         case "$_BPL" in
@@ -960,7 +963,8 @@ chain_status() {
             ;;
         esac
         _CL=$((_CL+1))
-      done; IFS=$OLDIFS
+#      done; IFS=$OLDIFS
+      done <$_MKTMP; rm $_MKTMP
       if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1)" = $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
