@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.4.1
+1.4.2
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
