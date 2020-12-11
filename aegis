@@ -103,7 +103,7 @@ INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
 
 # --------------- ENV FUNCTIONS ---------------
 
-sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
+sc_conf() { [ -z "$2" ] && _OPT='' || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
 
 get_ipt() { _IPT="$($IPT_BIN -S 2>/dev/null|/bin/grep -F "$SC_ABR")"; }
 
