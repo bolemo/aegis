@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.4.2"
+SC_VERS="1.4.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -103,7 +103,7 @@ INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
 
 # --------------- ENV FUNCTIONS ---------------
 
-sc_conf() { [ -z "$2" ] && _OPT='' || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
+sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
 
 get_ipt() { _IPT="$($IPT_BIN -S 2>/dev/null|/bin/grep -F "$SC_ABR")"; }
 
@@ -1362,14 +1362,13 @@ _engine_args() {
   [ -z "${ARGS##* -log *}" ]           && sc_conf set log=1 || sc_conf delete log
   [ -z "${ARGS##* -wan_no_bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
   [ -z "${ARGS##* -vpn_no_bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
+  sc_conf commit
 }
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1
   [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1
   [ -z "${ARGS##* -rm-web *}" ]        && RM_WEB=1
 }
-
-sc_conf commit
 
 [ "$QUIET" ] && exec>/dev/null
 
