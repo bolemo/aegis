@@ -25,6 +25,7 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
+LOGD_TMP_DIR="/tmp/${SC_ABR}-logd"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
@@ -118,6 +119,55 @@ inet_for_if() {
 # ---------------------------------------------
 : ENV STOP
 # ---------------------------------------------
+
+# -------------- LOGD FUNCTIONS ---------------
+# Aegis logging daemon
+# ---------------------------------------------
+_logd_start() {
+[ -e $LOGD_TMP_DIR/pid ] && kill -0 $(cat $LOGD_TMP_DIR/pid) && return # logd is already running
+[ -d $LOGD_TMP_DIR ] && rm $LOGD_TMP_DIR/* || mkdir $LOGD_TMP_DIR
+export LOGD_TMP_DIR; export SC_ABR; export IPTBL_SRC; export IPT_BIN
+cat >"$LOGD_TMP_DIR/${SC_ABR}-logd" <<'EOF'
+local NUMLINES=5000
+local LOG_MSG=/var/log/log-message
+local LOG_EXT=/var/log/log-${SC_ABR}
+rm $LOGD_TMP_DIR/${SC_ABR}-logd
+local LOG_TMP=$LOGD_TMP_DIR/logtmp
+trap "{ [ -e $LOGD_TMP_DIR ] && rm -rf $LOGD_TMP_DIR; exit; } 2>/dev/null" TERM
+touch $LOG_EXT
+while :; do
+  local FIRST_MSG_LINE="$(/usr/bin/awk '/\[aegis\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+  if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_EXT ]; then
+    local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1}' $LOG_EXT)" # first timestamp in our log
+    if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then
+      /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_EXT >$LOG_TMP
+      if [ $NUMLINES -le $(wc -l $LOG_TMP|cut -d' ' -f1) ]
+        then /usr/bin/tail -n $NUMLINES $LOG_TMP >$LOG_EXT
+        else cat $LOG_TMP >$LOG_EXT
+      fi
+    else :>$LOG_EXT;
+    fi
+  elif [ $NUMLINES -le $(wc -l $LOG_EXT|cut -d' ' -f1) ]; then
+    /usr/bin/tail -n $NUMLINES $LOG_EXT >$LOG_TMP; cat $LOG_TMP >$LOG_EXT
+  fi
+  rm $LOG_TMP 2>/dev/null
+     # using LOG_EXT>LOG_TMP>LOG_EXT allow to keep same inode for LOG_EXT
+     # now, LOG_EXT ends just before LOG_MSG starts and is no longer than NUMLINES
+  local INODE="$(ls -i $LOG_MSG)"
+  local C=1
+  while /usr/bin/awk '/\[aegis\]/{print; system("")}'; do
+    sleep 2;
+    [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
+    if [ $C -eq 10 ] # check every C x 2 seconds
+      then C=1; IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $TMP_DIR/pid)
+      else C=$((C+1))
+    fi
+  done <$LOG_MSG >>$LOG_EXT 2>/dev/null;
+done
+EOF
+cd $LOGD_TMP_DIR; /bin/sh ${SC_ABR}-logd & echo $! >pid
+exit 0
+}
 
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
