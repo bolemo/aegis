@@ -25,7 +25,6 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
-LOGD_TMP_DIR="/tmp/${SC_ABR}-logd"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
@@ -123,6 +122,7 @@ inet_for_if() {
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
 # ---------------------------------------------
+LOGD_TMP_DIR="/tmp/${SC_ABR}-logd"
 _logd_start() {
 [ -e $LOGD_TMP_DIR/pid ] && kill -0 $(cat $LOGD_TMP_DIR/pid) && return # logd is already running
 [ -d $LOGD_TMP_DIR ] && rm $LOGD_TMP_DIR/* || mkdir $LOGD_TMP_DIR
@@ -167,6 +167,16 @@ done
 EOF
 cd $LOGD_TMP_DIR; /bin/sh ${SC_ABR}-logd & echo $! >pid
 exit 0
+}
+_logd_stop() {
+if [ -d $LOGD_TMP_DIR ]; then
+  [ -e $LOGD_TMP_DIR/pid ] && kill $(cat $LOGD_TMP_DIR/pid)
+  rm -rf $LOGD_TMP_DIR
+fi
+}
+_logd_status() {
+[ -e $LOGD_TMP_DIR/pid ] && kill -0 $(cat $LOGD_TMP_DIR/pid) && return 0
+return 1
 }
 
 # ------------- CIPSET FUNCTIONS --------------
