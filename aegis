@@ -169,7 +169,7 @@ EOF
 /bin/sh LOGD_TMP & echo $! >$LOGD_PID
 return 0
 }
-_logd_stop() { kill $(cat $LOGD_PID); } 2>/dev/null
+_logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); } 2>/dev/null
 _logd_status() { return test -e $LOGD_PID && kill -0 $(cat $LOGD_PID); }
 
 # ------------- CIPSET FUNCTIONS --------------
