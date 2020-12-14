@@ -133,7 +133,7 @@ local LOG_MSG=/var/log/log-message
 local LOG_EXT=/var/log/log-${SC_ABR}
 rm $LOGD_TMP_DIR/${SC_ABR}-logd
 local LOG_TMP=$LOGD_TMP_DIR/logtmp
-trap "{ [ -e $LOGD_TMP_DIR ] && rm -rf $LOGD_TMP_DIR; exit; } 2>/dev/null" TERM
+trap "{ [ -e $LOGD_TMP_DIR ] && rm -r $LOGD_TMP_DIR; exit; } 2>/dev/null" TERM
 touch $LOG_EXT
 while :; do
   local FIRST_MSG_LINE="$(/usr/bin/awk '/\[aegis\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
@@ -170,8 +170,8 @@ return 0
 }
 _logd_stop() {
 if [ -d $LOGD_TMP_DIR ]; then
-  [ -e $LOGD_TMP_DIR/pid ] && kill $(cat $LOGD_TMP_DIR/pid)
-  rm -rf $LOGD_TMP_DIR
+  [ -e $LOGD_TMP_DIR/pid ] && kill -9 $(cat $LOGD_TMP_DIR/pid)
+  rm -r $LOGD_TMP_DIR
 fi
 }
 _logd_status() {
