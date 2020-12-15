@@ -30,7 +30,7 @@ aegis_env() {
 status() {
   aegis_env
   set -- $($wcAEGIS_BIN _status)
-  eval "_CK=$1; _PB=$2; _WN=$3; BL_NB=$4; WL_NB=$5; WAN_IF=$6; TUN_IF=$7"
+  eval "_CK=$1; _PB=$2; _WN=$3; BL_NB=$4; WL_NB=$5; _LOGD=$6; WAN_IF=$7; TUN_IF=$8"
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
@@ -43,6 +43,7 @@ status() {
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
+    [ $_LOGD -eq 0 ] && echo "<li>Logging is on.</li>" || echo "<li>Logging is off.</li>"
   else
     echo '<ul id="status" class="error">'
     echo "<li><strong>Something is not right!</strong></li>"
@@ -119,6 +120,7 @@ status() {
     INFO_FROM=$((INFO&INFO_FROM_MASK))
     INFO_IPS=$(((INFO>>INFO_IPS_SHIFT)&INFO_IPS_MASK))
     INFO_IPT=$(((INFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
+    INFO_LOGD=$(((INFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
@@ -202,6 +204,12 @@ status() {
     elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were set.</li>"
     elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were kept.</li>"
     fi
+    case "$INFO_LOGD" in
+      $INFO_LOGD_KEEP_OFF) echo '<li>log daemon: was already off.</li>';;
+      $INFO_LOGD_KEEP_ON) echo '<li>log daemon: was already on.</li>';;
+      $INFO_LOGD_STOPPED) echo '<li>log daemon: was turned off.</li>';;
+      $INFO_LOGD_STARTED) echo '<li>log daemon: was turned on.</li>';;
+    esac
   else
     echo "<li>No status file found.</li>"
   fi
@@ -213,7 +221,7 @@ status() {
   echo '<input type="checkbox" id="debug-status" /><label for="debug-status">Debug</label>'
   echo "<ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>"
   echo "<li>aegis info: $SC_NAME $SC_VERS-$([ "$EXT_DRIVE" ] && echo 'ext' || echo 'int')</li>"
-  echo "<li>status codes: $_CK#$_PB#$_WN#$WAN_IF#$(inet_for_if $WAN_IF)#$TUN_IF#$([ $TUN_IF ] && inet_for_if $TUN_IF)#$BL_NB#$WL_NB</li>"
+  echo "<li>status codes: $_CK#$_PB#$_WN#$WAN_IF#$(inet_for_if $WAN_IF)#$TUN_IF#$([ $TUN_IF ] && inet_for_if $TUN_IF)#$BL_NB#$WL_NB#$_LOGD</li>"
   echo "<li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>"
   echo '<li>iptables engine rules:</li><ul>'
   [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
@@ -272,7 +280,8 @@ _nameForIp() {
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
-  _KEY=$1
+#  _KEY=$1
+  _LF=$1
   _MAX=$2
   [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$3
   _ST=$4
@@ -281,8 +290,8 @@ _getLog() {
   _MD5=$7
   unset _NST
   unset _LINE
-  /usr/bin/awk 'match($0,/'$_KEY'/) {a[i++]=$0} END {stop=(i<'$_MAX')?0:i-'$_MAX'; for (j=i-1; j>=stop;) print a[j--] }' /var/log/log-message | { IFS=;while read -r LINE; do
-    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
+#  /usr/bin/awk 'match($0,/'$_KEY'/) {a[i++]=$0} END {stop=(i<'$_MAX')?0:i-'$_MAX'; for (j=i-1; j>=stop;) print a[j--] }' /var/log/log-message | { IFS=;while read -r LINE; do
+  /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk '{a[NR]=$0} END {while (NR) print a[NR--]}' | { IFS=;while read -r LINE; do    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     [ -z "$_NST" ] && _NST=$_TS
     [ $_TS -lt $_ST ] && break
     [ $_TS -eq $_ST ] && echo $LINE|/usr/bin/md5sum -|/bin/grep -Fq $_MD5 && break
@@ -314,7 +323,7 @@ _getLog() {
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
-  echo "$_KEY $_MAX $_BT $_NST $_WIF '$_TIF' $_MD5">/tmp/aegis_web
+  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF $_MD5">/tmp/aegis_web
   }
 }
 
@@ -327,7 +336,7 @@ log() {
        else LEN=$ARG
        fi ;;
   esac
-  _getLog $SC_NAME $LEN 0 0 $WAN_IF $TUN_IF
+  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
 }
 
 refreshLog() {

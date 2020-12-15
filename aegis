@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.4.3"
+SC_VERS="1.4.4"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -25,6 +25,7 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
+LOG_FILE="/var/log/log-$SC_ABR"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
@@ -101,6 +102,14 @@ INFO_IPT_TUN_PBM=98304     # . x x . . . . . . . . . . . . . . .
 
 INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
 
+# INFO LOGD (2 bits)
+INFO_LOGD_SHIFT=27
+INFO_LOGD_KEEP_OFF=0       # _ _
+INFO_LOGD_KEEP_ON=1        # _ x
+INFO_LOGD_STOPPED=2        # x _
+INFO_LOGD_STARTED=3        # x x
+INFO_LOGD_MASK=3
+
 # --------------- ENV FUNCTIONS ---------------
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
@@ -119,10 +128,62 @@ inet_for_if() {
 : ENV STOP
 # ---------------------------------------------
 
+# -------------- LOGD FUNCTIONS ---------------
+# Aegis logging daemon
+# ---------------------------------------------
+LOGD_NAME=${SC_ABR}-logd
+LOGD_PID="/var/run/${LOGD_NAME}.pid"
+LOGD_TMP="/tmp/$LOGD_NAME"
+_logd_start() {
+[ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
+cat >"$LOGD_TMP" <<'EOF'
+local NUMLINES=5000
+local LOG_MSG=/var/log/log-message
+rm $LOGD_TMP 2>/dev/null
+trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
+touch $LOG_FILE
+while :; do
+  local FIRST_MSG_LINE="$(/usr/bin/awk '/\[aegis\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+  if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
+    local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1}' $LOG_FILE)" # first timestamp in our log
+    if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then
+      /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >$LOGD_TMP
+      if [ $NUMLINES -le $(wc -l $LOGD_TMP|cut -d' ' -f1) ]
+        then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
+        else cat $LOGD_TMP >$LOG_FILE
+      fi
+    else :>$LOG_FILE;
+    fi
+  elif [ $NUMLINES -le $(wc -l $LOG_FILE|cut -d' ' -f1) ]; then
+    /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  fi
+  rm $LOGD_TMP 2>/dev/null
+     # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
+     # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
+  local INODE="$(ls -i $LOG_MSG)"
+  local C=1
+  while /usr/bin/awk '/\[aegis\]/{print; system("")}'; do
+    sleep 2 & wait $!
+    [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
+    if [ $C -eq 10 ] # check every C x 2 seconds
+      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
+      else C=$((C+1))
+    fi
+  done <$LOG_MSG >>$LOG_FILE 2>/dev/null;
+done
+EOF
+export LOGD_NAME; export LOGD_PID; export LOGD_TMP
+export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
+cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
+return 0
+}
+_logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
+_logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
+
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM; }
 _cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
@@ -197,7 +258,7 @@ engine_start() {
   NFO_FROM=$1
   [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
-  NFO_IPS=0; NFO_IPT=0;
+  NFO_IPS=0; NFO_IPT=0; NFO_LOGD=0;
   _cipset_init
   # creating ipset blocklist if needed
   if _cipset_copy_set $IPSET_BL_NAME; then
@@ -275,8 +336,10 @@ engine_start() {
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
   if _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else WAN_INET=''; fi
   if _cipset_inet_in_bl $TUN_INET; then [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else TUN_INET=''; fi
-  [ "$_EXCL_IF" ] && _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")" \
-                  || _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+  if [ "$_EXCL_IF" ]
+    then _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+    else _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+  fi
   if [ "$_IPT_UCH" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
@@ -318,6 +381,7 @@ engine_start() {
       [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       $IPT_BIN -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
+      _logd_start && NFO_LOGD=$INFO_LOGD_STARTED || NFO_LOGD=$INFO_LOGD_KEEP_ON
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -329,6 +393,7 @@ engine_start() {
   else
     $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    _logd_stop && NFO_LOGD=$INFO_LOGD_STOPPED || NFO_LOGD=$INFO_LOGD_KEEP_OFF
   fi
   _POS=$((1+_POS))
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
@@ -362,7 +427,7 @@ engine_start() {
   
   _cipset_end
   
-  echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
+  echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
 }
 
 ###############################################
@@ -744,11 +809,11 @@ fw_restart() {
 ###############################################
 
 print_log() {
+  _logd_status || echo -e "\033[35mLogging is turned off!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
-  echo -e "\033[35mIf the log is empty, to be sure it is enabled, use the \033[1mstatus\033[0;35m parameter.\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
-  /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
+  /usr/bin/tail -n$_TAIL $LOG_FILE | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")"
 
@@ -785,6 +850,9 @@ clean() {
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
+  _logd_stop
+  rm $LOG_FILE 2>/dev/null
+  [ "$VERBOSE" ] && echo "- Made sure the log daemon is off and removed log file."
   ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
@@ -937,7 +1005,6 @@ chain_status() {
     _LL=$((_SL+$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
     if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1)" = $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
       _CL=$_SL # current line
-#      OLDIFS=$IFS; IFS=$'\n'; for _BPL in "$(echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"")"; do
       local _MKTMP="$(/bin/mktemp /tmp/${SC_ABR}_tmp_XXXXXX)"
       echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"" >$_MKTMP
       while read -r _BPL; do
@@ -963,7 +1030,6 @@ chain_status() {
             ;;
         esac
         _CL=$((_CL+1))
-#      done; IFS=$OLDIFS
       done <$_MKTMP; rm $_MKTMP
       if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1)" = $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
@@ -981,6 +1047,7 @@ chain_status() {
 _status() {
   _CK=0; _WN=0; _PB=0
   _BLC=0; _WLC=0
+  _logd_status; _LOGD=$?
   _cipset_init
   
   # CHECK ENVIRONMENT
@@ -1079,12 +1146,12 @@ _status() {
   
   _cipset_end
   
-  echo -n "$_CK $_PB $_WN $_BLC $_WLC"
+  echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
 }
 
 status_term() {
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
-#  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5
+#  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5; _LOGD=$6
 _status>/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
@@ -1101,6 +1168,10 @@ _status>/dev/null
   else
     _RETVAL=2
     echo -e "- \033[1;31mSomething is not right!\033[0m"
+  fi
+  if [ $_LOGD -eq 0 ]
+    then echo "- Logging is on."
+    else echo "- Logging is off."
   fi
   
   if [ $_PB -ne 0 ]; then
@@ -1169,7 +1240,8 @@ _status>/dev/null
     INFO_FROM=$((INFO&INFO_FROM_MASK))
     INFO_IPS=$(((INFO>>INFO_IPS_SHIFT)&INFO_IPS_MASK))
     INFO_IPT=$(((INFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
-    echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT)"
+    INFO_LOGD=$(((INFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
+    echo " (CODE: $INFO_FROM-$INFO_IPS-$INFO_IPT-$INFO_LOGD)"
     case "$INFO_FROM" in
       $INFO_FROM_SC) FROM="$SC_NAME script" ;;
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
@@ -1253,6 +1325,13 @@ _status>/dev/null
     elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo '- iptables: VPN tunnel IFO rules were set.'
     elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo '- iptables: VPN tunnel IFO rules were kept.'
     fi
+ 
+    case "$INFO_LOGD" in
+      $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
+      $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
+      $INFO_LOGD_STOPPED)  echo '- log daemon: was turned off.';;
+      $INFO_LOGD_STARTED)  echo '- log daemon: was turned on.';;
+    esac
     
     echo -ne "\033[0m"
   else

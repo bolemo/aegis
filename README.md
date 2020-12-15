@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.4.3
+1.4.4
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -124,6 +124,7 @@ The former `-html` option is not supported since the Web Companion is available.
 To log activity of aegis and see what is blocked, you can use the `-log` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log`).
 This survives internal firewall restarts and router reboots.
 When using `restart`, `load_set` or `update` without the `-log` option, log is disabled.
+A specific log file is created in `/var/log/log-aegis`. A small daemon is loaded in memory to update this log file and is exited automatically when the log is turned off. The node id of the file is not changing with rotations, allowing to follow it.
 
 ### Access the log
 To watch the log, use `aegis log`.
