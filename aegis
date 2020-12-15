@@ -160,7 +160,7 @@ while :; do
     sleep 2;
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
-      then C=1; IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
+      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
       else C=$((C+1))
     fi
   done <$LOG_MSG >>$LOG_EXT 2>/dev/null;
