@@ -280,7 +280,8 @@ _nameForIp() {
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
-  _KEY=$1
+#  _KEY=$1
+  _LF=$1
   _MAX=$2
   [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$3
   _ST=$4
@@ -290,8 +291,7 @@ _getLog() {
   unset _NST
   unset _LINE
 #  /usr/bin/awk 'match($0,/'$_KEY'/) {a[i++]=$0} END {stop=(i<'$_MAX')?0:i-'$_MAX'; for (j=i-1; j>=stop;) print a[j--] }' /var/log/log-message | { IFS=;while read -r LINE; do
-  /usr/bin/awk '{a[i++]=$0} END {stop=(i<'$_MAX')?0:i-'$_MAX'; for (j=i-1; j>=stop;) print a[j--] }' $LOG_FILE | { IFS=;while read -r LINE; do
-    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
+  /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk '{a[NR]=$0} END {while (NR) print a[NR--]}' | { IFS=;while read -r LINE; do    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     [ -z "$_NST" ] && _NST=$_TS
     [ $_TS -lt $_ST ] && break
     [ $_TS -eq $_ST ] && echo $LINE|/usr/bin/md5sum -|/bin/grep -Fq $_MD5 && break
@@ -323,7 +323,7 @@ _getLog() {
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
   [ "$_LINE" ] && _MD5="$(echo $_LINE|/usr/bin/md5sum -|/usr/bin/cut -d' ' -f1)"
-  echo "$_KEY $_MAX $_BT $_NST $_WIF '$_TIF' $_MD5">/tmp/aegis_web
+  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF $_MD5">/tmp/aegis_web
   }
 }
 
@@ -336,7 +336,7 @@ log() {
        else LEN=$ARG
        fi ;;
   esac
-  _getLog $SC_NAME $LEN 0 0 $WAN_IF $TUN_IF
+  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
 }
 
 refreshLog() {
