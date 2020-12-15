@@ -25,6 +25,7 @@ ROOT_DIR="/opt/bolemo"
 BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
+LOG_FILE="/var/log/log-$SC_ABR"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
@@ -138,28 +139,27 @@ _logd_start() {
 cat >"$LOGD_TMP" <<'EOF'
 local NUMLINES=5000
 local LOG_MSG=/var/log/log-message
-local LOG_EXT=/var/log/log-${SC_ABR}
 rm $LOGD_TMP 2>/dev/null
 trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
-touch $LOG_EXT
+touch $LOG_FILE
 while :; do
   local FIRST_MSG_LINE="$(/usr/bin/awk '/\[aegis\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
-  if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_EXT ]; then
-    local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1}' $LOG_EXT)" # first timestamp in our log
+  if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
+    local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then
-      /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_EXT >$LOGD_TMP
+      /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >$LOGD_TMP
       if [ $NUMLINES -le $(wc -l $LOGD_TMP|cut -d' ' -f1) ]
-        then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_EXT
-        else cat $LOGD_TMP >$LOG_EXT
+        then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
+        else cat $LOGD_TMP >$LOG_FILE
       fi
     else :>$LOG_EXT;
     fi
-  elif [ $NUMLINES -le $(wc -l $LOG_EXT|cut -d' ' -f1) ]; then
-    /usr/bin/tail -n $NUMLINES $LOG_EXT >$LOGD_TMP; cat $LOGD_TMP >$LOG_EXT
+  elif [ $NUMLINES -le $(wc -l $LOG_FILE|cut -d' ' -f1) ]; then
+    /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
   fi
   rm $LOGD_TMP 2>/dev/null
-     # using LOG_EXT>LOGD_TMP>LOG_EXT allow to keep same inode for LOG_EXT
-     # now, LOG_EXT ends just before LOG_MSG starts and is no longer than NUMLINES
+     # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
+     # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local INODE="$(ls -i $LOG_MSG)"
   local C=1
   while /usr/bin/awk '/\[aegis\]/{print; system("")}'; do
@@ -169,11 +169,11 @@ while :; do
       then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
       else C=$((C+1))
     fi
-  done <$LOG_MSG >>$LOG_EXT 2>/dev/null;
+  done <$LOG_MSG >>$LOG_FILE 2>/dev/null;
 done
 EOF
 export LOGD_NAME; export LOGD_PID; export LOGD_TMP
-export SC_ABR; export IPTBL_SRC; export IPT_BIN
+export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
 }
@@ -850,6 +850,9 @@ clean() {
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
+  _logd_stop
+  rm $LOG_FILE 2>/dev/null
+  [ "$VERBOSE" ] && echo "- Made sure the log daemon is off and removed log file."
   ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
