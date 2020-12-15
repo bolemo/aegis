@@ -127,8 +127,6 @@ LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 1 # logd is already running
-export LOGD_NAME; export LOGD_PID; export LOGD_TMP
-export SC_ABR; export IPTBL_SRC; export IPT_BIN
 cat >"$LOGD_TMP" <<'EOF'
 local NUMLINES=5000
 local LOG_MSG=/var/log/log-message
@@ -166,7 +164,9 @@ while :; do
   done <$LOG_MSG >>$LOG_EXT 2>/dev/null;
 done
 EOF
-/bin/sh $LOGD_TMP & echo $! >$LOGD_PID
+export LOGD_NAME; export LOGD_PID; export LOGD_TMP
+export SC_ABR; export IPTBL_SRC; export IPT_BIN
+cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
 }
 _logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); } 2>/dev/null
