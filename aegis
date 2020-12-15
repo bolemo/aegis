@@ -813,7 +813,7 @@ print_log() {
   echo -e "\033[1;36mLog:\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
-  /bin/grep -F "$SC_NAME" /var/log/log-message | /usr/bin/tail -n$_TAIL | while IFS= read -r LINE; do
+  /usr/bin/tail -n$_TAIL $LOG_FILE | while IFS= read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     _PT="$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")"
 
