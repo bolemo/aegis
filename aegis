@@ -170,7 +170,7 @@ cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
 }
 _logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); } 2>/dev/null
-_logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $? }
+_logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
