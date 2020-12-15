@@ -258,7 +258,8 @@ engine_start() {
   NFO_FROM=$1
   [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
-  NFO_IPS=0; NFO_IPT=0; NFO_LOGD=0;
+  NFO_IPS=0; NFO_IPT=0
+  _logd_status; NFO_LOGD=$?
   _cipset_init
   # creating ipset blocklist if needed
   if _cipset_copy_set $IPSET_BL_NAME; then
@@ -381,7 +382,7 @@ engine_start() {
       [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
       $IPT_BIN -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
-      _logd_start && NFO_LOGD=$INFO_LOGD_STARTED || NFO_LOGD=$INFO_LOGD_KEEP_ON
+      _logd_start && NFO_LOGD=$INFO_LOGD_STARTED
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -393,7 +394,7 @@ engine_start() {
   else
     $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
     $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-    _logd_stop && NFO_LOGD=$INFO_LOGD_STOPPED || NFO_LOGD=$INFO_LOGD_KEEP_OFF
+    _logd_stop && NFO_LOGD=$INFO_LOGD_STOPPED
   fi
   _POS=$((1+_POS))
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
