@@ -152,7 +152,7 @@ while :; do
         then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
         else cat $LOGD_TMP >$LOG_FILE
       fi
-    else :>$LOG_EXT;
+    else :>$LOG_FILE;
     fi
   elif [ $NUMLINES -le $(wc -l $LOG_FILE|cut -d' ' -f1) ]; then
     /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
@@ -163,7 +163,7 @@ while :; do
   local INODE="$(ls -i $LOG_MSG)"
   local C=1
   while /usr/bin/awk '/\[aegis\]/{print; system("")}'; do
-    sleep 2;
+    sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
       then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
