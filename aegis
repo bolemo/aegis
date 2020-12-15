@@ -175,7 +175,7 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM; }
 _cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
@@ -328,8 +328,10 @@ engine_start() {
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
   if _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else WAN_INET=''; fi
   if _cipset_inet_in_bl $TUN_INET; then [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else TUN_INET=''; fi
-  [ "$_EXCL_IF" ] && _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")" \
-                  || _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+  if [ "$_EXCL_IF" ]
+    then _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+    else _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
+  fi
   if [ "$_IPT_UCH" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
     echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
