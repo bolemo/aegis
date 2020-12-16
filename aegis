@@ -143,7 +143,7 @@ rm $LOGD_TMP 2>/dev/null
 trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
 touch $LOG_FILE
 while :; do
-  local FIRST_MSG_LINE="$(/usr/bin/awk '/\[aegis\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+  local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
   if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then
@@ -162,7 +162,7 @@ while :; do
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local INODE="$(ls -i $LOG_MSG)"
   local C=1
-  while /usr/bin/awk '/\[aegis\]/{print; system("")}'; do
+  while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%d:%s\n",$1,c,substr($0,st)); system("")}'; do
     sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
