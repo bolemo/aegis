@@ -266,7 +266,7 @@ command() {
     upgrade*) _CMD="aegis _upgrade" ;;
   esac
   [ -z "${ARG##*-*}" ] && _ARG2="${ARG#*-}"
-  eval "/opt/bolemo/scripts/$_CMD"|/bin/sed "s/$(printf '\r')//g ; s/[[:cntrl:]]\[\([^m]*\)m//g ; /^[[:space:]]*$/d"
+  /opt/bolemo/scripts/$_CMD|/usr/bin/awk '!/^[[:cntrl:]]\[[0-9;]+m$/{gsub("[[:cntrl:]]\[[0-9;]+m","\0",$0);print;system("")}'
   if [ $? = 0 ]; then echo "Success!"; else echo "A problem was encountered."; exit 1; fi;
   if [ $_ARG2 ]; then ARG="$_ARG2"; _ARG2=''; command; fi;
 }
