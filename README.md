@@ -73,8 +73,8 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
   * `-refresh` + will update sets before (re)starting the engine
   * `-log-enable` + will enable logging
   * `-log-disable` + will disable logging
-  * `-wan_no_bypass` - will not set the WAN network range bypass
-  * `-vpn_no_bypass` - will not set the VPN network range bypass
+  * `-wan-no-bypass` - will not set the WAN network range bypass
+  * `-vpn-no-bypass` - will not set the VPN network range bypass
 * `down` - stops aegis engine
 * `refresh` - updates set from servers in `aegis.sources` and custom lists (blacklist, whitelist)
 * `clean` - stops aegis engine and allow further removal with options:
