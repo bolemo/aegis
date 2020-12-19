@@ -256,7 +256,8 @@ _set_ipt_for_if_pos() {
 
 engine_start() {
   NFO_FROM=$1
-  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
+  [ $2 ] && _RELOAD_WTD=1
+#  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
   NFO_IPS=0; NFO_IPT=0
   _logd_status; NFO_LOGD=$?
@@ -796,6 +797,12 @@ init() {
   fi
 }
 
+shield_up() {
+  [ $VERBOSE ] && echo -e "\033[1;36m(Re)starting engine...\033[0m"
+  engine_start "$INFO_FROM_SC"
+  [ $VERBOSE ] && echo "- Engine re-started."
+}
+
 fw_restart() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
   set_log_state
@@ -839,7 +846,7 @@ print_log() {
   done
 }
 
-set_log_state() { sc_conf get log >/dev/null && [ "$VERBOSE" ] && echo "- Enabling logging."; }
+#set_log_state() { sc_conf get log >/dev/null && [ "$VERBOSE" ] && echo "- Enabling logging."; }
 
 clean() {
   [ $VERBOSE ] && echo -e "\033[1;36mStopping/Cleaning...\033[0m"
@@ -863,9 +870,9 @@ clean() {
 set_ipset() {
   [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
   [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
-  set_log_state
+#  set_log_state
   [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
-  engine_start "$INFO_FROM_SC"
+  engine_start "$INFO_FROM_SC" 1
 }
 
 update_iplist() {
@@ -1451,8 +1458,8 @@ _engine_args() {
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { init; shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { init; shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   esac
 }
@@ -1476,7 +1483,7 @@ case "$PARAM" in
 #    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
 #    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
     #NEW
-    'up') _engine_args; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || set_ipset; [ $VERBOSE ] && status_term ;;
+    'up') _engine_args; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
   #NEW
