@@ -6,7 +6,7 @@ Formerly named **firewall-blocklist**
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.4.4
+1.4.5
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -26,14 +26,15 @@ You can install either on external (USB) drive or internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/aegis update -v` or `aegis update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
+Use `/opt/bolemo/scripts/aegis up -refresh -v` or `aegis up -refresh` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to check if everything is up and running or not.
 
 If aegis was set and running before a router reboot, it should be back automatically after the reboot.
 
 ### Cron job
-You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning (or local time if using Kamoj's addon).
+You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis refresh`, will update the blocklist (and the firewall) everyday at 3:15 in the morning (or local time if using Kamoj's addon); this will update and apply new sets without disturbing actual aegis state (up or down).
+Or if you want to make sure aegis is (re)started each time, use: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis up -refresh`
 
 ### What does install procedure do
 ***1) If installed on external drive, it will:***
@@ -61,41 +62,41 @@ You do not need to go through the installation script to install a new version.
 The comnand `aegis info` will show the installed version and the latest version available online.
 The `aegis upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
-To upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`, then `aegis update`
+To upgrade, it is strongly advised to perform `aegis down` then `aegis upgrade`, then `aegis up`
 
 ## Usage
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
-* `restart` - restarts internal firewall and aegis engine
-* `update_set` - updates set from servers in `aegis.sources`
-* `load_set` - reloads aegis engine with last generated set
-* `update` - updates set then reloads aegis engine with it [probably what you want to use]
-* `clean` - removes aegis engine from internal firewall and restarts it
+* `up` - (re)starts aegis engine
+  * `-net-wall` + also restarts the router firewall
+  * `-refresh` + will update sets before (re)starting the engine
+  * `-log-enable` + will enable logging
+  * `-log-disable` + will disable logging
+  * `-wan-no-bypass` - will not set the WAN network range bypass
+  * `-vpn-no-bypass` - will not set the VPN network range bypass
+* `down` - stops aegis engine
+* `refresh` - updates set from servers in `aegis.sources` and custom lists (blacklist, whitelist)
+* `clean` - stops aegis engine and allow further removal with options:
+  * `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
+  * `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
+  * `-rm-web` - removes Web Companion
+  * `-rm-log` - removes the log file
 * `help` - displays help
 * `info` - displays info on this script
 * `status` - displays status
-* `log` - displays log
+* `log -enable` - enable logging
+* `log -disable` - disable logging
+* `log -show` - displays log
+  * `-lines=`N - will display N lines (N being the number of lines to show)
 * `upgrade` - download and install latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
-
-### Options:
-#### GENERAL OPTIONS (can be used with any command)
+### GENERAL OPTIONS (can be used with any command)
 * `-v` - verbose mode (level 1)
 * `-vv` - verbose mode (level 2)
 * `-vvv` - verbose mode (level 3)
 * `-q` - quiet mode (no output)load_set or update):
-#### ENGINE OPTIONS (to use with `restart`, `load_set` or `update`)
-* `-log` - will enable logging
-* `-wan_no_bypass` - will not set the WAN network range bypass
-* `-vpn_no_bypass` - will not set the VPN network range bypass
-#### DISPLAY LOG OPTIONS (to use with `log`)
-* `-lines=`N - will display N lines (N being the number of lines to show)
-#### CLEANING OPTIONS (to use with `clean`):
-* `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
-* `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
-* `-rm-web` - removes Web Companion
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
@@ -121,16 +122,16 @@ The former `-html` option is not supported since the Web Companion is available.
 
 ## Logging
 ### Enable logging
-To log activity of aegis and see what is blocked, you can use the `-log` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log`).
+To enable logging, just run `aegis log -enable`. If aegis is up, it will activate the logging immediatly. If aegis is down, it won't start it, but next time it will be started, logging will be enabled.
+You can also use the `-log-enable` option with the command `up` (for example: `aegis up -log`) to (re)start aegis with logging on.
 This survives internal firewall restarts and router reboots.
-When using `restart`, `load_set` or `update` without the `-log` option, log is disabled.
 A specific log file is created in `/var/log/log-aegis`. A small daemon is loaded in memory to update this log file and is exited automatically when the log is turned off. The node id of the file is not changing with rotations, allowing to follow it.
 
 ### Access the log
-To watch the log, use `aegis log`.
+To watch the log, use `aegis log -show`.
 
 ### Disable logging
-To stop logging, just use `restart`, `load_set` or `update` using this script without the `-log` option.
+To stop logging, just use `aegis log -disable` (if aegis is up, it will desactivates the logging immediatly; if it is down, logging won't be active next time it is started). You an also use the option `-log-disable` when you are (re)starting then engine: `aegis up -log-disable`.
 
 ## iprange
 iprange is a great little utility dealing that is now part of the FireHOL project.
