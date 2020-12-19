@@ -33,7 +33,8 @@ Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to che
 If aegis was set and running before a router reboot, it should be back automatically after the reboot.
 
 ### Cron job
-You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis update` (without the `-v` option), will update the blocklist (and the firewall) everyday at 3:15 in the morning (or local time if using Kamoj's addon).
+You will probably want to setup a cron job to update the blocklists once a day (use Entware's cron or Kamoj's addon for that). For example: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis refresh`, will update the blocklist (and the firewall) everyday at 3:15 in the morning (or local time if using Kamoj's addon); this will update and apply new sets without disturbing actual aegis state (up or down).
+Or if you want to make sure aegis is (re)started each time, use: `15 3 * * * /bin/sh /opt/bolemo/scripts/aegis up -refresh`
 
 ### What does install procedure do
 ***1) If installed on external drive, it will:***
