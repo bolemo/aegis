@@ -801,7 +801,7 @@ shield_up() {
   [ $VERBOSE ] && echo -e "\033[1;36m(Re)starting engine...\033[0m"
   set_log_state
   engine_start "$INFO_FROM_SC"
-  [ $VERBOSE ] && echo "- Engine re-started."
+  [ $VERBOSE ] && echo "- Engine (re)started."
 }
 
 fw_restart() {
