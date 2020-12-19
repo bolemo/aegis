@@ -26,7 +26,7 @@ You can install either on external (USB) drive or internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/aegis update -v` or `aegis update` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
+Use `/opt/bolemo/scripts/aegis up -refresh -v` or `aegis up -refresh` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to check if everything is up and running or not.
 
@@ -61,7 +61,7 @@ You do not need to go through the installation script to install a new version.
 The comnand `aegis info` will show the installed version and the latest version available online.
 The `aegis upgrade` command will also show installed and latest version available and ask if you want to upgrade if the online version is different than the one installed.
 
-To upgrade, it is strongly advised to perform `aegis clean` then `aegis upgrade`, then `aegis update`
+To upgrade, it is strongly advised to perform `aegis down` then `aegis upgrade`, then `aegis up`
 
 ## Usage
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
@@ -121,16 +121,16 @@ The former `-html` option is not supported since the Web Companion is available.
 
 ## Logging
 ### Enable logging
-To log activity of aegis and see what is blocked, you can use the `-log` option with the parameter `restart`, `load_set` or `update` using this script (for example: `aegis restart -log`).
+To enable logging, just run `aegis log -enable`. If aegis is up, it will activate the logging immediatly. If aegis is down, it won't start it, but next time it will be started, logging will be enabled.
+You can also use the `-log-enable` option with the command `up` (for example: `aegis up -log`) to (re)start aegis with logging on.
 This survives internal firewall restarts and router reboots.
-When using `restart`, `load_set` or `update` without the `-log` option, log is disabled.
 A specific log file is created in `/var/log/log-aegis`. A small daemon is loaded in memory to update this log file and is exited automatically when the log is turned off. The node id of the file is not changing with rotations, allowing to follow it.
 
 ### Access the log
-To watch the log, use `aegis log`.
+To watch the log, use `aegis log -show`.
 
 ### Disable logging
-To stop logging, just use `restart`, `load_set` or `update` using this script without the `-log` option.
+To stop logging, just use `aegis log -disable` (if aegis is up, it will desactivates the logging immediatly; if it is down, logging won't be active next time it is started). You an also use the option `-log-disable` when you are (re)starting then engine: `aegis up -log-disable`.
 
 ## iprange
 iprange is a great little utility dealing that is now part of the FireHOL project.
