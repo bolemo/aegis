@@ -1439,7 +1439,8 @@ esac
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 _engine_args() {
-  [ -z "${ARGS##* -log *}" ]           && sc_conf set log=1 || sc_conf delete log
+  [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log=1
+  [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log
   [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
   [ -z "${ARGS##* -vpn-no-bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
   
@@ -1447,6 +1448,12 @@ _engine_args() {
   [ -z "${ARGS##* -refresh *}" ]       && ST_US=1      || ST_US=
   
   sc_conf commit
+}
+_log_args() {
+  case $ARGS in
+  * -enable *)     sc_conf set log=1; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  * -disable *)    sc_conf delete log; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  * -show *) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
 }
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=
@@ -1464,24 +1471,27 @@ elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [lev
 
 case "$PARAM" in
   # engine commands
-    'restart') _engine_args; init; fw_restart; [ $VERBOSE ] && status_term ;;
-    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
-    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
-    
+#    'restart') _engine_args; init; fw_restart; [ $VERBOSE ] && status_term ;;
+#    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
+#    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
+    #NEW
     'up') _engine_args; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || set_ipset; [ $VERBOSE ] && status_term ;;
     
-  'update_set') update_iplist ;;
-  
+#  'update_set') update_iplist ;;
+  #NEW
   'refresh') update_iplist; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
   
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
-  
+  #NEW
   'down') clean; [ $VERBOSE ] && status_term ;;
   
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
-  'log') [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
+ # 'log') [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
+  #NEW
+  'log') _log_args ;;
+  
   'upgrade') upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
