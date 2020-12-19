@@ -68,26 +68,26 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 
 ### Valid commands (only one):
 * `up` - (re)starts aegis engine
-** `-net-wall` + also restarts the router firewall
-** `-refresh` + will update sets before (re)starting the engine
-** `-log-enable` + will enable logging
-** `-log-disable` + will disable logging
-** `-wan_no_bypass` - will not set the WAN network range bypass
-** `-vpn_no_bypass` - will not set the VPN network range bypass
+  * `-net-wall` + also restarts the router firewall
+  * `-refresh` + will update sets before (re)starting the engine
+  * `-log-enable` + will enable logging
+  * `-log-disable` + will disable logging
+  * `-wan_no_bypass` - will not set the WAN network range bypass
+  * `-vpn_no_bypass` - will not set the VPN network range bypass
 * `down` - stops aegis engine
 * `refresh` - updates set from servers in `aegis.sources` and custom lists (blacklist, whitelist)
 * `clean` - stops aegis engine and allow further removal with options:
-** `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
-** `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
-** `-rm-web` - removes Web Companion
-** `-rm-log` - removes the log file
+  * `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
+  * `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
+  * `-rm-web` - removes Web Companion
+  * `-rm-log` - removes the log file
 * `help` - displays help
 * `info` - displays info on this script
 * `status` - displays status
 * `log -enable` - enable logging
 * `log -disable` - disable logging
 * `log -show` - displays log
-** `-lines=`N - will display N lines (N being the number of lines to show)
+  * `-lines=`N - will display N lines (N being the number of lines to show)
 * `upgrade` - download and install latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
