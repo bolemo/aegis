@@ -1472,7 +1472,7 @@ case "$PARAM" in
     
   'update_set') update_iplist ;;
   
-  'refresh') update_iplist; is_up && { init; update_iplist; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  'refresh') update_iplist; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
   
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   
