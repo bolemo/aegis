@@ -1462,7 +1462,6 @@ pre_init
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=3
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
 
-[ "$PARAM" = 'refresh' ] && is_up && { ST_US=1; PARAM='up'; }
 case "$PARAM" in
   # engine commands
     'restart') _engine_args; init; fw_restart; [ $VERBOSE ] && status_term ;;
@@ -1473,7 +1472,7 @@ case "$PARAM" in
     
   'update_set') update_iplist ;;
   
-  'refresh') update_iplist ;;
+  'refresh') update_iplist; is_up && { init; update_iplist; set_ipset; [ $VERBOSE ] && status_term; } ;;
   
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   
