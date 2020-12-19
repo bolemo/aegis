@@ -1372,6 +1372,7 @@ status_raw() {
 print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
   echo -e "Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
+  echo -e "\033[7mCOMMANDS (only one) and their specific options:\033[0m"
   echo -e " \033[1;35mup\033[0m             - (re)starts $SC_NAME engine"
   echo -e "   \033[1;36m-net-wall\033[0m      + will also restart the internal firewall"
   echo -e "   \033[1;36m-refresh\033[0m       + will update sets prior to (re)starting the engine"
