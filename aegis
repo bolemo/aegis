@@ -1451,9 +1451,9 @@ _engine_args() {
 }
 _log_args() {
   case $ARGS in
-  * -enable *)     sc_conf set log=1; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
-  * -disable *)    sc_conf delete log; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
-  * -show *) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
+  *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
 }
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=
