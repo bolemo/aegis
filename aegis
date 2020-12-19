@@ -842,24 +842,22 @@ print_log() {
 set_log_state() { sc_conf get log >/dev/null && [ "$VERBOSE" ] && echo "- Enabling logging."; }
 
 clean() {
-  [ "$VERBOSE" ] && echo -e "\033[1;36mCleaning...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mStopping/Cleaning...\033[0m"
   clean_firewall_start
   clean_postmount
-  [ "$RM_CONF" ] && check_conf && clean_conf
-  [ "$RM_SYMLINK" ] && check_path && clean_path
-  [ "$RM_WEB" ] && check_web && clean_web
+  [ $RM_CONF ] && check_conf && clean_conf
+  [ $RM_SYMLINK ] && check_path && clean_path
+  [ $RM_WEB ] && check_web && clean_web
   /bin/rm -f "$INFO_FILE"
-  /usr/sbin/net-wall restart > /dev/null
-  [ "$VERBOSE" ] && echo "- Built-in firewall restarted."
-  _logd_stop
-  rm $LOG_FILE 2>/dev/null
-  [ "$VERBOSE" ] && echo "- Made sure the log daemon is off and removed log file."
+  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
+  _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
+  [ $RM_LOG ] && { rm $LOG_FILE 2>/dev/null; [ $VERBOSE ] && echo "- Removed log file."; }
   ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
-  [ "$VERBOSE" ] && echo "- Cleaned ipsets."
+  [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
-  [ "$VERBOSE" ] && echo -e "- Removed temporary files.\n- Cleaning done."
+  [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
 set_ipset() {
@@ -1149,6 +1147,8 @@ _status() {
   
   echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
 }
+
+is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
 
 status_term() {
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
@@ -1440,14 +1440,19 @@ esac
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 _engine_args() {
   [ -z "${ARGS##* -log *}" ]           && sc_conf set log=1 || sc_conf delete log
-  [ -z "${ARGS##* -wan_no_bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
-  [ -z "${ARGS##* -vpn_no_bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
+  [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
+  [ -z "${ARGS##* -vpn-no-bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
+  
+  [ -z "${ARGS##* -net-wall *}" ]      && ST_FW=1      || ST_FW=
+  [ -z "${ARGS##* -refresh *}" ]       && ST_US=1      || ST_US=
+  
   sc_conf commit
 }
 _clean_args() {
-  [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1
-  [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1
-  [ -z "${ARGS##* -rm-web *}" ]        && RM_WEB=1
+  [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=
+  [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1 || RM_SYMLINK=
+  [ -z "${ARGS##* -rm-web *}" ]        && RM_WEB=1     || RM_WEB=
+  [ -z "${ARGS##* -rm-log *}" ]        && RM_LOG=1     || RM_LOG=
 }
 
 [ "$QUIET" ] && exec>/dev/null
@@ -1457,13 +1462,23 @@ pre_init
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=3
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
 
+[ "$PARAM" = 'refresh' ] && is_up && { ST_US=1; PARAM='up'; }
 case "$PARAM" in
   # engine commands
     'restart') _engine_args; init; fw_restart; [ $VERBOSE ] && status_term ;;
     'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
     'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
+    
+    'up') _engine_args; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || set_ipset; [ $VERBOSE ] && status_term ;;
+    
   'update_set') update_iplist ;;
+  
+  'refresh') update_iplist ;;
+  
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
+  
+  'down') clean; [ $VERBOSE ] && status_term ;;
+  
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
