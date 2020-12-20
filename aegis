@@ -1485,7 +1485,7 @@ case "$PARAM" in
 #    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
 #    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
     #NEW
-    'up') _engine_args; netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- No netset found! Refreshing it..."; }; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
+    'up') _engine_args; netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- Netset was not found! Refresh will be made."; }; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
   #NEW
