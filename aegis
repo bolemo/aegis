@@ -845,9 +845,9 @@ print_log() {
 set_log_state() { sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."; }
 
 shield_up() {
-  [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   sc_conf set up=1; sc_conf commit
   shield_init
+  [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   set_log_state
   if [ $1 ]; then
     [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
