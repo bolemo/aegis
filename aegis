@@ -1156,6 +1156,8 @@ _status() {
   echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
 }
 
+netset_exists() { test -e $IPSET_BL_NAME; return $?; }
+
 is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
 
 status_term() {
@@ -1483,7 +1485,7 @@ case "$PARAM" in
 #    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
 #    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
     #NEW
-    'up') _engine_args; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
+    'up') _engine_args; netset_exists || ST_US=1; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
   #NEW
