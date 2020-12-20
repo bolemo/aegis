@@ -279,15 +279,20 @@ _nameForIp() {
   [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
 }
 
+_LF=/var/log/log-aegis
+_SF=/tmp/aegis_status
+_WF=/tmp/aegis_web
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
-  _LF=$1
-  _MAX=$2
-  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$3
-  _ST=$4
-  _WIF=$5
-  _TIF=$6
+ # _LF=$1
+  _MAX=$1
+  [ $2 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$2
+  _ST=$3
+ # _WIF=$5
+  _WIF=/usr/bin/cut -d' ' -f2 $_SF
+ # _TIF=$6
+  _TIF=/usr/bin/cut -d' ' -f3 $_SF
   unset _NST
   /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
     _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
@@ -307,6 +312,8 @@ _getLog() {
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
       *"OUT=$_WIF"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
+    esac
+    if [ $_TIF ]; then case $LINE in
       *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
          _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
       *"IN=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
@@ -315,15 +322,16 @@ _getLog() {
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
       *"OUT=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
-    esac
+    esac; fi
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
-  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
+#  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
+  echo "$_MAX $_BT $_NST">$_WF
   }
 }
 
 log() {
-  aegis_env
+#  aegis_env
   case $ARG in
     ''|*[!0-9]*) LEN=100 ;;
     *) if [ $ARG -lt 1 ]; then LEN=1
@@ -331,11 +339,13 @@ log() {
        else LEN=$ARG
        fi ;;
   esac
-  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
+#  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
+  _getLog $LEN 0 0
 }
 
 refreshLog() {
-  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
+#  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
+  _getLog $(cat $_WF)
 }
 
 _ip_in_if_inet() {
