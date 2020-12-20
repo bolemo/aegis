@@ -1173,6 +1173,9 @@ _status() {
       fi fi
     fi
     # IFO
+  else
+    [ $((_WN-WN_WL_FILE_NTLD)) -ne 0 ] && _WN=$((_WN-WN_WL_FILE_NTLD))
+    [ $((_WN-WN_BL_FILE_NTLD)) -ne 0 ] && _WN=$((_WN-WN_BL_FILE_NTLD))
   fi
   
   _cipset_end
