@@ -35,7 +35,9 @@ status() {
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
-    echo "<li>Aegis is not active; Settings are clean.</li>"
+    echo "<li>Aegis is not active; Environment is clean.</li>"
+  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then
+    echo "<li>Aegis is not active.</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
     echo '<ul id="status" class="running">'
     echo -n "<li>Aegis is set and active"
