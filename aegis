@@ -994,6 +994,7 @@ info() {
 # STATUS VARS
 CK_FWS=1             # CK PB
 CK_PM=2              # CK PB
+CK_ENV_MASK=3
 CK_IPS_BL=4          # CK PB
 CK_IPS_WL=8          # CK PB
 CK_IPT_CH=16         # CK PB
@@ -1146,7 +1147,7 @@ _status() {
   fi
 
   # DEEPER CHECK
-  if [ $_CK -ne 0 ]; then
+  if [ $_CK -gt $CK_ENV_MASK ]; then
   # -- PROBLEMS / WARNINGS
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
@@ -1189,18 +1190,17 @@ status_term() {
 _status>/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
-  if [ $((_CK+_PB)) -eq 0 ]; then
-    _RETVAL=1
+  if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
+    echo -e "- '$SC_NAME' is not active.\n- Environment is clean from '$SC_NAME'."
+  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=1
     echo "- '$SC_NAME' is not active."
-  else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-      _RETVAL=0
+  else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
       echo -ne "- \033[1;32m'$SC_NAME' is set and active\033[0m"
       [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
       [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
       echo -e ".\n- Filtering $_BLC IP adresses."
       [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
-    else
-      _RETVAL=2
+    else _RETVAL=2
        echo -e "- \033[1;31mSomething is not right!\033[0m"
     fi
     if [ $_LOGD -eq 0 ]; then echo "- Logging is on."; else echo "- Logging is off."; fi
