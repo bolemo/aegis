@@ -254,7 +254,7 @@ _set_ipt_for_if_pos() {
   return $_RET
 }
 
-engine_start() {
+shield_uprear() {
   NFO_FROM=$1
   [ $2 ] && _RELOAD_WTD=1
 #  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
@@ -441,7 +441,7 @@ engine_start() {
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
   sc_conf get up >/dev/null || exit 0
-  engine_start "$INFO_FROM_FWS"
+  shield_uprear "$INFO_FROM_FWS"
   exit 0
 fi
 
@@ -451,7 +451,7 @@ _pm() {
   [ -d /opt/bolemo ] || /bin/ln -sfn /tmp/mnt/$2/bolemo /opt/bolemo
   sc_init
   shield_init
-  engine_start "$INFO_FROM_PM"
+  shield_uprear "$INFO_FROM_PM"
   exit 0
 }
 
@@ -759,7 +759,7 @@ name_from_ip() {
 ###############################################
 #
 #    INIT FUNCTIONS
-#    script init & engine init
+#    script init & shield init
 #
 ###############################################
 
@@ -773,7 +773,6 @@ sc_init() {
 
 shield_init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
-  sc_conf set up=1; sc_conf commit
   ipset -q destroy $IPSET_TMP
   if check_conf
     then [ "$VERBOSE" ] && echo "- Configuration file is set."
@@ -800,16 +799,9 @@ shield_init() {
   fi
 }
 
-shield_up() {
-  [ $VERBOSE ] && echo -e "\033[1;36m(Re)starting engine...\033[0m"
-  set_log_state
-  engine_start "$INFO_FROM_SC"
-  [ $VERBOSE ] && echo "- Engine (re)started."
-}
-
 fw_restart() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
-  set_log_state
+#  set_log_state
   /usr/sbin/net-wall restart > /dev/null
   [ "$VERBOSE" ] && echo "- Firewall restarted."
 }
@@ -852,12 +844,28 @@ print_log() {
 
 set_log_state() { sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."; }
 
+shield_up() {
+  sc_conf set up=1; sc_conf commit
+  shield_init
+  set_log_state
+  if [ "$1" == "1" ]; then
+    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+    [ $VERBOSE ] && echo -e "\033[1;36mLoading netsets into shield:\033[0m"
+    _FORCE_NS_RELOAD=1
+  fi
+  [ "$2" == "1" ] && { fw_restart; return; };
+  [ $VERBOSE ] && echo -e "\033[1;36mUprearing shield...\033[0m"
+  shield_uprear "$INFO_FROM_SC" $_FORCE_NS_RELOAD
+  [ $VERBOSE ] && echo "- Shield up."
+}
+
 shield_down() {
-  [ $VERBOSE ] && echo -e "\033[1;36mStopping...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mLowering shield...\033[0m"
   sc_conf delete up; sc_conf commit
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
   _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
+  [ $VERBOSE ] && echo "- Shield down."
 }
 
 clean() {
@@ -879,13 +887,13 @@ clean() {
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Cleaning done."
 }
 
-set_ipset() {
-  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
-  [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
-  set_log_state
-  [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
-  engine_start "$INFO_FROM_SC" 1
-}
+#set_ipset() {
+#  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+#  [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
+#  set_log_state
+#  [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
+#  shield_uprear "$INFO_FROM_SC" 1
+#}
 
 update_iplist() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating blocklist from sources...\033[0m"
@@ -1458,21 +1466,21 @@ esac
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
-_engine_args() {
+_shield_args() {
   [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log=1
   [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log
   [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
   [ -z "${ARGS##* -vpn-no-bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
   
-  [ -z "${ARGS##* -net-wall *}" ]      && ST_FW=1      || ST_FW=
-  [ -z "${ARGS##* -refresh *}" ]       && ST_US=1      || ST_US=
+  [ -z "${ARGS##* -net-wall *}" ]      && ST_FW=1      || ST_FW=0
+  [ -z "${ARGS##* -refresh *}" ]       && ST_US=1      || ST_US=0
   
   sc_conf commit
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { shield_init; shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { shield_init; shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   esac
 }
@@ -1496,11 +1504,15 @@ case "$PARAM" in
 #    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
 #    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
     #NEW
-    'up') _engine_args; netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- Netset was not found! Refresh will be made."; }; shield_init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
+    'up') _shield_args;
+          netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- Netset was not found! Refresh will be made."; }
+          [ $ST_US ] && update_iplist;
+          shield_up $ST_US $ST_FW;
+          [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
   #NEW
-  'refresh') update_iplist; is_up && { shield_init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  'refresh') update_iplist; is_up && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
   
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   #NEW
@@ -1517,8 +1529,8 @@ case "$PARAM" in
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_restart') _engine_args; VERBOSE=1; shield_init; fw_restart ;;
-  '_update') _engine_args; VERBOSE=1; shield_init; update_iplist; set_ipset ;;
+  '_restart') _shield_args; VERBOSE=1; shield_up 0 1 ;;
+  '_update') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
   '_clean') VERBOSE=1; clean ;;
   '_upgrade') _upgrade ;;
   
