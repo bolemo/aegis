@@ -1156,7 +1156,7 @@ _status() {
   echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
 }
 
-netset_exists() { test -e $IPSET_BL_NAME; return $?; }
+netset_exists() { [ -e "$IPSET_BL_NAME" ] && return 0 || return 1; }
 
 is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
 
