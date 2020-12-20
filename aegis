@@ -1181,7 +1181,7 @@ _status() {
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
 
-is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
+#is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
 
 status_term() {
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
@@ -1483,8 +1483,8 @@ _shield_args() {
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   esac
 }
@@ -1516,7 +1516,7 @@ case "$PARAM" in
     
 #  'update_set') update_iplist ;;
   #NEW
-  'refresh') update_iplist; is_up && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
+  'refresh') update_iplist; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
   
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   #NEW
