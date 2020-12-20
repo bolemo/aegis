@@ -440,15 +440,17 @@ engine_start() {
 
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
+  sc_conf get up >/dev/null || exit 0
   engine_start "$INFO_FROM_FWS"
   exit 0
 fi
 
 #when called from post-mount.sh
 _pm() {
+  sc_conf get up >/dev/null || exit 0
   [ -d /opt/bolemo ] || /bin/ln -sfn /tmp/mnt/$2/bolemo /opt/bolemo
-  pre_init
-  init
+  sc_init
+  shield_init
   engine_start "$INFO_FROM_PM"
   exit 0
 }
@@ -757,11 +759,11 @@ name_from_ip() {
 ###############################################
 #
 #    INIT FUNCTIONS
-#    script init & when using firewall init
+#    script init & engine init
 #
 ###############################################
 
-pre_init() {
+sc_init() {
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
   check_conf || set_conf
@@ -769,8 +771,9 @@ pre_init() {
   [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
 }
 
-init() {
+shield_init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
+  sc_conf set up=1; sc_conf commit
   ipset -q destroy $IPSET_TMP
   if check_conf
     then [ "$VERBOSE" ] && echo "- Configuration file is set."
@@ -849,11 +852,19 @@ print_log() {
 
 set_log_state() { sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."; }
 
+shield_down() {
+  [ $VERBOSE ] && echo -e "\033[1;36mStopping...\033[0m"
+  sc_conf delete up; sc_conf commit
+  /bin/rm -f "$INFO_FILE"
+  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
+  _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
+}
+
 clean() {
-  [ $VERBOSE ] && echo -e "\033[1;36mStopping/Cleaning...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mCleaning...\033[0m"
   clean_firewall_start
   clean_postmount
-  [ $RM_CONF ] && check_conf && clean_conf
+  if check_conf; then [ $RM_CONF ] && clean_conf || { sc_conf delete up; sc_conf commit; }; fi
   [ $RM_SYMLINK ] && check_path && clean_path
   [ $RM_WEB ] && check_web && clean_web
   /bin/rm -f "$INFO_FILE"
@@ -1412,7 +1423,7 @@ print_help() {
 _RETVAL=0
 
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
-[ "$1" = "_pm" ] && [ "$2" ] && _pm
+[ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
 
@@ -1460,8 +1471,8 @@ _engine_args() {
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { init; shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { init; shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { shield_init; shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { shield_init; shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   esac
 }
@@ -1474,7 +1485,7 @@ _clean_args() {
 
 [ "$QUIET" ] && exec>/dev/null
 
-pre_init
+sc_init
 
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=3
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
@@ -1485,15 +1496,15 @@ case "$PARAM" in
 #    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
 #    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
     #NEW
-    'up') _engine_args; netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- Netset was not found! Refresh will be made."; }; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
+    'up') _engine_args; netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- Netset was not found! Refresh will be made."; }; shield_init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
   #NEW
-  'refresh') update_iplist; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  'refresh') update_iplist; is_up && { shield_init; set_ipset; [ $VERBOSE ] && status_term; } ;;
   
   'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   #NEW
-  'down') clean; [ $VERBOSE ] && status_term ;;
+  'down') shield_down; [ $VERBOSE ] && status_term ;;
   
   'status') status_term ;;
   'help') print_help ;;
@@ -1506,8 +1517,8 @@ case "$PARAM" in
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_restart') _engine_args; VERBOSE=1; init; fw_restart ;;
-  '_update') _engine_args; VERBOSE=1; init; update_iplist; set_ipset ;;
+  '_restart') _engine_args; VERBOSE=1; shield_init; fw_restart ;;
+  '_update') _engine_args; VERBOSE=1; shield_init; update_iplist; set_ipset ;;
   '_clean') VERBOSE=1; clean ;;
   '_upgrade') _upgrade ;;
   
