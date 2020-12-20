@@ -848,12 +848,12 @@ shield_up() {
   sc_conf set up=1; sc_conf commit
   shield_init
   set_log_state
-  if [ "$1" == "1" ]; then
+  if [ $1  ]; then
     [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
     [ $VERBOSE ] && echo -e "\033[1;36mLoading netsets into $SC_NAME shield:\033[0m"
     _FORCE_NS_RELOAD=1
   fi
-  if [ "$2" == "1" ]; then
+  if [ $2 ]; then
     [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall with $SC_NAME shield...\033[0m"
     /usr/sbin/net-wall restart > /dev/null
   else
@@ -869,6 +869,7 @@ shield_down() {
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
   _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
+  ipset -q destroy "$IPSET_BL_NAME"; ipset -q destroy "$IPSET_WL_NAME"; ipset -q destroy "$IPSET_TMP"; [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ $VERBOSE ] && echo "- Shield down."
 }
 
@@ -1476,8 +1477,8 @@ _shield_args() {
   [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
   [ -z "${ARGS##* -vpn-no-bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
   
-  [ -z "${ARGS##* -net-wall *}" ]      && ST_FW=1      || ST_FW=0
-  [ -z "${ARGS##* -refresh *}" ]       && ST_US=1      || ST_US=0
+  [ -z "${ARGS##* -net-wall *}" ]      && ST_FW=1      || ST_FW=
+  [ -z "${ARGS##* -refresh *}" ]       && ST_US=1      || ST_US=
   
   sc_conf commit
 }
@@ -1511,7 +1512,7 @@ case "$PARAM" in
     'up') _shield_args;
           netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- Netset was not found! Refresh will be made."; }
           [ $ST_US ] && update_iplist;
-          shield_up $ST_US $ST_FW;
+          shield_up "$ST_US" "$ST_FW";
           [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
@@ -1533,7 +1534,7 @@ case "$PARAM" in
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_restart') _shield_args; VERBOSE=1; shield_up 0 1 ;;
+  '_restart') _shield_args; VERBOSE=1; shield_up '' 1 ;;
   '_update') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
   '_clean') VERBOSE=1; clean ;;
   '_upgrade') _upgrade ;;
