@@ -270,7 +270,7 @@ command() {
   [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log-enable' || _LOG='-log-disable'
   case $ARG in
     up*) _CMD="aegis _up $_LOG" ;;
-    refresh*) _CMD="aegis _up -refresh $_LOG" ;;
+    refresh*) _CMD="aegis _refresh $_LOG" ;;
     down*) _CMD="aegis _down" ;;
     upgrade*) _CMD="aegis _upgrade" ;;
   esac
