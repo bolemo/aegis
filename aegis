@@ -1538,7 +1538,7 @@ case "$PARAM" in
   '_status') status_raw ;;
   '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
   '_refresh') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
-  '_down') VERBOSE=1; down ;;
+  '_down') VERBOSE=1; shield_down ;;
   '_upgrade') _upgrade ;;
   
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
