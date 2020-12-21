@@ -68,35 +68,35 @@ To upgrade, it is strongly advised to perform `aegis down` then `aegis upgrade`,
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
-* `up` - (re)starts aegis engine
-  * `-net-wall` + also restarts the router firewall
-  * `-refresh` + will update sets before (re)starting the engine
-  * `-log-enable` + will enable logging
-  * `-log-disable` + will disable logging
-  * `-wan-no-bypass` - will not set the WAN network range bypass
-  * `-vpn-no-bypass` - will not set the VPN network range bypass
-* `down` - stops aegis engine
-* `refresh` - updates set from servers in `aegis.sources` and custom lists (blacklist, whitelist)
-* `clean` - stops aegis engine and allow further removal with options:
-  * `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
-  * `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
-  * `-rm-web` - removes Web Companion
-  * `-rm-log` - removes the log file
+* `up` - (re)starts aegis shield protection
+  * `-net-wall` + by restarting the internal firewall
+  * `-refresh` + with updated shield directives
+  * `-log-enable` + with logging enabled
+  * `-log-disable` + with logging disabled
+  * `-wan-no-bypass` + without WAN network range bypass
+  * `-vpn-no-bypass` + without VPN network range bypass
+* `down` - stops aegis shield protection
+* `refresh` - updates shield directives from servers in `aegis.sources` and custom lists (blocklists, whitelist)
+* `unset` - stops and unsets aegis shield
+  * `-rm-config` + and removes the configuration system (mostly if you plan not to use the script anymore)
+  * `-rm-symlink` + and removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
+  * `-rm-web` + and removes Web Companion
+  * `-rm-log` + and removes the log file
 * `help` - displays help
 * `info` - displays info on this script
 * `status` - displays status
-* `log -enable` - enable logging
-* `log -disable` - disable logging
+* `log -enable` - enables logging
+* `log -disable` - disables logging
 * `log -show` - displays log
-  * `-lines=`N - will display N lines (N being the number of lines to show)
-* `upgrade` - download and install latest version
+  * `-lines=`N + displays N lines (N being the number of lines to show)
+* `upgrade` - downloads and installs latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
 ### GENERAL OPTIONS (can be used with any command)
-* `-v` - verbose mode (level 1)
-* `-vv` - verbose mode (level 2)
-* `-vvv` - verbose mode (level 3)
-* `-q` - quiet mode (no output)load_set or update):
+* `-v` + verbose mode (level 1)
+* `-vv` + verbose mode (level 2)
+* `-vvv` + verbose mode (level 3)
+* `-q` + quiet mode (no output)load_set or update):
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
