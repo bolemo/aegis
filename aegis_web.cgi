@@ -12,15 +12,17 @@ else
 fi
 
 init() {
+  uci -c /opt/bolemo/etc/config set aegis.web='extension'
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
-  [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR 2>/dev/null
-  /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH 2>/dev/null
-}
+  [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR
+  /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH
+} 2>/dev/null
 
 uninstall() {
-  /bin/rm -f /tmp/aegis_web 2>/dev/null
-  /bin/rm -rf $wcDAT_DIR 2>/dev/null
-}
+  uci -c /opt/bolemo/etc/config delete aegis.web
+  /bin/rm -f /tmp/aegis_web
+  /bin/rm -rf $wcDAT_DIR
+} 2>/dev/null
 
 aegis_env() {
   # source environment we need from aegis
@@ -281,22 +283,27 @@ _nameForIp() {
 
 _LF=/var/log/log-aegis
 _SF=/tmp/aegis_status
-_WF=/tmp/aegis_web
+#_WF=/tmp/aegis_web
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
  # _LF=$1
-  _MAX=$1
-  [ $2 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$2
-  _ST=$3
+#  _MAX=$1
+  _MAX=$(uci -c /opt/bolemo/etc/config get aegis.web.log_len)
+#  [ $2 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$2
+  _BT=$(uci -c /opt/bolemo/etc/config get aegis.web.log_basetime)
+#  _ST=$3
+  _ST=$(uci -c /opt/bolemo/etc/config get aegis.web.log_starttime)
  # _WIF=$5
   _WIF=/usr/bin/cut -d' ' -f2 $_SF
  # _TIF=$6
   _TIF=/usr/bin/cut -d' ' -f3 $_SF
   unset _NST
   /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
-    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
-    [ -z "$_NST" ] && _NST=$_TS$(echo $LINE|/usr/bin/cut -d: -f2)
+#    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
+    _TS=${LINE%%:*}
+    [ $_NST ] || _1=${LINE%%: *};_NST=$_TS${_1#*:}
+#    [ -z "$_NST" ] && _NST=$_TS$(echo $LINE|/usr/bin/cut -d: -f2)
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
@@ -326,7 +333,8 @@ _getLog() {
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
 #  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
-  echo "$_MAX $_BT $_NST">$_WF
+  [ $_NST ] && uci -c /opt/bolemo/etc/config set aegis.web.log_starttime=$_NST
+#  echo "$_MAX $_BT $_NST">$_WF
   }
 }
 
@@ -339,13 +347,17 @@ log() {
        else LEN=$ARG
        fi ;;
   esac
+  uci -c /opt/bolemo/etc/config set aegis.web.log_len=$LEN
+  uci -c /opt/bolemo/etc/config set aegis.web.log_basetime=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
+  uci -c /opt/bolemo/etc/config set aegis.web.log_starttime=0
 #  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
-  _getLog $LEN 0 0
+  _getLog
 }
 
 refreshLog() {
 #  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
-  _getLog $(cat $_WF)
+#  _getLog $(cat $_WF)
+  _getLog
 }
 
 _ip_in_if_inet() {
