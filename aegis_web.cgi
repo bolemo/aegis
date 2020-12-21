@@ -53,7 +53,7 @@ status() {
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
-    [ $_LOGD -eq 0 ] && echo "<li>Logging is on.</li>" || echo "<li>Logging is off.</li>"
+    [ $_LOGD -eq 0 ] && echo "<li>Logging is enabled.</li>" || echo "<li>Logging is disabled.</li>"
   else
     echo '<ul id="status" class="error">'
     echo "<li><strong>Something is not right!</strong></li>"
@@ -67,14 +67,14 @@ status() {
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo "<li>ipset: no blocklist is set!</li>"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo "<li>ipset: no whitelist is set!</li>"
-    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo "<li>iptables: engine chains are not right!</li>"
+    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo "<li>iptables: shield chains are not right!</li>"
     [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo "<li>iptables: WAN network range bypass rules are not right!</li>"
     [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo "<li>iptables: VPN network range bypass rules are not right!</li>"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo "<li>iptables: whitelist rules are not right!</li>"
     [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo "<li>iptables: VPN tunnel IFO rules are corrupted!</li>"
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo "<li>iptables: WAN interface IFO rules are corrupted!</li>"
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo "<li>iptables: WAN interface ($WAN_IF) IFO rules are missing!</li>"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra engine IFO rules were found (likely from an old interface)!</li>"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra shield IFO rules were found (likely from an old interface)!</li>"
     echo '</ul>'
   fi
   
@@ -82,19 +82,19 @@ status() {
     echo '<h3 class="warning">Warnings</h3>'
     echo '<ul>'
     case "$((_WN&WN_BL_FILE_NTLD))" in
-      $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
-      $WN_BL_FILE_MISS) echo "<li>blocklist is set but file is missing.</li>";;
-      $WN_BL_FILE_NTLD) echo "<li>no blocklist is set but file exists.</li>";;
+      $WN_BL_FILE_DIFF) echo "<li>directives: shield blocklist is different than file.</li>";;
+      $WN_BL_FILE_MISS) echo "<li>directives: shield blocklist is set but file is missing.</li>";;
+      $WN_BL_FILE_NTLD) echo "<li>directives: no shield blocklist is set but file exists.</li>";;
     esac
     case "$((_WN&WN_WL_FILE_NTLD))" in
-      $WN_WL_FILE_DIFF) echo "<li>whitelist set is different than file.</li>";;
-      $WN_WL_FILE_MISS) echo "<li>whitelist is set but file is missing.</li>";;
-      $WN_WL_FILE_NTLD) echo "<li>no whitelist is set but file exists.</li>";;
+      $WN_WL_FILE_DIFF) echo "<li>directives: shield whitelist is different than file.</li>";;
+      $WN_WL_FILE_MISS) echo "<li>directives: shield whitelist is set but file is missing.</li>";;
+      $WN_WL_FILE_NTLD) echo "<li>directives: no shield whitelist is set but file exists.</li>";;
     esac
     [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are missing!</li>"
     [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are missing!</li>"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
-    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
+    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time shield was upreared.</li>"
     echo '</ul>'
   fi
   
@@ -104,14 +104,14 @@ status() {
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
   # dates
-  [ -e "$BL_FILE" ] && echo "<li>Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
-  [ -e "$WL_FILE" ] && echo "<li>Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
+  [ -e "$BL_FILE" ] && echo "<li>Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
+  [ -e "$WL_FILE" ] && echo "<li>Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
   if [ $_CK -ne 0 ]; then
     [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "<li>'firewall-start.sh' is set for $SC_NAME.</li>"
     [ $((_CK&CK_PM)) -ne 0 ] &&       echo "<li>'post-mount.sh' is set for $SC_NAME.</li>"
     [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "<li>ipset: blocklist is set.</li>"
     [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "<li>ipset: whitelist is set.</li>"
-    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "<li>iptables: engine chains are set.</li>"
+    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "<li>iptables: shield chains are set.</li>"
     [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are set.</li>"
     [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are set.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "<li>iptables: whitelist rules are set.</li>"
@@ -122,8 +122,8 @@ status() {
   echo '</ul>'
   
   # Status file
-  echo '<h3 class="more collapsibleList">Last Aegis engine launch report</h3>'
-  echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last Aegis engine launch report</label>'
+  echo '<h3 class="more collapsibleList">Last shield uprear report</h3>'
+  echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last shield uprear report</label>'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
@@ -136,30 +136,30 @@ status() {
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
       $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
     esac
-    echo "<li>engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)</li>"
+    echo "<li>shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)</li>"
     echo "<li>WAN interface was '$INFO_WAN'.</li>"
     [ "$INFO_TUN" ] && echo "<li>VPN tunnel was '$INFO_TUN'.</li>" || echo "<li>No VPN tunnel was found.</li>"
     case $((INFO_IPS&INFO_IPS_BL_MASK)) in
-      0) echo "<li><strong>blocklist file was not found!</strong></li>" ;;
-      $INFO_IPS_BL_SAME) echo "<li>ipset: blocklist was already set and identical to file.</li>" ;;
-      $INFO_IPS_BL_MISS) echo "<li>ipset: blocklist file was not found! The one already set was kept.</li>" ;;
-      $INFO_IPS_BL_LOAD) echo "<li>ipset: blocklist was set from file.</li>" ;;
+      0) echo "<li><strong>blocklist directives file was not found!</strong></li>" ;;
+      $INFO_IPS_BL_SAME) echo "<li>ipset: blocklist directives were already set and identical to file.</li>" ;;
+      $INFO_IPS_BL_MISS) echo "<li>ipset: blocklist directives file was not found! The one already set was kept.</li>" ;;
+      $INFO_IPS_BL_LOAD) echo "<li>ipset: blocklist directives were set from file.</li>" ;;
     esac
     case $((INFO_IPS&INFO_IPS_WL_MASK)) in
-      0) echo "<li>no whitelist file was found.</li>" ;;
-      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>ipset: whitelist was already set and identical to file.</li>" ;;
-      $INFO_IPS_WL_KEEP) echo "<li>ipset: whitelist was kept.</li>" ;;
-      $INFO_IPS_WL_LOAD) echo "<li>ipset: whitelist was set from file.</li>" ;;
-      $INFO_IPS_WL_SWAP) echo "<li>ipset: whitelist was updated from file.</li>" ;;
-      $INFO_IPS_WL_DEL) echo "<li>ipset: whitelist was unset.</li>" ;;
+      0) echo "<li>no whitelist directives file was found.</li>" ;;
+      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>ipset: whitelist directives were already set and identical to file.</li>" ;;
+      $INFO_IPS_WL_KEEP) echo "<li>ipset: whitelist directives were kept.</li>" ;;
+      $INFO_IPS_WL_LOAD) echo "<li>ipset: whitelist directives were set from file.</li>" ;;
+      $INFO_IPS_WL_SWAP) echo "<li>ipset: whitelist directives were updated from file.</li>" ;;
+      $INFO_IPS_WL_DEL) echo "<li>ipset: whitelist directives were unset.</li>" ;;
     esac
     if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
-      then echo "<li>iptables: engine inbound chain was set.</li>"
-      else echo "<li>iptables: engine inbound chain was already set.</li>"
+      then echo "<li>iptables: shield inbound chain was set.</li>"
+      else echo "<li>iptables: shield inbound chain was already set.</li>"
     fi
     if [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ]
-      then echo "<li>iptables: engine outbound chain was set.</li>"
-      else echo "<li>iptables: engine outbound chain was already set.</li>"
+      then echo "<li>iptables: shield outbound chain was set.</li>"
+      else echo "<li>iptables: shield outbound chain was already set.</li>"
     fi
     [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '<li>iptables: some irrelevant bypass rules had to be removed.</li>'
     if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
