@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.4.6"
+SC_VERS="1.4.7"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -114,7 +114,7 @@ INFO_LOGD_MASK=3
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() { _IPT="$($IPT_BIN -S 2>/dev/null|/bin/grep -F "$SC_ABR")"; }
+get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"; } 2>/dev/null
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -219,13 +219,13 @@ _set_ipt_bypass_for_if_inet_pos() { # Bypass for interface inet $1=iface, $2=ine
   _RET=0
   _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $2 -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
   if [ "$_BP_POS" != "$3" ]; then
-    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_SRC" $3 -s $2 -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$INFO_IPT_IB_SRC_NEW
   fi
   _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $2 -o $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
   if [ "$_BP_POS" != "$3" ]; then
-    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_DST" $3 -d $2 -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$((_RET+INFO_IPT_IB_DST_NEW))
   fi
@@ -239,7 +239,7 @@ _set_ipt_for_if_pos() {
   if [ "$_CT" -ne 4 ]; then
     if [ "$_CT" ] && [ "$_CT" -ne 0 ]; then
       # something is messed up with rules; deleting what is left
-      echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       _RET=$INFO_IPT_IF_PBM
     else
       _RET=$INFO_IPT_IF_NEW
@@ -257,7 +257,6 @@ _set_ipt_for_if_pos() {
 shield_uprear() {
   NFO_FROM=$1
   [ $2 ] && _RELOAD_WTD=1
-#  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
 
   NFO_IPS=0; NFO_IPT=0
   _logd_status; NFO_LOGD=$?
@@ -329,9 +328,9 @@ shield_uprear() {
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
-  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_BIN -N "$IPTBL_SRC" 2>/dev/null
+  [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_BIN -N "$IPTBL_SRC"
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
-  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_BIN -N "$IPTBL_DST" 2>/dev/null
+  [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_BIN -N "$IPTBL_DST"
 
   WAN_INET=$(inet_for_if $WAN_IF)
   [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
@@ -344,7 +343,7 @@ shield_uprear() {
   fi
   if [ "$_IPT_UCH" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
-    echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_UCH"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     NFO_IPT=$((NFO_IPT+INFO_IPT_IB_PBM))
   fi
 
@@ -359,20 +358,20 @@ shield_uprear() {
     _POS=$((1+_POS)) 
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
-      [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
     if [ "$_WL_POS" != "$_POS" ]; then
-      [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+      [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   else
     #Removing any trace of whitelist if any
-    echo "$_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
@@ -380,32 +379,32 @@ shield_uprear() {
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
-      [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
       $IPT_BIN -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
       _logd_start && NFO_LOGD=$INFO_LOGD_STARTED || NFO_LOGD=$INFO_LOGD_KEEP_ON
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
-      [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+      [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
       $IPT_BIN -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
   else
-    $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
-    $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] " 2>/dev/null
+    $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
+    $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
     _logd_stop && NFO_LOGD=$INFO_LOGD_STOPPED
   fi
   _POS=$((1+_POS))
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
-    [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_SRC" $_POS -m comment --comment "$SC_ABR drop incoming" -j DROP
   fi
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
   if [ "$_DROP_POS" != "$_POS" ]; then
-    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_DST" $_POS -m comment --comment "$SC_ABR reject outgoing" -j REJECT --reject-with icmp-admin-prohibited
   fi
   
@@ -413,7 +412,7 @@ shield_uprear() {
   _IPT_IFO="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME"|eval $_GREP)"
   if [ "$_IPT_IFO" ]; then
     # we have some unwanted rules (likely old WAN_IF or TUN_IF)
-    echo "$_IPT_IFO"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD 2>/dev/null"; done
+    echo "$_IPT_IFO"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     NFO_IPT=$((NFO_IPT+INFO_IPT_IFO_PBM))
   fi
   
@@ -430,7 +429,7 @@ shield_uprear() {
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-}
+} 2>/dev/null
 
 ###############################################
 #
@@ -448,7 +447,7 @@ fi
 #when called from post-mount.sh
 _pm() {
   sc_conf get up >/dev/null || exit 0
-  [ -d /opt/bolemo ] || /bin/ln -sfn /tmp/mnt/$2/bolemo /opt/bolemo
+  [ -d "$ROOT_DIR" ] || /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
   sc_init
   shield_init
   shield_uprear "$INFO_FROM_PM"
@@ -799,13 +798,6 @@ shield_init() {
   fi
 }
 
-#fw_restart() {
-#  [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
-#  set_log_state
-#  /usr/sbin/net-wall restart > /dev/null
-#  [ "$VERBOSE" ] && echo "- Firewall restarted."
-#}
-
 ###############################################
 #
 #    FUNCTIONS FOR SCRIPT CMD ARGUMENTS
@@ -841,8 +833,6 @@ print_log() {
     esac
   done
 }
-
-#set_log_state() { sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."; }
 
 shield_up() {
   sc_conf set up=1; sc_conf commit
@@ -890,14 +880,6 @@ clean() {
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
 }
-
-#set_ipset() {
-#  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
-#  [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
-#  set_log_state
-#  [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
-#  shield_uprear "$INFO_FROM_SC" 1
-#}
 
 update_iplist() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
@@ -1185,8 +1167,6 @@ _status() {
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
 
-#is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
-
 status_term() {
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
 #  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5; _LOGD=$6
@@ -1253,17 +1233,17 @@ _status>/dev/null
   [ -e "$BL_FILE" ] && echo "- Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
   [ -e "$WL_FILE" ] && echo "- Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   if [ $_CK -ne 0 ]; then
-    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- set: firewall-start.sh is set for $SC_NAME."
-    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- set: post-mount.sh is set for $SC_NAME."
-    [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist is set."
-    [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist is set."
-    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: shield chains are set."
+    [ $((_CK&CK_FWS)) -ne 0 ] &&        echo "- set: firewall-start.sh is set for $SC_NAME."
+    [ $((_CK&CK_PM)) -ne 0 ] &&         echo "- set: post-mount.sh is set for $SC_NAME."
+    [ $((_CK&CK_IPS_BL)) -ne 0 ] &&     echo "- ipset: blocklist is set."
+    [ $((_CK&CK_IPS_WL)) -ne 0 ] &&     echo "- ipset: whitelist is set."
+    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&     echo "- iptables: shield chains are set."
     [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "- iptables: WAN network range bypass rules are set."
     [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "- iptables: VPN network range bypass rules are set."
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "- iptables: whitelist rules are set."
-    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: $SC_NAME logging rules are set."
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: VPN tunnel IFO rules are set."
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: WAN interface IFO rules are set."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] &&     echo "- iptables: whitelist rules are set."
+    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&    echo "- iptables: $SC_NAME logging rules are set."
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&    echo "- iptables: VPN tunnel IFO rules are set."
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&    echo "- iptables: WAN interface IFO rules are set."
   fi
   
   [ "$VERBOSE" -lt 2 ] && return 0
@@ -1506,34 +1486,23 @@ if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
 
 case "$PARAM" in
-  # engine commands
-#    'restart') _engine_args; init; fw_restart; [ $VERBOSE ] && status_term ;;
-#    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
-#    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
-    #NEW
-    'up') _shield_args;
-          netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- No directives were found! Refresh will be made."; }
-          [ $ST_US ] && update_iplist;
-          shield_up "$ST_US" "$ST_FW";
-          [ $VERBOSE ] && status_term ;;
-    
-#  'update_set') update_iplist ;;
-  #NEW
-  'refresh') update_iplist; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
+  'up') _shield_args;
+        netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- No directives were found! Refresh will be made."; }
+        [ $ST_US ] && update_iplist;
+        shield_up "$ST_US" "$ST_FW";
+        [ $VERBOSE ] && status_term ;;
+  'down') shield_down; [ $VERBOSE ] && status_term ;;
   
   'unset') _clean_args; clean; [ $VERBOSE ] && status_term ;;
-  #NEW
-  'down') shield_down; [ $VERBOSE ] && status_term ;;
+  'refresh') update_iplist; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
   
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
- # 'log') [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
-  #NEW
   'log') _log_args ;;
-  
   'upgrade') upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
+  
   # calls for outside helpers (html)
   '_status') status_raw ;;
   '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
