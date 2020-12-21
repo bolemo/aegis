@@ -302,7 +302,7 @@ _getLog() {
   /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
 #    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
     _TS=${LINE%%:*}
-    [ $_NST ] || _1=${LINE%%: *};_NST=$_TS${_1#*:}
+    [ $_NST ] || { _1=${LINE#*:};_NST=$_TS${_1%%:*}; }
 #    [ -z "$_NST" ] && _NST=$_TS$(echo $LINE|/usr/bin/cut -d: -f2)
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
