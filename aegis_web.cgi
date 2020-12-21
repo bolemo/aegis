@@ -2,6 +2,7 @@
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
 wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
+wcUCI='uci -c /opt/bolemo/etc/config'
 
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
@@ -12,14 +13,18 @@ else
 fi
 
 init() {
-  uci -c /opt/bolemo/etc/config set aegis.web='extension'
+  $wcUCI import aegis_web << EOF
+package aegis_web
+config subsection 'log'
+EOF
+$wcUCI aegis_web commit
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
   [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR
   /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
 uninstall() {
-  uci -c /opt/bolemo/etc/config delete aegis.web
+  /bin/rm -f /opt/bolemo/etc/config/aegis_web
   /bin/rm -f /tmp/aegis_web
   /bin/rm -rf $wcDAT_DIR
 } 2>/dev/null
@@ -289,11 +294,11 @@ _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
  # _LF=$1
 #  _MAX=$1
-  _MAX=$(uci -c /opt/bolemo/etc/config get aegis.web.log_len)
+  _MAX=$($wcUCI get aegis_web.log.len)
 #  [ $2 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$2
-  _BT=$(uci -c /opt/bolemo/etc/config get aegis.web.log_basetime)
+  _BT=$($wcUCI get aegis_web.log.basetime)
 #  _ST=$3
-  _ST=$(uci -c /opt/bolemo/etc/config get aegis.web.log_starttime)
+  _ST=$($wcUCI get aegis_web.log.pos)
  # _WIF=$5
   _WIF=/usr/bin/cut -d' ' -f2 $_SF
  # _TIF=$6
@@ -333,7 +338,7 @@ _getLog() {
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
 #  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
-  [ $_NST ] && uci -c /opt/bolemo/etc/config set aegis.web.log_starttime=$_NST
+  [ $_NST ] && $wcUCI set aegis_web.log.pos=$_NST
 #  echo "$_MAX $_BT $_NST">$_WF
   }
 }
@@ -347,9 +352,9 @@ log() {
        else LEN=$ARG
        fi ;;
   esac
-  uci -c /opt/bolemo/etc/config set aegis.web.log_len=$LEN
-  uci -c /opt/bolemo/etc/config set aegis.web.log_basetime=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
-  uci -c /opt/bolemo/etc/config set aegis.web.log_starttime=0
+  $wcUCI set aegis_web.log.len=$LEN
+  $wcUCI set aegis_web.log.basetime=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
+  $wcUCI set aegis_web.log.pos=0
 #  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
   _getLog
 }
