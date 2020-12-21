@@ -1,7 +1,6 @@
 # Aegis
 A firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
-Formerly named **firewall-blocklist**
 
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
@@ -26,7 +25,7 @@ You can install either on external (USB) drive or internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/aegis up -refresh -v` or `aegis up -refresh` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
+Use `/opt/bolemo/scripts/aegis up -v` or `aegis up` to generate updated directives (first launch), set and uprear the shield protection. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to check if everything is up and running or not.
 
@@ -113,17 +112,15 @@ You can have several custom white lists, beside aegis.whitelist, any file named 
 
 ## Web Companion
 Aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
-To remove it, simply run `aegis web -remove`, or while using the command `aegis clean`, add the `-rm-web` option.
+To remove it, simply run `aegis web -remove`, or while using the command `aegis unset`, add the `-rm-web` option.
 Once installed, thr Web Companion is accessible here: http://routerlogin.net/bolemo/aegis.htm
 
 If the Web Companion is installed, it will automatically get upgraded when aegis is upgraded from the command `aegis upgrade`.
 
-The former `-html` option is not supported since the Web Companion is available.
-
 ## Logging
 ### Enable logging
 To enable logging, just run `aegis log -enable`. If aegis is up, it will activate the logging immediatly. If aegis is down, it won't start it, but next time it will be started, logging will be enabled.
-You can also use the `-log-enable` option with the command `up` (for example: `aegis up -log`) to (re)start aegis with logging on.
+You can also use the `-log-enable` option with the command `up` to (re)start aegis with logging on.
 This survives internal firewall restarts and router reboots.
 A specific log file is created in `/var/log/log-aegis`. A small daemon is loaded in memory to update this log file and is exited automatically when the log is turned off. The node id of the file is not changing with rotations, allowing to follow it.
 
