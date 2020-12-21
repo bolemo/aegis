@@ -1,12 +1,11 @@
 # Aegis
 A firewall blocklist script for Netgear R7800 & R9000 Routers with Voxel firmware.
 Should work with several other Netgear routers as well.
-Formerly named **firewall-blocklist**
 
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.4.5
+1.4.6
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -26,7 +25,7 @@ You can install either on external (USB) drive or internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
 
 Once installed, you will likely want to launch the script.
-Use `/opt/bolemo/scripts/aegis up -refresh -v` or `aegis up -refresh` to update blocklists, generate netset, setup ipset and iptables. Use of `-v` is to see the progress.
+Use `/opt/bolemo/scripts/aegis up -v` or `aegis up` to generate updated directives (first launch), set and uprear the shield protection. Use of `-v` is to see the progress.
 
 Anytime, you can use `/opt/bolemo/scripts/aegis status` or `aegis status` to check if everything is up and running or not.
 
@@ -68,35 +67,35 @@ To upgrade, it is strongly advised to perform `aegis down` then `aegis upgrade`,
 Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION(S)]`
 
 ### Valid commands (only one):
-* `up` - (re)starts aegis engine
-  * `-net-wall` + also restarts the router firewall
-  * `-refresh` + will update sets before (re)starting the engine
-  * `-log-enable` + will enable logging
-  * `-log-disable` + will disable logging
-  * `-wan-no-bypass` - will not set the WAN network range bypass
-  * `-vpn-no-bypass` - will not set the VPN network range bypass
-* `down` - stops aegis engine
-* `refresh` - updates set from servers in `aegis.sources` and custom lists (blacklist, whitelist)
-* `clean` - stops aegis engine and allow further removal with options:
-  * `-rm-config` - removes the configuration system (mostly if you plan not to use the script anymore)
-  * `-rm-symlink` - removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
-  * `-rm-web` - removes Web Companion
-  * `-rm-log` - removes the log file
+* `up` - (re)starts aegis shield protection
+  * `-net-wall` + by restarting the internal firewall
+  * `-refresh` + with updated shield directives
+  * `-log-enable` + with logging enabled
+  * `-log-disable` + with logging disabled
+  * `-wan-no-bypass` + without WAN network range bypass
+  * `-vpn-no-bypass` + without VPN network range bypass
+* `down` - stops aegis shield protection
+* `refresh` - updates shield directives from servers in `aegis.sources` and custom lists (blocklists, whitelist)
+* `unset` - stops and unsets aegis shield
+  * `-rm-config` + and removes the configuration system (mostly if you plan not to use the script anymore)
+  * `-rm-symlink` + and removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
+  * `-rm-web` + and removes Web Companion
+  * `-rm-log` + and removes the log file
 * `help` - displays help
 * `info` - displays info on this script
 * `status` - displays status
-* `log -enable` - enable logging
-* `log -disable` - disable logging
+* `log -enable` - enables logging
+* `log -disable` - disables logging
 * `log -show` - displays log
-  * `-lines=`N - will display N lines (N being the number of lines to show)
-* `upgrade` - download and install latest version
+  * `-lines=`N + displays N lines (N being the number of lines to show)
+* `upgrade` - downloads and installs latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
 ### GENERAL OPTIONS (can be used with any command)
-* `-v` - verbose mode (level 1)
-* `-vv` - verbose mode (level 2)
-* `-vvv` - verbose mode (level 3)
-* `-q` - quiet mode (no output)load_set or update):
+* `-v` + verbose mode (level 1)
+* `-vv` + verbose mode (level 2)
+* `-vvv` + verbose mode (level 3)
+* `-q` + quiet mode (no output)load_set or update):
 
 ## Blocklists
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
@@ -113,17 +112,15 @@ You can have several custom white lists, beside aegis.whitelist, any file named 
 
 ## Web Companion
 Aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
-To remove it, simply run `aegis web -remove`, or while using the command `aegis clean`, add the `-rm-web` option.
+To remove it, simply run `aegis web -remove`, or while using the command `aegis unset`, add the `-rm-web` option.
 Once installed, thr Web Companion is accessible here: http://routerlogin.net/bolemo/aegis.htm
 
 If the Web Companion is installed, it will automatically get upgraded when aegis is upgraded from the command `aegis upgrade`.
 
-The former `-html` option is not supported since the Web Companion is available.
-
 ## Logging
 ### Enable logging
 To enable logging, just run `aegis log -enable`. If aegis is up, it will activate the logging immediatly. If aegis is down, it won't start it, but next time it will be started, logging will be enabled.
-You can also use the `-log-enable` option with the command `up` (for example: `aegis up -log`) to (re)start aegis with logging on.
+You can also use the `-log-enable` option with the command `up` to (re)start aegis with logging on.
 This survives internal firewall restarts and router reboots.
 A specific log file is created in `/var/log/log-aegis`. A small daemon is loaded in memory to update this log file and is exited automatically when the log is turned off. The node id of the file is not changing with rotations, allowing to follow it.
 

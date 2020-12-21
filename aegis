@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.4.5"
+SC_VERS="1.4.6"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -254,7 +254,7 @@ _set_ipt_for_if_pos() {
   return $_RET
 }
 
-engine_start() {
+shield_uprear() {
   NFO_FROM=$1
   [ $2 ] && _RELOAD_WTD=1
 #  [ $NFO_FROM = $INFO_FROM_SC ] && _RELOAD_WTD=1
@@ -440,16 +440,18 @@ engine_start() {
 
 #we are called from firewall_start.sh
 if [ "$1" ] && [ "$1" = "_fws" ]; then
-  engine_start "$INFO_FROM_FWS"
+  sc_conf get up >/dev/null || exit 0
+  shield_uprear "$INFO_FROM_FWS"
   exit 0
 fi
 
 #when called from post-mount.sh
 _pm() {
+  sc_conf get up >/dev/null || exit 0
   [ -d /opt/bolemo ] || /bin/ln -sfn /tmp/mnt/$2/bolemo /opt/bolemo
-  pre_init
-  init
-  engine_start "$INFO_FROM_PM"
+  sc_init
+  shield_init
+  shield_uprear "$INFO_FROM_PM"
   exit 0
 }
 
@@ -757,11 +759,11 @@ name_from_ip() {
 ###############################################
 #
 #    INIT FUNCTIONS
-#    script init & when using firewall init
+#    script init & shield init
 #
 ###############################################
 
-pre_init() {
+sc_init() {
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
   check_conf || set_conf
@@ -769,7 +771,7 @@ pre_init() {
   [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
 }
 
-init() {
+shield_init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   ipset -q destroy $IPSET_TMP
   if check_conf
@@ -797,19 +799,12 @@ init() {
   fi
 }
 
-shield_up() {
-  [ $VERBOSE ] && echo -e "\033[1;36m(Re)starting engine...\033[0m"
-  set_log_state
-  engine_start "$INFO_FROM_SC"
-  [ $VERBOSE ] && echo "- Engine (re)started."
-}
-
-fw_restart() {
-  [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
-  set_log_state
-  /usr/sbin/net-wall restart > /dev/null
-  [ "$VERBOSE" ] && echo "- Firewall restarted."
-}
+#fw_restart() {
+#  [ "$VERBOSE" ] && echo -e "\033[1;36mRestarting firewall...\033[0m"
+#  set_log_state
+#  /usr/sbin/net-wall restart > /dev/null
+#  [ "$VERBOSE" ] && echo "- Firewall restarted."
+#}
 
 ###############################################
 #
@@ -818,7 +813,7 @@ fw_restart() {
 ###############################################
 
 print_log() {
-  _logd_status || echo -e "\033[35mLogging is turned off!\033[0m"
+  _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
@@ -847,13 +842,41 @@ print_log() {
   done
 }
 
-set_log_state() { sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."; }
+#set_log_state() { sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."; }
+
+shield_up() {
+  sc_conf set up=1; sc_conf commit
+  shield_init
+  [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
+  if [ $1 ]; then
+    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+    [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
+    _FORCE_NS_RELOAD=1
+  fi
+  sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."
+  if [ $2 ]; then
+    [ "$VERBOSE" ] && echo -e "- Restarting firewall with $SC_NAME shield.\033[0m"
+    /usr/sbin/net-wall restart > /dev/null
+  else shield_uprear "$INFO_FROM_SC" $_FORCE_NS_RELOAD
+  fi
+  [ $VERBOSE ] && echo "- Done."
+}
+
+shield_down() {
+  [ $VERBOSE ] && echo -e "\033[1;36mWithdrawing shield...\033[0m"
+  sc_conf delete up; sc_conf commit
+  /bin/rm -f "$INFO_FILE"
+  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
+  _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
+  ipset -q destroy "$IPSET_BL_NAME"; ipset -q destroy "$IPSET_WL_NAME"; ipset -q destroy "$IPSET_TMP"; [ $VERBOSE ] && echo "- Cleaned ipsets."
+  [ $VERBOSE ] && echo "- Shield down."
+}
 
 clean() {
-  [ $VERBOSE ] && echo -e "\033[1;36mStopping/Cleaning...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mUnsetting...\033[0m"
   clean_firewall_start
   clean_postmount
-  [ $RM_CONF ] && check_conf && clean_conf
+  if check_conf; then [ $RM_CONF ] && clean_conf || { sc_conf delete up; sc_conf commit; }; fi
   [ $RM_SYMLINK ] && check_path && clean_path
   [ $RM_WEB ] && check_web && clean_web
   /bin/rm -f "$INFO_FILE"
@@ -865,19 +888,19 @@ clean() {
   ipset -q destroy "$IPSET_TMP"
   [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
-  [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Cleaning done."
+  [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
 }
 
-set_ipset() {
-  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
-  [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
-  set_log_state
-  [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
-  engine_start "$INFO_FROM_SC" 1
-}
+#set_ipset() {
+#  [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+#  [ "$VERBOSE" ] && echo -e "\033[1;36mLoading blocklist into engine:\033[0m"
+#  set_log_state
+#  [ "$VERBOSE" ] && echo "- Starting $SC_NAME engine, forcing reload of blocklist..."
+#  shield_uprear "$INFO_FROM_SC" 1
+#}
 
 update_iplist() {
-  [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating blocklist from sources...\033[0m"
+  [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
   [ -e "$SRC_LIST" ] || get_def_srclst
 
   :>"$TMP_FILE"
@@ -913,7 +936,7 @@ update_iplist() {
 
   # processing whitelist if any
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
-    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist from custom list(s)...\033[0m"
+    [ "$VERBOSE" ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
     /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
@@ -922,7 +945,7 @@ update_iplist() {
           [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
           $IPR_BIN --ipset-reduce 20 "$TMP_FILE"  > "$WL_FILE"
         else
-          echo '- No IP in common with blocklist, skipping whitelist.'
+          echo '- No IP in common with blocklist directives, skipping whitelist directives.'
         fi
       else
         [ "$VERBOSE" ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
@@ -971,6 +994,7 @@ info() {
 # STATUS VARS
 CK_FWS=1             # CK PB
 CK_PM=2              # CK PB
+CK_ENV_MASK=3
 CK_IPS_BL=4          # CK PB
 CK_IPS_WL=8          # CK PB
 CK_IPT_CH=16         # CK PB
@@ -1123,7 +1147,7 @@ _status() {
   fi
 
   # DEEPER CHECK
-  if [ $_CK -ne 0 ]; then
+  if [ $_CK -gt $CK_ENV_MASK ]; then
   # -- PROBLEMS / WARNINGS
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
@@ -1149,6 +1173,9 @@ _status() {
       fi fi
     fi
     # IFO
+  else
+    [ $((_WN&WN_WL_FILE_NTLD)) -ne 0 ] && _WN=$((_WN-WN_WL_FILE_NTLD))
+    [ $((_WN&WN_BL_FILE_NTLD)) -ne 0 ] && _WN=$((_WN-WN_BL_FILE_NTLD))
   fi
   
   _cipset_end
@@ -1156,7 +1183,9 @@ _status() {
   echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
 }
 
-is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
+netset_exists() { test -e "$BL_FILE"; return $?; }
+
+#is_up() { _status>/dev/null; [ $((_CK+_PB)) -eq 0 ] && return 1 || return 0; }
 
 status_term() {
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
@@ -1164,55 +1193,54 @@ status_term() {
 _status>/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
-  if [ $((_CK+_PB)) -eq 0 ]; then
-    _RETVAL=1
-    echo "- '$SC_NAME' is not active."
-  else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-      _RETVAL=0
-      echo -ne "- \033[1;32m'$SC_NAME' is set and active\033[0m"
+  if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
+    echo "- Shield is unset."
+  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=1
+    echo "- Shield is down."
+  else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
+      echo -ne "- \033[1;32mShield is up\033[0m"
       [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
       [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
       echo -e ".\n- Filtering $_BLC IP adresses."
       [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
-    else
-      _RETVAL=2
+    else _RETVAL=2
        echo -e "- \033[1;31mSomething is not right!\033[0m"
     fi
-    if [ $_LOGD -eq 0 ]; then echo "- Logging is on."; else echo "- Logging is off."; fi
+    if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
   fi
   
   if [ $_PB -ne 0 ]; then
     echo -ne '\033[1;31mErrors:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_PB)" || echo ''
-    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- 'firewall-start.sh' is not set properly for $SC_NAME!\033[0m"
-    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- 'post-mount.sh' is not set properly for $SC_NAME!\033[0m"
+    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
+    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no whitelist is set!\033[0m"
-    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: engine chains are not right!\033[0m"
+    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: shield chains are not right!\033[0m"
     [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: WAN network range bypass rules are not right!\033[0m"
     [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: VPN network range bypass rules are not right!\033[0m"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: whitelist rules are not right!\033[0m"
     [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo -e "\033[31m- iptables: VPN tunnel IFO rules are corrupted!\033[0m"
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo -e "\033[31m- iptables: WAN interface IFO rules are corrupted!\033[0m"
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra engine IFO rules were found (likely from an old interface)!\033[0m"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra shield IFO rules were found (likely from an old interface)!\033[0m"
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo -ne '\033[1;35mWarnings:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_WN)" || echo ''
     case "$((_WN&WN_BL_FILE_NTLD))" in
-      $WN_BL_FILE_DIFF) echo -e "\033[35m- blocklist set is different than file.\033[0m";;
-      $WN_BL_FILE_MISS) echo -e "\033[35m- blocklist is set but file is missing.\033[0m";;
-      $WN_BL_FILE_NTLD) echo -e "\033[35m- no blocklist is set but file exists.\033[0m";;
+      $WN_BL_FILE_DIFF) echo -e "\033[35m- directives: shield blocklist is different than file.\033[0m";;
+      $WN_BL_FILE_MISS) echo -e "\033[35m- directives: shield blocklist is set but file is missing.\033[0m";;
+      $WN_BL_FILE_NTLD) echo -e "\033[35m- directives: no shield blocklist is set but file exists.\033[0m";;
     esac
     case "$((_WN&WN_WL_FILE_NTLD))" in
-      $WN_WL_FILE_DIFF) echo -e "\033[35m- whitelist set is different than file.\033[0m";;
-      $WN_WL_FILE_MISS) echo -e "\033[35m- whitelist is set but file is missing.\033[0m";;
-      $WN_WL_FILE_NTLD) echo -e "\033[35m- no whitelist is set but file exists.\033[0m";;
+      $WN_WL_FILE_DIFF) echo -e "\033[35m- directives: ipset whitelist set is different than file.\033[0m";;
+      $WN_WL_FILE_MISS) echo -e "\033[35m- directives: ipset whitelist is set but file is missing.\033[0m";;
+      $WN_WL_FILE_NTLD) echo -e "\033[35m- directives: no ipset whitelist is set but file exists.\033[0m";;
     esac
     [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ] && echo -e "\033[31m- iptables: WAN network range bypass rules are missing!\033[0m"
     [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo -e "\033[31m- iptables: VPN network range bypass rules are missing!\033[0m"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel ($TUN_IF) IFO rules are missing!\033[0m"
-    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
+    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time shield was upreared.\033[0m"
   fi
  
   [ "$VERBOSE" ] || return 0
@@ -1222,18 +1250,18 @@ _status>/dev/null
   [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
-  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
+  [ -e "$BL_FILE" ] && echo "- Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   if [ $_CK -ne 0 ]; then
-    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for $SC_NAME."
-    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for $SC_NAME."
+    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- set: firewall-start.sh is set for $SC_NAME."
+    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- set: post-mount.sh is set for $SC_NAME."
     [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist is set."
     [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist is set."
-    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: engine chains are set."
+    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: shield chains are set."
     [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "- iptables: WAN network range bypass rules are set."
     [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "- iptables: VPN network range bypass rules are set."
     [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "- iptables: whitelist rules are set."
-    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: $SC_NAME logging is on."
+    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&  echo "- iptables: $SC_NAME logging rules are set."
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&  echo "- iptables: VPN tunnel IFO rules are set."
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&  echo "- iptables: WAN interface IFO rules are set."
   fi
@@ -1241,7 +1269,7 @@ _status>/dev/null
   [ "$VERBOSE" -lt 2 ] && return 0
 
   # Status file
-  echo -ne "\033[1;36m'$SC_NAME' engine last launch report:\033[0m"
+  echo -ne "\033[1;36mLast shield uprear report:\033[0m"
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
     INFO_FROM=$((INFO&INFO_FROM_MASK))
@@ -1254,30 +1282,30 @@ _status>/dev/null
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
       $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
     esac
-    echo "- engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+    echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
     echo "- WAN interface was '$INFO_WAN'."
     [ "$INFO_TUN" ] && echo "- VPN tunnel was '$INFO_TUN'." || echo '- No VPN tunnel was found.'
     case $((INFO_IPS&INFO_IPS_BL_MASK)) in
-      0) echo '! blocklist file was not found!' ;;
-      $INFO_IPS_BL_SAME) echo '- ipset: blocklist was already set and identical to file.' ;;
-      $INFO_IPS_BL_MISS) echo '- ipset: blocklist file was not found! The one already set was kept.' ;;
-      $INFO_IPS_BL_LOAD) echo '- ipset: blocklist was set from file.' ;;
+      0) echo '! directives: blocklist file was not found!' ;;
+      $INFO_IPS_BL_SAME) echo '- directives: ipset blocklist was already set and identical to file.' ;;
+      $INFO_IPS_BL_MISS) echo '- directives: blocklist file was not found! The one already in ipset was kept.' ;;
+      $INFO_IPS_BL_LOAD) echo '- directives: ipset blocklist was set from file.' ;;
     esac
     case $((INFO_IPS&INFO_IPS_WL_MASK)) in
-      0) echo '- no whitelist file was found.' ;;
-      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo '- ipset: whitelist was already set and identical to file.' ;;
-      $INFO_IPS_WL_KEEP) echo '- ipset: whitelist was kept.' ;;
-      $INFO_IPS_WL_LOAD) echo '- ipset: whitelist was set from file.' ;;
-      $INFO_IPS_WL_SWAP) echo '- ipset: whitelist was updated from file.' ;;
-      $INFO_IPS_WL_DEL) echo '- ipset: whitelist was unset.' ;;
+      0) echo '- directives: no whitelist file was found.' ;;
+      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo '- ipset: whitelist was already set and identical to directives.' ;;
+      $INFO_IPS_WL_KEEP) echo '- directives: ipset whitelist was kept.' ;;
+      $INFO_IPS_WL_LOAD) echo '- directives: ipset whitelist was set from file.' ;;
+      $INFO_IPS_WL_SWAP) echo '- directives: ipset whitelist was updated from file.' ;;
+      $INFO_IPS_WL_DEL) echo '- directives: ipset whitelist was unset.' ;;
     esac
     if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
-      then echo "- iptables: engine inbound chain was set."
-      else echo "- iptables: engine inbound chain was already set."
+      then echo "- iptables: shield inbound chain was set."
+      else echo "- iptables: shield inbound chain was already set."
     fi
     if [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ]
-      then echo '- iptables: engine outbound chain was set.'
-      else echo '- iptables: engine outbound chain was already set.'
+      then echo '- iptables: shield outbound chain was set.'
+      else echo '- iptables: shield outbound chain was already set.'
     fi
     [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '- iptables: some irrelevant bypass rules had to be removed.'
     if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
@@ -1371,24 +1399,24 @@ print_help() {
   echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"
   echo -e "Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"
   echo -e "\033[7mCOMMANDS (only one) and their specific options:\033[0m"
-  echo -e " \033[1;35mup\033[0m             - (re)starts $SC_NAME engine"
-  echo -e "   \033[1;36m-net-wall\033[0m      + will also restart the internal firewall"
-  echo -e "   \033[1;36m-refresh\033[0m       + will update sets prior to (re)starting the engine"
-  echo -e "   \033[1;36m-log-enable\033[0m    + will enable logging"
-  echo -e "   \033[1;36m-log-disable\033[0m   + will disable logging"
-  echo -e "   \033[1;36m-wan-no-bypass\033[0m + will not set the WAN network range bypass"
-  echo -e "   \033[1;36m-vpn-no-bypass\033[0m + will not set the VPN network range bypass"
-  echo -e " \033[1;35mdown\033[0m           - stops $SC_NAME engine"
-  echo -e " \033[1;35mrefresh\033[0m        - updates sets from sources and custom lists\033[0m"
-  echo -e " \033[1;35mlog -enable\033[0m    - to enable logging"
-  echo -e " \033[1;35mlog -disable\033[0m   - to disable logging"
-  echo -e " \033[1;35mlog -show\033[0m      - will display the log report"
-  echo -e "   \033[1;36m-lines=\033[0mN       + used with -show: will display N last lines (N being the number of lines to show)"
-  echo -e " \033[1;35mclean\033[0m          - stops $SC_NAME engine and accept options to clean further"
-  echo -e "   \033[1;36m-rm-config\033[0m     + removes $SC_NAME configuration file"
-  echo -e "   \033[1;36m-rm-symlink\033[0m    + removes the symlink /usr/bin/$SC_NAME"
-  echo -e "   \033[1;36m-rm-web\033[0m        + removes $WEB_NAME"
-  echo -e "   \033[1;36m-rm-log\033[0m        + removes log file"
+  echo -e " \033[1;35mup\033[0m             - (re)starts $SC_NAME shield protection"
+  echo -e "   \033[1;36m-net-wall\033[0m      + by restarting the internal firewall"
+  echo -e "   \033[1;36m-refresh\033[0m       + with updated shield directives"
+  echo -e "   \033[1;36m-log-enable\033[0m    + with logging enabled"
+  echo -e "   \033[1;36m-log-disable\033[0m   + with logging disabled"
+  echo -e "   \033[1;36m-wan-no-bypass\033[0m + without WAN network range bypass"
+  echo -e "   \033[1;36m-vpn-no-bypass\033[0m + without VPN network range bypass"
+  echo -e " \033[1;35mdown\033[0m           - stops $SC_NAME shield protection"
+  echo -e " \033[1;35mrefresh\033[0m        - updates shield directives from sources and custom lists\033[0m"
+  echo -e " \033[1;35mlog -enable\033[0m    - enables logging"
+  echo -e " \033[1;35mlog -disable\033[0m   - disables logging"
+  echo -e " \033[1;35mlog -show\033[0m      - displays the log report"
+  echo -e "   \033[1;36m-lines=\033[0mN       + will display N last lines (N being the number of lines to show)"
+  echo -e " \033[1;35munset\033[0m          - stops and unsets $SC_NAME shield"
+  echo -e "   \033[1;36m-rm-config\033[0m     + and removes $SC_NAME configuration file"
+  echo -e "   \033[1;36m-rm-symlink\033[0m    + and removes the symlink /usr/bin/$SC_NAME"
+  echo -e "   \033[1;36m-rm-web\033[0m        + and removes $WEB_NAME"
+  echo -e "   \033[1;36m-rm-log\033[0m        + and removes log file"
   echo -e " \033[1;35mhelp\033[0m           - displays help (this)"
   echo -e " \033[1;35minfo\033[0m           - displays info on this script"
   echo -e " \033[1;35mstatus\033[0m         - displays status"
@@ -1410,7 +1438,7 @@ print_help() {
 _RETVAL=0
 
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
-[ "$1" = "_pm" ] && [ "$2" ] && _pm
+[ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
 
@@ -1445,7 +1473,7 @@ esac
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
-_engine_args() {
+_shield_args() {
   [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log=1
   [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log
   [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
@@ -1458,8 +1486,8 @@ _engine_args() {
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; is_up && { init; shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; is_up && { init; shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   esac
 }
@@ -1472,7 +1500,7 @@ _clean_args() {
 
 [ "$QUIET" ] && exec>/dev/null
 
-pre_init
+sc_init
 
 if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=3
 elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
@@ -1483,15 +1511,19 @@ case "$PARAM" in
 #    'load_set') _engine_args; init; set_ipset; [ $VERBOSE ] && status_term ;;
 #    'update') _engine_args; init; update_iplist; set_ipset; [ $VERBOSE ] && status_term ;;
     #NEW
-    'up') _engine_args; init; [ $ST_US ] && update_iplist; [ $ST_FW ] && fw_restart || { [ $ST_US ] && set_ipset || shield_up; }; [ $VERBOSE ] && status_term ;;
+    'up') _shield_args;
+          netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- No directives were found! Refresh will be made."; }
+          [ $ST_US ] && update_iplist;
+          shield_up "$ST_US" "$ST_FW";
+          [ $VERBOSE ] && status_term ;;
     
 #  'update_set') update_iplist ;;
   #NEW
-  'refresh') update_iplist; is_up && { init; set_ipset; [ $VERBOSE ] && status_term; } ;;
+  'refresh') update_iplist; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
   
-  'clean') _clean_args; clean; [ $VERBOSE ] && status_term ;;
+  'unset') _clean_args; clean; [ $VERBOSE ] && status_term ;;
   #NEW
-  'down') clean; [ $VERBOSE ] && status_term ;;
+  'down') shield_down; [ $VERBOSE ] && status_term ;;
   
   'status') status_term ;;
   'help') print_help ;;
@@ -1504,9 +1536,9 @@ case "$PARAM" in
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_restart') _engine_args; VERBOSE=1; init; fw_restart ;;
-  '_update') _engine_args; VERBOSE=1; init; update_iplist; set_ipset ;;
-  '_clean') VERBOSE=1; clean ;;
+  '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
+  '_refresh') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
+  '_down') VERBOSE=1; shield_down ;;
   '_upgrade') _upgrade ;;
   
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;

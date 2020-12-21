@@ -317,7 +317,7 @@ function sendCommand() {
 }
 function showCommandLog(value) {
    switch (value) {
-      case 'stop': var displayVal = true;
+      case 'down': var displayVal = true;
         break;
       default: var displayVal = false;
    }
@@ -399,9 +399,9 @@ function ready() {
   <div id="ctrl-command" class="show">
     COMMAND: 
     <select id="command-cmd" name="commandCmd" onchange="showCommandLog(this.value);">
-      <option value="update" selected>UPDATE — update set, then reload aegis engine</option>
-      <option value="restart">RESTART — restart internal firewall with aegis engine</option>
-      <option value="stop">CLEAN / STOP — restart internal firewall without aegis engine</option>
+      <option value="refresh" selected>REFRESH directives then start aegis</option>
+      <option value="up">SHIELD UP (start aegis)</option>
+      <option value="down">SHIELD DOWN (stop aegis)</option>
     </select>
     <select id="command-log" name="commandLog">
       <option value="on">with logging ENABLED</option>
@@ -427,8 +427,8 @@ function ready() {
   <div id="ctrl-upgrade" class="show">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
-      <option value="upgrade">UPGRADE (WITHOUT RESTARTING AEGIS ENGINE)</option>
-      <option value="stop-upgrade-restart" selected>CLEAN RULES, UPGRADE THEN (RE)START AEGIS ENGINE [RECOMMENDED]</option>
+      <option value="upgrade">UPGRADE (WITHOUT RESTARTING AEGIS SHIELD)</option>
+      <option value="down-upgrade-up" selected>STOP, UPGRADE THEN START[RECOMMENDED]</option>
     </select>
     <input type="submit" value="Submit" onclick="doUpgrade();" />
   </div>

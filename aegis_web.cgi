@@ -2,6 +2,7 @@
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
 wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
+wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
 
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
@@ -12,15 +13,21 @@ else
 fi
 
 init() {
+  $wcUCI import aegis_web << EOF
+package aegis_web
+config subsection 'log'
+EOF
+$wcUCI aegis_web commit
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
-  [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR 2>/dev/null
-  /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH 2>/dev/null
-}
+  [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR
+  /usr/bin/wget -qO- $wcPRT_URL >$wcPRT_PTH
+} 2>/dev/null
 
 uninstall() {
-  /bin/rm -f /tmp/aegis_web 2>/dev/null
-  /bin/rm -rf $wcDAT_DIR 2>/dev/null
-}
+  /bin/rm -f /opt/bolemo/etc/config/aegis_web
+  /bin/rm -f /tmp/aegis_web
+  /bin/rm -rf $wcDAT_DIR
+} 2>/dev/null
 
 aegis_env() {
   # source environment we need from aegis
@@ -35,15 +42,18 @@ status() {
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
-    echo "<li>Aegis is not active; Settings are clean.</li>"
+    echo "<li>Aegis shield is not set (environment is clean).</li>"
+  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then
+    echo '<ul id="status" class="off">'
+    echo "<li>Aegis shield is down (environment is set).</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
     echo '<ul id="status" class="running">'
-    echo -n "<li>Aegis is set and active"
+    echo -n "<li>Aegis shield is up."
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
-    [ $_LOGD -eq 0 ] && echo "<li>Logging is on.</li>" || echo "<li>Logging is off.</li>"
+    [ $_LOGD -eq 0 ] && echo "<li>Logging is enabled.</li>" || echo "<li>Logging is disabled.</li>"
   else
     echo '<ul id="status" class="error">'
     echo "<li><strong>Something is not right!</strong></li>"
@@ -53,18 +63,18 @@ status() {
   if [ $_PB -ne 0 ]; then
     echo '<h3 class="error">Errors</h3>'
     echo '<ul>'
-    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>'firewall-start.sh' is not set properly for $SC_NAME!</li>"
-    [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>'post-mount.sh' is not set properly for $SC_NAME!</li>"
+    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo "<li>set: firewall-start.sh is not set properly for $SC_NAME!</li>"
+    [ $((_PB&CK_PM)) -ne 0 ] &&      echo "<li>set: post-mount.sh is not set properly for $SC_NAME!</li>"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo "<li>ipset: no blocklist is set!</li>"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo "<li>ipset: no whitelist is set!</li>"
-    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo "<li>iptables: engine chains are not right!</li>"
+    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo "<li>iptables: shield chains are not right!</li>"
     [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo "<li>iptables: WAN network range bypass rules are not right!</li>"
     [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo "<li>iptables: VPN network range bypass rules are not right!</li>"
     [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo "<li>iptables: whitelist rules are not right!</li>"
     [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo "<li>iptables: VPN tunnel IFO rules are corrupted!</li>"
     [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo "<li>iptables: WAN interface IFO rules are corrupted!</li>"
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo "<li>iptables: WAN interface ($WAN_IF) IFO rules are missing!</li>"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra engine IFO rules were found (likely from an old interface)!</li>"
+    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra shield IFO rules were found (likely from an old interface)!</li>"
     echo '</ul>'
   fi
   
@@ -72,19 +82,19 @@ status() {
     echo '<h3 class="warning">Warnings</h3>'
     echo '<ul>'
     case "$((_WN&WN_BL_FILE_NTLD))" in
-      $WN_BL_FILE_DIFF) echo "<li>blocklist set is different than file.</li>";;
-      $WN_BL_FILE_MISS) echo "<li>blocklist is set but file is missing.</li>";;
-      $WN_BL_FILE_NTLD) echo "<li>no blocklist is set but file exists.</li>";;
+      $WN_BL_FILE_DIFF) echo "<li>directives: ipset blocklist is different than file.</li>";;
+      $WN_BL_FILE_MISS) echo "<li>directives: ipset blocklist is set but file is missing.</li>";;
+      $WN_BL_FILE_NTLD) echo "<li>directives: no ipset blocklist is set but file exists.</li>";;
     esac
     case "$((_WN&WN_WL_FILE_NTLD))" in
-      $WN_WL_FILE_DIFF) echo "<li>whitelist set is different than file.</li>";;
-      $WN_WL_FILE_MISS) echo "<li>whitelist is set but file is missing.</li>";;
-      $WN_WL_FILE_NTLD) echo "<li>no whitelist is set but file exists.</li>";;
+      $WN_WL_FILE_DIFF) echo "<li>directives: ipset whitelist is different than file.</li>";;
+      $WN_WL_FILE_MISS) echo "<li>directives: ipset whitelist is set but file is missing.</li>";;
+      $WN_WL_FILE_NTLD) echo "<li>directives: no ipset whitelist is set but file exists.</li>";;
     esac
     [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are missing!</li>"
     [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are missing!</li>"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
-    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time engine was started.</li>"
+    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo "<li>current logging settings differs from last time shield was upreared.</li>"
     echo '</ul>'
   fi
   
@@ -94,14 +104,14 @@ status() {
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
   # dates
-  [ -e "$BL_FILE" ] && echo "<li>Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
-  [ -e "$WL_FILE" ] && echo "<li>Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
+  [ -e "$BL_FILE" ] && echo "<li>Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
+  [ -e "$WL_FILE" ] && echo "<li>Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
   if [ $_CK -ne 0 ]; then
-    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "<li>'firewall-start.sh' is set for $SC_NAME.</li>"
-    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "<li>'post-mount.sh' is set for $SC_NAME.</li>"
+    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "<li>set: firewall-start.sh is set for $SC_NAME.</li>"
+    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "<li>set: post-mount.sh is set for $SC_NAME.</li>"
     [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "<li>ipset: blocklist is set.</li>"
     [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "<li>ipset: whitelist is set.</li>"
-    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "<li>iptables: engine chains are set.</li>"
+    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "<li>iptables: shield chains are set.</li>"
     [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are set.</li>"
     [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are set.</li>"
     [ $((_CK&CK_IPT_WL)) -ne 0 ] &&   echo "<li>iptables: whitelist rules are set.</li>"
@@ -112,8 +122,8 @@ status() {
   echo '</ul>'
   
   # Status file
-  echo '<h3 class="more collapsibleList">Last Aegis engine launch report</h3>'
-  echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last Aegis engine launch report</label>'
+  echo '<h3 class="more collapsibleList">Last shield uprear report</h3>'
+  echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last shield uprear report</label>'
   echo '<ul>'
   if [ -r "$INFO_FILE" ]; then
     read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
@@ -126,30 +136,30 @@ status() {
       $INFO_FROM_PM) FROM="post-mount.sh" ;;
       $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
     esac
-    echo "<li>engine was launched from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)</li>"
+    echo "<li>shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)</li>"
     echo "<li>WAN interface was '$INFO_WAN'.</li>"
     [ "$INFO_TUN" ] && echo "<li>VPN tunnel was '$INFO_TUN'.</li>" || echo "<li>No VPN tunnel was found.</li>"
     case $((INFO_IPS&INFO_IPS_BL_MASK)) in
-      0) echo "<li><strong>blocklist file was not found!</strong></li>" ;;
-      $INFO_IPS_BL_SAME) echo "<li>ipset: blocklist was already set and identical to file.</li>" ;;
-      $INFO_IPS_BL_MISS) echo "<li>ipset: blocklist file was not found! The one already set was kept.</li>" ;;
-      $INFO_IPS_BL_LOAD) echo "<li>ipset: blocklist was set from file.</li>" ;;
+      0) echo "<li><strong>directives: blocklist file was not found!</strong></li>" ;;
+      $INFO_IPS_BL_SAME) echo "<li>directives: ipset blocklist was already set and identical to file.</li>" ;;
+      $INFO_IPS_BL_MISS) echo "<li>directives: ipset blocklist file was not found! The one already set was kept.</li>" ;;
+      $INFO_IPS_BL_LOAD) echo "<li>directives: ipset blocklist was set from file.</li>" ;;
     esac
     case $((INFO_IPS&INFO_IPS_WL_MASK)) in
-      0) echo "<li>no whitelist file was found.</li>" ;;
-      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>ipset: whitelist was already set and identical to file.</li>" ;;
-      $INFO_IPS_WL_KEEP) echo "<li>ipset: whitelist was kept.</li>" ;;
-      $INFO_IPS_WL_LOAD) echo "<li>ipset: whitelist was set from file.</li>" ;;
-      $INFO_IPS_WL_SWAP) echo "<li>ipset: whitelist was updated from file.</li>" ;;
-      $INFO_IPS_WL_DEL) echo "<li>ipset: whitelist was unset.</li>" ;;
+      0) echo "<li>directives: no whitelist file was found.</li>" ;;
+      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>ipset: whitelist directives were already set and identical to file.</li>" ;;
+      $INFO_IPS_WL_KEEP) echo "<li>directives: ipset whitelist was kept.</li>" ;;
+      $INFO_IPS_WL_LOAD) echo "<li>directives: ipset whitelist was set from file.</li>" ;;
+      $INFO_IPS_WL_SWAP) echo "<li>directives: ipset whitelist was updated from file.</li>" ;;
+      $INFO_IPS_WL_DEL) echo "<li>directives: ipset whitelist was unset.</li>" ;;
     esac
     if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
-      then echo "<li>iptables: engine inbound chain was set.</li>"
-      else echo "<li>iptables: engine inbound chain was already set.</li>"
+      then echo "<li>iptables: shield inbound chain was set.</li>"
+      else echo "<li>iptables: shield inbound chain was already set.</li>"
     fi
     if [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ]
-      then echo "<li>iptables: engine outbound chain was set.</li>"
-      else echo "<li>iptables: engine outbound chain was already set.</li>"
+      then echo "<li>iptables: shield outbound chain was set.</li>"
+      else echo "<li>iptables: shield outbound chain was already set.</li>"
     fi
     [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '<li>iptables: some irrelevant bypass rules had to be removed.</li>'
     if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
@@ -258,11 +268,11 @@ info() {
 }
 
 command() {
-  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log' || _LOG=
+  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log-enable' || _LOG='-log-disable'
   case $ARG in
-    restart*) _CMD="aegis _restart $_LOG" ;;
-    update*) _CMD="aegis _update $_LOG" ;;
-    stop*) _CMD="aegis _clean" ;;
+    up*) _CMD="aegis _up $_LOG" ;;
+    refresh*) _CMD="aegis _refresh $_LOG" ;;
+    down*) _CMD="aegis _down" ;;
     upgrade*) _CMD="aegis _upgrade" ;;
   esac
   [ -z "${ARG##*-*}" ] && _ARG2="${ARG#*-}"
@@ -277,19 +287,29 @@ _nameForIp() {
   [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
 }
 
+_LF=/var/log/log-aegis
+_SF=/tmp/aegis_status
+#_WF=/tmp/aegis_web
 # _getLog key name in log, max lines, router start time, start timestamp, wan interface name, vpn interface name
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
-  _LF=$1
-  _MAX=$2
-  [ $3 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$3
-  _ST=$4
-  _WIF=$5
-  _TIF=$6
+ # _LF=$1
+#  _MAX=$1
+  _MAX=$($wcUCI get aegis_web.log.len)
+#  [ $2 = 0 ] && _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) )) || _BT=$2
+  _BT=$($wcUCI get aegis_web.log.basetime)
+#  _ST=$3
+  _ST=$($wcUCI get aegis_web.log.pos)
+ # _WIF=$5
+  _WIF=/usr/bin/cut -d' ' -f2 $_SF
+ # _TIF=$6
+  _TIF=/usr/bin/cut -d' ' -f3 $_SF
   unset _NST
   /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
-    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
-    [ -z "$_NST" ] && _NST=$_TS$(echo $LINE|/usr/bin/cut -d: -f2)
+#    _TS=$(echo $LINE|/usr/bin/cut -d: -f1)
+    _TS=${LINE%%:*}
+    [ $_NST ] || { _1=${LINE#*:};_NST=$_TS${_1%%:*}; }
+#    [ -z "$_NST" ] && _NST=$_TS$(echo $LINE|/usr/bin/cut -d: -f2)
     _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
     _1=${LINE#* SRC=}; _SRC=${_1%% *}
     _1=${LINE#* DST=}; _DST=${_1%% *}
@@ -305,6 +325,8 @@ _getLog() {
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
       *"OUT=$_WIF"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
+    esac
+    if [ $_TIF ]; then case $LINE in
       *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
          _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
       *"IN=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
@@ -313,15 +335,17 @@ _getLog() {
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
       *"OUT=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
          _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
-    esac
+    esac; fi
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
-  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
+#  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
+  [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
+#  echo "$_MAX $_BT $_NST">$_WF
   }
 }
 
 log() {
-  aegis_env
+#  aegis_env
   case $ARG in
     ''|*[!0-9]*) LEN=100 ;;
     *) if [ $ARG -lt 1 ]; then LEN=1
@@ -329,11 +353,17 @@ log() {
        else LEN=$ARG
        fi ;;
   esac
-  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
+  $wcUCI set aegis_web.log.len=$LEN
+  $wcUCI set aegis_web.log.basetime=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
+  $wcUCI set aegis_web.log.pos=0
+#  _getLog $LOG_FILE $LEN 0 0 $WAN_IF $([ $TUN_IF ] && echo $TUN_IF || echo '-')
+  _getLog
 }
 
 refreshLog() {
-  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
+#  [ -r /tmp/aegis_web ] && [ "$(/bin/date +%s -r /tmp/aegis_web)" -gt "$(/bin/date +%s -r /tmp/aegis_status 2>/dev/null)" ] && _getLog $(cat /tmp/aegis_web) || log
+#  _getLog $(cat $_WF)
+  _getLog
 }
 
 _ip_in_if_inet() {
