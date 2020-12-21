@@ -813,7 +813,7 @@ shield_init() {
 ###############################################
 
 print_log() {
-  _logd_status || echo -e "\033[35mLogging is turned off!\033[0m"
+  _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
   [ $1 ] && _TAIL=$1 || _TAIL=100
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
@@ -900,7 +900,7 @@ clean() {
 #}
 
 update_iplist() {
-  [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating directives from sources and custom lists...\033[0m"
+  [ "$VERBOSE" ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
   [ -e "$SRC_LIST" ] || get_def_srclst
 
   :>"$TMP_FILE"
@@ -1194,7 +1194,7 @@ _status>/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
-    echo "- Shield is not set."
+    echo "- Shield is unset."
   elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=1
     echo "- Shield is down."
   else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
@@ -1228,19 +1228,19 @@ _status>/dev/null
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo -ne '\033[1;35mWarnings:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_WN)" || echo ''
     case "$((_WN&WN_BL_FILE_NTLD))" in
-      $WN_BL_FILE_DIFF) echo -e "\033[35m- blocklist set is different than directives file.\033[0m";;
-      $WN_BL_FILE_MISS) echo -e "\033[35m- blocklist is set but directives file is missing.\033[0m";;
-      $WN_BL_FILE_NTLD) echo -e "\033[35m- no blocklist is set but directives file exists.\033[0m";;
+      $WN_BL_FILE_DIFF) echo -e "\033[35m- directives: shield blocklist is different than file.\033[0m";;
+      $WN_BL_FILE_MISS) echo -e "\033[35m- directives: shield blocklist is set but file is missing.\033[0m";;
+      $WN_BL_FILE_NTLD) echo -e "\033[35m- directives: no shield blocklist is set but file exists.\033[0m";;
     esac
     case "$((_WN&WN_WL_FILE_NTLD))" in
-      $WN_WL_FILE_DIFF) echo -e "\033[35m- whitelist set is different than directives file.\033[0m";;
-      $WN_WL_FILE_MISS) echo -e "\033[35m- whitelist is set but directives file is missing.\033[0m";;
-      $WN_WL_FILE_NTLD) echo -e "\033[35m- no whitelist is set but directives file exists.\033[0m";;
+      $WN_WL_FILE_DIFF) echo -e "\033[35m- directives: ipset whitelist set is different than file.\033[0m";;
+      $WN_WL_FILE_MISS) echo -e "\033[35m- directives: ipset whitelist is set but file is missing.\033[0m";;
+      $WN_WL_FILE_NTLD) echo -e "\033[35m- directives: no ipset whitelist is set but file exists.\033[0m";;
     esac
     [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ] && echo -e "\033[31m- iptables: WAN network range bypass rules are missing!\033[0m"
     [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo -e "\033[31m- iptables: VPN network range bypass rules are missing!\033[0m"
     [ $((_WN&WN_TUN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: VPN tunnel ($TUN_IF) IFO rules are missing!\033[0m"
-    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time engine was started.\033[0m"
+    [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time shield was upreared.\033[0m"
   fi
  
   [ "$VERBOSE" ] || return 0
@@ -1250,11 +1250,11 @@ _status>/dev/null
   [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
-  [ -e "$BL_FILE" ] && echo "- Blocklist generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
-  [ -e "$WL_FILE" ] && echo "- Whitelist generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
+  [ -e "$BL_FILE" ] && echo "- Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
+  [ -e "$WL_FILE" ] && echo "- Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   if [ $_CK -ne 0 ]; then
-    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- 'firewall-start.sh' is set for $SC_NAME."
-    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- 'post-mount.sh' is set for $SC_NAME."
+    [ $((_CK&CK_FWS)) -ne 0 ] &&      echo "- set: firewall-start.sh is set for $SC_NAME."
+    [ $((_CK&CK_PM)) -ne 0 ] &&       echo "- set: post-mount.sh is set for $SC_NAME."
     [ $((_CK&CK_IPS_BL)) -ne 0 ] &&   echo "- ipset: blocklist is set."
     [ $((_CK&CK_IPS_WL)) -ne 0 ] &&   echo "- ipset: whitelist is set."
     [ $((_CK&CK_IPT_CH)) -ne 0 ] &&   echo "- iptables: shield chains are set."
@@ -1286,18 +1286,18 @@ _status>/dev/null
     echo "- WAN interface was '$INFO_WAN'."
     [ "$INFO_TUN" ] && echo "- VPN tunnel was '$INFO_TUN'." || echo '- No VPN tunnel was found.'
     case $((INFO_IPS&INFO_IPS_BL_MASK)) in
-      0) echo '! blocklist file was not found!' ;;
-      $INFO_IPS_BL_SAME) echo '- ipset: blocklist was already set and identical to directives.' ;;
-      $INFO_IPS_BL_MISS) echo '- ipset: blocklist file was not found! The one already set was kept.' ;;
-      $INFO_IPS_BL_LOAD) echo '- ipset: blocklist was set from file.' ;;
+      0) echo '! directives: blocklist file was not found!' ;;
+      $INFO_IPS_BL_SAME) echo '- directives: ipset blocklist was already set and identical to file.' ;;
+      $INFO_IPS_BL_MISS) echo '- directives: blocklist file was not found! The one already in ipset was kept.' ;;
+      $INFO_IPS_BL_LOAD) echo '- directives: ipset blocklist was set from file.' ;;
     esac
     case $((INFO_IPS&INFO_IPS_WL_MASK)) in
-      0) echo '- no whitelist file was found.' ;;
+      0) echo '- directives: no whitelist file was found.' ;;
       $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo '- ipset: whitelist was already set and identical to directives.' ;;
-      $INFO_IPS_WL_KEEP) echo '- ipset: whitelist was kept.' ;;
-      $INFO_IPS_WL_LOAD) echo '- ipset: whitelist was set from file.' ;;
-      $INFO_IPS_WL_SWAP) echo '- ipset: whitelist was updated from file.' ;;
-      $INFO_IPS_WL_DEL) echo '- ipset: whitelist was unset.' ;;
+      $INFO_IPS_WL_KEEP) echo '- directives: ipset whitelist was kept.' ;;
+      $INFO_IPS_WL_LOAD) echo '- directives: ipset whitelist was set from file.' ;;
+      $INFO_IPS_WL_SWAP) echo '- directives: ipset whitelist was updated from file.' ;;
+      $INFO_IPS_WL_DEL) echo '- directives: ipset whitelist was unset.' ;;
     esac
     if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
       then echo "- iptables: shield inbound chain was set."
