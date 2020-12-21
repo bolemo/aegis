@@ -42,12 +42,13 @@ status() {
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
     echo '<ul id="status" class="off">'
-    echo "<li>Aegis is not active; Environment is clean.</li>"
+    echo "<li>Aegis shield is not set (environment is clean).</li>"
   elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then
-    echo "<li>Aegis is not active.</li>"
+    echo '<ul id="status" class="off">'
+    echo "<li>Aegis shield is down (environment is set).</li>"
   elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
     echo '<ul id="status" class="running">'
-    echo -n "<li>Aegis is set and active"
+    echo -n "<li>Aegis shield is up."
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
     [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
     echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
