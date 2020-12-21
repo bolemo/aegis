@@ -1536,9 +1536,9 @@ case "$PARAM" in
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_restart') _shield_args; VERBOSE=1; shield_up '' 1 ;;
-  '_update') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
-  '_clean') VERBOSE=1; clean ;;
+  '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
+  '_refresh') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
+  '_down') VERBOSE=1; down ;;
   '_upgrade') _upgrade ;;
   
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
