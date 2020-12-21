@@ -338,7 +338,7 @@ _getLog() {
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
 #  echo "$_LF $_MAX $_BT $_NST $_WIF $_TIF">/tmp/aegis_web
-  [ $_NST ] && $wcUCI set aegis_web.log.pos=$_NST
+  [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
 #  echo "$_MAX $_BT $_NST">$_WF
   }
 }
