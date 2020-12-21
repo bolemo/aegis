@@ -267,11 +267,11 @@ info() {
 }
 
 command() {
-  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log' || _LOG=
+  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log-enable' || _LOG='-log-disable'
   case $ARG in
-    restart*) _CMD="aegis _restart $_LOG" ;;
-    update*) _CMD="aegis _update $_LOG" ;;
-    stop*) _CMD="aegis _clean" ;;
+    up*) _CMD="aegis _up $_LOG" ;;
+    refresh*) _CMD="aegis _up -refresh $_LOG" ;;
+    down*) _CMD="aegis _down" ;;
     upgrade*) _CMD="aegis _upgrade" ;;
   esac
   [ -z "${ARG##*-*}" ] && _ARG2="${ARG#*-}"
