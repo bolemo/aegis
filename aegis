@@ -554,19 +554,16 @@ set_path() {
 }
 
 clean_path() {
-  if [ -e "/usr/bin/$SC_NAME" ]; then
-    /bin/rm "/usr/bin/$SC_NAME" 2>/dev/null
-    [ "$VERBOSE" ] && echo "- '/usr/bin' symlink was removed."
+  if [ -e "/usr/bin/$SC_NAME" ]; then /bin/rm "/usr/bin/$SC_NAME" 2>/dev/null
+    [ $VERBOSE ] && echo "- '/usr/bin' symlink was removed."
   fi
 }
 
+# CONFIG: .../bolemo/etc/config/aegis #########
 check_conf() {
-  [ -d "$ROOT_DIR/etc/config" ] || return 1
-  sc_conf get >/dev/null || return 1
-  sc_conf get wan >/dev/null || return 1
-  sc_conf get tun >/dev/null || return 1
-  return 0
-}
+  [ -d "$ROOT_DIR/etc/config" ] && sc_conf get && sc_conf get wan && sc_conf get tun
+  return $?
+} >/dev/null
 
 set_conf() {
   [ -d "$ROOT_DIR/etc/config" ] || /bin/mkdir -p "$ROOT_DIR/etc/config" 2>/dev/null
@@ -580,8 +577,7 @@ EOF
 
 clean_conf() {
   /bin/rm "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
-  sc_conf commit
-  [ "$VERBOSE" ] && echo "- '$SC_NAME' configuration file was removed."
+  [ $VERBOSE ] && echo "- '$SC_NAME' configuration file was removed."
 }
 
 ###############################################
@@ -613,7 +609,7 @@ echo "- Downloading:"
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$DL_PATH"
+    strip_sh_file "$DL_PATH"
     \/bin/mv "$DL_PATH" "$SC_NICEPATH"
     /bin/chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
@@ -719,6 +715,7 @@ install_web() {
   fi
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
+    strip_sh_file "$DL_PATH"
     \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
@@ -749,11 +746,13 @@ clean_web() {
 #
 ###############################################
 
+strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$1"; }
+
 name_from_ip() {
-  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device 2>/dev/null)"
-  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts 2>/dev/null)"
+  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device)"
+  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts)"
   [ -z "$_NAME" ] && echo "$1" || echo "$_NAME ($1)"
-}
+} 2>/dev/null
 
 ###############################################
 #
@@ -764,11 +763,11 @@ name_from_ip() {
 
 sc_init() {
   check_path || set_path
-  [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc" 2>/dev/null
+  [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc"
   check_conf || set_conf
-  [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null		
-  [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
-}
+  [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH"
+  [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo'
+} 2>/dev/null
 
 shield_init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
@@ -804,6 +803,17 @@ shield_init() {
 #
 ###############################################
 
+_log_line_for_iface() { # $1 = iface / $2 = iface name
+  case $LINE in
+    *"IN=$1 OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
+       echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from $2: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
+    *"IN=$1"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from $2: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
+    *"IN= OUT=$1"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to $2: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
+    *"OUT=$1"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to $2: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
+    *) return 1 ;;
+  esac;
+}
+
 print_log() {
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
@@ -819,18 +829,7 @@ print_log() {
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT=":${_1%% *}"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT=":${_1%% *}"
 
-    case $LINE in
-      *"IN=$WAN_IF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
-         echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"IN=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from WAN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
-      *"IN= OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"OUT=$WAN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to WAN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
-      *"IN=$TUN_IF OUT= "*) [ "$_DST" = '255.255.255.255' ] && _DNAME="broadcast" || _DNAME="router"
-         echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to $_DNAME: \\033[1;33m$_DST$_DPT\\033[0m" ;;
-      *"IN=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;35mincoming\\033[0m $_PROTO packet from VPN: \\033[1;35m$_SRC$_SPT\\033[0m to LAN: \\033[1;33m$(name_from_ip $_DST)$_DPT\\033[0m" ;;
-      *"IN= OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from router: \\033[1;33m$_SRC$_SPT\\033[0m" ;;
-      *"OUT=$TUN_IF"*) echo -e "$_PT Blocked \\033[1;33moutgoing\\033[0m $_PROTO packet to VPN: \\033[1;35m$_DST$_DPT\\033[0m from LAN: \\033[1;33m$(name_from_ip $_SRC)$_SPT\\033[0m" ;;
-    esac
+    _log_line_for_iface $WAN_IF 'WAN' || { [ $TUN_IF ] && _log_line_for_iface $TUN_IF 'TUN'; }
   done
 }
 
