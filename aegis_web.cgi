@@ -287,8 +287,24 @@ _nameForIp() {
   [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
 }
 
+# LOG
 _LF=/var/log/log-aegis
 _SF=/tmp/aegis_status
+
+_log_line_for_iface() { # $1 = iface
+  case $LINE in
+    *"IN=$1 OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
+       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
+    *"IN=$1"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
+       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
+    *"IN= OUT=$1"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
+       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
+    *"OUT=$1"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
+       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
+    *) return 1 ;;
+  esac
+}
+
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
   _MAX=$($wcUCI get aegis_web.log.len)
@@ -306,26 +322,11 @@ _getLog() {
     _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
     _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
-    case $LINE in
-      *"IN=$_WIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
-         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
-      *"IN=$_WIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
-         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming wan" ;;
-      *"IN= OUT=$_WIF"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
-         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
-      *"OUT=$_WIF"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
-         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing wan" ;;
-    esac
-    if [ $_TIF ]; then case $LINE in
-      *"IN=$_TIF OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
-         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
-      *"IN=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
-         _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming vpn" ;;
-      *"IN= OUT=$_TIF"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
-         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
-      *"OUT=$_TIF"*) _REM=$_SRC; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
-         _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing vpn" ;;
-    esac; fi
+    
+    if   _log_line_for_iface $_WIF; then _ATTR="$_ATTR wan"
+    else _log_line_for_iface $_TIF; then _ATTR="$_ATTR vpn"
+    fi
+    
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
   done
   [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
