@@ -324,7 +324,7 @@ _getLog() {
     _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
     
     if   _log_line_for_iface $_WIF; then _ATTR="$_ATTR wan"
-    else _log_line_for_iface $_TIF; then _ATTR="$_ATTR vpn"
+    elif _log_line_for_iface $_TIF; then _ATTR="$_ATTR vpn"
     fi
     
     echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
