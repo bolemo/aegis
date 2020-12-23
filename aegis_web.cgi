@@ -312,25 +312,60 @@ _getLog() {
   _ST=$($wcUCI get aegis_web.log.pos)
   _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
   _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
-  _NST=
-  /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
-    _TS=${LINE%%:*}
-    [ $_NST ] || { _1=${LINE#*:};_NST=$_TS${_1%%:*}; }
-    _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
-    _1=${LINE#* SRC=}; _SRC=${_1%% *}
-    _1=${LINE#* DST=}; _DST=${_1%% *}
-    _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
-    _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
-    _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
-    
-    if _log_line_for_iface $_WIF; then _ATTR="$_ATTR wan"
-    elif [ $_TIF ] && _log_line_for_iface $_TIF; then _ATTR="$_ATTR vpn"
-    fi
-    
-    echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
-  done
-  [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
-  }
+#  _NST=
+#  /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
+#    _TS=${LINE%%:*}
+#    [ $_NST ] || { _1=${LINE#*:};_NST=$_TS${_1%%:*}; }
+#    _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
+#    _1=${LINE#* SRC=}; _SRC=${_1%% *}
+#    _1=${LINE#* DST=}; _DST=${_1%% *}
+#    _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
+#    _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
+#    _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
+#    
+#    if _log_line_for_iface $_WIF; then _ATTR="$_ATTR wan"
+#    elif [ $_TIF ] && _log_line_for_iface $_TIF; then _ATTR="$_ATTR vpn"
+#    fi
+#    
+#    echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
+#  done
+#  [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
+#  }
+awk -F: ' \
+function namefromip(ip){ \
+  cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd); \
+  if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)} \
+  if (nm) {nm=nm"<q>"ip"</q>"} else {nm=ip} \
+  return nm} \
+function protoname(proto){ \
+  if (proto~/^[0-9]+$/){ \
+     cmd="sed \"$((_1+2))q;d\" '$wcPRT_PTH'|cut -d, -f3";cmd|getline nm;close(cmd); \
+     nm="<log-ptl value=\""proto"\">"nm"</log-ptl>" \
+  } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"} \
+  return nm} \
+function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str} \
+function pline(iface){ \
+  if (IN==iface) {REM=SRC; RPT=SPT; LPT=DPT; ATTR="incoming"; \
+     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"} \
+     else {LOC=namefromip(DST); LNM="LAN"} \
+  } else if (OUT==iface) {REM=DST; RPT=DPT; LPT=SPT; ATTR="outgoing"; \
+     if (IN=="") {LOC='$_RNM'"<q>"SRC"</q>"; LNM="router"} \
+     else {LOC=namefromip(SRC); LNM="LAN"} \
+  } else return 0; \
+  return 1;} \
+{ts[c]=$1;uts[c]=$1$2;l[c++]=$0} END \
+{ \
+  if (uts[--c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c])} \
+  while (c-->(NR-300) && uts[c]>'$_ST') { \
+    PT=strftime("%F %T", ('$_BT'+ts[c])); \
+    IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT"); \
+    if (pline("'$_WIF'")) {ATTR2=" wan"} else if (pline("'$_TIF'")) {ATTR2=" vpn"} \
+    if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"} \
+#    print ts[c]
+#    print "IN:"IN" OUT:"OUT" SRC:"SRC" DST:"DST" PROTO:"PROTO" REM:"REM" RPT:"RPT" LOC:"LOC" LPT:"LPT" LNM:"LNM" ATTR:"ATTR
+    print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>" \
+  } \
+}' $_LF
 }
 
 log() {
