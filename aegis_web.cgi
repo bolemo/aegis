@@ -339,7 +339,7 @@ function namefromip(ip){ \
   return nm} \
 function protoname(proto){ \
   if (proto~/^[0-9]+$/){ \
-     cmd="sed \"$((_1+2))q;d\" '$wcPRT_PTH'|cut -d, -f3";cmd|getline nm;close(cmd); \
+     cmd="sed \""proto+2"q;d\" '"$wcPRT_PTH"'|cut -d, -f3";cmd|getline nm;close(cmd); \
      nm="<log-ptl value=\""proto"\">"nm"</log-ptl>" \
   } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"} \
   return nm} \
