@@ -5,7 +5,7 @@ Should work with several other Netgear routers as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.4.6
+1.4.7
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
