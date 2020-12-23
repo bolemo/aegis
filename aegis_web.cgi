@@ -291,19 +291,19 @@ _nameForIp() {
 _LF=/var/log/log-aegis
 _SF=/tmp/aegis_status
 
-_log_line_for_iface() { # $1 = iface
-  case $LINE in
-    *"IN=$1 OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
-       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
-    *"IN=$1"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
-       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
-    *"IN= OUT=$1"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
-       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
-    *"OUT=$1"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
-       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
-    *) return 1 ;;
-  esac
-}
+#_log_line_for_iface() { # $1 = iface
+#  case $LINE in
+#    *"IN=$1 OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
+#       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
+#    *"IN=$1"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
+#       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
+#    *"IN= OUT=$1"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
+#       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
+#    *"OUT=$1"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
+#       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
+#    *) return 1 ;;
+#  esac
+#}
 
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
