@@ -310,9 +310,9 @@ _getLog() {
   _MAX=$($wcUCI get aegis_web.log.len)
   _BT=$($wcUCI get aegis_web.log.basetime)
   _ST=$($wcUCI get aegis_web.log.pos)
-  _WIF=/usr/bin/cut -d' ' -f2 $_SF
-  _TIF=/usr/bin/cut -d' ' -f3 $_SF
-  unset _NST
+  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
+  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
+  _NST=
   /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
     _TS=${LINE%%:*}
     [ $_NST ] || { _1=${LINE#*:};_NST=$_TS${_1%%:*}; }
