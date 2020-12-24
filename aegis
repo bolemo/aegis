@@ -861,8 +861,9 @@ function pline(iface){ \
     IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT"); \
     if (pline("'$WAN_IF'")) {IFACE="WAN"} else if (pline("'$TUN_IF'")) {IFACE="VPN"} \
     if (RPT) {RPT=":"RPT}; if (LPT) {LPT=":"LPT} \
-    print PT": Blocked "DIR PROTO" packet "DIR1" "IFACE":\\033[1;35m"REM RPT"\\033[0m "DIR2" "LNM": \\033[1;33m"LOC LPT"\\033[0m"
-  } \
+#    print PT": Blocked "DIR PROTO" packet "DIR1" "IFACE":\\033[1;35m"REM RPT"\\033[0m "DIR2" "LNM": \\033[1;33m"LOC LPT"\\033[0m"
+    printf("%s: Blocked %s %s packet %s %s:\\033[1;35m%s%s\\033[0m %s %s:\\033[1;33m%s%s\\033[0m",PT,DIR,PROTO,DIR1,IFACE,REM,RPT,DIR2,LNM,LOC,LPT) \
+} \
 }' $LOG_FILE
 }
 
