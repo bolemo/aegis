@@ -268,11 +268,15 @@ info() {
 }
 
 command() {
-  [ "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" = 'on' ] && _LOG='-log-enable' || _LOG='-log-disable'
+  case "$(echo -n "$ARG"|/usr/bin/cut -d: -f2)" in
+    on)  _LOG=' -log-enable';;
+    off) _LOG=' -log-disable';;
+    *) _LOG=;;
+  esac
   case $ARG in
     upgrade*) _CMD="aegis _upgrade" ;;
-    up*) _CMD="aegis _up $_LOG" ;;
-    refresh*) _CMD="aegis _refresh $_LOG" ;;
+    up*) _CMD="aegis _up$_LOG" ;;
+    refresh*) _CMD="aegis _refresh$_LOG" ;;
     down*) _CMD="aegis _down" ;;
   esac
   [ -z "${ARG##*-*}" ] && _ARG2="${ARG#*-}"
@@ -361,8 +365,6 @@ function pline(iface){ \
     IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT"); \
     if (pline("'$_WIF'")) {ATTR2=" wan"} else if (pline("'$_TIF'")) {ATTR2=" vpn"} \
     if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"} \
-#    print ts[c]
-#    print "IN:"IN" OUT:"OUT" SRC:"SRC" DST:"DST" PROTO:"PROTO" REM:"REM" RPT:"RPT" LOC:"LOC" LPT:"LPT" LNM:"LNM" ATTR:"ATTR
     print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>" \
   } \
 }' $_LF
