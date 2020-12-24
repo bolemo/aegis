@@ -846,10 +846,10 @@ function namefromip(ip){ \
 function protoname(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto} \
 function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str} \
 function pline(iface){ \
-  if (IN==iface){REM=SRC;RPT=SPT;LPT=DPT;DIR="\\033[1;35mincoming\\033[0m";DIR1="from";DIR2="to"; \
+  if (IN==iface){REM=SRC;RPT=SPT;LPT=DPT;DIR="\033[1;35mincoming\033[0m";DIR1="from";DIR2="to"; \
      if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"} \
      else {LOC=namefromip(DST); LNM="LAN"} \
-  } else if (OUT==iface){REM=DST;RPT=DPT;LPT=SPT;DIR="\\033[1;33moutgoing\\033[0m";DIR1="to";DIR2="from"; \
+  } else if (OUT==iface){REM=DST;RPT=DPT;LPT=SPT;DIR="\033[1;33moutgoing\033[0m";DIR1="to";DIR2="from"; \
      if (IN=="") {LOC='$_RNM'"("SRC")"; LNM="router"} \
      else {LOC=namefromip(SRC); LNM="LAN"} \
   } else return 0; \
