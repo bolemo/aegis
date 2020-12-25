@@ -358,16 +358,14 @@ function pline(iface){
   } else return 0;
   return 1;}
 {ts[c]=$1;uts[c]=$1$2;l[c++]=$0} END
-{
-  if (uts[--c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c])}
-  while (c-->(NR-300) && uts[c]>'$_ST') {
-    PT=strftime("%F %T", ('$_BT'+ts[c]));
-    IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
-    if (pline("'$_WIF'")) {ATTR2=" wan"} else if (pline("'$_TIF'")) {ATTR2=" vpn"}
-    if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"}
-    print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>"
-  }
-}' $_LF
+{if (uts[--c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c])}
+ while (c-->(NR-300) && uts[c]>'$_ST') {
+   PT=strftime("%F %T", ('$_BT'+ts[c]));
+   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
+   if (pline("'$_WIF'")) {ATTR2=" wan"} else if (pline("'$_TIF'")) {ATTR2=" vpn"}
+   if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"}
+   print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>"
+}}' $_LF
 }
 
 log() {
