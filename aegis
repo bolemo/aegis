@@ -1406,37 +1406,37 @@ status_raw() {
 }
 #---------------------------- END _STATUS ----------------------------
 
-print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m" \
-"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m" \
-"\033[7mCOMMANDS (only one) and their specific options:\033[0m" \
-"\033[1;35mup\033[0m             - (re)starts $SC_NAME shield protection" \
-"   \033[1;36m-net-wall\033[0m      + by restarting the internal firewall" \
-"   \033[1;36m-refresh\033[0m       + with updated shield directives" \
-"   \033[1;36m-log-enable\033[0m    + with logging enabled" \
-"   \033[1;36m-log-disable\033[0m   + with logging disabled" \
-"   \033[1;36m-wan-no-bypass\033[0m + without WAN network range bypass" \
-"   \033[1;36m-vpn-no-bypass\033[0m + without VPN network range bypass" \
-" \033[1;35mdown\033[0m           - stops $SC_NAME shield protection" \
-" \033[1;35mrefresh\033[0m        - updates shield directives from sources and custom lists\033[0m" \
-" \033[1;35mlog -enable\033[0m    - enables logging" \
-" \033[1;35mlog -disable\033[0m   - disables logging" \
-" \033[1;35mlog -show\033[0m      - displays the log report" \
-"   \033[1;36m-lines=\033[0mN       + will display N last lines (N being the number of lines to show)" \
-" \033[1;35munset\033[0m          - stops and unsets $SC_NAME shield" \
-"   \033[1;36m-rm-config\033[0m     + and removes $SC_NAME configuration file" \
-"   \033[1;36m-rm-symlink\033[0m    + and removes the symlink /usr/bin/$SC_NAME" \
-"   \033[1;36m-rm-web\033[0m        + and removes $WEB_NAME" \
-"   \033[1;36m-rm-log\033[0m        + and removes log file" \
-" \033[1;35mhelp\033[0m           - displays help (this)" \
-" \033[1;35minfo\033[0m           - displays info on this script" \
-" \033[1;35mstatus\033[0m         - displays status" \
-" \033[1;35mupgrade\033[0m        - downloads and installs latest version" \
-" \033[1;35mweb -install\033[0m   - downloads and installs $WEB_NAME" \
-" \033[1;35mweb -remove\033[0m    - removes $WEB_NAME" \
-"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m" \
-" \033[1;36m-v\033[0m             + verbose mode (level 1)" \
-" \033[1;36m-vv\033[0m            + verbose mode (level 2)" \
-" \033[1;36m-vvv\033[0m           + verbose mode (level 3)" \
+print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m\n"
+"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m\n"
+"\033[7mCOMMANDS (only one) and their specific options:\033[0m\n"
+"\033[1;35mup\033[0m             - (re)starts $SC_NAME shield protection\n"
+"   \033[1;36m-net-wall\033[0m      + by restarting the internal firewall\n"
+"   \033[1;36m-refresh\033[0m       + with updated shield directives\n"
+"   \033[1;36m-log-enable\033[0m    + with logging enabled\n"
+"   \033[1;36m-log-disable\033[0m   + with logging disabled\n"
+"   \033[1;36m-wan-no-bypass\033[0m + without WAN network range bypass\n"
+"   \033[1;36m-vpn-no-bypass\033[0m + without VPN network range bypass\n"
+" \033[1;35mdown\033[0m           - stops $SC_NAME shield protection\n"
+" \033[1;35mrefresh\033[0m        - updates shield directives from sources and custom lists\033[0m\n"
+" \033[1;35mlog -enable\033[0m    - enables logging\n"
+" \033[1;35mlog -disable\033[0m   - disables logging\n"
+" \033[1;35mlog -show\033[0m      - displays the log report\n"
+"   \033[1;36m-lines=\033[0mN       + will display N last lines (N being the number of lines to show)\n"
+" \033[1;35munset\033[0m          - stops and unsets $SC_NAME shield\n"
+"   \033[1;36m-rm-config\033[0m     + and removes $SC_NAME configuration file\n"
+"   \033[1;36m-rm-symlink\033[0m    + and removes the symlink /usr/bin/$SC_NAME\n"
+"   \033[1;36m-rm-web\033[0m        + and removes $WEB_NAME\n"
+"   \033[1;36m-rm-log\033[0m        + and removes log file\n"
+" \033[1;35mhelp\033[0m           - displays help (this)\n"
+" \033[1;35minfo\033[0m           - displays info on this script\n"
+" \033[1;35mstatus\033[0m         - displays status\n"
+" \033[1;35mupgrade\033[0m        - downloads and installs latest version\n"
+" \033[1;35mweb -install\033[0m   - downloads and installs $WEB_NAME\n"
+" \033[1;35mweb -remove\033[0m    - removes $WEB_NAME\n"
+"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m\n"
+" \033[1;36m-v\033[0m             + verbose mode (level 1)\n"
+" \033[1;36m-vv\033[0m            + verbose mode (level 2)\n"
+" \033[1;36m-vvv\033[0m           + verbose mode (level 3)\n"
 " \033[1;36m-q\033[0m             + quiet mode (no output)"
 }
 
