@@ -1207,7 +1207,7 @@ _status>/dev/null
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
     echo "- Shield is unset."
-  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=1
+  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=2
     echo "- Shield is down."
   else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
       echo -ne "- \033[1;32mShield is up\033[0m"
@@ -1215,7 +1215,7 @@ _status>/dev/null
       [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
       echo -e ".\n- Filtering $_BLC IP adresses."
       [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
-    else _RETVAL=2
+    else _RETVAL=3
        echo -e "- \033[1;31mSomething is not right!\033[0m"
     fi
     if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
@@ -1400,6 +1400,7 @@ _status>/dev/null
       ipset -L -t $_SET|/bin/sed 's/^/- /'
     done
   fi
+  exit $_RETVAL
 }
 
 status_raw() {
@@ -1447,8 +1448,6 @@ print_help() {
 #    MAIN ROUTINE
 #
 ###############################################
-_RETVAL=0
-
 [ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
@@ -1545,4 +1544,4 @@ case "$PARAM" in
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
 
-exit $_RETVAL
+exit
