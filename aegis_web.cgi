@@ -231,7 +231,7 @@ status() {
 <input type=\"checkbox\" id=\"debug-status\" /><label for=\"debug-status\">Debug</label>
 <ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>
 <li>aegis info: $SC_NAME $SC_VERS-$([ "$EXT_DRIVE" ] && echo 'ext' || echo 'int')</li>
-<li>status codes: $_CK#$_PB#$_WN#$WAN_IF#$(inet_for_if $WAN_IF)#$TUN_IF#$([ $TUN_IF ] && inet_for_if $TUN_IF)#$BL_NB#$WL_NB#$_LOGD</li>
+<li>status codes: ${_CK}_${_PB}_${_WN}_${WAN_IF}_$(inet_for_if $WAN_IF)_${TUN_IF}_$([ $TUN_IF ] && inet_for_if $TUN_IF)_{$BL_NB}_${WL_NB}_${_LOGD}</li>
 <li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>
 <li>iptables engine rules:</li><ul>"
   [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
