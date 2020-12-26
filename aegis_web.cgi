@@ -357,9 +357,9 @@ function pline(iface){
      else {LOC=namefromip(SRC); LNM="LAN"}
   } else return 0;
   return 1;}
-{ts[c]=$1;uts[c]=$1$2;l[c++]=$0} END
-{if (uts[--c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c])}
- while (c-->(NR-300) && uts[c]>'$_ST') {
+{ts[++c]=$1;uts[c]=$1$2;l[c]=$0} END
+{if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
+ min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
    PT=strftime("%F %T", ('$_BT'+ts[c]));
    IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
    if (pline("'$_WIF'")) {ATTR2=" wan"} else if (pline("'$_TIF'")) {ATTR2=" vpn"}
