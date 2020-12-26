@@ -845,7 +845,7 @@ function namefromip(ip){
   return nm}
 function protoname(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
 function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-function min(a,b){return (a<b)?a:b}
+function floored(a){return (a<0)?0:a}
 function pline(iface){
   if (IN==iface){REM=SRC;RPT=SPT;LPT=DPT;DIR="\033[1;35mincoming\033[0m";DIR1="from";DIR2="to";
      if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
@@ -856,7 +856,7 @@ function pline(iface){
   } else return 0;
   return 1;}
 {ts[c]=$1;l[++c]=$0} END
-{c=0;max=min(NR,'$_TAIL');while (c++<max){
+{c=floored(NR-'$_TAIL');while (c++<NR){
   PT=strftime("%F %T", ('$_BT'+ts[c]));
   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
   if (pline("'$WAN_IF'")) {IFACE="WAN"} else if (pline("'$TUN_IF'")) {IFACE="VPN"}
