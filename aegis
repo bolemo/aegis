@@ -157,7 +157,7 @@ while :; do
   elif [ "$NUMLINES" -le "$(wc -l $LOG_FILE|cut -d' ' -f1)" ]; then
     /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
   fi
-  rm $LOGD_TMP 2>/dev/null
+  rm $LOGD_TMP
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local INODE="$(ls -i $LOG_MSG)"
@@ -169,8 +169,8 @@ while :; do
       then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
       else C=$((C+1))
     fi
-  done <$LOG_MSG >>$LOG_FILE 2>/dev/null;
-done
+  done <$LOG_MSG >>$LOG_FILE
+done 2>/dev/null;
 EOF
 export LOGD_NAME; export LOGD_PID; export LOGD_TMP
 export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
