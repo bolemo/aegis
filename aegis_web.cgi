@@ -335,7 +335,7 @@ _getLog() {
 #  done
 #  [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
 #  }
-awk -F: '
+/usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
   if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
