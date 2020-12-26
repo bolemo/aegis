@@ -855,7 +855,7 @@ function pline(iface){
      else {LOC=namefromip(SRC); LNM="LAN"}
   } else return 0;
   return 1;}
-{ts[c]=$1;l[++c]=$0} END
+{ts[++c]=$1;l[c]=$0} END
 {c=floored(NR-'$_TAIL');while (c++<NR){
   PT=strftime("%F %T", ('$_BT'+ts[c]));
   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
