@@ -855,7 +855,7 @@ function pline(iface){
   } else return 0;
   return 1;}
 {ts[c]=$1;l[c++]=$0} END
-{while (c-->(NR-'$_TAIL')) {
+{c=0;max=NR-'$_TAIL';while (c++<max)){
   PT=strftime("%F %T", ('$_BT'+ts[c]));
   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
   if (pline("'$WAN_IF'")) {IFACE="WAN"} else if (pline("'$TUN_IF'")) {IFACE="VPN"}
