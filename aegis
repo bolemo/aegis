@@ -148,13 +148,13 @@ while :; do
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
       /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -le "$(wc -l $LOGD_TMP|cut -d' ' -f1)" ]
+      if [ "$NUMLINES" -le "$(/usr/bin/wc -l <$LOGD_TMP)" ]
         then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
         else cat $LOGD_TMP >$LOG_FILE
       fi
     else :>$LOG_FILE
     fi
-  elif [ "$NUMLINES" -le "$(wc -l $LOG_FILE|cut -d' ' -f1)" ]; then
+  elif [ "$NUMLINES" -le "$(/usr/bin/wc -l <$LOG_FILE)" ]; then
     /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
   fi
   rm $LOGD_TMP
@@ -192,13 +192,13 @@ _cipset_diff_set_file() {
 }
 _cipset_swap_set_file() {
   cat $2 >$_CIPSET_DIR/$1
-  echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l < "$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $IPSET_TMP /" $_CIPSET_DIR/$1)" | ipset restore
+  echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $IPSET_TMP /" $_CIPSET_DIR/$1)" | ipset restore
   ipset swap "$1" "$IPSET_TMP"
   ipset destroy $IPSET_TMP
 }
 _cipset_create_set_file() {
   cat $2 >$_CIPSET_DIR/$1
-  echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l < "$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
+  echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
 }
 _cipset_inet_in_bl() {
   [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
