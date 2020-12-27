@@ -286,11 +286,11 @@ command() {
   if [ $_ARG2 ]; then ARG="$_ARG2"; _ARG2=''; command; fi;
 }
 
-_nameForIp() {
-  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device)"
-  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts)"
-  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
-} 2>/dev/null
+#_nameForIp() {
+#  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device)"
+#  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts)"
+#  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
+#} 2>/dev/null
 
 # LOG
 _LF=/var/log/log-aegis
