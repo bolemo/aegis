@@ -232,7 +232,8 @@ status() {
 <ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>
 <li>aegis info: $SC_NAME $SC_VERS-$([ "$EXT_DRIVE" ] && echo 'ext' || echo 'int')</li>
 <li>status codes: $_CK|$_PB|$_WN|$WAN_IF|$(inet_for_if $WAN_IF)|$TUN_IF|$([ $TUN_IF ] && inet_for_if $TUN_IF)|$BL_NB|$WL_NB|$_LOGD</li>
-<li>file codes: $INFO/$INFO_WAN/$INFO_TUN</li>
+<li>file codes: $INFO|$INFO_WAN|$INFO_TUN</li>
+<li>timestamps: $(/bin/date +%s -r $INFO_FILE)|$(/bin/date +%s -r $BL_FILE)|$(/bin/date +%s -r $WL_FILE)</li>
 <li>iptables engine rules:</li><ul>"
   [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
   echo '</ul><li>ipset engine sets:</li><ul>'
@@ -247,7 +248,7 @@ status() {
     echo '</ul>'
   done
   echo '</ul></ul>'
-}
+} 2>/dev/null
 
 info() {
   aegis_env
@@ -285,11 +286,11 @@ command() {
   if [ $_ARG2 ]; then ARG="$_ARG2"; _ARG2=''; command; fi;
 }
 
-_nameForIp() {
-  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device)"
-  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts)"
-  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
-} 2>/dev/null
+#_nameForIp() {
+#  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device)"
+#  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts)"
+#  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
+#} 2>/dev/null
 
 # LOG
 _LF=/var/log/log-aegis

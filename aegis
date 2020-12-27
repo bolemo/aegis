@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.0"
+SC_VERS="1.5.1"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -148,16 +148,16 @@ while :; do
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
       /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -le "$(/usr/bin/wc -l <$LOGD_TMP)" ]
+      if [ "$NUMLINES" -le "$(wc -l $LOGD_TMP|cut -d' ' -f1)" ]
         then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
         else cat $LOGD_TMP >$LOG_FILE
       fi
     else :>$LOG_FILE
     fi
-  elif [ "$NUMLINES" -le "$(/usr/bin/wc -l <$LOG_FILE)" ]; then
+  elif [ "$NUMLINES" -le "$(wc -l $LOG_FILE|cut -d' ' -f1)" ]; then
     /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
   fi
-  rm $LOGD_TMP
+  rm $LOGD_TMP 2>/dev/null
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local INODE="$(ls -i $LOG_MSG)"
@@ -169,8 +169,8 @@ while :; do
       then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
       else C=$((C+1))
     fi
-  done <$LOG_MSG >>$LOG_FILE
-done 2>/dev/null;
+  done <$LOG_MSG >>$LOG_FILE 2>/dev/null;
+done
 EOF
 export LOGD_NAME; export LOGD_PID; export LOGD_TMP
 export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
