@@ -1431,6 +1431,7 @@ print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '" \033[1;35mlog -disable\033[0m   - disables logging"'
 '" \033[1;35mlog -show\033[0m      - displays the log report"'
 '"   \033[1;36m-lines=\033[0mN       + will display N last lines (N being the number of lines to show)"'
+'" \033[1;35mlog -live\033[0m      - displays the log report live (CTRL-C to exit)"'
 '" \033[1;35munset\033[0m          - stops and unsets $SC_NAME shield"'
 '"   \033[1;36m-rm-config\033[0m     + and removes $SC_NAME configuration file"'
 '"   \033[1;36m-rm-symlink\033[0m    + and removes the symlink /usr/bin/$SC_NAME"'
@@ -1506,6 +1507,7 @@ _log_args() {
     *' -enable '*)     sc_conf set log=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -disable '*)    sc_conf delete log; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
+    *' -live '*) print_log 0 ;;
   esac
 }
 _clean_args() {
