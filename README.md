@@ -5,7 +5,7 @@ Should work with several other Netgear routers as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.5.1
+1.5.2
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -88,6 +88,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `log -disable` - disables logging
 * `log -show` - displays log
   * `-lines=`N + displays N lines (N being the number of lines to show)
+* `log -live` - displays log live (*CTRL-C* to exit)
 * `upgrade` - downloads and installs latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
@@ -125,7 +126,10 @@ This survives internal firewall restarts and router reboots.
 A specific log file is created in `/var/log/log-aegis`. A small daemon is loaded in memory to update this log file and is exited automatically when the log is turned off. The node id of the file is not changing with rotations, allowing to follow it.
 
 ### Access the log
-To watch the log, use `aegis log -show`.
+To watch the last entries of the log, use `aegis log -show`.
+To watch the last N entries of the log, use `aegis log -show -lines=`N.
+To watch the log live (in realtime), use `aegis log -live`. To exit use *CTRL-C*.
+
 
 ### Disable logging
 To stop logging, just use `aegis log -disable` (if aegis is up, it will desactivates the logging immediatly; if it is down, logging won't be active next time it is started). You an also use the option `-log-disable` when you are (re)starting then engine: `aegis up -log-disable`.
