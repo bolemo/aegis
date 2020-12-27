@@ -148,13 +148,13 @@ while :; do
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
       /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -le "$(wc -l $LOGD_TMP|cut -d' ' -f1)" ]
+      if [ "$NUMLINES" -le "$([ -r "$LOGD_TMP" ] && wc -l <"$LOGD_TMP")" ]
         then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
         else cat $LOGD_TMP >$LOG_FILE
       fi
     else :>$LOG_FILE
     fi
-  elif [ "$NUMLINES" -le "$(wc -l $LOG_FILE|cut -d' ' -f1)" ]; then
+  elif [ "$NUMLINES" -le "$([ -r "$LOG_FILE" ] && wc -l <"$LOG_FILE")" ]; then
     /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
   fi
   rm $LOGD_TMP 2>/dev/null
