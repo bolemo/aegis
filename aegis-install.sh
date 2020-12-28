@@ -13,20 +13,24 @@ ask_yn() {
   esac
 }
 
-i=1; for var in $(ls /tmp/mnt); do eval var$i="'$var'"; i=$((i+1)); done;
-until [ "$A" ] && $(echo "$A" | grep -qE '^[0-9]?$') && [ "$A" -ge 0 ] && [ "$A" -lt "$i" ]; do
-  echo "Where do you want to install aegis?"
-  echo '  0 - router internal memory (rootfs)'
-  j=1; while [ "$j" -ne "$i" ]; do
-    echo "  $j - external drive: /mnt/$(eval echo "\$var$j")"
-    j=$((j+1))
-  done
-  echo "  c - cancel installation"
-  echo -n 'Your choice: '
-  A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
-  [ "$A" = 'c' ] && exit 0
-done;
-CHOICE="$(eval echo "\$var$A")";
+[ -z ${1+x} ] && ASK=1 || ASK=
+
+if [ $ASK ]; then
+  i=1; for var in $(ls /tmp/mnt); do eval var$i="'$var'"; i=$((i+1)); done;
+  until [ "$A" ] && $(echo "$A" | grep -qE '^[0-9]?$') && [ "$A" -ge 0 ] && [ "$A" -lt "$i" ]; do
+    echo "Where do you want to install aegis?"
+    echo '  0 - router internal memory (rootfs)'
+    j=1; while [ "$j" -ne "$i" ]; do
+      echo "  $j - external drive: /mnt/$(eval echo "\$var$j")"
+      j=$((j+1))
+    done
+    echo "  c - cancel installation"
+    echo -n 'Your choice: '
+    A="$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)"
+    [ "$A" = 'c' ] && exit 0
+  done;
+  CHOICE="$(eval echo "\$var$A")";
+else CHOICE="$1"; fi
 
 if [ "$CHOICE" ]; then
   BASE_DIR="/tmp/mnt/$CHOICE"
@@ -68,16 +72,24 @@ fi
 command -v aegis > /dev/null || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
 
 # iprange
+if [ -z "$ASK" ]; then case "$2" in
+  3) ASK_ENT=true;  ASK_INT=true  ;;
+  2) ASK_ENT=true;  ASK_INT=false ;;
+  1) ASK_ENT=false; ASK_INT=true  ;;
+  *) ASK_ENT=false; ASK_INT=false ;;
+esac; fi
+
 if command -v iprange>/dev/null; then
   echo 'iprange is installed.'
 else
   echo 'iprange is not installed.'
   if command -v /opt/bin/opkg && [ "$(/opt/bin/opkg list iprange)" ]; then
-    if ask_yn 'It appears you have Entware, do you want to install it through Entware?'
+    [ $ASK ] && { ask_yn 'It appears you have Entware, do you want to install it through Entware?' && ASK_ENT=true || ASK_ENT=false; }
+    if $ASK_ENT
       then /opt/bin/opkg update; /opt/bin/opkg install iprange
       else _ASK_ROOTFS='y'
     fi
-  else _ASK_ROOTFS='y'
+    else _ASK_ROOTFS='y'
   fi
   
   if [ $_ASK_ROOTFS ]; then
@@ -87,7 +99,8 @@ else
       *) IPRANGE_IPK_URL='' ;; 
     esac
     if [ "$IPRANGE_IPK_URL" ]; then
-      if ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?'; then
+      [ $ASK ] && { ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?' && ASK_INT=true || ASK_INT=false; }
+      if $ASK_INT; then
         echo "Downloading and installing iprange..."
         if wget -qO '/tmp/iprange.ipk' "$IPRANGE_IPK_URL"; then
           /bin/opkg install '/tmp/iprange.ipk'
