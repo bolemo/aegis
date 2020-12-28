@@ -72,7 +72,7 @@ fi
 command -v aegis > /dev/null || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
 
 # iprange
-if [ $ASK ]; then case "$2" in
+if [ -z "$ASK" ]; then case "$2" in
   3) ASK_ENT=true;  ASK_INT=true  ;;
   2) ASK_ENT=true;  ASK_INT=false ;;
   1) ASK_ENT=false; ASK_INT=true  ;;
@@ -84,7 +84,7 @@ if command -v iprange>/dev/null; then
 else
   echo 'iprange is not installed.'
   if command -v /opt/bin/opkg && [ "$(/opt/bin/opkg list iprange)" ]; then
-    [ -z "$ASK" ] && { ask_yn 'It appears you have Entware, do you want to install it through Entware?' && ASK_ENT=true || ASK_ENT=false; }
+    [ $ASK ] && { ask_yn 'It appears you have Entware, do you want to install it through Entware?' && ASK_ENT=true || ASK_ENT=false; }
     if $ASK_ENT
       then /opt/bin/opkg update; /opt/bin/opkg install iprange
       else _ASK_ROOTFS='y'
@@ -99,7 +99,7 @@ else
       *) IPRANGE_IPK_URL='' ;; 
     esac
     if [ "$IPRANGE_IPK_URL" ]; then
-      [ -z "$ASK" ] && { ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?' && ASK_INT=true || ASK_INT=false; }
+      [ $ASK ] && { ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?' && ASK_INT=true || ASK_INT=false; }
       if $ASK_INT; then
         echo "Downloading and installing iprange..."
         if wget -qO '/tmp/iprange.ipk' "$IPRANGE_IPK_URL"; then
