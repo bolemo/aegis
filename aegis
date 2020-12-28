@@ -1510,6 +1510,8 @@ _log_args() {
     *' -disable '*)    sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
     *' -live '*) print_log 0 ;;
+    *' -get-length '*) sc_conf get log.len ;;
+    *' -set-length='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-length=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
   esac
 }
 _clean_args() {
