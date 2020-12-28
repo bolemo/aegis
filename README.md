@@ -89,8 +89,8 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `log -show` - displays log
   * `-lines=`N + displays N lines (N being the number of lines to show)
 * `log -live` - displays log live (*CTRL-C* to exit)
-* `log -get-history` - displays the history size for the log record file
-* `log -set-history=`N - sets the history size to N lines for the log record file
+* `log -get-history` - show the history size for the log file /var/log/log-aegis
+* `log -set-history=`N - sets the history size to N records for the log file /var/log/log-aegis
 * `upgrade` - downloads and installs latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
