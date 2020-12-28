@@ -30,7 +30,7 @@ if [ $ASK ]; then
     [ "$A" = 'c' ] && exit 0
   done;
   CHOICE="$(eval echo "\$var$A")";
-else CHOICE="$1"
+else CHOICE="$1"; fi
 
 if [ "$CHOICE" ]; then
   BASE_DIR="/tmp/mnt/$CHOICE"
