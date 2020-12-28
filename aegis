@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.2"
+SC_VERS="1.5.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -136,26 +136,27 @@ LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
+sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 cat >"$LOGD_TMP" <<'EOF'
-local NUMLINES=5000
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
 trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
 touch $LOG_FILE
 while :; do
+  local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
   local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
   if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
       /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -le "$([ -r "$LOGD_TMP" ] && wc -l <"$LOGD_TMP")" ]
+      set -- $(/usr/bin/wc -l $LOGD_TMP); if [ "$NUMLINES" -le "$1" ]
         then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
         else cat $LOGD_TMP >$LOG_FILE
       fi
     else :>$LOG_FILE
     fi
-  elif [ "$NUMLINES" -le "$([ -r "$LOG_FILE" ] && wc -l <"$LOG_FILE")" ]; then
-    /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  else set -- $(/usr/bin/wc -l $LOG_FILE); if [ "$NUMLINES" -le "$1" ]
+    then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE; fi
   fi
   rm $LOGD_TMP 2>/dev/null
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
@@ -375,7 +376,7 @@ shield_uprear() {
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
-  if sc_conf get log >/dev/null; then
+  if sc_conf get log.enabled >/dev/null; then
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -561,7 +562,7 @@ clean_path() {
 
 # CONFIG: .../bolemo/etc/config/aegis #########
 check_conf() {
-  [ -d "$ROOT_DIR/etc/config" ] && sc_conf get && sc_conf get wan && sc_conf get tun
+  [ -d "$ROOT_DIR/etc/config" ] && sc_conf get && sc_conf get wan && sc_conf get tun && sc_conf get log
   return $?
 } >/dev/null
 
@@ -571,6 +572,7 @@ set_conf() {
 package $SC_ABR
 config net-iface 'wan'
 config net-iface 'tun'
+config log 'log'
 EOF
   sc_conf commit
 }
@@ -882,7 +884,7 @@ shield_up() {
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
-  sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."
+  sc_conf get log.enabled >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."
   if [ $2 ]; then
     [ "$VERBOSE" ] && echo -e "- Restarting firewall with $SC_NAME shield.\033[0m"
     /usr/sbin/net-wall restart > /dev/null
@@ -1188,7 +1190,7 @@ _status() {
         [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                                           _PB=$((_PB+CK_IPT_WL))
       fi
       # LOG
-      if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log >/dev/null
+      if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log.enabled >/dev/null
         then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                                     _WN=$((_WN+WN_LOG_DIFF))
         else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                                     _WN=$((_WN+WN_LOG_DIFF))
       fi fi
@@ -1418,36 +1420,38 @@ status_raw() {
 print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"'
 '"\033[7mCOMMANDS (only one) and their specific options:\033[0m"'
-'"\033[1;35mup\033[0m             - (re)starts $SC_NAME shield protection"'
-'"   \033[1;36m-net-wall\033[0m      + by restarting the internal firewall"'
-'"   \033[1;36m-refresh\033[0m       + with updated shield directives"'
-'"   \033[1;36m-log-enable\033[0m    + with logging enabled"'
-'"   \033[1;36m-log-disable\033[0m   + with logging disabled"'
-'"   \033[1;36m-wan-no-bypass\033[0m + without WAN network range bypass"'
-'"   \033[1;36m-vpn-no-bypass\033[0m + without VPN network range bypass"'
-'" \033[1;35mdown\033[0m           - stops $SC_NAME shield protection"'
-'" \033[1;35mrefresh\033[0m        - updates shield directives from sources and custom lists\033[0m"'
-'" \033[1;35mlog -enable\033[0m    - enables logging"'
-'" \033[1;35mlog -disable\033[0m   - disables logging"'
-'" \033[1;35mlog -show\033[0m      - displays the log report"'
-'"   \033[1;36m-lines=\033[0mN       + will display N last lines (N being the number of lines to show)"'
-'" \033[1;35mlog -live\033[0m      - displays the log report live (CTRL-C to exit)"'
-'" \033[1;35munset\033[0m          - stops and unsets $SC_NAME shield"'
-'"   \033[1;36m-rm-config\033[0m     + and removes $SC_NAME configuration file"'
-'"   \033[1;36m-rm-symlink\033[0m    + and removes the symlink /usr/bin/$SC_NAME"'
-'"   \033[1;36m-rm-web\033[0m        + and removes $WEB_NAME"'
-'"   \033[1;36m-rm-log\033[0m        + and removes log file"'
-'" \033[1;35mhelp\033[0m           - displays help (this)"'
-'" \033[1;35minfo\033[0m           - displays info on this script"'
-'" \033[1;35mstatus\033[0m         - displays status"'
-'" \033[1;35mupgrade\033[0m        - downloads and installs latest version"'
-'" \033[1;35mweb -install\033[0m   - downloads and installs $WEB_NAME"'
-'" \033[1;35mweb -remove\033[0m    - removes $WEB_NAME"'
+'"\033[1;35mup\033[0m                  - (re)starts $SC_NAME shield protection"'
+'"   \033[1;36m-net-wall\033[0m          + by restarting the internal firewall"'
+'"   \033[1;36m-refresh\033[0m           + with updated shield directives"'
+'"   \033[1;36m-log-enable\033[0m        + with logging enabled"'
+'"   \033[1;36m-log-disable\033[0m       + with logging disabled"'
+'"   \033[1;36m-wan-no-bypass\033[0m     + without WAN network range bypass"'
+'"   \033[1;36m-vpn-no-bypass\033[0m     + without VPN network range bypass"'
+'" \033[1;35mdown\033[0m               - stops $SC_NAME shield protection"'
+'" \033[1;35mrefresh\033[0m            - updates shield directives from sources and custom lists\033[0m"'
+'" \033[1;35mlog -enable\033[0m        - enables logging"'
+'" \033[1;35mlog -disable\033[0m       - disables logging"'
+'" \033[1;35mlog -show\033[0m          - displays the log report"'
+'"   \033[1;36m-lines=\033[0mN           + will display N last lines (N being the number of lines to show)"'
+'" \033[1;35mlog -live\033[0m          - displays the log report live (CTRL-C to exit)"'
+'" \033[1;35mlog -get-history\033[0m   - show the history size for the log file $LOG_FILE"'
+'" \033[1;35mlog -set-history=\033[0mN - sets the history size to N records for the log file $LOG_FILE"'
+'" \033[1;35munset\033[0m              - stops and unsets $SC_NAME shield"'
+'"   \033[1;36m-rm-config\033[0m         + and removes $SC_NAME configuration file"'
+'"   \033[1;36m-rm-symlink\033[0m        + and removes the symlink /usr/bin/$SC_NAME"'
+'"   \033[1;36m-rm-web\033[0m            + and removes $WEB_NAME"'
+'"   \033[1;36m-rm-log\033[0m            + and removes log file"'
+'" \033[1;35mhelp\033[0m               - displays help (this)"'
+'" \033[1;35minfo\033[0m               - displays info on this script"'
+'" \033[1;35mstatus\033[0m             - displays status"'
+'" \033[1;35mupgrade\033[0m            - downloads and installs latest version"'
+'" \033[1;35mweb -install\033[0m       - downloads and installs $WEB_NAME"'
+'" \033[1;35mweb -remove\033[0m        - removes $WEB_NAME"'
 '"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m"'
-'" \033[1;36m-v\033[0m             + verbose mode (level 1)"'
-'" \033[1;36m-vv\033[0m            + verbose mode (level 2)"'
-'" \033[1;36m-vvv\033[0m           + verbose mode (level 3)"'
-'" \033[1;36m-q\033[0m             + quiet mode (no output)"
+'" \033[1;36m-v\033[0m                 + verbose mode (level 1)"'
+'" \033[1;36m-vv\033[0m                + verbose mode (level 2)"'
+'" \033[1;36m-vvv\033[0m               + verbose mode (level 3)"'
+'" \033[1;36m-q\033[0m                 + quiet mode (no output)"
 }
 
 ###############################################
@@ -1492,8 +1496,8 @@ esac
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 _shield_args() {
-  [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log=1
-  [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log
+  [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log.enabled=1
+  [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log.enabled
   [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
   [ -z "${ARGS##* -vpn-no-bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
   
@@ -1504,10 +1508,12 @@ _shield_args() {
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
     *' -live '*) print_log 0 ;;
+    *' -get-history '*) sc_conf get log.len ;;
+    *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
   esac
 }
 _clean_args() {
