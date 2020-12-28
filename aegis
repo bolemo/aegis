@@ -2,15 +2,13 @@
 # ----------- ENVIRONMENT VARIABLES -----------
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
-if [ "$1" = '_env' ]; then IFS=; while read -r L
-  do case "$L" in ': ENV START') E=1;; ': ENV STOP') E=;; ': ENV EOF') break;; *) [ $E ] && echo "$L";; esac
-done<$0; exit; fi
+[ "$1" == '_env' ] && /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print} $0==": ENV START"{e=1}' $0; exit
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.3"
+SC_VERS="1.5.4"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -33,7 +31,7 @@ if ifconfig wg0 >/dev/null 2>/dev/null; then
   TUN_IF='wg0'
 else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
-  [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
+  [ $TUN_IF ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 
 # INFO FROM (2 bits)
