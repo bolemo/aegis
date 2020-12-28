@@ -136,7 +136,7 @@ LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
-[ sc_conf get log.len ] || sc_conf set log.len=5000
+sc_conf get log.len >/dev/null || sc_conf set log.len=5000
 cat >"$LOGD_TMP" <<'EOF'
 #local NUMLINES=5000
 local LOG_MSG=/var/log/log-message
@@ -377,7 +377,7 @@ shield_uprear() {
     ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   fi
 
-  if sc_conf get log >/dev/null; then
+  if sc_conf get log.enabled >/dev/null; then
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -563,7 +563,7 @@ clean_path() {
 
 # CONFIG: .../bolemo/etc/config/aegis #########
 check_conf() {
-  [ -d "$ROOT_DIR/etc/config" ] && sc_conf get && sc_conf get wan && sc_conf get tun
+  [ -d "$ROOT_DIR/etc/config" ] && sc_conf get && sc_conf get wan && sc_conf get tun && sc_conf get log
   return $?
 } >/dev/null
 
@@ -885,7 +885,7 @@ shield_up() {
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
-  sc_conf get log >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."
+  sc_conf get log.enabled >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."
   if [ $2 ]; then
     [ "$VERBOSE" ] && echo -e "- Restarting firewall with $SC_NAME shield.\033[0m"
     /usr/sbin/net-wall restart > /dev/null
@@ -1191,7 +1191,7 @@ _status() {
         [ $((_CK&CK_IPT_WL)) -eq 0 ] &&                                                           _PB=$((_PB+CK_IPT_WL))
       fi
       # LOG
-      if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log >/dev/null
+      if [ $((_PB&CK_IPT_CH)) -eq 0 ]; then if sc_conf get log.enabled >/dev/null
         then [ $((_CK&CK_IPT_LOG)) -eq 0 ] &&                                                     _WN=$((_WN+WN_LOG_DIFF))
         else [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&                                                     _WN=$((_WN+WN_LOG_DIFF))
       fi fi
@@ -1495,8 +1495,8 @@ esac
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
 _shield_args() {
-  [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log=1
-  [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log
+  [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log.enabled=1
+  [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log.enabled
   [ -z "${ARGS##* -wan-no-bypass *}" ] && sc_conf set wan.no_bypass=1 || sc_conf delete wan.no_bypass
   [ -z "${ARGS##* -vpn-no-bypass *}" ] && sc_conf set tun.no_bypass=1 || sc_conf delete tun.no_bypass
   
@@ -1507,8 +1507,8 @@ _shield_args() {
 }
 _log_args() {
   case $ARGS in
-    *' -enable '*)     sc_conf set log=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -enable '*)     sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+    *' -disable '*)    sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
     *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
     *' -live '*) print_log 0 ;;
   esac
