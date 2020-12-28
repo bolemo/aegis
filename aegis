@@ -10,7 +10,7 @@ done<$0; exit; fi
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.2"
+SC_VERS="1.5.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -136,26 +136,28 @@ LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
+[ sc_conf get log.len ] || sc_conf set log.len=5000
 cat >"$LOGD_TMP" <<'EOF'
-local NUMLINES=5000
+#local NUMLINES=5000
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
 trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
 touch $LOG_FILE
 while :; do
+  local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
   local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
   if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
       /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -le "$([ -r "$LOGD_TMP" ] && wc -l <"$LOGD_TMP")" ]
+      set -- $(/usr/bin/wc -l $LOGD_TMP); if [ "$NUMLINES" -le "$1" ]
         then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
         else cat $LOGD_TMP >$LOG_FILE
       fi
     else :>$LOG_FILE
     fi
-  elif [ "$NUMLINES" -le "$([ -r "$LOG_FILE" ] && wc -l <"$LOG_FILE")" ]; then
-    /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  else set -- $(/usr/bin/wc -l $LOG_FILE); if [ "$NUMLINES" -le "$1" ]
+    then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE; fi
   fi
   rm $LOGD_TMP 2>/dev/null
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
@@ -571,6 +573,7 @@ set_conf() {
 package $SC_ABR
 config net-iface 'wan'
 config net-iface 'tun'
+config log 'log'
 EOF
   sc_conf commit
 }
