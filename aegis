@@ -136,9 +136,8 @@ LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
-sc_conf get log.len >/dev/null || sc_conf set log.len=5000
+sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 cat >"$LOGD_TMP" <<'EOF'
-#local NUMLINES=5000
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
 trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
