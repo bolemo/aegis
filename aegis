@@ -190,14 +190,18 @@ _cipset_diff_set_file() {
   return $?
 }
 _cipset_swap_set_file() {
-  cat $2 >$_CIPSET_DIR/$1
-  echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $IPSET_TMP /" $_CIPSET_DIR/$1)" | ipset restore
-  ipset swap "$1" "$IPSET_TMP"
-  ipset destroy $IPSET_TMP
+  /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' $2 >"$_CIPSET_DIR/$1"
+  ipset restore "$_CIPSET_DIR/$1"; ipset swap "$1" "$IPSET_TMP"; ipset destroy $IPSET_TMP; rm "$_CIPSET_DIR/$1"
+#  cat $2 >$_CIPSET_DIR/$1
+#  echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $IPSET_TMP /" $_CIPSET_DIR/$1)" | ipset restore
+#  ipset swap "$1" "$IPSET_TMP"
+#  ipset destroy $IPSET_TMP
 }
 _cipset_create_set_file() {
-  cat $2 >$_CIPSET_DIR/$1
-  echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
+/usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' $2 >"$_CIPSET_DIR/$1"
+  ipset restore "$_CIPSET_DIR/$1"; rm "$_CIPSET_DIR/$1"
+#  cat $2 >$_CIPSET_DIR/$1
+#  echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
 }
 _cipset_inet_in_bl() {
   [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
