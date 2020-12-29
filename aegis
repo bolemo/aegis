@@ -24,6 +24,7 @@ BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
 WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
 INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
+SHIELD_LOCK="/tmp/${SC_ABR}_lock"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
@@ -165,7 +166,7 @@ while :; do
     sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
-      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || kill $(cat $LOGD_PID)
+      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || [ -e "$SHIELD_LOCK" ] || kill $(cat $LOGD_PID)
       else C=$((C+1))
     fi
   done <$LOG_MSG >>$LOG_FILE 2>/dev/null;
@@ -257,6 +258,7 @@ shield_uprear() {
   [ $2 ] && _RELOAD_WTD=1
 
   NFO_IPS=0; NFO_IPT=0
+  :>"$SHIELD_LOCK" # creating the lock file to advertise that shield IS BEING (re)-built
   _logd_status; NFO_LOGD=$?
   _cipset_init
   # creating ipset blocklist if needed
@@ -426,6 +428,7 @@ shield_uprear() {
     NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TUN_SHIFT)))
   fi
   
+  /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
@@ -766,6 +769,7 @@ sc_init() {
 
 shield_init() {
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
+  [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   ipset -q destroy $IPSET_TMP
   if check_conf
     then [ "$VERBOSE" ] && echo "- Configuration file is set."
@@ -883,6 +887,7 @@ clean() {
   ipset -q destroy "$IPSET_TMP"
   [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
+  [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
 }
 
