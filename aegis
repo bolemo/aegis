@@ -2,7 +2,7 @@
 # ----------- ENVIRONMENT VARIABLES -----------
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
-[ "$1" == '_env' ] && /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print} $0==": ENV START"{e=1}' $0; exit
+[ "$1" == '_env' ] && /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print;fflush()} $0==": ENV START"{e=1}' $0; exit
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
