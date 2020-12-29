@@ -144,7 +144,7 @@ status() {
     esac
     case $((INFO_IPS&INFO_IPS_WL_MASK)) in
       0)                                      echo "<li>directives: no whitelist file was found.</li>" ;;
-      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>ipset: whitelist directives were already set and identical to file.</li>" ;;
+      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>directives: ipset whitelist was already set and identical to file.</li>" ;;
       $INFO_IPS_WL_KEEP)                      echo "<li>directives: ipset whitelist was kept.</li>" ;;
       $INFO_IPS_WL_LOAD)                      echo "<li>directives: ipset whitelist was set from file.</li>" ;;
       $INFO_IPS_WL_SWAP)                      echo "<li>directives: ipset whitelist was updated from file.</li>" ;;
