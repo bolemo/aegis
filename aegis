@@ -190,16 +190,15 @@ _cipset_diff_set_file() {
   return $?
 }
 _cipset_swap_set_file() {
-  /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' $2 >"$_CIPSET_DIR/$1"
-  ipset restore "$_CIPSET_DIR/$1"; ipset swap "$1" "$IPSET_TMP"; ipset destroy $IPSET_TMP; rm "$_CIPSET_DIR/$1"
+  /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' $2 | ipset restore
+  ipset swap "$1" "$IPSET_TMP"; ipset destroy $IPSET_TMP
 #  cat $2 >$_CIPSET_DIR/$1
 #  echo -e "create $IPSET_TMP hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $IPSET_TMP /" $_CIPSET_DIR/$1)" | ipset restore
 #  ipset swap "$1" "$IPSET_TMP"
 #  ipset destroy $IPSET_TMP
 }
 _cipset_create_set_file() {
-/usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' $2 >"$_CIPSET_DIR/$1"
-  ipset restore "$_CIPSET_DIR/$1"; rm "$_CIPSET_DIR/$1"
+/usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' $2 | ipset restore
 #  cat $2 >$_CIPSET_DIR/$1
 #  echo -e "create $1 hash:net family inet maxelem $(/usr/bin/wc -l <"$_CIPSET_DIR/$1")\n$(/bin/sed "s/^/add $1 /" "$_CIPSET_DIR/$1")" | ipset restore
 }
