@@ -112,7 +112,7 @@ INFO_LOGD_MASK=3
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"; } 2>/dev/null
+get_ipt() 2>/dev/null _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -190,11 +190,13 @@ _cipset_diff_set_file() {
   return $?
 }
 _cipset_swap_set_file() {
-  /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' $2 | ipset restore
+  /bin/cp -f $2 "$_CIPSET_DIR/$1"
+  /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
   ipset swap "$1" "$IPSET_TMP"; ipset destroy $IPSET_TMP
 }
 _cipset_create_set_file() {
-/usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' $2 | ipset restore
+  /bin/cp -f $2 "$_CIPSET_DIR/$1"
+  /usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
 }
 _cipset_inet_in_bl() {
   [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
@@ -321,7 +323,7 @@ shield_uprear() {
 
   get_ipt
   #Define grep to find inaccurate ifaces (used for clean-ups)
-  [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
+  [ $TUN_IF ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
   [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_BIN -N "$IPTBL_SRC"
@@ -329,7 +331,7 @@ shield_uprear() {
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_BIN -N "$IPTBL_DST"
 
   WAN_INET=$(inet_for_if $WAN_IF)
-  [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
+  [ $TUN_IF ] && TUN_INET=$(inet_for_if $TUN_IF)
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
   if _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else WAN_INET=''; fi
   if _cipset_inet_in_bl $TUN_INET; then [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else TUN_INET=''; fi
