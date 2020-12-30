@@ -448,7 +448,7 @@ shield_uprear() {
 ###############################################
 
 #we are called from firewall_start.sh
-if [ "$1" ] && [ "$1" = "_fws" ]; then
+if [ "$1" == "_fws" ]; then
   sc_conf get up >/dev/null || exit 0
   shield_uprear "$INFO_FROM_FWS"
   exit 0
