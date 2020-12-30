@@ -138,13 +138,14 @@ _logd_start() {
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 export STDERR=$(sc_conf get log.debug); [ "$STDERR" ] && touch $STDERR || STDERR=/dev/null
 cat >"$LOGD_TMP" <<'EOF'
-echo "$(date): log daemon starts" >>$STDERR
+debug() echo "$(date): $1" >>$STDERR;
+debug 'log daemon starts'
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
 trap "{ [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; echo \"$(date): log daemon exiting\" >&2; exit; } 2>>$STDERR" TERM INT QUIT EXIT
 touch $LOG_FILE
 while :; do
-  echo "$(date): log-message was rotated" >>$STDERR
+  debug 'log-message was rotated'
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
   local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
   if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
@@ -169,7 +170,7 @@ while :; do
     sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
-      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || [ -e "$SHIELD_LOCK" ] || kill $(cat $LOGD_PID)
+      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || [ -e "$SHIELD_LOCK" ] && debug 'iptables rules not found, but shield is locked...' || { debug 'iptables rules not found, shield unlocked -> killing daemon'; kill $(cat $LOGD_PID); }
       else C=$((C+1))
     fi
   done <$LOG_MSG >>$LOG_FILE
