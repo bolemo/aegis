@@ -148,14 +148,13 @@ while :; do
     local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
     if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
       /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -le "$(/usr/bin/wc -l $LOGD_TMP|/usr/bin/cut -d' ' -f1)" ]
-        then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
-        else /bin/cat $LOGD_TMP >$LOG_FILE
-      fi
+      [ -s "$LOGD_TMP" ] && set -- /usr/bin/wc -l "$LOGD_TMP" || set -- 0
+      if [ "$1" -gt "$NUMLINES" ]; then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
+      else /bin/cat $LOGD_TMP >$LOG_FILE; fi
     else :>$LOG_FILE
     fi
-  else if [ "$NUMLINES" -le "$(/usr/bin/wc -l $LOG_FILE|/usr/bin/cut -d' ' -f1)" ]
-    then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE; fi
+  else [ -s "$LOG_FILE" ] && set -- /usr/bin/wc -l "$LOG_FILE" || set -- 0
+    if [ "$1" -gt "$NUMLINES" ]; then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE; fi
   fi
   rm $LOGD_TMP 2>/dev/null
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
@@ -384,7 +383,6 @@ shield_uprear() {
       [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
       $IPT_BIN -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
-      _logd_start && NFO_LOGD=$INFO_LOGD_STARTED || NFO_LOGD=$INFO_LOGD_KEEP_ON
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
     if [ "$_LOG_POS" != "$_POS" ]; then
@@ -393,6 +391,7 @@ shield_uprear() {
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
+    _logd_start && NFO_LOGD=$INFO_LOGD_STARTED || NFO_LOGD=$INFO_LOGD_KEEP_ON
   else
     $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
     $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
