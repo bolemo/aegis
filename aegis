@@ -293,10 +293,10 @@ shield_uprear() {
   fi
   
   # creating ipset whitelist if needed
+  [ -r "$WL_FILE" ] && _WL=true || _WL=false
   if _cipset_copy_set $IPSET_WL_NAME; then
     # ipset whitelist is already in place
-    if [ -r "$WL_FILE" ]; then
-      _WL=1
+    if $_WL; then
       [ "$_RELOAD_WTD" ] && _RELOAD=1 || _RELOAD=''
       # checking if ipset and file are identical
       if _cipset_diff_set_file $IPSET_WL_NAME $WL_FILE
@@ -313,18 +313,15 @@ shield_uprear() {
       fi
     #else it will be destroyed later
     fi
-  else
-    if [ -r "$WL_FILE" ]; then
-      # netset file exists, so creating whitelist ipset from it
-      _WL=1
-      _cipset_create_set_file $IPSET_WL_NAME $WL_FILE
-      NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
-    fi
+  elif $_WL; then
+    # netset file exists, so creating whitelist ipset from it
+    _cipset_create_set_file $IPSET_WL_NAME $WL_FILE
+    NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
 
   get_ipt
   #Define grep to find inaccurate ifaces (used for clean-ups)
-  [ $TUN_IF ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
+  [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
   _IPT_SRC="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_SRC")"
   [ "$_IPT_SRC" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_SRC_KEEP)) || $IPT_BIN -N "$IPTBL_SRC"
@@ -334,7 +331,7 @@ shield_uprear() {
   sc_conf get wan.no_bypass >/dev/null && _WBW=false || _WBW=true
   sc_conf get tun.no_bypass >/dev/null && _TBW=false || _TBW=true
   WAN_INET=$(inet_for_if $WAN_IF)
-  [ $TUN_IF ] && TUN_INET=$(inet_for_if $TUN_IF)
+  [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
   if $_WBW && _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else _WBW=false; fi
   if $_TBW && _cipset_inet_in_bl $TUN_INET; then [ $_EXCL_IF ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$TUN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else _TBW=false; fi
@@ -354,7 +351,7 @@ shield_uprear() {
   # Applying TUN Network Range Bypass (if applicable, needed and not skipped)
   $_TBW && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); }
 
-  if [ "$_WL" ]; then
+  if $_WL; then
     # apply whitelist
     _POS=$((1+_POS)) 
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
