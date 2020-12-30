@@ -138,8 +138,8 @@ _logd_start() {
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 cat >"$LOGD_TMP" <<'EOF'
 if uci -qc /opt/bolemo/etc/config get aegis.log.debug >/dev/null
-  then local STDERR=/tmp/aegis_logd_debug; echo "$(date): log daemon starts" >$STDERR
-  else local STDERR=/dev/null
+  then STDERR=/tmp/aegis_logd_debug; echo "$(date): log daemon starts" >$STDERR
+  else STDERR=/dev/null
 fi
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
@@ -174,7 +174,7 @@ while :; do
       else C=$((C+1))
     fi
   done <$LOG_MSG >>$LOG_FILE
-done 2>>$STDERR
+done 2>>"$STDERR"
 EOF
 export LOGD_NAME; export LOGD_PID; export LOGD_TMP
 export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
