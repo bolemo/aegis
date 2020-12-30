@@ -155,7 +155,7 @@ while :; do
     else :>$LOG_FILE
     fi
   elif [ "$NUMLINES" -le "$(/usr/bin/wc -l $LOG_FILE|/usr/bin/cut -d' ' -f1)" ]
-     then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE; fi
+     then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
   fi
   rm $LOGD_TMP 2>/dev/null
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
