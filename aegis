@@ -141,7 +141,7 @@ cat >"$LOGD_TMP" <<'EOF'
 echo "$(date): log daemon starts" >>$STDERR
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
-trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>$STDERR" TERM EXIT
+trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>>$STDERR" TERM EXIT
 touch $LOG_FILE
 while :; do
   echo "$(date): log-message was rotated" >>$STDERR
