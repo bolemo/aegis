@@ -170,7 +170,13 @@ while :; do
     sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
-      then C=1; $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] " || [ -e "$SHIELD_LOCK" ] && debug 'iptables rules not found, but shield is locked...' || { debug 'iptables rules not found, shield unlocked -> killing daemon'; kill $(cat $LOGD_PID); }
+      then C=1
+        if ! $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
+          if [ -e "$SHIELD_LOCK" ]
+            then debug 'iptables rules not found, but shield is locked...'
+            else debug 'iptables rules not found, shield unlocked -> killing daemon'; kill $(cat $LOGD_PID)
+          fi
+        fi
       else C=$((C+1))
     fi
   done <$LOG_MSG >>$LOG_FILE
