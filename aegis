@@ -254,7 +254,7 @@ _set_ipt_for_if_pos() {
 
 shield_uprear() {
   NFO_FROM=$1
-  [ $2 ] && _RELOAD_WTD=1
+  [ $2 ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
   NFO_IPS=0; NFO_IPT=0
   :>"$SHIELD_LOCK" # creating the lock file to advertise that shield IS BEING (re)-built
@@ -264,18 +264,18 @@ shield_uprear() {
   if _cipset_copy_set $IPSET_BL_NAME; then
     # an ipset blocklist is already loaded
     if [ -r "$BL_FILE" ]; then
-      [ "$_RELOAD_WTD" ] && _RELOAD=1
+      if $_RELOAD_WTD; then _RELOAD=true
       # checking if ipset and file are identical
-      if _cipset_diff_set_file $IPSET_BL_NAME $BL_FILE
-        then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
-        else _RELOAD=1
+      elif _cipset_diff_set_file $IPSET_BL_NAME $BL_FILE
+        then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
+        else _RELOAD=true
       fi
     else
       # blocklist file is missing!
-      _RELOAD=''
+      _RELOAD=false
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_MISS))
     fi
-    if [ "$_RELOAD" ]; then
+    if $_RELOAD; then
     # reload is asked for; so need to swap ipset
       _cipset_swap_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
@@ -297,13 +297,13 @@ shield_uprear() {
   if _cipset_copy_set $IPSET_WL_NAME; then
     # ipset whitelist is already in place
     if $_WL; then
-      [ "$_RELOAD_WTD" ] && _RELOAD=1 || _RELOAD=''
+      if $_RELOAD_WTD; then _RELOAD=true
       # checking if ipset and file are identical
-      if _cipset_diff_set_file $IPSET_WL_NAME $WL_FILE
-        then _RELOAD=''; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
-        else _RELOAD=1
+      elif _cipset_diff_set_file $IPSET_WL_NAME $WL_FILE
+        then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
+        else _RELOAD=true
       fi
-      if [ "$_RELOAD" ]; then
+      if $_RELOAD; then
       # reload is asked for; so need to swap ipset
         _cipset_swap_set_file $IPSET_WL_NAME $WL_FILE
         NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SWAP))
