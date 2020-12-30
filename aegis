@@ -1067,7 +1067,7 @@ chain_status() {
       if [ "$(echo "$_CH_IPT"|/bin/grep -F -- 'LOG'|/usr/bin/cut -d: -f1)" = $_CL ]; then            _CH_CK=$((_CH_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL == $_LL ] ||                                                         _CH_PB=$((_CH_PB+CK_IPT_CH))
+      [ $_CL -eq $_LL ] ||                                                       _CH_PB=$((_CH_PB+CK_IPT_CH))
     else                                                                         _CH_PB=$((_CH_PB+CK_IPT_CH))
     fi
   fi
