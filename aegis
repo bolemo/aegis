@@ -136,14 +136,12 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
+sc_conf get log.debug >/dev/null && export STDERR=/tmp/aegis_logd_debug || export STDERR=/dev/null
 cat >"$LOGD_TMP" <<'EOF'
-if uci -qc /opt/bolemo/etc/config get aegis.log.debug >/dev/null
-  then STDERR=/tmp/aegis_logd_debug; echo "$(date): log daemon starts" >$STDERR
-  else STDERR=/dev/null
-fi
+echo "$(date): log daemon starts" >$STDERR
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
-trap "{ echo "$(date): log daemon stops" >>$STDERR; PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
+trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; echo "$(date): log daemon stops" >>$STDERR; exit; } 2>/dev/null" TERM EXIT
 touch $LOG_FILE
 while :; do
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
@@ -174,7 +172,7 @@ while :; do
       else C=$((C+1))
     fi
   done <$LOG_MSG >>$LOG_FILE
-done 2>>"$STDERR"
+done 2>>$STDERR
 EOF
 export LOGD_NAME; export LOGD_PID; export LOGD_TMP
 export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
