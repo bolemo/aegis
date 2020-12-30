@@ -136,14 +136,15 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-sc_conf get log.debug >/dev/null && export STDERR=/tmp/aegis_logd_debug || export STDERR=/dev/null
+export STDERR=$(sc_conf get log.debug); [ "$STDERR" ] && touch $STDERR || STDERR=/dev/null
 cat >"$LOGD_TMP" <<'EOF'
-echo "$(date): log daemon starts" >$STDERR
+echo "$(date): log daemon starts" >>$STDERR
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
-trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; echo "$(date): log daemon stops" >>$STDERR; exit; } 2>/dev/null" TERM EXIT
+trap "{ PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>$STDERR" TERM EXIT
 touch $LOG_FILE
 while :; do
+  echo "$(date): log-message was rotated" >>$STDERR
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
   local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
   if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
