@@ -143,7 +143,7 @@ if uci -qc /opt/bolemo/etc/config get aegis.log.debug >/dev/null
 fi
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
-trap "{ echo "$(date): log daemon stops" >>$STDERR; PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>>$STDERR" TERM EXIT
+trap "{ echo "$(date): log daemon stops" >>$STDERR; PID=$(cat $LOGD_PID); rm $LOGD_PID; rm $LOGD_TMP; kill -9 $PID; exit; } 2>/dev/null" TERM EXIT
 touch $LOG_FILE
 while :; do
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
