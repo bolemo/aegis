@@ -914,10 +914,10 @@ update_iplist() {
       { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } |/bin/grep '^[0-9]'|/bin/sed 's/;.*//' >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
       _EC=$?
       [ $VERBOSE ] && echo -e "\033[0m"
-      [ $_EC = 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
+      [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
     done
-    [ $_NBOK = 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
-    [ $_NBOK = $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
+    [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
+    [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
   }
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blacklist(s)..."
