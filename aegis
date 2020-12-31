@@ -147,7 +147,7 @@ trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trap
 touch $LOG_FILE
 while :; do
   local INODE="$(ls -i $LOG_MSG)"
-  debug "working with log-message inode: $LOG_MSG"
+  debug "working with log-message inode: $INODE"
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
   if [ -s $LOG_FILE ]; then
     debug "log-aegis exists and is not empty"
