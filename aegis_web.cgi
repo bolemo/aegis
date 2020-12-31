@@ -29,10 +29,7 @@ uninstall() {
   /bin/rm -rf $wcDAT_DIR
 } 2>/dev/null
 
-aegis_env() {
-  # source environment we need from aegis
-  eval "$($wcAEGIS_BIN _env)"
-}
+aegis_env() eval "$($wcAEGIS_BIN _env)" # source environment we need from aegis
 
 status() {
   aegis_env
@@ -147,7 +144,7 @@ status() {
     esac
     case $((INFO_IPS&INFO_IPS_WL_MASK)) in
       0)                                      echo "<li>directives: no whitelist file was found.</li>" ;;
-      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>ipset: whitelist directives were already set and identical to file.</li>" ;;
+      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>directives: ipset whitelist was already set and identical to file.</li>" ;;
       $INFO_IPS_WL_KEEP)                      echo "<li>directives: ipset whitelist was kept.</li>" ;;
       $INFO_IPS_WL_LOAD)                      echo "<li>directives: ipset whitelist was set from file.</li>" ;;
       $INFO_IPS_WL_SWAP)                      echo "<li>directives: ipset whitelist was updated from file.</li>" ;;
@@ -286,29 +283,9 @@ command() {
   if [ $_ARG2 ]; then ARG="$_ARG2"; _ARG2=''; command; fi;
 }
 
-#_nameForIp() {
-#  _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $3;exit}' /tmp/netscan/attach_device)"
-#  [ -z "$_NAME" ] && _NAME="$(/usr/bin/awk 'match($0,/'$1' /) {print $NF;exit}' /tmp/dhcpd_hostlist /tmp/hosts)"
-#  [ -z "$_NAME" ] && echo "$1" || echo "$_NAME<q>$1</q>"
-#} 2>/dev/null
-
 # LOG
 _LF=/var/log/log-aegis
 _SF=/tmp/aegis_status
-
-#_log_line_for_iface() { # $1 = iface
-#  case $LINE in
-#    *"IN=$1 OUT= "*) _REM=$_SRC; _LOC=$_DST; [ "$_DST" = '255.255.255.255' ] && _LNM="broadcast" || _LNM="router"
-#       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
-#    *"IN=$1"*) _REM=$_SRC; _LOC="$(_nameForIp $_DST)"; _LNM="LAN"
-#       _RPT=$_SPT; _LPT=$_DPT; _ATTR="new incoming" ;;
-#    *"IN= OUT=$1"*) _REM=$_DST; _LOC="$_RNM<q>$_SRC</q>"; _LNM="router"
-#       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
-#    *"OUT=$1"*) _REM=$_DST; _LOC="$(_nameForIp $_SRC)"; _LNM="LAN"
-#       _RPT=$_DPT; _LPT=$_SPT; _ATTR="new outgoing" ;;
-#    *) return 1 ;;
-#  esac
-#}
 
 _getLog() {
   _RNM="$(/bin/nvram get Device_name)"
@@ -317,26 +294,7 @@ _getLog() {
   _ST=$($wcUCI get aegis_web.log.pos)
   _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
   _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
-#  _NST=
-#  /usr/bin/tail -n$_MAX $_LF | /usr/bin/awk -F: '$1$2>'$_ST'{a[++c]=$0} END {while (c) print a[c--]}' | { IFS=;while read -r LINE; do
-#    _TS=${LINE%%:*}
-#    [ $_NST ] || { _1=${LINE#*:};_NST=$_TS${_1%%:*}; }
-#    _PT="<log-ts>$(/bin/date -d $((_BT+_TS)) -D %s +"%F %T")</log-ts>"
-#    _1=${LINE#* SRC=}; _SRC=${_1%% *}
-#    _1=${LINE#* DST=}; _DST=${_1%% *}
-#    _1=${LINE#* PROTO=}; _1=${_1%% *}; [ -z "${_1##*[!0-9]*}" ] && _PROTO="<log-ptl value=\"$_1\">$_1</log-ptl>" || { [ -r "$wcPRT_PTH" ] && _PROTO="<log-ptl value=\"$_1\">$(sed "$((_1+2))q;d" $wcPRT_PTH | /usr/bin/cut -d, -f3)</log-ptl>" || _PROTO="<log-ptl value=\"$_1\">#$_1</log-ptl>"; }
-#    _1=${LINE#* SPT=}; [ "$_1" = "$LINE" ] && _SPT='' || _SPT="<log-pt>${_1%% *}</log-pt>"
-#    _1=${LINE#* DPT=}; [ "$_1" = "$LINE" ] && _DPT='' || _DPT="<log-pt>${_1%% *}</log-pt>"
-#    
-#    if _log_line_for_iface $_WIF; then _ATTR="$_ATTR wan"
-#    elif [ $_TIF ] && _log_line_for_iface $_TIF; then _ATTR="$_ATTR vpn"
-#    fi
-#    
-#    echo "<p class='$_ATTR'>$_PT<log-lbl></log-lbl><log-dir></log-dir>$_PROTO<log-rll><log-if></log-if></log-rll><log-rem><log-rip>$_REM</log-rip>$_RPT</log-rem><log-lll><log-lnm>$_LNM</log-lnm></log-lll><log-loc><log-lip>$_LOC</log-lip>$_LPT</log-loc></p>"
-#  done
-#  [ $_NST ] && eval "$wcUCI set aegis_web.log.pos=$_NST"
-#  }
-/usr/bin/awk -F: '
+  /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
   if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
