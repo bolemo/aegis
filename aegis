@@ -139,33 +139,39 @@ sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 export STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; export DEBUG=true; else STDERR=/dev/null; export DEBUG=false; fi
 cat >"$LOGD_TMP" <<'EOF'
 debug() { $DEBUG && echo "$(date): $1"; } >>$STDERR
-debug 'log daemon starts'
+debug 'log daemon starting'
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
 trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 while :; do
-  debug 'log-message was rotated'
+  local INODE="$(ls -i $LOG_MSG)"
+  debug "working with log-message inode: $LOG_MSG"
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
-  local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
-  if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
-    local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
-    if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
-      /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -lt "$(/bin/cat $LOGD_TMP|/usr/bin/wc -l)" ]
-        then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
-        else /bin/cat $LOGD_TMP >$LOG_FILE
+  if [ -s $LOG_FILE ]; then
+    debug "log-aegis exists and is not empty"
+    local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+    if [ "$FIRST_MSG_LINE" ]; then
+      local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
+      if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
+        /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
+        if [ "$NUMLINES" -lt "$(/bin/cat $LOGD_TMP|/usr/bin/wc -l)" ]
+          then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
+          else /bin/cat $LOGD_TMP >$LOG_FILE
+        fi
+        debug "log-message 1st aegis record is more recent log-aegis 1st record: kept older records from log-aegis up to $NUMLINES"
+      else :>$LOG_FILE; debug "log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis"
       fi
-    else :>$LOG_FILE
+    elif [ "$NUMLINES" -lt "$(/bin/cat $LOG_FILE|/usr/bin/wc -l)" ]
+       then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+          debug "no aegis log record in log-message; kept only $NUMLINES records"
     fi
-  elif [ "$NUMLINES" -lt "$(/bin/cat $LOG_FILE|/usr/bin/wc -l)" ]
-     then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  else :>$LOG_FILE; debug "aegis-log was empty or inexistant, making sure file exists"
   fi
   rm $LOGD_TMP
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
-  local INODE="$(ls -i $LOG_MSG)"
   local C=1; local FC=false
   while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%.3d:%s\n",$1,c,substr($0,st)); fflush()}'; do
     sleep 2 & wait $!
