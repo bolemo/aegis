@@ -8,7 +8,7 @@
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.4"
+SC_VERS="1.5.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -172,7 +172,7 @@ while :; do
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
     if [ $C -eq 10 ] # check every C x 2 seconds
       then C=1
-        if ! $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
+        if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
           if [ -e "$SHIELD_LOCK" ]
             then debug 'iptables rules not found, but shield is locked...'
             else debug 'iptables rules not found, shield unlocked -> killing daemon'; kill $(cat $LOGD_PID)
