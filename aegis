@@ -142,7 +142,8 @@ debug() echo "$(date): $1" >>$STDERR;
 debug 'log daemon starts'
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
-trap "{ [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; echo \"$(date): log daemon exiting\" >&2; exit; } 2>>$STDERR" TERM INT QUIT EXIT
+trapf() { [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; debug \"log daemon exiting; signal: $1\"; exit; } 2>>$STDERR"
+trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 while :; do
   debug 'log-message was rotated'
