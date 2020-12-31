@@ -172,7 +172,7 @@ while :; do
   rm $LOGD_TMP
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
-  local C=1; local FC=false
+  local C=1; local FC=false; local D=1
   while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%.3d:%s\n",$1,c,substr($0,st)); fflush()}'; do
     sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
@@ -185,6 +185,8 @@ while :; do
         FC=true; C=5
       else FC=false; C=1; fi
     else C=$((C+1)); fi
+    $DEBUG && if [ $D -eq 300 ]; then debug "10 minutes in the loop; INODE VAR=$INODE; FILE=$(ls -i $LOG_MSG)"; D=1
+              else D=$((D+1)); fi
   done <$LOG_MSG >>$LOG_FILE
 done 2>>$STDERR
 EOF
