@@ -170,7 +170,7 @@ while :; do
   while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%.3d:%s\n",$1,c,substr($0,st)); fflush()}'; do
     sleep 2 & wait $!
     [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
-    if [ $C -eq 10 ] then; # check every C x 2 seconds
+    if [ $C -eq 10 ]; then # check every C x 2 seconds
       if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
         debug "checking iptables logging rules returned: $?"
         if [ -e "$SHIELD_LOCK" ]; then debug 'shield is locked, waiting for next check'
