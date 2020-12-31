@@ -136,13 +136,13 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-export STDERR=$(sc_conf get log.debug); [ "$STDERR" ] && touch $STDERR || STDERR=/dev/null
+export STDERR=$(sc_conf get log.debug); [ "$STDERR" ] && { touch $STDERR; export DEBUG=true; } || { STDERR=/dev/null; export DEBUG=false; }
 cat >"$LOGD_TMP" <<'EOF'
-debug() echo "$(date): $1" >>$STDERR;
+debug() DEBUG && echo "$(date): $1" >>$STDERR;
 debug 'log daemon starts'
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
-trapf() { [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; debug \"log daemon exiting; signal: $1\"; exit; } 2>>$STDERR"
+trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 while :; do
