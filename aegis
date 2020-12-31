@@ -138,7 +138,7 @@ _logd_start() {
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 export STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; export DEBUG=true; else STDERR=/dev/null; export DEBUG=false; fi
 cat >"$LOGD_TMP" <<'EOF'
-debug() if $DEBUG; then echo "$(date): $1" >>$STDERR; fi
+debug() { $DEBUG && echo "$(date): $1"; } >>$STDERR
 debug 'log daemon starts'
 local LOG_MSG=/var/log/log-message
 rm $LOGD_TMP 2>/dev/null
