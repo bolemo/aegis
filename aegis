@@ -919,9 +919,9 @@ update_iplist() {
   [ $VERBOSE ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
   [ -e "$SRC_LIST" ] || get_def_srclst
   
-  if [ "$1" ]; then # $1 set leans using cache
+  if [ "$1" ]; then # $1 set means using cache
     [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
-    if [ -s "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
+    if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
     else 2>&1 echo "! Blocklist sources cache is empty!"; exit 1; fi
   else
     :>"$TMP_FILE"
