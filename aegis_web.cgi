@@ -101,6 +101,7 @@ status() {
   echo "<li>Active WAN interface is '$WAN_IF'.</li>"
   [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
   # dates
+  [ -e "$SRC_BL_CACHE" ] && echo "<li>Sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)</li>"
   [ -e "$BL_FILE" ] && echo "<li>Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
   [ -e "$WL_FILE" ] && echo "<li>Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
   if [ $_CK -ne 0 ]; then
