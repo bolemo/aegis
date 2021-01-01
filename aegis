@@ -485,6 +485,7 @@ _pm() {
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
+SRC_BL_CACHE="$ROOT_DIR/etc/$SC_NAME-blsrccache"
 CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
 CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 TMP_FILE="/tmp/$SC_NAME.tmp"
@@ -905,6 +906,10 @@ clean() {
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
   [ $VERBOSE ] && echo "- Cleaned ipsets."
+  [ -e "$SRC_BL_CACHE" ] && /bin/rm -f "$SRC_BL_CACHE"
+  [ -e "$BL_FILE" ] && /bin/rm -f "$BL_FILE"
+  [ -e "$WL_FILE" ] && /bin/rm -f "$WL_FILE"
+  [ $VERBOSE ] && echo "- Removed directives files."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
@@ -913,24 +918,32 @@ clean() {
 update_iplist() {
   [ $VERBOSE ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
   [ -e "$SRC_LIST" ] || get_def_srclst
-
-  :>"$TMP_FILE"
-  # Process each source url
-  [ $VERBOSE ] && echo "- Downloading lists defined in $SRC_LIST"
-  [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
-  _NBOK=0; _TOT=0;
-  /bin/grep -v "^[[:space:]*\#]" "$SRC_LIST" | \
-  { while read -r URL; do
-      _TOT=$((_TOT+1))
-      [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
-      { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } | strip_netset_file >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
-      _EC=$?
-      [ $VERBOSE ] && echo -e "\033[0m"
-      [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
-    done
-    [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
-    [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
-  }
+  
+  if [ "$1" ]; then # $1 set leans using cache
+    [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
+    if [ -s "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
+    else 2>&1 echo "! Blocklist sources cache is empty!"; exit 1; fi
+  else
+    :>"$TMP_FILE"
+    # Process each source url
+    [ $VERBOSE ] && echo "- Downloading lists defined in $SRC_LIST"
+    [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
+    _NBOK=0; _TOT=0;
+    /bin/grep -v "^[[:space:]*\#]" "$SRC_LIST" | \
+    { while read -r URL; do
+        _TOT=$((_TOT+1))
+        [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
+        { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } | strip_netset_file >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
+        _EC=$?
+        [ $VERBOSE ] && echo -e "\033[0m"
+        [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
+      done
+      [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
+      [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
+    }
+    [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
+    /bin/cp -f "$TMP_FILE" "$SRC_BL_CACHE"
+  fi
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blacklist(s)..."
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
@@ -1259,6 +1272,7 @@ _status>/dev/null
   [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
+  [ -e "$SRC_BL_CACHE" ] && echo "- Sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)"
   [ -e "$BL_FILE" ] && echo "- Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
   [ -e "$WL_FILE" ] && echo "- Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   if [ $_CK -ne 0 ]; then
@@ -1417,6 +1431,7 @@ print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"   \033[1;36m-vpn-no-bypass\033[0m     + without VPN network range bypass"'
 '" \033[1;35mdown\033[0m               - stops $SC_NAME shield protection"'
 '" \033[1;35mrefresh\033[0m            - updates shield directives from sources and custom lists\033[0m"'
+'"   \033[1;36m-offline=\033[0mN         + will not download lists from sources but use the offline cache instead"'
 '" \033[1;35mlog -enable\033[0m        - enables logging"'
 '" \033[1;35mlog -disable\033[0m       - disables logging"'
 '" \033[1;35mlog -show\033[0m          - displays the log report"'
@@ -1483,6 +1498,9 @@ esac
 [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
 [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 [ -z "${ARGS##* -q *}" ] && QUIET=1
+_refresh_args() {
+  [ -z "${ARGS##* -offline *}" ]       && RF_OFFLN=1   || RF_OFFLN=
+}
 _shield_args() {
   [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log.enabled=1
   [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log.enabled
@@ -1527,7 +1545,7 @@ case "$PARAM" in
   'down') shield_down; [ $VERBOSE ] && status_term ;;
   
   'unset') _clean_args; clean; [ $VERBOSE ] && status_term ;;
-  'refresh') update_iplist; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
+  'refresh') _refresh_args; update_iplist $RF_OFFLN; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
   
   'status') status_term ;;
   'help') print_help ;;
