@@ -1500,7 +1500,7 @@ if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
   [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
 fi
 _refresh_args() {
-  [ -z "${ARGS##* --custom-only *}" ]  && RF_OFFLN=1   || RF_OFFLN=
+  [ -z "${ARGS##* -custom-only *}" ]   && RF_OFFLN=1   || RF_OFFLN=
 }
 _shield_args() {
   [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log.enabled=1
