@@ -575,7 +575,7 @@ set_path() {
 }
 
 clean_path() {
-  if [ -e "/usr/bin/$SC_NAME" ]; then /bin/rm "/usr/bin/$SC_NAME" 2>/dev/null
+  if [ -e "/usr/bin/$SC_NAME" ]; then /bin/rm -f "/usr/bin/$SC_NAME" 2>/dev/null
     [ $VERBOSE ] && echo "- '/usr/bin' symlink was removed."
   fi
 }
@@ -901,7 +901,7 @@ clean() {
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
   _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
-  [ $RM_LOG ] && { rm $LOG_FILE 2>/dev/null; [ $VERBOSE ] && echo "- Removed log file."; }
+  [ $RM_LOG ] && { /bin/rm -f $LOG_FILE 2>/dev/null; [ $VERBOSE ] && echo "- Removed log file."; }
   ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
@@ -938,7 +938,7 @@ update_iplist() {
         [ $VERBOSE ] && echo -e "\033[0m"
         [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
       done
-      [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
+      [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; /bin/rm -f "$TMP_FILE"; exit 1; }
       [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
     }
     [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
