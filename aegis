@@ -204,7 +204,7 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
 _cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
@@ -532,7 +532,7 @@ clean_firewall_start() {
       /bin/sed -i "/$SC_NAME/d" "$FWS_FILE"
       [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
     else
-      /bin/rm "$FWS_FILE" 2>/dev/null
+      /bin/rm -f "$FWS_FILE" 2>/dev/null
       [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
     fi
   fi
@@ -559,7 +559,7 @@ clean_postmount() {
       /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
     else
-      /bin/rm "$PM_FILE" 2>/dev/null
+      /bin/rm -f "$PM_FILE" 2>/dev/null
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
@@ -598,7 +598,7 @@ EOF
 }
 
 clean_conf() {
-  /bin/rm "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
+  /bin/rm -f "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
   [ $VERBOSE ] && echo "- '$SC_NAME' configuration file was removed."
 }
 
@@ -632,7 +632,7 @@ echo "- Downloading:"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
     strip_sh_file "$DL_PATH"
-    \/bin/mv "$DL_PATH" "$SC_NICEPATH"
+    /bin/mv "$DL_PATH" "$SC_NICEPATH"
     /bin/chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
@@ -827,7 +827,7 @@ print_log() {
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI=$_UPT ;; *) _TAIL=$1 _LSCI=0 ;; esac
-  _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "rm $_LSC >/dev/null 2>&1; exit" INT TERM
+  _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "/bin/rm -f $_LSC >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
 while :; do while /usr/bin/awk -F: '
@@ -860,7 +860,7 @@ $1$2>'$(cat $_LSC)'{ts[++b]=$1;l[b]=$0} END
   _ASIZE=$(wc -l <$LOG_FILE); [ $_ASIZE -ge $_RSIZE ] && _RSIZE=$_ASIZE || { _RSIZE=$_ASIZE; break; }
   sleep 1
 done <$LOG_FILE; done
-rm $_LSC >/dev/null 2>&1
+/bin/rm -f $_LSC >/dev/null 2>&1
 }
 
 shield_up() {
@@ -1085,7 +1085,7 @@ chain_status() {
             ;;
         esac
         _CL=$((_CL+1))
-      done <$_MKTMP; rm $_MKTMP
+      done <$_MKTMP; /bin/rm -f $_MKTMP
       if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1)" = $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
@@ -1431,7 +1431,7 @@ print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"   \033[1;36m-vpn-no-bypass\033[0m     + without VPN network range bypass"'
 '" \033[1;35mdown\033[0m               - stops $SC_NAME shield protection"'
 '" \033[1;35mrefresh\033[0m            - updates shield directives from sources and custom lists\033[0m"'
-'"   \033[1;36m-custom-only=\033[0m      + will not download lists from sources but use the offline cache instead"'
+'"   \033[1;36m-custom-only=\033[0m      + will refresh directives only from custom lists (using offline cache for sources ones)"'
 '" \033[1;35mlog -enable\033[0m        - enables logging"'
 '" \033[1;35mlog -disable\033[0m       - disables logging"'
 '" \033[1;35mlog -show\033[0m          - displays the log report"'
