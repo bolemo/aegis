@@ -769,6 +769,8 @@ clean_web() {
 
 strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$1"; }
 
+strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' "$1"; }
+
 ###############################################
 #
 #    INIT FUNCTIONS
@@ -921,7 +923,7 @@ update_iplist() {
   { while read -r URL; do
       _TOT=$((_TOT+1))
       [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
-      { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } |/bin/grep '^[0-9]'|/bin/sed 's/;.*//' >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
+      { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } | strip_netset_file >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
       _EC=$?
       [ $VERBOSE ] && echo -e "\033[0m"
       [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
@@ -931,7 +933,7 @@ update_iplist() {
   }
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blacklist(s)..."
-    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_BL_FILE >>"$TMP_FILE"
+    strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
@@ -946,7 +948,7 @@ update_iplist() {
   # processing whitelist if any
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
-    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
+    strip_netset_file $CUST_WL_FILE >>"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
