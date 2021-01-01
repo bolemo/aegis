@@ -146,6 +146,7 @@ trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 inode() { set -- $(/bin/ls -i $LOG_MSG); echo $1; }
+lc() { set -- $(/usr/bin/wc -l $1); echo $1; }
 while :; do
   local INODE=$(inode)
   debug "working with log-message inode: $INODE"
@@ -157,14 +158,14 @@ while :; do
       local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
       if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
         /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-        if [ "$NUMLINES" -lt "$(/bin/cat $LOGD_TMP|/usr/bin/wc -l)" ]
+        if [ "$NUMLINES" -lt "$(lc $LOGD_TMP)" ]
           then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
           else /bin/cat $LOGD_TMP >$LOG_FILE
         fi
         debug "log-message 1st aegis record is more recent log-aegis 1st record: kept older records from log-aegis up to $NUMLINES"
       else :>$LOG_FILE; debug "log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis"
       fi
-    elif [ "$NUMLINES" -lt "$(/bin/cat $LOG_FILE|/usr/bin/wc -l)" ]
+    elif [ "$NUMLINES" -lt "$(lc $LOG_FILE)" ]
        then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
           debug "no aegis log record in log-message; kept only $NUMLINES records"
     fi
