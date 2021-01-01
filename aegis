@@ -20,8 +20,8 @@ IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 ROOT_DIR="/opt/bolemo"
-BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
-WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
+BL_FILE="$ROOT_DIR/etc/${SC_NAME}.bl.directives"
+WL_FILE="$ROOT_DIR/etc/${SC_NAME}.wl.directives"
 INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
@@ -141,8 +141,8 @@ cat >"$LOGD_TMP" <<'EOF'
 debug() { $DEBUG && echo "$(date): $1"; } >>$STDERR
 debug 'log daemon starting'
 local LOG_MSG=/var/log/log-message
-rm $LOGD_TMP 2>/dev/null
-trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
+/bin/rm -f $LOGD_TMP 2>/dev/null
+trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 inode() { set -- $(/bin/ls -i $LOG_MSG); echo $1; }
@@ -171,7 +171,7 @@ while :; do
     fi
   else :>$LOG_FILE; debug "aegis-log was empty or inexistant, making sure file exists"
   fi
-  rm $LOGD_TMP
+  /bin/rm -f $LOGD_TMP
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local C=1; local FC=false; local D=1
@@ -485,7 +485,7 @@ _pm() {
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-SRC_BL_CACHE="$ROOT_DIR/etc/$SC_NAME-blsrccache"
+SRC_BL_CACHE="$ROOT_DIR/etc/$SC_NAME.bl.src.cache"
 CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
 CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 TMP_FILE="/tmp/$SC_NAME.tmp"
@@ -1431,7 +1431,7 @@ print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"   \033[1;36m-vpn-no-bypass\033[0m     + without VPN network range bypass"'
 '" \033[1;35mdown\033[0m               - stops $SC_NAME shield protection"'
 '" \033[1;35mrefresh\033[0m            - updates shield directives from sources and custom lists\033[0m"'
-'"   \033[1;36m-offline=\033[0mN         + will not download lists from sources but use the offline cache instead"'
+'"   \033[1;36m-custom-only=\033[0m      + will not download lists from sources but use the offline cache instead"'
 '" \033[1;35mlog -enable\033[0m        - enables logging"'
 '" \033[1;35mlog -disable\033[0m       - disables logging"'
 '" \033[1;35mlog -show\033[0m          - displays the log report"'
@@ -1494,12 +1494,13 @@ case $(echo "$PARAM"|/usr/bin/wc -w) in
   *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
 esac
 
-[ -z "${ARGS##* -v *}" ] && VERBOSE=1
-[ -z "${ARGS##* -vv *}" ] && VERBOSE=2
-[ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
-[ -z "${ARGS##* -q *}" ] && QUIET=1
+if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
+  [ -z "${ARGS##* -v *}" ] && VERBOSE=1
+  [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
+  [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
+fi
 _refresh_args() {
-  [ -z "${ARGS##* -offline *}" ]       && RF_OFFLN=1   || RF_OFFLN=
+  [ -z "${ARGS##* --custom-only *}" ]  && RF_OFFLN=1   || RF_OFFLN=
 }
 _shield_args() {
   [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log.enabled=1
