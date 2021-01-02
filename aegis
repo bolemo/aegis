@@ -179,6 +179,7 @@ while :; do
     sleep 2 & wait $!
     [ "$INODE" != "$(inode)" ] && break;
     if [ $C -eq 10 ]; then # check every C x 2 seconds
+      touch $LOG_MSG # attempt to fix stall from $LOG_MSG not rotating fot a long while
       if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
         debug "checking iptables logging rules returned: $?"
         if [ -e "$SHIELD_LOCK" ]; then debug 'shield is locked, waiting for next check'
