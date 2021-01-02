@@ -177,9 +177,8 @@ while :; do
   local C=1; local FC=false; local D=1
   while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%.3d:%s\n",$1,c,substr($0,st)); fflush()}'; do
     sleep 2 & wait $!
-    [ "$INODE" != "$(inode)" ] && break;
+    [ "$INODE" != "$(inode)" ] && break
     if [ $C -eq 10 ]; then # check every C x 2 seconds
-      touch $LOG_MSG # attempt to fix stall from $LOG_MSG not rotating fot a long while
       if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
         debug "checking iptables logging rules returned: $?"
         if [ -e "$SHIELD_LOCK" ]; then debug 'shield is locked, waiting for next check'
@@ -188,8 +187,8 @@ while :; do
         FC=true; C=5
       else FC=false; C=1; fi
     else C=$((C+1)); fi
-    $DEBUG && if [ $D -eq 300 ]; then debug "10 minutes in the loop; INODE VAR=$INODE; FILE=$(inode)"; D=1
-              else D=$((D+1)); fi
+    if [ $D -eq 300 ]; then debug "10 minutes in the loop; breaking it."; break
+    else D=$((D+1)); fi
   done <$LOG_MSG >>$LOG_FILE
 done 2>>$STDERR
 EOF
