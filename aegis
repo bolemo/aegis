@@ -959,29 +959,28 @@ update_iplist() {
 
   # processing whitelist if any
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
-    :>"$TMP_FILE"
     [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
-    strip_netset_file $CUST_WL_FILE >>"$TMP_FILE"
+    strip_netset_file $CUST_WL_FILE >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
         if [ "$($IPR_BIN --common "$BL_FILE" "$TMP_FILE")" ]; then
           [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-          $IPR_BIN --ipset-reduce 20 "$TMP_FILE"  > "$WL_FILE"
+          $IPR_BIN --ipset-reduce 20 "$TMP_FILE" >"$WL_FILE"
         else
           echo '- No IP in common with blocklist directives, skipping whitelist directives.'
         fi
       else
         [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
-        /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq > "$WL_FILE"
+        /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq >"$WL_FILE"
       fi
       else echo '- No IP set found, custom whitelist is empty.'
     fi
-    /bin/rm -f "$TMP_FILE"
     [ $VERBOSE ] && echo "- Done."
+  else /bin/rm -f "$WL_FILE"
   fi
-
-  /bin/rm -f "$WL_FILE"
+  
+  /bin/rm -f "$TMP_FILE" 2>/dev/null
 }
 
 info() {
