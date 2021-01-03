@@ -152,7 +152,7 @@ while :; do
   local NUMLINES=\$(/sbin/uci -qc /opt/bolemo/etc/config get aegis.log.len)
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo 'debug "log-aegis exists and is not empty"')
-    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
     if [ "\$FIRST_MSG_LINE" ]; then
       local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
       if [ "\${FIRST_MSG_LINE%%:*}" -gt "\$FIRST_EXT_TS" ]; then :>$LOGD_TMP
