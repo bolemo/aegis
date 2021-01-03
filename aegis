@@ -1557,7 +1557,7 @@ case "$PARAM" in
   # calls for outside helpers (html)
   '_status') status_raw ;;
   '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
-  '_refresh') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
+  '_refresh') _refresh_args; _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
   '_down') VERBOSE=1; shield_down ;;
   '_upgrade') _upgrade ;;
   
