@@ -275,6 +275,7 @@ command() {
   case $ARG in
     upgrade*) _CMD="aegis _upgrade" ;;
     up*) _CMD="aegis _up$_LOG" ;;
+    refresh_custom*) _CMD="aegis _refresh -custom-only$_LOG" ;;
     refresh*) _CMD="aegis _refresh$_LOG" ;;
     down*) _CMD="aegis _down" ;;
   esac
