@@ -8,7 +8,7 @@
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.5"
+SC_VERS="1.5.6"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -137,60 +137,60 @@ _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 export STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; export DEBUG=true; else STDERR=/dev/null; export DEBUG=false; fi
-cat >"$LOGD_TMP" <<'EOF'
-debug() { $DEBUG || return; touch $STDERR; echo "$(date): $1"; } >>$STDERR
+cat >"$LOGD_TMP" <<EOF
+debug() { \$DEBUG || return; touch \$STDERR; echo "\$(date): \$1"; } >>\$STDERR
 debug 'log daemon starting'
 local LOG_MSG=/var/log/log-message
-/bin/rm -f $LOGD_TMP 2>/dev/null
-trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
+/bin/rm -f \$LOGD_TMP 2>/dev/null
+trapf() { debug "trap signal: \$1"; [ -e \$LOGD_PID ] || exit; PID=\$(cat \$LOGD_PID); /bin/rm -f \$LOGD_PID; [ -e \$LOGD_TMP ] && /bin/rm -f \$LOGD_TMP; debug "log daemon exiting"; exit; } 2>>\$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
-touch $LOG_FILE
-inode() { set -- $(/bin/ls -i $LOG_MSG); echo $1; }
-lc() { set -- $(/usr/bin/wc -l $1); echo $1; }
+touch \$LOG_FILE
+inode() { set -- \$(/bin/ls -i \$LOG_MSG); echo \$1; }
+lc() { set -- \$(/usr/bin/wc -l \$1); echo \$1; }
 while :; do
-  local INODE=$(inode)
-  debug "working with log-message inode: $INODE"
-  local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
-  if [ -s $LOG_FILE ]; then
+  local INODE=\$(inode)
+  debug "working with log-message inode: \$INODE"
+  local NUMLINES=\$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
+  if [ -s \$LOG_FILE ]; then
     debug "log-aegis exists and is not empty"
-    local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
-    if [ "$FIRST_MSG_LINE" ]; then
-      local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
-      if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
-        /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-        if [ "$NUMLINES" -lt "$(lc $LOGD_TMP)" ]
-          then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
-          else /bin/cat $LOGD_TMP >$LOG_FILE
+    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\['\$SC_ABR'\]/{print; exit}' \$LOG_MSG)" # first line in rotated message log
+    if [ "\$FIRST_MSG_LINE" ]; then
+      local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' \$LOG_FILE)" # first timestamp in our log
+      if [ "\${FIRST_MSG_LINE%%:*}" -gt "\$FIRST_EXT_TS" ]; then :>\$LOGD_TMP
+        /usr/bin/awk '\$0=="'"\$FIRST_MSG_LINE"'"{exit} {print}' \$LOG_FILE >>\$LOGD_TMP
+        if [ "\$NUMLINES" -lt "\$(lc \$LOGD_TMP)" ]
+          then /usr/bin/tail -n \$NUMLINES \$LOGD_TMP >\$LOG_FILE
+          else /bin/cat \$LOGD_TMP >\$LOG_FILE
         fi
-        debug "log-message 1st aegis record is more recent log-aegis 1st record: kept older records from log-aegis up to $NUMLINES"
-      else :>$LOG_FILE; debug "log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis"
+        debug "log-message 1st aegis record is more recent than log-aegis 1st record: kept older records from log-aegis up to \$NUMLINES"
+      else :>\$LOG_FILE; debug "log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis"
       fi
-    elif [ "$NUMLINES" -lt "$(lc $LOG_FILE)" ]
-       then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-          debug "no aegis log record in log-message; kept only $NUMLINES records"
+    elif [ "\$NUMLINES" -lt "\$(lc \$LOG_FILE)" ]
+       then /usr/bin/tail -n \$NUMLINES \$LOG_FILE >\$LOGD_TMP; cat \$LOGD_TMP >\$LOG_FILE
+          debug "no aegis log record in log-message; kept only \$NUMLINES records"
     fi
-  else :>$LOG_FILE; debug "aegis-log was empty or inexistant, making sure file exists"
+  else :>\$LOG_FILE; debug "aegis-log was empty or inexistant, making sure file exists"
   fi
-  /bin/rm -f $LOGD_TMP
+  /bin/rm -f \$LOGD_TMP
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local C=1; local FC=false; local D=1
-  while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%.3d:%s\n",$1,c,substr($0,st)); fflush()}'; do
+  while /usr/bin/awk -F: '/\['\$SC_ABR'\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
     sleep 2 & wait $!
-    [ "$INODE" != "$(inode)" ] && break
-    if [ $C -eq 10 ]; then # check every C x 2 seconds
-      if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
-        debug "checking iptables logging rules returned: $?"
-        if [ -e "$SHIELD_LOCK" ]; then debug 'shield is locked, waiting for next check'
-        elif $FC; then debug 'shield is unlocked, this is second check: killing daemon'; kill $(cat $LOGD_PID)
+    [ "\$INODE" != "\$(inode)" ] && break
+    if [ \$C -eq 10 ]; then # check every C x 2 seconds
+      if ! \$IPT_BIN -w -C \$IPTBL_SRC -j LOG --log-prefix "[\$SC_ABR] "; then
+        debug "checking iptables logging rules returned: \$?"
+        if [ -e "\$SHIELD_LOCK" ]; then debug 'shield is locked, waiting for next check'
+        elif \$FC; then debug 'shield is unlocked, this is second check: killing daemon'; kill \$(cat \$LOGD_PID)
         else debug 'shield is unlocked but waiting for second check'; fi
         FC=true; C=5
       else FC=false; C=1; fi
-    else C=$((C+1)); fi
-    if [ $D -eq 300 ]; then debug "10 minutes in the loop; breaking it."; break
-    else D=$((D+1)); fi
-  done <$LOG_MSG >>$LOG_FILE
-done 2>>$STDERR
+    else C=\$((C+1)); fi
+    if [ \$D -eq 300 ]; then debug "10 minutes in the loop; breaking it."; break
+    else D=\$((D+1)); fi
+  done <\$LOG_MSG >>\$LOG_FILE
+done 2>>\$STDERR
 EOF
 export LOGD_NAME; export LOGD_PID; export LOGD_TMP
 export SHIELD_LOCK; export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
