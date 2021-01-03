@@ -136,7 +136,7 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; local DEBUG=true; else STDERR=/dev/null; local DEBUG=false; fi
+local STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; local DEBUG=true; else STDERR=/dev/null; local DEBUG=false; fi
 local LOG_MSG=/var/log/log-message
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(date): \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
