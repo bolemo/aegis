@@ -137,7 +137,7 @@ _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 local LOG_MSG=/var/log/log-message
-export STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; export DEBUG=true; else STDERR=/dev/null; export DEBUG=false; fi
+local STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; local DEBUG=true; else STDERR=/dev/null; local DEBUG=false; fi
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(date): \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
@@ -190,8 +190,7 @@ while :; do
   done <$LOG_MSG >>$LOG_FILE
 done 2>>$STDERR
 EOF
-export LOGD_NAME; export LOGD_PID; export LOGD_TMP
-export SHIELD_LOCK; export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
+export LOGD_PID
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
 }
