@@ -8,7 +8,7 @@
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.4"
+SC_VERS="1.5.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -20,8 +20,8 @@ IPSET_BL_NAME="${SC_ABR}_bl"
 IPSET_WL_NAME="${SC_ABR}_wl"
 IPSET_TMP="${IPSET_BL_NAME}_tmp"
 ROOT_DIR="/opt/bolemo"
-BL_FILE="$ROOT_DIR/etc/${SC_NAME}-bl.netset"
-WL_FILE="$ROOT_DIR/etc/${SC_NAME}-wl.netset"
+BL_FILE="$ROOT_DIR/etc/${SC_NAME}.bl.directives"
+WL_FILE="$ROOT_DIR/etc/${SC_NAME}.wl.directives"
 INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
@@ -138,48 +138,57 @@ _logd_start() {
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 export STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; export DEBUG=true; else STDERR=/dev/null; export DEBUG=false; fi
 cat >"$LOGD_TMP" <<'EOF'
-debug() { $DEBUG && echo "$(date): $1"; } >>$STDERR
-debug 'log daemon starts'
+debug() { $DEBUG || return; touch $STDERR; echo "$(date): $1"; } >>$STDERR
+debug 'log daemon starting'
 local LOG_MSG=/var/log/log-message
-rm $LOGD_TMP 2>/dev/null
-trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); rm $LOGD_PID; [ -e $LOGD_TMP ] && rm $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
+/bin/rm -f $LOGD_TMP 2>/dev/null
+trapf() { debug "trap signal: $1"; [ -e $LOGD_PID ] || exit; PID=$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; debug "log daemon exiting"; exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
+inode() { set -- $(/bin/ls -i $LOG_MSG); echo $1; }
+lc() { set -- $(/usr/bin/wc -l $1); echo $1; }
 while :; do
-  debug 'log-message was rotated'
+  local INODE=$(inode)
+  debug "working with log-message inode: $INODE"
   local NUMLINES=$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
-  local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
-  if [ "$FIRST_MSG_LINE" ] && [ -s $LOG_FILE ]; then
-    local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
-    if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
-      /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-      if [ "$NUMLINES" -lt "$(/bin/cat $LOGD_TMP|/usr/bin/wc -l)" ]
-        then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
-        else /bin/cat $LOGD_TMP >$LOG_FILE
+  if [ -s $LOG_FILE ]; then
+    debug "log-aegis exists and is not empty"
+    local FIRST_MSG_LINE="$(/usr/bin/awk '/\['$SC_ABR'\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+    if [ "$FIRST_MSG_LINE" ]; then
+      local FIRST_EXT_TS="$(/usr/bin/awk -F':' 'NR==1{print $1; exit}' $LOG_FILE)" # first timestamp in our log
+      if [ "${FIRST_MSG_LINE%%:*}" -gt "$FIRST_EXT_TS" ]; then :>$LOGD_TMP
+        /usr/bin/awk '$0=="'"$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
+        if [ "$NUMLINES" -lt "$(lc $LOGD_TMP)" ]
+          then /usr/bin/tail -n $NUMLINES $LOGD_TMP >$LOG_FILE
+          else /bin/cat $LOGD_TMP >$LOG_FILE
+        fi
+        debug "log-message 1st aegis record is more recent log-aegis 1st record: kept older records from log-aegis up to $NUMLINES"
+      else :>$LOG_FILE; debug "log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis"
       fi
-    else :>$LOG_FILE
+    elif [ "$NUMLINES" -lt "$(lc $LOG_FILE)" ]
+       then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+          debug "no aegis log record in log-message; kept only $NUMLINES records"
     fi
-  elif [ "$NUMLINES" -lt "$(/bin/cat $LOG_FILE|/usr/bin/wc -l)" ]
-     then /usr/bin/tail -n $NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  else :>$LOG_FILE; debug "aegis-log was empty or inexistant, making sure file exists"
   fi
-  rm $LOGD_TMP
+  /bin/rm -f $LOGD_TMP
      # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
      # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
-  local INODE="$(ls -i $LOG_MSG)"
-  local C=1
+  local C=1; local FC=false; local D=1
   while /usr/bin/awk -F: '/\['$SC_ABR'\]/{st=index($0," ");if ($1==pts) {c++} else {c=0;pts=$1}; printf("%s:%.3d:%s\n",$1,c,substr($0,st)); fflush()}'; do
     sleep 2 & wait $!
-    [ "$INODE" != "$(ls -i $LOG_MSG)" ] && break;
-    if [ $C -eq 10 ] # check every C x 2 seconds
-      then C=1
-        if ! $IPT_BIN -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
-          if [ -e "$SHIELD_LOCK" ]
-            then debug 'iptables rules not found, but shield is locked...'
-            else debug 'iptables rules not found, shield unlocked -> killing daemon'; kill $(cat $LOGD_PID)
-          fi
-        fi
-      else C=$((C+1))
-    fi
+    [ "$INODE" != "$(inode)" ] && break
+    if [ $C -eq 10 ]; then # check every C x 2 seconds
+      if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
+        debug "checking iptables logging rules returned: $?"
+        if [ -e "$SHIELD_LOCK" ]; then debug 'shield is locked, waiting for next check'
+        elif $FC; then debug 'shield is unlocked, this is second check: killing daemon'; kill $(cat $LOGD_PID)
+        else debug 'shield is unlocked but waiting for second check'; fi
+        FC=true; C=5
+      else FC=false; C=1; fi
+    else C=$((C+1)); fi
+    if [ $D -eq 300 ]; then debug "10 minutes in the loop; breaking it."; break
+    else D=$((D+1)); fi
   done <$LOG_MSG >>$LOG_FILE
 done 2>>$STDERR
 EOF
@@ -195,7 +204,7 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
 _cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -r $_CIPSET_DIR; }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
@@ -476,6 +485,7 @@ _pm() {
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
+SRC_BL_CACHE="$ROOT_DIR/etc/$SC_NAME.bl.src.cache"
 CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
 CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 TMP_FILE="/tmp/$SC_NAME.tmp"
@@ -522,7 +532,7 @@ clean_firewall_start() {
       /bin/sed -i "/$SC_NAME/d" "$FWS_FILE"
       [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
     else
-      /bin/rm "$FWS_FILE" 2>/dev/null
+      /bin/rm -f "$FWS_FILE" 2>/dev/null
       [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
     fi
   fi
@@ -549,7 +559,7 @@ clean_postmount() {
       /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
     else
-      /bin/rm "$PM_FILE" 2>/dev/null
+      /bin/rm -f "$PM_FILE" 2>/dev/null
       [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
@@ -565,7 +575,7 @@ set_path() {
 }
 
 clean_path() {
-  if [ -e "/usr/bin/$SC_NAME" ]; then /bin/rm "/usr/bin/$SC_NAME" 2>/dev/null
+  if [ -e "/usr/bin/$SC_NAME" ]; then /bin/rm -f "/usr/bin/$SC_NAME" 2>/dev/null
     [ $VERBOSE ] && echo "- '/usr/bin' symlink was removed."
   fi
 }
@@ -588,7 +598,7 @@ EOF
 }
 
 clean_conf() {
-  /bin/rm "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
+  /bin/rm -f "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
   [ $VERBOSE ] && echo "- '$SC_NAME' configuration file was removed."
 }
 
@@ -622,7 +632,7 @@ echo "- Downloading:"
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
     strip_sh_file "$DL_PATH"
-    \/bin/mv "$DL_PATH" "$SC_NICEPATH"
+    /bin/mv "$DL_PATH" "$SC_NICEPATH"
     /bin/chmod +x "$SC_NICEPATH"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
@@ -654,12 +664,12 @@ upgrade() {
     if [ "$SC_LAST_VERS" ]; then
       _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
       _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the last version.            "; exit 0
+      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the latest version.            "; exit 0
       elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
       else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS         \033[0m"
       fi
     else
-      >&2 echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+      >&2 echo -e "\033[31m! Could not check what is the latest version online!\033[0m"
       exit 1
     fi
     UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
@@ -760,6 +770,8 @@ clean_web() {
 
 strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$1"; }
 
+strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' $*; }
+
 ###############################################
 #
 #    INIT FUNCTIONS
@@ -815,7 +827,7 @@ print_log() {
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI=$_UPT ;; *) _TAIL=$1 _LSCI=0 ;; esac
-  _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "rm $_LSC >/dev/null 2>&1; exit" INT TERM
+  _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "/bin/rm -f $_LSC >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
 while :; do while /usr/bin/awk -F: '
@@ -848,7 +860,7 @@ $1$2>'$(cat $_LSC)'{ts[++b]=$1;l[b]=$0} END
   _ASIZE=$(wc -l <$LOG_FILE); [ $_ASIZE -ge $_RSIZE ] && _RSIZE=$_ASIZE || { _RSIZE=$_ASIZE; break; }
   sleep 1
 done <$LOG_FILE; done
-rm $_LSC >/dev/null 2>&1
+/bin/rm -f $_LSC >/dev/null 2>&1
 }
 
 shield_up() {
@@ -889,11 +901,15 @@ clean() {
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
   _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
-  [ $RM_LOG ] && { rm $LOG_FILE 2>/dev/null; [ $VERBOSE ] && echo "- Removed log file."; }
+  [ $RM_LOG ] && { /bin/rm -f $LOG_FILE 2>/dev/null; [ $VERBOSE ] && echo "- Removed log file."; }
   ipset -q destroy "$IPSET_BL_NAME"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
   [ $VERBOSE ] && echo "- Cleaned ipsets."
+  [ -e "$SRC_BL_CACHE" ] && /bin/rm -f "$SRC_BL_CACHE"
+  [ -e "$BL_FILE" ] && /bin/rm -f "$BL_FILE"
+  [ -e "$WL_FILE" ] && /bin/rm -f "$WL_FILE"
+  [ $VERBOSE ] && echo "- Removed directives files."
   [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
@@ -902,27 +918,35 @@ clean() {
 update_iplist() {
   [ $VERBOSE ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
   [ -e "$SRC_LIST" ] || get_def_srclst
-
-  :>"$TMP_FILE"
-  # Process each source url
-  [ $VERBOSE ] && echo "- Downloading lists defined in $SRC_LIST"
-  [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
-  _NBOK=0; _TOT=0;
-  /bin/grep -v "^[[:space:]*\#]" "$SRC_LIST" | \
-  { while read -r URL; do
-      _TOT=$((_TOT+1))
-      [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
-      { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } |/bin/grep '^[0-9]'|/bin/sed 's/;.*//' >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
-      _EC=$?
-      [ $VERBOSE ] && echo -e "\033[0m"
-      [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
-    done
-    [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; rm "$TMP_FILE"; exit 1; }
-    [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
-  }
+  
+  if [ "$1" ]; then # $1 set means using cache
+    [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
+    if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
+    else 2>&1 echo "! Blocklist sources cache is empty!"; exit 1; fi
+  else
+    :>"$TMP_FILE"
+    # Process each source url
+    [ $VERBOSE ] && echo "- Downloading lists defined in $SRC_LIST"
+    [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress' || WGET_OPTS='-qO-'
+    _NBOK=0; _TOT=0;
+    /bin/grep -v "^[[:space:]*\#]" "$SRC_LIST" | \
+    { while read -r URL; do
+        _TOT=$((_TOT+1))
+        [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
+        { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } | strip_netset_file >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
+        _EC=$?
+        [ $VERBOSE ] && echo -e "\033[0m"
+        [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
+      done
+      [ $_NBOK -eq 0 ] && { >&2 echo -e "\033[31m! Could not get any list!\033[0m"; /bin/rm -f "$TMP_FILE"; exit 1; }
+      [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
+    }
+    [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
+    /bin/cp -f "$TMP_FILE" "$SRC_BL_CACHE"
+  fi
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blacklist(s)..."
-    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_BL_FILE >>"$TMP_FILE"
+    strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   fi
   if [ -x "$IPR_BIN" ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
@@ -931,33 +955,32 @@ update_iplist() {
     [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
     /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq > "$BL_FILE"
   fi
-  /bin/rm -f "$TMP_FILE"
   [ $VERBOSE ] && echo "- Done."
 
   # processing whitelist if any
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
-    /usr/bin/awk -F'[#;]' 'match($1,/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?$/) {print $1}' $CUST_WL_FILE >>"$TMP_FILE"
+    strip_netset_file $CUST_WL_FILE >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
         if [ "$($IPR_BIN --common "$BL_FILE" "$TMP_FILE")" ]; then
           [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
-          $IPR_BIN --ipset-reduce 20 "$TMP_FILE"  > "$WL_FILE"
+          $IPR_BIN --ipset-reduce 20 "$TMP_FILE" >"$WL_FILE"
         else
           echo '- No IP in common with blocklist directives, skipping whitelist directives.'
         fi
       else
         [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
-        /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq > "$WL_FILE"
+        /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq >"$WL_FILE"
       fi
       else echo '- No IP set found, custom whitelist is empty.'
     fi
-    /bin/rm -f "$TMP_FILE"
     [ $VERBOSE ] && echo "- Done."
-  else
-    /bin/rm -f "$WL_FILE"
+  else /bin/rm -f "$WL_FILE"
   fi
+  
+  /bin/rm -f "$TMP_FILE" 2>/dev/null
 }
 
 info() {
@@ -971,11 +994,11 @@ info() {
   if [ "$SC_LAST_VERS" ]; then
     _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
     _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-    if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is the last version.            "
+    if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is the latest version.            "
     elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo -e "\033[35m- New version available: $SC_LAST_VERS       \033[0m"
     else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS       \033[0m"
     fi
-  else echo -e "\033[31m! Could not check what is the last version online!\033[0m"
+  else echo -e "\033[31m! Could not check what is the latest version online!\033[0m"
   fi
   if check_path
     then echo "- '$SC_NAME' is in PATH."
@@ -1061,7 +1084,7 @@ chain_status() {
             ;;
         esac
         _CL=$((_CL+1))
-      done <$_MKTMP; rm $_MKTMP
+      done <$_MKTMP; /bin/rm -f $_MKTMP
       if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1)" = $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
@@ -1248,6 +1271,7 @@ _status>/dev/null
   [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
+  [ -e "$SRC_BL_CACHE" ] && echo "- Sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)"
   [ -e "$BL_FILE" ] && echo "- Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)"
   [ -e "$WL_FILE" ] && echo "- Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)"
   if [ $_CK -ne 0 ]; then
@@ -1406,6 +1430,7 @@ print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"   \033[1;36m-vpn-no-bypass\033[0m     + without VPN network range bypass"'
 '" \033[1;35mdown\033[0m               - stops $SC_NAME shield protection"'
 '" \033[1;35mrefresh\033[0m            - updates shield directives from sources and custom lists\033[0m"'
+'"   \033[1;36m-custom-only\033[0m       + will refresh directives only from custom lists (using offline cache for sources)"'
 '" \033[1;35mlog -enable\033[0m        - enables logging"'
 '" \033[1;35mlog -disable\033[0m       - disables logging"'
 '" \033[1;35mlog -show\033[0m          - displays the log report"'
@@ -1468,10 +1493,14 @@ case $(echo "$PARAM"|/usr/bin/wc -w) in
   *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
 esac
 
-[ -z "${ARGS##* -v *}" ] && VERBOSE=1
-[ -z "${ARGS##* -vv *}" ] && VERBOSE=2
-[ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
-[ -z "${ARGS##* -q *}" ] && QUIET=1
+if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
+  [ -z "${ARGS##* -v *}" ] && VERBOSE=1
+  [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
+  [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
+fi
+_refresh_args() {
+  [ -z "${ARGS##* -custom-only *}" ]   && RF_OFFLN=1   || RF_OFFLN=
+}
 _shield_args() {
   [ -z "${ARGS##* -log-enable *}" ]    && sc_conf set log.enabled=1
   [ -z "${ARGS##* -log-disable *}" ]   && sc_conf delete log.enabled
@@ -1516,7 +1545,7 @@ case "$PARAM" in
   'down') shield_down; [ $VERBOSE ] && status_term ;;
   
   'unset') _clean_args; clean; [ $VERBOSE ] && status_term ;;
-  'refresh') update_iplist; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
+  'refresh') _refresh_args; update_iplist $RF_OFFLN; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
   
   'status') status_term ;;
   'help') print_help ;;
@@ -1528,7 +1557,7 @@ case "$PARAM" in
   # calls for outside helpers (html)
   '_status') status_raw ;;
   '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
-  '_refresh') _shield_args; VERBOSE=1; update_iplist; shield_up 1 ;;
+  '_refresh') _refresh_args; _shield_args; VERBOSE=1; update_iplist $RF_OFFLN; shield_up 1 ;;
   '_down') VERBOSE=1; shield_down ;;
   '_upgrade') _upgrade ;;
   

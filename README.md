@@ -5,7 +5,7 @@ Should work with several other Netgear routers as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.5.4
+1.5.5
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -76,6 +76,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
   * `-vpn-no-bypass` + without VPN network range bypass
 * `down` - stops aegis shield protection
 * `refresh` - updates shield directives from servers in `aegis.sources` and custom lists (blocklists, whitelist)
+  * `-custom-only` - will refresh directives only from custom lists (using offline cache for sources)
 * `unset` - stops and unsets aegis shield
   * `-rm-config` + and removes the configuration system (mostly if you plan not to use the script anymore)
   * `-rm-symlink` + and removes the symlink /usr/bin/aegis (mostly if you plan not to use the script anymore)
