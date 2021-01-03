@@ -141,7 +141,7 @@ cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch \$STDERR; echo \"\$(date): \$1\"; } >>\$STDERR\ndebug 'log daemon starting'")
 local LOG_MSG=/var/log/log-message
 /bin/rm -f \$LOGD_TMP 2>/dev/null
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e \$LOGD_PID ] || exit; PID=\$(cat \$LOGD_PID); /bin/rm -f \$LOGD_PID; [ -e \$LOGD_TMP ] && /bin/rm -f \$LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting"'); exit; } 2>>\$STDERR
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e \$LOGD_PID ] || exit; PID=\$(cat \$LOGD_PID); /bin/rm -f \$LOGD_PID; [ -e \$LOGD_TMP ] && /bin/rm -f \$LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>\$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch \$LOG_FILE
 inode() { set -- \$(/bin/ls -i \$LOG_MSG); echo \$1; }
