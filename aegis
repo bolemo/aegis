@@ -25,6 +25,7 @@ WL_FILE="$ROOT_DIR/etc/${SC_NAME}.wl.directives"
 INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
+CONF_DIR="$ROOT_DIR/etc/config"
 ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
 if ifconfig wg0 >/dev/null 2>/dev/null; then
@@ -111,7 +112,7 @@ INFO_LOGD_MASK=3
 
 # --------------- ENV FUNCTIONS ---------------
 
-sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $ROOT_DIR/etc/config $1 $SC_ABR$_OPT; return $?; }
+sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $CONF_DIR $1 $SC_ABR$_OPT; return $?; }
 
 get_ipt() 2>/dev/null _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
 
@@ -149,7 +150,7 @@ lc() { set -- \$(/usr/bin/wc -l \$1); echo \$1; }
 while :; do
   local INODE=\$(inode)
   $($DEBUG && echo "debug \"working with log-message inode: \$INODE\"")
-  local NUMLINES=\$(uci -qc /opt/bolemo/etc/config get aegis.log.len)
+  local NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
     local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
