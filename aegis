@@ -617,7 +617,7 @@ SC_DEV_REPO="$SC_BASE_REPO/dev"
 
 last_avail_version() {
   [ "$DEVMODE" ] && VERSION_URL="$SC_DEV_REPO/version" || VERSION_URL="$SC_MAIN_REPO/version"
-  /usr/bin/wget -qO- "$VERSION_URL" --no-check-certificate
+  /usr/bin/wget -qO- --no-check-certificate "$VERSION_URL"
 }
 
 # ---------------------------------------------
@@ -656,7 +656,7 @@ upgrade() {
   if [ "$DEVMODE" ]; then
     echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
-    UPGRADE_VER=$(/usr/bin/wget -qO- "$SC_DEV_REPO/version" --no-check-certificate)
+    UPGRADE_VER=$(/usr/bin/wget -qO- --no-check-certificate "$SC_DEV_REPO/version")
     [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";exit 1; }
   else
     echo -ne "- Checking latest available version...\r"
@@ -687,7 +687,7 @@ get_def_srclst() {
   if [ ! -e "$SRC_LIST" ]; then
     [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing!"
     SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
-    if /usr/bin/wget -qO "$SRC_LIST" "$SRC_LIST_URL" --no-check-certificate; then
+    if /usr/bin/wget -qO "$SRC_LIST" --no-check-certificate "$SRC_LIST_URL"; then
       [ "$VERBOSE" ] && echo -e "- Default list was downloaded."
     else
       >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
@@ -723,10 +723,10 @@ install_web() {
   fi
   echo "- Downloading $WEB_NAME:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress';
+  _PROG='--show-progress --no-check-certificate';
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
   echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm" --no-check-certificate; then
+  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm"; then
     /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
     echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   else
@@ -736,7 +736,7 @@ install_web() {
     exit 1
   fi
   echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi" --no-check-certificate; then
+  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
     strip_sh_file "$DL_PATH"
     \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
