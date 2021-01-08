@@ -54,8 +54,8 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/www" ] || mkdir "$BASE_DIR/bolemo/www"
 
 echo "Downloading and installing aegis..."
-VERS="$($WGET_PATH -qO- "$AEGIS_VER_URL")"
-if [ "$VERS" ] && $WGET_PATH -qO '/tmp/aegis_dl.tmp' "$AEGIS_SCP_URL"; then
+VERS="$($WGET_PATH -qO- --no-check-certificate "$AEGIS_VER_URL")"
+if [ "$VERS" ] && $WGET_PATH -qO '/tmp/aegis_dl.tmp' --no-check-certificate "$AEGIS_SCP_URL"; then
   /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' '/tmp/aegis_dl.tmp'
   /bin/mv '/tmp/aegis_dl.tmp' '/opt/bolemo/scripts/aegis'
   chmod +x "/opt/bolemo/scripts/aegis"
@@ -104,7 +104,7 @@ fi
       $ASK && { ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?' && ASK_INT=true || ASK_INT=false; }
       if $ASK_INT; then
         echo "Downloading and installing iprange..."
-        if $WGET_PATH -qO '/tmp/iprange.ipk' "$IPRANGE_IPK_URL"; then
+        if $WGET_PATH -qO '/tmp/iprange.ipk' --no-check-certificate "$IPRANGE_IPK_URL"; then
           /bin/opkg install '/tmp/iprange.ipk'
           /bin/rm -f '/tmp/iprange.ipk'
         else
