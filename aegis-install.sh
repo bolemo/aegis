@@ -4,6 +4,7 @@ AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_VER_URL="$AEGIS_REPO/version"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
 SELF_PATH="$(pwd -P)"
+WGET_PATH="/usr/bin/wget"
 
 ask_yn() {
   echo -ne "$1 [y/n] "
@@ -13,9 +14,9 @@ ask_yn() {
   esac
 }
 
-[ -z ${1+x} ] && ASK=1 || ASK=
+[ -z ${1+x} ] && ASK=true || ASK=false
 
-if [ $ASK ]; then
+if $ASK; then
   i=1; for var in $(ls /tmp/mnt); do eval var$i="'$var'"; i=$((i+1)); done;
   until [ "$A" ] && $(echo "$A" | grep -qE '^[0-9]?$') && [ "$A" -ge 0 ] && [ "$A" -lt "$i" ]; do
     echo "Where do you want to install aegis?"
@@ -53,10 +54,10 @@ echo "Creating subdirectories in bolemo: scripts, etc"
 [ -d "$BASE_DIR/bolemo/www" ] || mkdir "$BASE_DIR/bolemo/www"
 
 echo "Downloading and installing aegis..."
-VERS="$(wget -qO- "$AEGIS_VER_URL")"
-if [ "$VERS" ] && wget -qO '/tmp/aegis_dl.tmp' "$AEGIS_SCP_URL"; then
-  sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/ ; 1,8s/^SC_VERS="[^"]*"$/SC_VERS="'$VERS'"/' '/tmp/aegis_dl.tmp'
-  \mv '/tmp/aegis_dl.tmp' '/opt/bolemo/scripts/aegis'
+VERS="$($WGET_PATH -qO- --no-check-certificate "$AEGIS_VER_URL")"
+if [ "$VERS" ] && $WGET_PATH -qO '/tmp/aegis_dl.tmp' --no-check-certificate "$AEGIS_SCP_URL"; then
+  /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' '/tmp/aegis_dl.tmp'
+  /bin/mv '/tmp/aegis_dl.tmp' '/opt/bolemo/scripts/aegis'
   chmod +x "/opt/bolemo/scripts/aegis"
 else >&2 echo 'Could not download aegis!'; exit 1
 fi
@@ -72,7 +73,7 @@ fi
 command -v aegis > /dev/null || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
 
 # iprange
-if [ -z "$ASK" ]; then case "$2" in
+if ! $ASK; then case "$2" in
   3) ASK_ENT=true;  ASK_INT=true  ;;
   2) ASK_ENT=true;  ASK_INT=false ;;
   1) ASK_ENT=false; ASK_INT=true  ;;
@@ -81,30 +82,31 @@ esac; fi
 
 if command -v iprange>/dev/null; then
   echo 'iprange is installed.'
+  _ASK_ROOTFS=false
 else
   echo 'iprange is not installed.'
   if command -v /opt/bin/opkg && [ "$(/opt/bin/opkg list iprange)" ]; then
-    [ $ASK ] && { ask_yn 'It appears you have Entware, do you want to install it through Entware?' && ASK_ENT=true || ASK_ENT=false; }
+    $ASK && { ask_yn 'It appears you have Entware, do you want to install it through Entware?' && ASK_ENT=true || ASK_ENT=false; }
     if $ASK_ENT
-      then /opt/bin/opkg update; /opt/bin/opkg install iprange
-      else _ASK_ROOTFS='y'
+      then /opt/bin/opkg update; /opt/bin/opkg install iprange; _ASK_ROOTFS=false
+      else _ASK_ROOTFS=true
     fi
-    else _ASK_ROOTFS='y'
-  fi
+  else _ASK_ROOTFS=true
+fi
   
-  if [ $_ASK_ROOTFS ]; then
+  if $_ASK_ROOTFS; then
     case "$(cat /module_name)" in
       'R7800') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_ipq806x.ipk" ;;
       'R9000') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_r9000.ipk" ;;
-      *) IPRANGE_IPK_URL='' ;; 
+      *) IPRANGE_IPK_URL=;; 
     esac
     if [ "$IPRANGE_IPK_URL" ]; then
-      [ $ASK ] && { ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?' && ASK_INT=true || ASK_INT=false; }
+      $ASK && { ask_yn 'Do you want to install iprange into router internal memory (/usr/bin)?' && ASK_INT=true || ASK_INT=false; }
       if $ASK_INT; then
         echo "Downloading and installing iprange..."
-        if wget -qO '/tmp/iprange.ipk' "$IPRANGE_IPK_URL"; then
+        if $WGET_PATH -qO '/tmp/iprange.ipk' --no-check-certificate "$IPRANGE_IPK_URL"; then
           /bin/opkg install '/tmp/iprange.ipk'
-          rm -f '/tmp/iprange.ipk'
+          /bin/rm -f '/tmp/iprange.ipk'
         else
           >&2 echo 'Could not download iprange!'
         fi
