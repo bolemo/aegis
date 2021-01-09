@@ -62,11 +62,11 @@ if [ "$VERS" ] && $WGET_PATH -qO '/tmp/aegis_dl.tmp' --no-check-certificate "$AE
 else >&2 echo 'Could not download aegis!'; exit 1
 fi
 
-if [ -e "/opt/bolemo/etc/aegis.sources" ]
+if [ -s "/opt/bolemo/etc/aegis.sources" ]
   then echo "An aegis sources file already exists, keeping it."
   else
     echo "Downloading aegis default sources file..."
-    wget -qO "/opt/bolemo/etc/aegis.sources" "$AEGIS_SRC_URL"
+    WGET_PATH -qO- --no-check-certificate "$AEGIS_SRC_URL" >/opt/bolemo/etc/aegis.sources
 fi
 
 # symlink
