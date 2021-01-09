@@ -204,7 +204,7 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
 _cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
@@ -985,7 +985,7 @@ update_iplist() {
   fi
   
   /bin/rm -f "$TMP_FILE" 2>/dev/null
-  trap INT TERM EXIT
+  trap - INT TERM EXIT
 }
 
 info() {
