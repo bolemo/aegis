@@ -951,7 +951,7 @@ update_iplist() {
     [ $VERBOSE ] && echo "- Adding netset from custom blocklist(s)..."
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   fi
-  if [ -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; exit 1; fi
+  if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; exit 1; fi
   if [ -x "$IPR_BIN" ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
