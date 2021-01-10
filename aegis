@@ -459,7 +459,7 @@ shield_uprear() { $DBG "|---> shield_uprear $*"
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-$DBG "<---| shield_uprear" } 2>>"$STDERR"
+$DBG "<---| shield_uprear"; } 2>>"$STDERR"
 
 ###############################################
 #
