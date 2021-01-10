@@ -212,7 +212,9 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ---------------------------------------------
 _cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
 _cipset_end() { if [ -d "$_CIPSET_DIR" ]; then /bin/rm -rf $_CIPSET_DIR; fi; trap - TERM INT; $DEBUG && debug "_cipset_end"; } 2>>"$STDERR"
-_cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"; return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); } 2>>"$STDERR"
+_cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"
+  return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1)
+} 2>>"$STDERR"
 _cipset_diff_set_file() { $DEBUG && debug "_cipset_diff_set_file $*"
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
   return $?
