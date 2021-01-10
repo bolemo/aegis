@@ -457,7 +457,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-  if $DEBUG; then debug "$INFO_FILE -> $(/bin/cat $INFO_FILE)"; debug "<---| shield_uprear"; fi
+  $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"; fi
 } 2>>"$STDERR"
 
 ###############################################
@@ -1112,7 +1112,7 @@ chain_status() { $DEBUG && debug "chain_status $*"
   [ "$1" = 'src' ] && { _S_CK=$_CH_CK; _S_PB=$_CH_PB; _S_IPT=$_CH_IPT; } || { _D_CK=$_CH_CK; _D_PB=$_CH_PB; _D_IPT=$_CH_IPT; }
 }
 
-_status() { $DEBUG && debug "_status"
+_status() { $DEBUG && debug "|---> _status"
   _CK=0; _WN=0; _PB=0
   _BLC=0; _WLC=0
   _logd_status; _LOGD=$?
@@ -1218,14 +1218,15 @@ _status() { $DEBUG && debug "_status"
   _cipset_end
   
   echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
-}
+  $DEBUG && debug "<---| _status [$_CK $_PB $_WN $_BLC $_WLC $_LOGD]"
+} 2>>"$STDERR"
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
 #  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5; _LOGD=$6
-_status>/dev/null
+_status >/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
