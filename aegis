@@ -1462,6 +1462,8 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '" \033[1;35mupgrade\033[0m            - downloads and installs latest version"'
 '" \033[1;35mweb -install\033[0m       - downloads and installs $WEB_NAME"'
 '" \033[1;35mweb -remove\033[0m        - removes $WEB_NAME"'
+'" \033[1;35mdebug -to=\033[0mFILE     - enables debug and store output in file FILE (use only if required by developer)"'
+'" \033[1;35mdebug -disable\033[0m     - disables debug"'
 '"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m"'
 '" \033[1;36m-v\033[0m                 + verbose mode (level 1)"'
 '" \033[1;36m-vv\033[0m                + verbose mode (level 2)"'
@@ -1568,6 +1570,10 @@ case "$PARAM" in
   'log') _log_args ;;
   'upgrade') upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
+  'debug') case "$ARGS" in
+      *' -to='*) _DF="$(echo "$ARGS"|/bin/sed 's/.* -to=\([^ ]\+\) .*/\1/')"; sc_conf set "debug=$_DF"; sc_conf commit ;;
+      *' -disable '*) sc_conf delete debug; sc_conf commit ;;
+    esac ;;
   
   # calls for outside helpers (html)
   '_status') status_raw ;;
