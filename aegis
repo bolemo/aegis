@@ -130,12 +130,14 @@ inet_for_if() {
 
 # ------------------- DEBUG -------------------
 
-export DEBUG STDERR
-STDERR=$(sc_conf get log.debug)
+export DEBUG STDERR DBG
+STDERR="$(sc_conf get log.debug)"
 if [ "$STDERR" ]; then DEBUG=true
-  touch $STDERR
-else DEBUG=false; STDERR=/dev/null
+  debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*"; } >>"$STDERR"
+  debug "$SC_NAME $SC_VERS launched [$0 $*]."
+else DEBUG=false; STDERR=/dev/null; debug() return
 fi
+DBG='$DEBUG && debug'
 
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
@@ -148,7 +150,7 @@ _logd_start() {
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 local LOG_MSG=/var/log/log-message
 cat >"$LOGD_TMP" <<EOF
-$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(date): \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
+$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
 trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] || exit; PID=\$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
@@ -211,8 +213,8 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DBG "cipset init (dir: $_CIPSET_DIR)"; }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; $DBG "cipset end"; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
@@ -281,7 +283,7 @@ _set_ipt_for_if_pos() {
   return $_RET
 }
 
-shield_uprear() {
+shield_uprear() { $DBG "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
@@ -457,7 +459,7 @@ shield_uprear() {
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-} 2>/dev/null
+$DBG "<---| shield_uprear" } 2>>"$STDERR"
 
 ###############################################
 #
