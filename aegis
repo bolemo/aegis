@@ -132,7 +132,9 @@ inet_for_if() {
 
 debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*" >>"$STDERR"; }
 export DEBUG STDERR="$(sc_conf get debug)"
-if [ "$STDERR" ]; then DEBUG=true; debug "$SC_NAME $SC_VERS launched [$0 $*]."
+if [ "$STDERR" ]; then DEBUG=true
+  debug "$SC_NAME $SC_VERS launched [$0 $*]"; /bin/cat /module_name /hardware_version /firmware_version >>"$STDERR"
+  sc_conf show >>"$STDERR"
 else DEBUG=false STDERR=/dev/null
 fi
 
@@ -199,8 +201,6 @@ while :; do
   done <$LOG_MSG >>$LOG_FILE
 done 2>>$STDERR
 EOF
-#export LOGD_NAME; export LOGD_PID; export LOGD_TMP
-#export SHIELD_LOCK; export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
 }
@@ -456,7 +456,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-$DEBUG && debug "<---| shield_uprear"; } 2>>"$STDERR"
+  $DEBUG && { debug "$INFO_FILE -> $(/bin/cat $INFO_FILE)"; debug "<---| shield_uprear"; }
+} 2>>"$STDERR"
 
 ###############################################
 #
