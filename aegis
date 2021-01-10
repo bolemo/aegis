@@ -133,8 +133,8 @@ inet_for_if() {
 debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*" >>"$STDERR"; }
 export DEBUG STDERR="$(sc_conf get debug)"
 if [ "$STDERR" ]; then DEBUG=true
-  debug "$SC_NAME $SC_VERS launched [$0 $*] [$(/bin/cat /module_name /hardware_version /firmware_version)]"
-  echo "Config: $(sc_conf show)" >>"$STDERR"
+  debug "$SC_NAME $SC_VERS launched [$0 $*] ["$(/bin/cat /module_name /hardware_version /firmware_version)"]"
+  sc_conf show | /usr/bin/awk '{print "   - "$0}' >>"$STDERR"
 else DEBUG=false STDERR=/dev/null
 fi
 
