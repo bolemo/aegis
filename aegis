@@ -8,7 +8,7 @@
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.7"
+SC_VERS="1.5.8"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -128,6 +128,16 @@ inet_for_if() {
 : ENV STOP
 # ---------------------------------------------
 
+# ------------------- DEBUG -------------------
+
+debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*" >>"$STDERR"; }
+export DEBUG STDERR="$(sc_conf get debug)"
+if [ "$STDERR" ]; then DEBUG=true
+  debug "$SC_NAME $SC_VERS launched [$0 $*] ["$(/bin/cat /module_name /hardware_version /firmware_version)"]"
+  sc_conf show | /usr/bin/awk '{print "   - "$0}' >>"$STDERR"
+else DEBUG=false STDERR=/dev/null
+fi
+
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
 # ---------------------------------------------
@@ -137,10 +147,9 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; local DEBUG=true; else STDERR=/dev/null; local DEBUG=false; fi
 local LOG_MSG=/var/log/log-message
 cat >"$LOGD_TMP" <<EOF
-$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(date): \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
+$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
 trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] || exit; PID=\$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
@@ -192,8 +201,6 @@ while :; do
   done <$LOG_MSG >>$LOG_FILE
 done 2>>$STDERR
 EOF
-#export LOGD_NAME; export LOGD_PID; export LOGD_TMP
-#export SHIELD_LOCK; export LOG_FILE; export SC_ABR; export IPTBL_SRC; export IPT_BIN
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
 }
@@ -203,27 +210,27 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; }
-_cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
-_cipset_diff_set_file() {
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; $DEBUG && debug "_cipset_end"; }
+_cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"; return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
+_cipset_diff_set_file() { $DEBUG && debug "_cipset_diff_set_file $*"
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
   return $?
 }
-_cipset_swap_set_file() {
+_cipset_swap_set_file() { $DEBUG && debug "_cipset_swap_set_file $*"
   /bin/cp -f $2 "$_CIPSET_DIR/$1"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
   ipset swap "$1" "$IPSET_TMP"; ipset destroy $IPSET_TMP
 }
-_cipset_create_set_file() {
+_cipset_create_set_file() { $DEBUG && debug "_cipset_create_set_file $*"
   /bin/cp -f $2 "$_CIPSET_DIR/$1"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
 }
-_cipset_inet_in_bl() {
+_cipset_inet_in_bl() { $DEBUG && debug "_cipset_inet_in_bl $*"
   [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
   [ -z "$(echo "$1" | iprange "$_CIPSET_DIR/$IPSET_BL_NAME" --common - )" ] && return 1 || return 0
 }
-_cipset_count_set() {
+_cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
   [ "$IPR_BIN" ] && { $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2; return; }
   /bin/grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$_CIPSET_DIR/$1"|/usr/bin/awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
 }
@@ -234,7 +241,8 @@ _cipset_count_set() {
 #
 ###############################################
 
-_set_ipt_bypass_for_if_inet_pos() { # Bypass for interface inet $1=iface, $2=inet, $3=pos
+_set_ipt_bypass_for_if_inet_pos() { $DEBUG && debug "_set_ipt_bypass_for_if_inet_pos $*"
+# Bypass for interface inet $1=iface, $2=inet, $3=pos
   _RET=0
   _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $2 -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
   if [ "$_BP_POS" != "$3" ]; then
@@ -251,7 +259,7 @@ _set_ipt_bypass_for_if_inet_pos() { # Bypass for interface inet $1=iface, $2=ine
   return $_RET
 }
 
-_set_ipt_for_if_pos() {
+_set_ipt_for_if_pos() { $DEBUG && debug "_set_ipt_for_if_pos $*"
   _IF="$1"
   _POS=$2
   _CT=$(echo "$_IPT"|/bin/grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
@@ -273,7 +281,7 @@ _set_ipt_for_if_pos() {
   return $_RET
 }
 
-shield_uprear() {
+shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
@@ -449,7 +457,8 @@ shield_uprear() {
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-} 2>/dev/null
+  $DEBUG && { debug "$INFO_FILE -> $(/bin/cat $INFO_FILE)"; debug "<---| shield_uprear"; }
+} 2>>"$STDERR"
 
 ###############################################
 #
@@ -459,19 +468,17 @@ shield_uprear() {
 
 #we are called from firewall_start.sh
 if [ "$1" == "_fws" ]; then
-  sc_conf get up >/dev/null || exit 0
-  shield_uprear "$INFO_FROM_FWS"
-  exit 0
+  sc_conf get up >/dev/null && shield_uprear "$INFO_FROM_FWS"
+  $DEBUG && debug "exiting with no error"; exit 0
 fi
 
 #when called from post-mount.sh
-_pm() {
-  sc_conf get up >/dev/null || exit 0
-  [ -d "$ROOT_DIR" ] || /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
-  sc_init
-  shield_init
-  shield_uprear "$INFO_FROM_PM"
-  exit 0
+_pm() { $DEBUG && debug "_pm $*"
+  if sc_conf get up >/dev/null; then
+    [ -d "$ROOT_DIR" ] || /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
+    sc_init; shield_init; shield_uprear "$INFO_FROM_PM"
+  fi
+  $DEBUG && debug "exiting with no error"; exit 0
 }
 
 ###############################################
@@ -513,20 +520,20 @@ fi
 ###############################################
 
 # SCRIPT: firewall-start.sh ###################
-check_firewall_start() {
+check_firewall_start() { $DEBUG && debug "check_firewall_start"
   [ -x "$FWS_FILE" ] || return 1
   [ "$(/bin/sed 's/[[:space:]]\+/ /g' "$FWS_FILE"|/bin/grep -c -- "\[ -x $SC_NICEPATH \] && $SC_NICEPATH _fws")" = 1 ] || return 1
   return 0
 }
 
-set_firewall_start() {
+set_firewall_start() { $DEBUG && debug "set_firewall_start"
   [ -d "$FWS_DIR" ] || /bin/mkdir -p "$FWS_DIR"
   [ -e "$FWS_FILE" ] && /bin/sed -i "/$SC_NAME/d" "$FWS_FILE"
   echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _fws" >> "$FWS_FILE"
   [ -x "$FWS_FILE" ] || /bin/chmod +x "$FWS_FILE"
 }
 
-clean_firewall_start() {
+clean_firewall_start() { $DEBUG && debug "clean_firewall_start"
   if [ -e "$FWS_FILE" ]; then
     if [ "$(/bin/grep -Fv "$SC_NAME" "$FWS_FILE"|/bin/sed '/^[[:space:]]*$/d')" ]; then
       /bin/sed -i "/$SC_NAME/d" "$FWS_FILE"
@@ -539,13 +546,13 @@ clean_firewall_start() {
 }
 
 # SCRIPT: post-mount.sh ########################
-check_postmount() {
+check_postmount() { $DEBUG && debug "check_postmount"
   [ -x "$PM_FILE" ] || return 1
   [ "$(/bin/sed 's/[[:space:]]\+/ /g' "$PM_FILE"|/bin/grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
   return 0
 }
 
-set_postmount() {
+set_postmount() { $DEBUG && debug "set_postmount"
   [ "$EXT_DRIVE" ] || return 1
   [ -d "$PM_DIR" ] || /bin/mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
@@ -553,7 +560,7 @@ set_postmount() {
   [ -x "$PM_FILE" ] || /bin/chmod +x "$PM_FILE"
 }
 
-clean_postmount() {
+clean_postmount() { $DEBUG && debug "clean_postmount"
   if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
     if [ "$(/bin/grep -Fv "$SC_NAME" "$PM_FILE"|/bin/sed '/^[[:space:]]*$/d')" ]; then
       /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
@@ -566,27 +573,27 @@ clean_postmount() {
 }
 
 # SYMLINK: /usr/bin/SELF ######################
-check_path() {
+check_path() { $DEBUG && debug "check_path"
   command -v "$SC_NAME" > /dev/null && return 0 || return 1
 }
 
-set_path() {
+set_path() { $DEBUG && debug "set_path"
   [ -e "/usr/bin/$SC_NAME" ] || /bin/ln -s "$SC_NICEPATH" "/usr/bin/$SC_NAME"
 }
 
-clean_path() {
+clean_path() { $DEBUG && debug "clean_path"
   if [ -e "/usr/bin/$SC_NAME" ]; then /bin/rm -f "/usr/bin/$SC_NAME" 2>/dev/null
     [ $VERBOSE ] && echo "- '/usr/bin' symlink was removed."
   fi
 }
 
 # CONFIG: .../bolemo/etc/config/aegis #########
-check_conf() {
+check_conf() { $DEBUG && debug "check_conf"
   [ -d "$ROOT_DIR/etc/config" ] && sc_conf get && sc_conf get wan && sc_conf get tun && sc_conf get log
   return $?
 } >/dev/null
 
-set_conf() {
+set_conf() { $DEBUG && debug "set_conf"
   [ -d "$ROOT_DIR/etc/config" ] || /bin/mkdir -p "$ROOT_DIR/etc/config" 2>/dev/null
   uci -qc $ROOT_DIR/etc/config import $SC_ABR << EOF
 package $SC_ABR
@@ -597,7 +604,7 @@ EOF
   sc_conf commit
 }
 
-clean_conf() {
+clean_conf() { $DEBUG && debug "clean_conf"
   /bin/rm -f "$ROOT_DIR/etc/config/$SC_ABR" 2>/dev/null
   [ $VERBOSE ] && echo "- '$SC_NAME' configuration file was removed."
 }
@@ -615,7 +622,7 @@ SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
 SC_MAIN_REPO="$SC_BASE_REPO/master"
 SC_DEV_REPO="$SC_BASE_REPO/dev"
 
-last_avail_version() {
+last_avail_version() { $DEBUG && debug "last_avail_version"
   [ "$DEVMODE" ] && VERSION_URL="$SC_DEV_REPO/version" || VERSION_URL="$SC_MAIN_REPO/version"
   /usr/bin/wget -qO- --no-check-certificate "$VERSION_URL"
 }
@@ -624,7 +631,7 @@ last_avail_version() {
 : ENV STOP
 # ---------------------------------------------
 
-do_upgrade() {
+do_upgrade() { $DEBUG && debug "do_upgrade"
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _PROG='--show-progress --no-check-certificate';
@@ -645,12 +652,12 @@ echo "- Downloading:"
   exit 0
 }
 
-_upgrade() {
+_upgrade() { $DEBUG && debug "_upgrade"
   UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"; UPGRADE_VER="$SC_LAST_VERS"
   do_upgrade
 }
 
-upgrade() {
+upgrade() { $DEBUG && debug "upgrade"
   echo -e "\033[1;36mUpgrading:\033[0m"
   echo "- Version installed: $SC_VERS"
   if [ "$DEVMODE" ]; then
@@ -683,7 +690,7 @@ upgrade() {
 }
 
 # get default sources list (from bolemo github)
-get_def_srclst() {
+get_def_srclst() { $DEBUG && debug "get_def_srclst"
   if [ ! -s "$SRC_LIST" ]; then
     [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing or empty!"
     SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
@@ -703,14 +710,14 @@ get_def_srclst() {
 #
 ###############################################
 WEB_NAME='Web Companion'
-check_web() {
+check_web() { $DEBUG && debug "check_web"
   [ -L "/www/bolemo" ] || return 1
   [ -e "/www/bolemo/aegis.htm" ] || return 1
   [ -x "/www/bolemo/cgi-bin/aegis_web.cgi" ] || return 1
   return 0
 }
 
-install_web() {
+install_web() { $DEBUG && debug "install_web"
   [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null
   [ -d "$WWW_PATH/cgi-bin" ] || mkdir "$WWW_PATH/cgi-bin"
   if [ -z "$UPGRADE_URL" ]; then
@@ -755,7 +762,7 @@ install_web() {
   exit 0
 }
 
-clean_web() {
+clean_web() { $DEBUG && debug "clean_web"
   /bin/rm -f "$WWW_PATH/$SC_NAME.htm"
   eval "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi uninstall"
   /bin/rm -f "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
@@ -779,7 +786,7 @@ strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[
 #
 ###############################################
 
-sc_init() {
+sc_init() { $DEBUG && debug "sc_init"
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc"
   check_conf || set_conf
@@ -787,7 +794,7 @@ sc_init() {
   [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo'
 } 2>/dev/null
 
-shield_init() {
+shield_init() { $DEBUG && debug "shield_init"
   [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   ipset -q destroy $IPSET_TMP
@@ -822,7 +829,7 @@ shield_init() {
 #
 ###############################################
 
-print_log() {
+print_log() { $DEBUG && debug "print_log"
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
@@ -863,7 +870,7 @@ done <$LOG_FILE; done
 /bin/rm -f $_LSC >/dev/null 2>&1
 }
 
-shield_up() {
+shield_up() { $DEBUG && debug "shield_up"
   sc_conf set up=1; sc_conf commit
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
@@ -881,7 +888,7 @@ shield_up() {
   [ $VERBOSE ] && echo "- Done."
 }
 
-shield_down() {
+shield_down() { $DEBUG && debug "shield_down"
   [ $VERBOSE ] && echo -e "\033[1;36mWithdrawing shield...\033[0m"
   sc_conf delete up; sc_conf commit
   /bin/rm -f "$INFO_FILE"
@@ -891,7 +898,7 @@ shield_down() {
   [ $VERBOSE ] && echo "- Shield down."
 }
 
-clean() {
+clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
   [ $VERBOSE ] && echo -e "\033[1;36mUnsetting...\033[0m"
   clean_firewall_start
   clean_postmount
@@ -915,7 +922,7 @@ clean() {
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
 }
 
-update_iplist() {
+update_iplist() { $DEBUG && debug "update_iplist $*"
   [ $VERBOSE ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
   [ -s "$SRC_LIST" ] || get_def_srclst # change to -e when ready to deal with empty sources file
   trap "/bin/rm -f "$TMP_FILE" >/dev/null 2>&1; exit" INT TERM EXIT
@@ -988,7 +995,7 @@ update_iplist() {
   trap - INT TERM EXIT
 }
 
-info() {
+info() { $DEBUG && debug "info"
   echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
@@ -1054,7 +1061,7 @@ WN_MASK=255  #8 bits
 : ENV EOF
 # ---------------------------------------------
 
-chain_status() {
+chain_status() { $DEBUG && debug "chain_status $*"
   [ "$1" = 'src' ] && { _DIR='-s'; _PUT='-i'; _IPTBL_CH=$IPTBL_SRC; _RULE='DROP'; } || { _DIR='-d'; _PUT='-o'; _IPTBL_CH=$IPTBL_DST; _RULE='REJECT'; }
   _CH_CK=0
   _CH_PB=0
@@ -1103,7 +1110,7 @@ chain_status() {
   [ "$1" = 'src' ] && { _S_CK=$_CH_CK; _S_PB=$_CH_PB; _S_IPT=$_CH_IPT; } || { _D_CK=$_CH_CK; _D_PB=$_CH_PB; _D_IPT=$_CH_IPT; }
 }
 
-_status() {
+_status() { $DEBUG && debug "_status"
   _CK=0; _WN=0; _PB=0
   _BLC=0; _WLC=0
   _logd_status; _LOGD=$?
@@ -1213,7 +1220,7 @@ _status() {
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
 
-status_term() {
+status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
 #  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5; _LOGD=$6
 _status>/dev/null
@@ -1418,12 +1425,13 @@ _status>/dev/null
   exit $_RETVAL
 }
 
-status_raw() {
-  echo "$(_status) '$WAN_IF' '$TUN_IF'"; exit 0
+status_raw() { $DEBUG && debug "status_raw"
+  echo "$(_status) '$WAN_IF' '$TUN_IF'"; $DEBUG && debug "exiting with no error"; exit 0
 }
 #---------------------------- END _STATUS ----------------------------
 
-print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
+print_help() { $DEBUG && debug "print_help"
+echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"'
 '"\033[7mCOMMANDS (only one) and their specific options:\033[0m"'
 '"\033[1;35mup\033[0m                  - (re)starts $SC_NAME shield protection"'
@@ -1470,6 +1478,8 @@ print_help() { echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 [ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
+
+$DEBUG && debug "main routing with args: $ARGS"
 
 if [ -z "${ARGS##* %devmode*% *}" ]; then
   if [ "${ARGS##* %devmode% *}" ]; then
@@ -1569,4 +1579,4 @@ case "$PARAM" in
   *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
 esac
 
-exit
+$DEBUG && debug "end of script, exiting with no error"; exit 0
