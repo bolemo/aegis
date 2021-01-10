@@ -1503,7 +1503,7 @@ if [ -z "${ARGS##* %devmode*% *}" ]; then
   echo "Arguments: '$ARGS'"
 fi
 
-PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*[[:space:]]*[[:digit:]]*//g')"
+PARAM="$(echo "$ARGS"|/bin/sed 's/-[[:alpha:]]*\(=[[:alnum:]/._-]*\)?[[:space:]]*[[:digit:]]*//g')"
 case $(echo "$PARAM"|/usr/bin/wc -w) in
   0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
   1) PARAM="$(echo "$PARAM"|/bin/sed 's/ //g')" ;;
