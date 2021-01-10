@@ -130,14 +130,13 @@ inet_for_if() {
 
 # ------------------- DEBUG -------------------
 
-export DEBUG STDERR DBG
+export DEBUG STDERR
 STDERR="$(sc_conf get log.debug)"
 if [ "$STDERR" ]; then DEBUG=true
   debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*"; } >>"$STDERR"
   debug "$SC_NAME $SC_VERS launched [$0 $*]."
 else DEBUG=false; STDERR=/dev/null; debug() return
 fi
-DBG='$DEBUG && debug'
 
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
@@ -213,8 +212,8 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DBG "cipset init (dir: $_CIPSET_DIR)"; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; $DBG "cipset end"; }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "cipset init (dir: $_CIPSET_DIR)"; }
+_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; $DEBUG && debug "cipset end"; }
 _cipset_copy_set() { return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
 _cipset_diff_set_file() {
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
@@ -283,7 +282,7 @@ _set_ipt_for_if_pos() {
   return $_RET
 }
 
-shield_uprear() { $DBG "|---> shield_uprear $*"
+shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
@@ -459,7 +458,7 @@ shield_uprear() { $DBG "|---> shield_uprear $*"
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-$DBG "<---| shield_uprear"; } 2>>"$STDERR"
+$DEBUG && debug "<---| shield_uprear"; } 2>>"$STDERR"
 
 ###############################################
 #
