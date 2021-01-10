@@ -130,12 +130,10 @@ inet_for_if() {
 
 # ------------------- DEBUG -------------------
 
-export DEBUG STDERR
-STDERR="$(sc_conf get log.debug)"
-if [ "$STDERR" ]; then DEBUG=true
-  debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*"; } >>"$STDERR"
-  debug "$SC_NAME $SC_VERS launched [$0 $*]."
-else DEBUG=false; STDERR=/dev/null; debug() return
+debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*"; } >>"$STDERR"
+export DEBUG STDERR; STDERR="$(sc_conf get log.debug)"
+if [ "$STDERR" ]; then DEBUG=true; debug "$SC_NAME $SC_VERS launched [$0 $*]."
+else DEBUG=false; STDERR=/dev/null
 fi
 
 # -------------- LOGD FUNCTIONS ---------------
