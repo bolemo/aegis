@@ -363,7 +363,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
   if $_WBW && _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else _WBW=false; fi
-  if $_TBW && _cipset_inet_in_bl $TUN_INET; then [ $_EXCL_IF ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$TUN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else _TBW=false; fi
+  if $_TBW && _cipset_inet_in_bl $TUN_INET; then if [ $_EXCL_IF ]; then _EXCL_IF="\($WAN_IF\|$TUN_IF\)"; else _EXCL_IF=$TUN_IF; fi; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else _TBW=false; fi
   if [ $_EXCL_IF ]
     then _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
     else _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
@@ -376,21 +376,21 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   _POS=0
   # Applying WAN Network Range Bypass if needed and not skipped
-  $_WBW && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $WAN_IF $WAN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT))); }
+  if $_WBW; then _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $WAN_IF $WAN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT))); fi
   # Applying TUN Network Range Bypass (if applicable, needed and not skipped)
-  $_TBW && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); }
+  if $_TBW; then _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); fi
 
   if $_WL; then
     # apply whitelist
     _POS=$((1+_POS)) 
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
-    if [ "$_WL_POS" != "$_POS" ]; then
+    if [ "$_WL_POS" -ne "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
-    if [ "$_WL_POS" != "$_POS" ]; then
+    if [ "$_WL_POS" -ne "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
@@ -457,7 +457,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-  $DEBUG && { debug "$INFO_FILE -> $(/bin/cat $INFO_FILE)"; debug "<---| shield_uprear"; }
+  if $DEBUG; then debug "$INFO_FILE -> $(/bin/cat $INFO_FILE)"; debug "<---| shield_uprear"; fi
 } 2>>"$STDERR"
 
 ###############################################
@@ -795,31 +795,33 @@ sc_init() { $DEBUG && debug "sc_init"
 } 2>/dev/null
 
 shield_init() { $DEBUG && debug "shield_init"
-  [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   ipset -q destroy $IPSET_TMP
   if check_conf
-    then [ "$VERBOSE" ] && echo "- Configuration file is set."
+    then [ $VERBOSE ] && echo "- Configuration file is set."
     else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; exit 1; }
   fi
   if check_firewall_start; then
-    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' is in place and ok."
+    [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
   else
     set_firewall_start
-    check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
-    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' was edited and is now ok."
+    if check_firewall_start
+      then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
+      else { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
+    fi
   fi
   if [ "$EXT_DRIVE" ]; then
-    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on external drive."
-    if check_postmount; then
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' is in place and ok."
-    else
-      set_postmount
-      check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' was edited and is now ok."
+    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on external drive."
+    if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' is in place and ok."
+    else set_postmount
+      if check_postmount
+        then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
+        else { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
+      fi
     fi
   else
-    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
+    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
 }
 
