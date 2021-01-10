@@ -8,7 +8,7 @@
 # ---------------------------------------------
 command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.7"
+SC_VERS="1.5.8"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -128,6 +128,15 @@ inet_for_if() {
 : ENV STOP
 # ---------------------------------------------
 
+# ------------------- DEBUG -------------------
+
+export DEBUG STDERR
+STDERR=$(sc_conf get log.debug)
+if [ "$STDERR" ]; then DEBUG=true
+  touch $STDERR
+else DEBUG=false; STDERR=/dev/null
+fi
+
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
 # ---------------------------------------------
@@ -137,7 +146,6 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local STDERR=$(sc_conf get log.debug); if [ "$STDERR" ]; then touch $STDERR; local DEBUG=true; else STDERR=/dev/null; local DEBUG=false; fi
 local LOG_MSG=/var/log/log-message
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(date): \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
