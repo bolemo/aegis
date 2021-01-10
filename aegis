@@ -130,8 +130,8 @@ inet_for_if() {
 
 # ------------------- DEBUG -------------------
 
-debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*"; } >>"$STDERR"
-export DEBUG STDERR; STDERR="$(sc_conf get log.debug)"
+debug() { touch $STDERR; echo "$(/bin/date +%s) $SC_ABR: $*" >>"$STDERR"; }
+export DEBUG STDERR; STDERR="$(sc_conf get debug)"
 if [ "$STDERR" ]; then DEBUG=true; debug "$SC_NAME $SC_VERS launched [$0 $*]."
 else DEBUG=false; STDERR=/dev/null
 fi
