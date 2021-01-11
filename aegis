@@ -574,7 +574,7 @@ clean_postmount() { $DEBUG && debug "clean_postmount"
 
 # SYMLINK: /usr/bin/SELF ######################
 check_path() { $DEBUG && debug "check_path"
-  return command -v "$SC_NAME"
+  command -v "$SC_NAME"; return $?
 } >/dev/null
 
 set_path() { $DEBUG && debug "set_path"
