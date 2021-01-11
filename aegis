@@ -2,13 +2,14 @@
 # ----------- ENVIRONMENT VARIABLES -----------
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
-[ "$1" == '_env' ] && { /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print} $0==": ENV START"{e=1}' $0; exit; }
+if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print} $0==": ENV START"{e=1}' $0; exit; fi
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
-command -v iptables>/dev/null 2>&1 || export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-! command -v iprange>/dev/null 2>&1 && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.5.8"
+{
+! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+! command -v iprange && [ -e /root/.profile ] && source /root/.profile
+SC_VERS="1.5.9"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -26,15 +27,17 @@ INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
 CONF_DIR="$ROOT_DIR/etc/config"
-ifconfig ppp0 >/dev/null 2>/dev/null && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
+ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
-if ifconfig wg0 >/dev/null 2>/dev/null; then
+if ifconfig wg0; then
   # WireGuard
   TUN_IF='wg0'
 else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
+STDERR=/dev/null
+} >/dev/null 2>&1
 
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
@@ -114,14 +117,12 @@ INFO_LOGD_MASK=3
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $CONF_DIR $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() 2>/dev/null _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
+get_ipt() 2>>"$STDERR" _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
-  if [ "$IPR_BIN" ]
-    then echo $_IP|iprange -
-    else _IP=$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/NETWORK|PREFIX/ {ORS="/";print $2}');echo ${_IP%?}
-  fi
+  if [ "$IPR_BIN" ]; then echo $_IP|iprange -
+  else _IP=$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/NETWORK|PREFIX/ {ORS="/";print $2}');echo ${_IP%?}; fi
 }
 
 # ---------------------------------------------
@@ -137,6 +138,8 @@ if [ "$STDERR" ]; then DEBUG=true
   sc_conf show | /usr/bin/awk '{print "   - "$0}' >>"$STDERR"
 else DEBUG=false STDERR=/dev/null
 fi
+
+_exit() { $DEBUG && debug "exiting with code: $1"; exit $1; }
 
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
@@ -199,7 +202,7 @@ while :; do
     if [ \$D -eq 300 ]; then $($DEBUG && echo "debug '10 minutes in the loop; breaking it.';") break
     else D=\$((D+1)); fi
   done <$LOG_MSG >>$LOG_FILE
-done 2>>$STDERR
+done 2>>"$STDERR"
 EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return 0
@@ -210,30 +213,32 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; }
-_cipset_end() { [ -d "$_CIPSET_DIR" ] && /bin/rm -rf $_CIPSET_DIR; trap - TERM INT; $DEBUG && debug "_cipset_end"; }
-_cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"; return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1); }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
+_cipset_end() { if [ -d "$_CIPSET_DIR" ]; then /bin/rm -rf $_CIPSET_DIR; fi; trap - TERM INT; $DEBUG && debug "_cipset_end"; } 2>>"$STDERR"
+_cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"
+  return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1)
+} 2>>"$STDERR"
 _cipset_diff_set_file() { $DEBUG && debug "_cipset_diff_set_file $*"
   if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/sort|diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
   return $?
-}
+} 2>>"$STDERR"
 _cipset_swap_set_file() { $DEBUG && debug "_cipset_swap_set_file $*"
   /bin/cp -f $2 "$_CIPSET_DIR/$1"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$IPSET_TMP' hash:net family inet maxelem "c; while(d<c){print "add '$IPSET_TMP' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
   ipset swap "$1" "$IPSET_TMP"; ipset destroy $IPSET_TMP
-}
+} 2>>"$STDERR"
 _cipset_create_set_file() { $DEBUG && debug "_cipset_create_set_file $*"
   /bin/cp -f $2 "$_CIPSET_DIR/$1"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
-}
+} 2>>"$STDERR"
 _cipset_inet_in_bl() { $DEBUG && debug "_cipset_inet_in_bl $*"
   [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
   [ -z "$(echo "$1" | iprange "$_CIPSET_DIR/$IPSET_BL_NAME" --common - )" ] && return 1 || return 0
-}
+} 2>>"$STDERR"
 _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
   [ "$IPR_BIN" ] && { $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2; return; }
   /bin/grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$_CIPSET_DIR/$1"|/usr/bin/awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
-}
+} 2>>"$STDERR"
 
 ###############################################
 #
@@ -317,7 +322,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     else
     # no netset file, exiting with _IPS=0
-      exit 1
+      _exit 1
     fi
   fi
   
@@ -363,7 +368,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
   if $_WBW && _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else _WBW=false; fi
-  if $_TBW && _cipset_inet_in_bl $TUN_INET; then [ $_EXCL_IF ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$TUN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else _TBW=false; fi
+  if $_TBW && _cipset_inet_in_bl $TUN_INET; then if [ $_EXCL_IF ]; then _EXCL_IF="\($WAN_IF\|$TUN_IF\)"; else _EXCL_IF=$TUN_IF; fi; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else _TBW=false; fi
   if [ $_EXCL_IF ]
     then _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
     else _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
@@ -376,21 +381,21 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   _POS=0
   # Applying WAN Network Range Bypass if needed and not skipped
-  $_WBW && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $WAN_IF $WAN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT))); }
+  if $_WBW; then _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $WAN_IF $WAN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_WB_SHIFT))); fi
   # Applying TUN Network Range Bypass (if applicable, needed and not skipped)
-  $_TBW && { _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); }
+  if $_TBW; then _POS=$((1+_POS)); _set_ipt_bypass_for_if_inet_pos $TUN_IF $TUN_INET $_POS; NFO_IPT=$((NFO_IPT+($?<<INFO_IPT_TB_SHIFT))); fi
 
   if $_WL; then
     # apply whitelist
     _POS=$((1+_POS)) 
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
-    if [ "$_WL_POS" != "$_POS" ]; then
+    if [ "$_WL_POS" -ne "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
-    if [ "$_WL_POS" != "$_POS" ]; then
+    if [ "$_WL_POS" -ne "$_POS" ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
@@ -457,7 +462,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
-  $DEBUG && { debug "$INFO_FILE -> $(/bin/cat $INFO_FILE)"; debug "<---| shield_uprear"; }
+  $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
 } 2>>"$STDERR"
 
 ###############################################
@@ -467,10 +472,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 ###############################################
 
 #we are called from firewall_start.sh
-if [ "$1" == "_fws" ]; then
-  sc_conf get up >/dev/null && shield_uprear "$INFO_FROM_FWS"
-  $DEBUG && debug "exiting with no error"; exit 0
-fi
+if [ "$1" == "_fws" ]; then sc_conf get up >/dev/null && shield_uprear "$INFO_FROM_FWS"; _exit 0; fi
 
 #when called from post-mount.sh
 _pm() { $DEBUG && debug "_pm $*"
@@ -478,7 +480,7 @@ _pm() { $DEBUG && debug "_pm $*"
     [ -d "$ROOT_DIR" ] || /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
     sc_init; shield_init; shield_uprear "$INFO_FROM_PM"
   fi
-  $DEBUG && debug "exiting with no error"; exit 0
+  _exit 0
 }
 
 ###############################################
@@ -501,12 +503,10 @@ WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 # Check if script is installed on USB
-if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then
+if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then EXT_DRIVE=true
   PM_DIR="${SC_PATH%${SC_PATH#/tmp/mnt/*/}}autorun/scripts"
   PM_FILE="$PM_DIR/post-mount.sh"
-  EXT_DRIVE=1
-else
-  EXT_DRIVE=''
+else EXT_DRIVE=false
 fi
 # ---------------------------------------------
 : ENV STOP
@@ -537,10 +537,10 @@ clean_firewall_start() { $DEBUG && debug "clean_firewall_start"
   if [ -e "$FWS_FILE" ]; then
     if [ "$(/bin/grep -Fv "$SC_NAME" "$FWS_FILE"|/bin/sed '/^[[:space:]]*$/d')" ]; then
       /bin/sed -i "/$SC_NAME/d" "$FWS_FILE"
-      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
+      [ $VERBOSE ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
     else
       /bin/rm -f "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
+      [ $VERBOSE ] && echo "- 'firewall-start.sh' had no other rules; removed it."
     fi
   fi
 }
@@ -553,7 +553,7 @@ check_postmount() { $DEBUG && debug "check_postmount"
 }
 
 set_postmount() { $DEBUG && debug "set_postmount"
-  [ "$EXT_DRIVE" ] || return 1
+  $EXT_DRIVE || return 1
   [ -d "$PM_DIR" ] || /bin/mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
   echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
@@ -561,21 +561,21 @@ set_postmount() { $DEBUG && debug "set_postmount"
 }
 
 clean_postmount() { $DEBUG && debug "clean_postmount"
-  if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
+  if $EXT_DRIVE && [ -e "$PM_FILE" ]; then
     if [ "$(/bin/grep -Fv "$SC_NAME" "$PM_FILE"|/bin/sed '/^[[:space:]]*$/d')" ]; then
       /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
+      [ $VERBOSE ] && echo "- 'post-mount.sh' has some other code; removed only our code."
     else
       /bin/rm -f "$PM_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
+      [ $VERBOSE ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
 }
 
 # SYMLINK: /usr/bin/SELF ######################
 check_path() { $DEBUG && debug "check_path"
-  command -v "$SC_NAME" > /dev/null && return 0 || return 1
-}
+  command -v "$SC_NAME"; return $?
+} >/dev/null
 
 set_path() { $DEBUG && debug "set_path"
   [ -e "/usr/bin/$SC_NAME" ] || /bin/ln -s "$SC_NICEPATH" "/usr/bin/$SC_NAME"
@@ -646,10 +646,10 @@ echo "- Downloading:"
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     /bin/rm -f "$DL_PATH"
-    exit 1
+    _exit 1
   fi
   check_web && install_web
-  exit 0
+  _exit 0
 }
 
 _upgrade() { $DEBUG && debug "_upgrade"
@@ -664,27 +664,27 @@ upgrade() { $DEBUG && debug "upgrade"
     echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
     UPGRADE_VER=$(/usr/bin/wget -qO- --no-check-certificate "$SC_DEV_REPO/version")
-    [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";exit 1; }
+    [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";_exit 1; }
   else
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)"
     if [ "$SC_LAST_VERS" ]; then
       _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
       _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the latest version.            "; exit 0
+      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the latest version.            ";_exit 0
       elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
       else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS         \033[0m"
       fi
     else
       >&2 echo -e "\033[31m! Could not check what is the latest version online!\033[0m"
-      exit 1
+      _exit 1
     fi
     UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
     UPGRADE_VER="$SC_LAST_VERS"
   fi
   if [ ! "$DEVMODE" ]; then
     echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
-    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
+    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) _exit 0 ;; esac
   fi
   do_upgrade
 }
@@ -692,14 +692,14 @@ upgrade() { $DEBUG && debug "upgrade"
 # get default sources list (from bolemo github)
 get_def_srclst() { $DEBUG && debug "get_def_srclst"
   if [ ! -s "$SRC_LIST" ]; then
-    [ "$VERBOSE" ] && echo -e "! $SRC_LIST is missing or empty!"
+    [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty!"
     SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
     if /usr/bin/wget -qO "$SRC_LIST" --no-check-certificate "$SRC_LIST_URL"; then
-      [ "$VERBOSE" ] && echo -e "- Default list was downloaded."
+      [ $VERBOSE ] && echo -e "- Default list was downloaded."
     else
       >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
       /bin/rm -f "$SRC_LIST"
-      exit 1
+      _exit 1
     fi
   fi
 }
@@ -740,7 +740,7 @@ install_web() { $DEBUG && debug "install_web"
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     /bin/rm -f "$DL_PATH"
-    exit 1
+    _exit 1
   fi
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
@@ -752,14 +752,14 @@ install_web() { $DEBUG && debug "install_web"
     echo -ne "\033[0m"
     >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     /bin/rm -f "$DL_PATH"
-    exit 1
+    _exit 1
   fi
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
     echo "- $WEB_NAME paths were repaired."
   fi
-  exit 0
+  _exit 0
 }
 
 clean_web() { $DEBUG && debug "clean_web"
@@ -795,31 +795,33 @@ sc_init() { $DEBUG && debug "sc_init"
 } 2>/dev/null
 
 shield_init() { $DEBUG && debug "shield_init"
-  [ "$VERBOSE" ] && echo -e "\033[1;36mInitializing...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   ipset -q destroy $IPSET_TMP
   if check_conf
-    then [ "$VERBOSE" ] && echo "- Configuration file is set."
-    else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; exit 1; }
+    then [ $VERBOSE ] && echo "- Configuration file is set."
+    else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; _exit 1; }
   fi
   if check_firewall_start; then
-    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' is in place and ok."
+    [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
   else
     set_firewall_start
-    check_firewall_start || { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
-    [ "$VERBOSE" ] && echo "- 'firewall-start.sh' was edited and is now ok."
+    if check_firewall_start
+      then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
+      else { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; _exit 1; }
+    fi
   fi
-  if [ "$EXT_DRIVE" ]; then
-    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on external drive."
-    if check_postmount; then
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' is in place and ok."
-    else
-      set_postmount
-      check_postmount || { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' was edited and is now ok."
+  if $EXT_DRIVE; then
+    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on external drive."
+    if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' is in place and ok."
+    else set_postmount
+      if check_postmount
+        then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
+        else { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; _exit 1; }
+      fi
     fi
   else
-    [ "$VERBOSE" ] && echo "- '$SC_NAME' is installed on internal drive."
+    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
 }
 
@@ -875,7 +877,7 @@ shield_up() { $DEBUG && debug "shield_up"
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
-    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; _exit 1; }
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
@@ -930,7 +932,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   if [ "$1" ]; then # $1 set means using cache
     [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
     if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
-    else 2>&1 echo "! Blocklist sources cache is empty!"; exit 1; fi
+    else 2>&1 echo "! Blocklist sources cache is empty!"; _exit 1; fi
   elif [ -s "$SRC_LIST" ]; then
     :>"$TMP_FILE"
     # Process each source url
@@ -946,7 +948,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
         [ $VERBOSE ] && echo -e "\033[0m"
         [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
       done
-      if [ $_NBOK -eq 0 ]; then >&2 echo -e "\033[31m! Could not get any list! Exiting\033[0m"; exit 1; fi
+      if [ $_NBOK -eq 0 ]; then >&2 echo -e "\033[31m! Could not get any list! Exiting\033[0m"; _exit 1; fi
       [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
     }
     [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
@@ -954,11 +956,11 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   else [ $VERBOSE ] && echo "- Sources file $SRC_LIST is empty or does not exists."
     :>"$TMP_FILE"
   fi
-  if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_BL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blocklist(s)..."
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   fi
-  if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; exit 1; fi
+  if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; _exit 1; fi
   if [ -x "$IPR_BIN" ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
@@ -969,7 +971,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   [ $VERBOSE ] && echo "- Done."
 
   # processing whitelist if any
-  if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_WL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
     strip_netset_file $CUST_WL_FILE >"$TMP_FILE"
     
@@ -998,7 +1000,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 info() { $DEBUG && debug "info"
   echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
+    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
   echo -ne "- Checking latest available version...\r"
@@ -1110,7 +1112,7 @@ chain_status() { $DEBUG && debug "chain_status $*"
   [ "$1" = 'src' ] && { _S_CK=$_CH_CK; _S_PB=$_CH_PB; _S_IPT=$_CH_IPT; } || { _D_CK=$_CH_CK; _D_PB=$_CH_PB; _D_IPT=$_CH_IPT; }
 }
 
-_status() { $DEBUG && debug "_status"
+_status() { $DEBUG && debug "|---> _status"
   _CK=0; _WN=0; _PB=0
   _BLC=0; _WLC=0
   _logd_status; _LOGD=$?
@@ -1120,7 +1122,7 @@ _status() { $DEBUG && debug "_status"
   # check firewall-start.sh script
   check_firewall_start &&                                                        _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
-  [ "$EXT_DRIVE" ] && check_postmount &&                                         _CK=$((_CK+CK_PM))
+  $EXT_DRIVE && check_postmount &&                                               _CK=$((_CK+CK_PM))
 
   # CHECK BLOCKLIST (IPS, FILE)
   if _cipset_copy_set $IPSET_BL_NAME; then                                       _CK=$((_CK+CK_IPS_BL))
@@ -1186,7 +1188,7 @@ _status() { $DEBUG && debug "_status"
   # -- PROBLEMS / WARNINGS
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
-    [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                              _PB=$((_PB+CK_PM))
+    $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] &&                                    _PB=$((_PB+CK_PM))
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # CH
@@ -1216,14 +1218,15 @@ _status() { $DEBUG && debug "_status"
   _cipset_end
   
   echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
-}
+  $DEBUG && debug "<---| _status [$_CK $_PB $_WN $_BLC $_WLC $_LOGD]"
+} 2>>"$STDERR"
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
 #  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5; _LOGD=$6
-_status>/dev/null
+_status >/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
@@ -1276,7 +1279,7 @@ _status>/dev/null
     [ $((_WN&WN_LOG_DIFF)) -ne 0 ] && echo -e "\033[35m- current logging settings differs from last time shield was upreared.\033[0m"
   fi
  
-  [ "$VERBOSE" ] || return 0
+  [ $VERBOSE ] || return 0
 
   echo -ne '\033[1;36mDetailed status:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_CK)" || echo ''
   echo "- Active WAN interface is '$WAN_IF'."
@@ -1422,11 +1425,11 @@ _status>/dev/null
       ipset -L -t $_SET|/bin/sed 's/^/- /'
     done
   fi
-  exit $_RETVAL
+  _exit $_RETVAL
 }
 
 status_raw() { $DEBUG && debug "status_raw"
-  echo "$(_status) '$WAN_IF' '$TUN_IF'"; $DEBUG && debug "exiting with no error"; exit 0
+  echo "$(_status) '$WAN_IF' '$TUN_IF'"; _exit 0
 }
 #---------------------------- END _STATUS ----------------------------
 
@@ -1474,7 +1477,7 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 #    MAIN ROUTINE
 #
 ###############################################
-[ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1; }
+[ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; _exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
@@ -1503,9 +1506,9 @@ fi
 
 PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*[[:space:]]*[[:digit:]]*//g')"
 case $(echo "$PARAM"|/usr/bin/wc -w) in
-  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; exit 1 ;;
+  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; _exit 1 ;;
   1) PARAM="$(echo "$PARAM"|/bin/sed 's/ //g')" ;;
-  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; exit 1 ;;
+  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; _exit 1 ;;
 esac
 
 if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
@@ -1576,7 +1579,7 @@ case "$PARAM" in
   '_down') VERBOSE=1; shield_down ;;
   '_upgrade') _upgrade ;;
   
-  *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; exit 1 ;;
+  *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; _exit 1 ;;
 esac
 
-$DEBUG && debug "end of script, exiting with no error"; exit 0
+_exit 0

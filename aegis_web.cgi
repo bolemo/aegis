@@ -228,7 +228,7 @@ status() {
   echo -e "<h3 class=\"debug collapsibleList\">Debug</h3>
 <input type=\"checkbox\" id=\"debug-status\" /><label for=\"debug-status\">Debug</label>
 <ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>
-<li>aegis info: $SC_NAME $SC_VERS-$([ "$EXT_DRIVE" ] && echo 'ext' || echo 'int')</li>
+<li>aegis info: $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')</li>
 <li>status codes: ck:$_CK|pb:$_PB|wn:$_WN|wif:$WAN_IF|wnt:$(inet_for_if $WAN_IF)|tif:$TUN_IF|tnt:$([ $TUN_IF ] && inet_for_if $TUN_IF)|blc:$BL_NB|wlc:$WL_NB|log:$_LOGD</li>
 <li>info file: $INFO|$INFO_WAN|$INFO_TUN</li>
 <li>timestamps: inf:$(/bin/date +%s -r $INFO_FILE)|cch:$(/bin/date +%s -r $SRC_BL_CACHE)|bld:$(/bin/date +%s -r $BL_FILE)|wld:$(/bin/date +%s -r $WL_FILE)</li>
@@ -252,7 +252,7 @@ status() {
 info() {
   aegis_env
   _JSON="{\"version\":\"$SC_VERS\""
-  [ "$EXT_DRIVE" ] && _JSON="$_JSON, \"location\":\"external\"" || _JSON="$_JSON, \"location\":\"internal\""
+  $EXT_DRIVE && _JSON="$_JSON, \"location\":\"external\"" || _JSON="$_JSON, \"location\":\"internal\""
   SC_LAST_VERS="$(last_avail_version)";
   if [ "$SC_LAST_VERS" ]; then
     _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
