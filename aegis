@@ -503,12 +503,10 @@ WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
 FWS_FILE="$FWS_DIR/firewall-start.sh"
 # Check if script is installed on USB
-if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then
+if [ -z "${SC_PATH##/tmp/mnt/*}" ]; then EXT_DRIVE=true
   PM_DIR="${SC_PATH%${SC_PATH#/tmp/mnt/*/}}autorun/scripts"
   PM_FILE="$PM_DIR/post-mount.sh"
-  EXT_DRIVE=1
-else
-  EXT_DRIVE=''
+else EXT_DRIVE=false
 fi
 # ---------------------------------------------
 : ENV STOP
@@ -539,10 +537,10 @@ clean_firewall_start() { $DEBUG && debug "clean_firewall_start"
   if [ -e "$FWS_FILE" ]; then
     if [ "$(/bin/grep -Fv "$SC_NAME" "$FWS_FILE"|/bin/sed '/^[[:space:]]*$/d')" ]; then
       /bin/sed -i "/$SC_NAME/d" "$FWS_FILE"
-      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
+      [ $VERBOSE ] && echo "- 'firewall-start.sh' has some other rules; removed only our rules."
     else
       /bin/rm -f "$FWS_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- 'firewall-start.sh' had no other rules; removed it."
+      [ $VERBOSE ] && echo "- 'firewall-start.sh' had no other rules; removed it."
     fi
   fi
 }
@@ -555,7 +553,7 @@ check_postmount() { $DEBUG && debug "check_postmount"
 }
 
 set_postmount() { $DEBUG && debug "set_postmount"
-  [ "$EXT_DRIVE" ] || return 1
+  $EXT_DRIVE || return 1
   [ -d "$PM_DIR" ] || /bin/mkdir -p "$PM_DIR"
   [ -e "$PM_FILE" ] && /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
   echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
@@ -563,13 +561,13 @@ set_postmount() { $DEBUG && debug "set_postmount"
 }
 
 clean_postmount() { $DEBUG && debug "clean_postmount"
-  if [ "$EXT_DRIVE" ] && [ -e "$PM_FILE" ]; then
+  if $EXT_DRIVE && [ -e "$PM_FILE" ]; then
     if [ "$(/bin/grep -Fv "$SC_NAME" "$PM_FILE"|/bin/sed '/^[[:space:]]*$/d')" ]; then
       /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' has some other code; removed only our code."
+      [ $VERBOSE ] && echo "- 'post-mount.sh' has some other code; removed only our code."
     else
       /bin/rm -f "$PM_FILE" 2>/dev/null
-      [ "$VERBOSE" ] && echo "- 'post-mount.sh' had no other code; removed it."
+      [ $VERBOSE ] && echo "- 'post-mount.sh' had no other code; removed it."
     fi
   fi
 }
@@ -813,7 +811,7 @@ shield_init() { $DEBUG && debug "shield_init"
       else { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; _exit 1; }
     fi
   fi
-  if [ "$EXT_DRIVE" ]; then
+  if $EXT_DRIVE; then
     [ $VERBOSE ] && echo "- '$SC_NAME' is installed on external drive."
     if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' is in place and ok."
     else set_postmount
@@ -1002,7 +1000,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 info() { $DEBUG && debug "info"
   echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
-    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; [ "$EXT_DRIVE" ] && echo 'on external drive.' || echo 'on internal drive.'
+    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
   echo -ne "- Checking latest available version...\r"
@@ -1124,7 +1122,7 @@ _status() { $DEBUG && debug "|---> _status"
   # check firewall-start.sh script
   check_firewall_start &&                                                        _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
-  [ "$EXT_DRIVE" ] && check_postmount &&                                         _CK=$((_CK+CK_PM))
+  $EXT_DRIVE && check_postmount &&                                               _CK=$((_CK+CK_PM))
 
   # CHECK BLOCKLIST (IPS, FILE)
   if _cipset_copy_set $IPSET_BL_NAME; then                                       _CK=$((_CK+CK_IPS_BL))
@@ -1190,7 +1188,7 @@ _status() { $DEBUG && debug "|---> _status"
   # -- PROBLEMS / WARNINGS
     # ENV
     [ $((_CK&CK_FWS)) -eq 0 ] &&                                                 _PB=$((_PB+CK_FWS))
-    [ "$EXT_DRIVE" ] && [ $((_CK&CK_PM)) -eq 0 ] &&                              _PB=$((_PB+CK_PM))
+    $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] &&                                    _PB=$((_PB+CK_PM))
     # BL
     [ $((_CK&CK_IPS_BL)) -eq 0 ] &&                                              _PB=$((_PB+CK_IPS_BL))
     # CH
