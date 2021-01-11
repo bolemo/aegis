@@ -666,14 +666,14 @@ upgrade() { $DEBUG && debug "upgrade"
     echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
     UPGRADE_VER=$(/usr/bin/wget -qO- --no-check-certificate "$SC_DEV_REPO/version")
-    [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";exit 1; }
+    [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";_exit 1; }
   else
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)"
     if [ "$SC_LAST_VERS" ]; then
       _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
       _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the latest version.            "; exit 0
+      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the latest version.            ";_exit 0
       elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
       else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS         \033[0m"
       fi
@@ -686,7 +686,7 @@ upgrade() { $DEBUG && debug "upgrade"
   fi
   if [ ! "$DEVMODE" ]; then
     echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
-    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) exit 0 ;; esac
+    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) _exit 0 ;; esac
   fi
   do_upgrade
 }
@@ -802,7 +802,7 @@ shield_init() { $DEBUG && debug "shield_init"
   ipset -q destroy $IPSET_TMP
   if check_conf
     then [ $VERBOSE ] && echo "- Configuration file is set."
-    else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; exit 1; }
+    else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; _exit 1; }
   fi
   if check_firewall_start; then
     [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
@@ -810,7 +810,7 @@ shield_init() { $DEBUG && debug "shield_init"
     set_firewall_start
     if check_firewall_start
       then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
-      else { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; exit 1; }
+      else { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; _exit 1; }
     fi
   fi
   if [ "$EXT_DRIVE" ]; then
@@ -819,7 +819,7 @@ shield_init() { $DEBUG && debug "shield_init"
     else set_postmount
       if check_postmount
         then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
-        else { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; exit 1; }
+        else { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; _exit 1; }
       fi
     fi
   else
@@ -879,7 +879,7 @@ shield_up() { $DEBUG && debug "shield_up"
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
-    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; exit 1; }
+    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; _exit 1; }
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
@@ -934,7 +934,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   if [ "$1" ]; then # $1 set means using cache
     [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
     if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
-    else 2>&1 echo "! Blocklist sources cache is empty!"; exit 1; fi
+    else 2>&1 echo "! Blocklist sources cache is empty!"; _exit 1; fi
   elif [ -s "$SRC_LIST" ]; then
     :>"$TMP_FILE"
     # Process each source url
@@ -950,7 +950,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
         [ $VERBOSE ] && echo -e "\033[0m"
         [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
       done
-      if [ $_NBOK -eq 0 ]; then >&2 echo -e "\033[31m! Could not get any list! Exiting\033[0m"; exit 1; fi
+      if [ $_NBOK -eq 0 ]; then >&2 echo -e "\033[31m! Could not get any list! Exiting\033[0m"; _exit 1; fi
       [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
     }
     [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
@@ -958,11 +958,11 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   else [ $VERBOSE ] && echo "- Sources file $SRC_LIST is empty or does not exists."
     :>"$TMP_FILE"
   fi
-  if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_BL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blocklist(s)..."
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   fi
-  if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; exit 1; fi
+  if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; _exit 1; fi
   if [ -x "$IPR_BIN" ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
@@ -973,7 +973,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   [ $VERBOSE ] && echo "- Done."
 
   # processing whitelist if any
-  if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_WL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
     strip_netset_file $CUST_WL_FILE >"$TMP_FILE"
     
