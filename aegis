@@ -353,7 +353,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
 
-  get_ipt; $DEBUG && echo "$_IPT"|/usr/bin/awk '{print "   "$0}' >>"$STDERR"
+  get_ipt; $DEBUG && echo "$_IPT"|/usr/bin/awk '{print "   - "NR": "$0}' >>"$STDERR"
   #Define grep to find inaccurate ifaces (used for clean-ups)
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
@@ -362,14 +362,18 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   _IPT_DST="$(echo "$_IPT"|/bin/grep -F -- "-A $IPTBL_DST")"
   [ "$_IPT_DST" ] && NFO_IPT=$((NFO_IPT+INFO_IPT_DST_KEEP)) || $IPT_BIN -N "$IPTBL_DST"
 
-  sc_conf get wan.no_bypass >/dev/null && _WBW=false || _WBW=true
-  sc_conf get tun.no_bypass >/dev/null && _TBW=false || _TBW=true
-  WAN_INET=$(inet_for_if $WAN_IF)
-  [ "$TUN_IF" ] && TUN_INET=$(inet_for_if $TUN_IF)
   # checking and cleaning any bypass that is not WAN_IF or TUN_IF (+ WAN_IF and TUN_IF if not needed) in SRC/DST chains
-  if $_WBW && _cipset_inet_in_bl $WAN_INET; then _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); else _WBW=false; fi
-  if $_TBW && _cipset_inet_in_bl $TUN_INET; then if [ $_EXCL_IF ]; then _EXCL_IF="\($WAN_IF\|$TUN_IF\)"; else _EXCL_IF=$TUN_IF; fi; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); else _TBW=false; fi
-  if [ $_EXCL_IF ]
+  if [ "$WAN_IF" ] && ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
+    if _cipset_inet_in_bl $WAN_INET; then _WBW=true
+      _EXCL_IF=$WAN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD))
+    else _WBW=false; fi
+  else _WBW=false; fi
+  if [ "$TUN_IF" ] && ! sc_conf get tun.no_bypass >/dev/null; then TUN_INET=$(inet_for_if $TUN_IF)
+    if _cipset_inet_in_bl $TUN_INET; then _TBW=true
+      [ "$_EXCL_IF" ] && _EXCL_IF="\($WAN_IF\|$TUN_IF\)" || _EXCL_IF=$TUN_IF; NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD))
+    else _TBW=false; fi
+  else _TBW=false; fi
+  if [ "$_EXCL_IF" ]
     then _IPT_UCH="$(echo "$_IPT"|/bin/grep -v $_EXCL_IF|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
     else _IPT_UCH="$(echo "$_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\" -j RETURN")"
   fi
