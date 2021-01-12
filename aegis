@@ -353,7 +353,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
 
-  get_ipt
+  get_ipt; $DEBUG && echo "$_IPT"|/usr/bin/awk '{print "   "$0}' >>"$STDERR"
   #Define grep to find inaccurate ifaces (used for clean-ups)
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
