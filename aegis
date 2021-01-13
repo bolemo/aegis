@@ -665,7 +665,7 @@ echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _PROG='--show-progress --no-check-certificate';
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  _download "$UPGRADE_URL" "$DL_PATH" $_PROG
+  _download "$UPGRADE_URL" "$DL_PATH" "$_PROG"
   strip_sh_file "$DL_PATH"
   /bin/mv "$DL_PATH" "$SC_NICEPATH"
   /bin/chmod +x "$SC_NICEPATH"
