@@ -148,13 +148,13 @@ _warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
-_logd_logmsg() {
+_logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
   elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
   else _warn "No log-message or log_message found!"; return 1
   fi
 }
-_logd_start() {
+_logd_start() { $DEBUG && debug "_logd_start"
 if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
@@ -217,8 +217,8 @@ EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
-_logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
-_logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
+_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
+_logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
@@ -330,15 +330,12 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     # else keeping existing blocklist
     fi
-  else
-    if [ -r "$BL_FILE" ]; then
+  elif [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
       _cipset_create_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
-    else
-    # no netset file, exiting with _IPS=0
-      _exit 1
-    fi
+  else # no netset file, exiting with _IPS=0
+    $DEBUG && debug "no ipset or file blocking directives! Exiting..."; _exit 1
   fi
   
   # creating ipset whitelist if needed
