@@ -964,9 +964,10 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   else [ $VERBOSE ] && echo "- Sources file $SRC_LIST is empty or does not exists."
     :>"$TMP_FILE"
   fi
-  if ( for F in $CUST_BL_FILE; do test -r $F || _exit 1; done; ); then
+  if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding netset from custom blocklist(s)..."
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
+  elif [ $VERBOSE ]; then echo "- No custom custom blocklist(s) found."
   fi
   if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; _exit 1; fi
   if [ -x "$IPR_BIN" ]; then
@@ -979,7 +980,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   [ $VERBOSE ] && echo "- Done."
 
   # processing whitelist if any
-  if ( for F in $CUST_WL_FILE; do test -r $F || _exit 1; done; ); then
+  if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
     strip_netset_file $CUST_WL_FILE >"$TMP_FILE"
     
@@ -998,7 +999,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
       else echo '- No IP set found, custom whitelist is empty.'
     fi
     [ $VERBOSE ] && echo "- Done."
-  else /bin/rm -f "$WL_FILE"
+  elif [ $VERBOSE ]; then echo "- No custom custom whitelist(s) found."
   fi
   
   /bin/rm -f "$TMP_FILE" 2>/dev/null
