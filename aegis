@@ -156,7 +156,7 @@ _logd_logmsg() {
 _logd_start() {
 if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
-  else _logd_stop; return $INFO_LOGD_STOPPED
+  else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
 local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
