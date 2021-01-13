@@ -150,7 +150,10 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_start() {
 [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local LOG_MSG=/var/log/log-message
+if test -e /var/log/log-message; then local LOG_MSG=/var/log/log-message
+elif test -e /var/log/log_message; then local LOG_MSG=/var/log/log_message
+else >&2 echo -e "\033[31m! No log-message or log_message found!\033[0m"; return 1
+fi
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
