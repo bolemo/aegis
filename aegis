@@ -652,7 +652,7 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 
 _download() { # $1=URL, $2=DEST, $3=OPTS
   echo -ne "\033[35m"
-  if ! /usr/bin/wget -qO "$2" $3 "$1"; then
+  if ! /usr/bin/wget -qO "$2" $3 --show-progress --no-check-certificate "$1"; then
     echo -ne "\033[0m"
     /bin/rm -f "$2"
     _warn "Wget error code $?! Could not download $1" 1
@@ -663,8 +663,7 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 do_upgrade() { $DEBUG && debug "do_upgrade"
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress --no-check-certificate';
-  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
+  [ "$DEVMODE" ] && _PROG="--no-cache" || _PROG=''
   _download "$UPGRADE_URL" "$DL_PATH" "$_PROG"
   strip_sh_file "$DL_PATH"
   /bin/mv "$DL_PATH" "$SC_NICEPATH"
@@ -713,12 +712,8 @@ get_def_srclst() { $DEBUG && debug "get_def_srclst"
   if [ ! -s "$SRC_LIST" ]; then
     [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty!"
     SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
-    if /usr/bin/wget -qO "$SRC_LIST" --no-check-certificate "$SRC_LIST_URL"; then
-      [ $VERBOSE ] && echo -e "- Default list was downloaded."
-    else
-      /bin/rm -f "$SRC_LIST"
-      _warn "Wget error code $?! Could not download $SRC_LIST_URL" 1
-    fi
+    _download "$SRC_LIST_URL" "$SRC_LIST"
+    [ $VERBOSE ] && echo -e "- Default list was downloaded."
   fi
 }
 
@@ -748,28 +743,15 @@ install_web() { $DEBUG && debug "install_web"
   fi
   echo "- Downloading $WEB_NAME:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress --no-check-certificate';
-  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm"; then
-    /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
-    echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
-  else
-    echo -ne "\033[0m"
-    /bin/rm -f "$DL_PATH"
-    _warn "Wget error code $?! Could not download $DL_PATH" 1
-  fi
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
-    strip_sh_file "$DL_PATH"
-    /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-    /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-    echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-  else
-    echo -ne "\033[0m"
-    /bin/rm -f "$DL_PATH"
-    _warn "Wget error code $?! Could not download $DL_PATH" 1
-  fi
+  [ "$DEVMODE" ] && _PROG='--no-cache' || _PROG=''
+  _download "${UPGRADE_URL}.htm" "$DL_PATH" "$_PROG"
+  /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
+  echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
+  _download "${UPGRADE_URL}_web.cgi" "$DL_PATH" "$_PROG"
+  strip_sh_file "$DL_PATH"
+  /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
