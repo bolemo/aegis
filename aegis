@@ -213,7 +213,8 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
+_cipset_trap() { $DEBUG && debug "_cipset_trap"; _cipset_end; exit; }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_trap" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
 _cipset_end() { if [ -d "$_CIPSET_DIR" ]; then /bin/rm -rf $_CIPSET_DIR; fi; trap - TERM INT; $DEBUG && debug "_cipset_end"; } 2>>"$STDERR"
 _cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"
   if [ "$IPR_BIN" ]
