@@ -141,10 +141,30 @@ To stop logging, just use `aegis log -disable` (if aegis is up, it will desactiv
 iprange is a great little utility dealing that is now part of the FireHOL project.
 Aegis works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
 
-The install script offers to install a version of it on the router (rootfs in /usr/bin). It has been kindly compiled by Voxel and does not require Entware or an external drive.
-You can also install it separately:
-* [firmware Addon for R7800] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`.
-* [firmware Addon for R9000] directly from Voxel's website here: https://voxel-firmware.com/Downloads/iprange_1.0.4-1_r9000.ipk and install it using the command `/bin/opkg install iprange_1.0.4-1_r9000.ipk`.
-* using Entware: `/opt/bin/opkg install iprange`.
+The install script offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
+**For Orbi, it can only be installed through Entware for now.**
+
+### without Entware
+If you did not install it from the install script, you can install manually.
+It has been kindly compiled by Voxel and does not require Entware or an external drive.
+
+* [firmware Addon for R7500/R7800]:
+`cd /opt/tmp
+wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk
+/bin/opkg install iprange_1.0.4-1_ipq806x.ipk
+rm iprange_1.0.4-1_ipq806x.ipk`
+* [firmware Addon for R8900/R9000]:
+`cd /opt/tmp
+wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_r9000.ipk
+/bin/opkg install iprange_1.0.4-1_r9000.ipk
+rm iprange_1.0.4-1_r9000.ipk`
+
+### with Entware
+It has been kindly compiled by Voxel and ipk is available on his website:
+`cd /opt/tmp
+wget http://voxel-firmware.com/Downloads/iprange_1.0.4-1_cortex-a15-3x.ipk
+/opt/bin/opkg install iprange_1.0.4-1_cortex-a15-3x.ipk
+rm iprange_1.0.4-1_cortex-a15-3x.ipk`
+
 
 The source is here: https://github.com/firehol/iprange
