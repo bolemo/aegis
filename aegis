@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.0"
+SC_VERS="1.6.1"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -105,12 +105,12 @@ INFO_IPT_TUN_PBM=98304     # . x x . . . . . . . . . . . . . . .
 
 INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
 
-# INFO LOGD (2 bits)
+# INFO LOGD (2 bits) and _logd_start return code
 INFO_LOGD_SHIFT=27
-INFO_LOGD_KEEP_ON=0        # _ _
-INFO_LOGD_KEEP_OFF=1       # _ x
-INFO_LOGD_STARTED=2        # x _
-INFO_LOGD_STOPPED=3        # x x
+INFO_LOGD_STARTED=0        # _ _
+INFO_LOGD_STOPPED=1        # _ x
+INFO_LOGD_KEEP_ON=2        # x _
+INFO_LOGD_KEEP_OFF=3       # x x
 INFO_LOGD_MASK=3
 
 # --------------- ENV FUNCTIONS ---------------
@@ -147,10 +147,19 @@ _exit() { $DEBUG && debug "exiting with code: $1"; exit $1; }
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
+_logd_logmsg() {
+  if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
+  elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
+  else >&2 echo -e "\033[31m! No log-message or log_message found!\033[0m"; return 1
+  fi
+}
 _logd_start() {
-[ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return 2 # logd is already running
+if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
+  if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
+  else _logd_stop; return $INFO_LOGD_STOPPED; fi
+fi
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local LOG_MSG=/var/log/log-message
+local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
@@ -205,7 +214,7 @@ while :; do
 done 2>>"$STDERR"
 EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
-return 0
+return $INFO_LOGD_STARTED
 }
 _logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
 _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
@@ -213,7 +222,8 @@ _logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
 # ---------------------------------------------
-_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_end; exit" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
+_cipset_trap() { $DEBUG && debug "_cipset_trap"; _cipset_end; exit; }
+_cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_trap" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
 _cipset_end() { if [ -d "$_CIPSET_DIR" ]; then /bin/rm -rf $_CIPSET_DIR; fi; trap - TERM INT; $DEBUG && debug "_cipset_end"; } 2>>"$STDERR"
 _cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"
   if [ "$IPR_BIN" ]
@@ -430,7 +440,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
     fi
     NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
-    _logd_start && NFO_LOGD=$INFO_LOGD_STARTED || NFO_LOGD=$INFO_LOGD_KEEP_ON
+    _logd_start; NFO_LOGD=$?
   else
     $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
     $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
