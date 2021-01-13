@@ -70,7 +70,7 @@ if [ -s "/opt/bolemo/etc/aegis.sources" ]
 fi
 
 # symlink
-command -v aegis > /dev/null || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
+command -v aegis >/dev/null || ln -s /opt/bolemo/scripts/aegis /usr/bin/aegis
 
 # iprange
 if ! $ASK; then case "$2" in
@@ -80,15 +80,22 @@ if ! $ASK; then case "$2" in
   *) ASK_ENT=false; ASK_INT=false ;;
 esac; fi
 
-if command -v iprange>/dev/null; then
+if command -v iprange >/dev/null; then
   echo 'iprange is installed.'
   _ASK_ROOTFS=false
 else
   echo 'iprange is not installed.'
-  if command -v /opt/bin/opkg && [ "$(/opt/bin/opkg list iprange)" ]; then
+  if command -v /opt/bin/opkg >/dev/null; then
     $ASK && { ask_yn 'It appears you have Entware, do you want to install it through Entware?' && ASK_ENT=true || ASK_ENT=false; }
-    if $ASK_ENT
-      then /opt/bin/opkg update; /opt/bin/opkg install iprange; _ASK_ROOTFS=false
+    if $ASK_ENT; then _ASK_ROOTFS=false
+      echo "Downloading and installing iprange..."
+      IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_cortex-a15-3x.ipk"
+      if $WGET_PATH -qO '/tmp/iprange.ipk' --no-check-certificate "$IPRANGE_IPK_URL"; then
+        /opt/bin/opkg install '/tmp/iprange.ipk'
+        /bin/rm -f '/tmp/iprange.ipk'
+      else
+        >&2 echo 'Could not download iprange!'
+      fi
       else _ASK_ROOTFS=true
     fi
   else _ASK_ROOTFS=true

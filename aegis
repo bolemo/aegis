@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.1"
+SC_VERS="1.6.2"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -140,6 +140,7 @@ else DEBUG=false STDERR=/dev/null
 fi
 
 _exit() { $DEBUG && debug "exiting with code: $1"; exit $1; }
+_warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$2" ] && _exit $2; }
 
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
@@ -150,7 +151,7 @@ LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_logmsg() {
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
   elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
-  else >&2 echo -e "\033[31m! No log-message or log_message found!\033[0m"; return 1
+  else _warn "No log-message or log_message found!"; return 1
   fi
 }
 _logd_start() {
@@ -662,9 +663,8 @@ echo "- Downloading:"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
     echo -ne "\033[0m"
-    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     /bin/rm -f "$DL_PATH"
-    _exit 1
+    _warn "Wget error code $?! Could not download $DL_PATH" 1
   fi
   check_web && install_web
   _exit 0
@@ -682,7 +682,7 @@ upgrade() { $DEBUG && debug "upgrade"
     echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
     UPGRADE_VER=$(/usr/bin/wget -qO- --no-check-certificate "$SC_DEV_REPO/version")
-    [ -z "$UPGRADE_VER" ] && { >&2 echo -e "\033[31m! Could not get version!\033[0m";_exit 1; }
+    [ -z "$UPGRADE_VER" ] && _warn "Could not get version!" 1
   else
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)"
@@ -693,10 +693,7 @@ upgrade() { $DEBUG && debug "upgrade"
       elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
       else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS         \033[0m"
       fi
-    else
-      >&2 echo -e "\033[31m! Could not check what is the latest version online!\033[0m"
-      _exit 1
-    fi
+    else _warn "Could not check what is the latest version online!" 1; fi
     UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
     UPGRADE_VER="$SC_LAST_VERS"
   fi
@@ -715,9 +712,8 @@ get_def_srclst() { $DEBUG && debug "get_def_srclst"
     if /usr/bin/wget -qO "$SRC_LIST" --no-check-certificate "$SRC_LIST_URL"; then
       [ $VERBOSE ] && echo -e "- Default list was downloaded."
     else
-      >&2 echo -e "\033[31m! Wget error code $?! Could not download $SRC_LIST_URL\033[0m"
       /bin/rm -f "$SRC_LIST"
-      _exit 1
+      _warn "Wget error code $?! Could not download $SRC_LIST_URL" 1
     fi
   fi
 }
@@ -756,21 +752,19 @@ install_web() { $DEBUG && debug "install_web"
     echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   else
     echo -ne "\033[0m"
-    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     /bin/rm -f "$DL_PATH"
-    _exit 1
+    _warn "Wget error code $?! Could not download $DL_PATH" 1
   fi
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
     strip_sh_file "$DL_PATH"
-    \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+    /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   else
     echo -ne "\033[0m"
-    >&2 echo -e "\033[31m! Wget error code $?! Could not download $DL_PATH\033[0m"
     /bin/rm -f "$DL_PATH"
-    _exit 1
+    _warn "Wget error code $?! Could not download $DL_PATH" 1
   fi
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
@@ -816,30 +810,22 @@ shield_init() { $DEBUG && debug "shield_init"
   [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   ipset -q destroy $IPSET_TMP
-  if check_conf
-    then [ $VERBOSE ] && echo "- Configuration file is set."
-    else { >&2 echo -e "\033[31m! Problem with the configuration system!\033[0m"; _exit 1; }
-  fi
-  if check_firewall_start; then
-    [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
+  if check_conf; then [ $VERBOSE ] && echo "- Configuration file is set."
+  else _warn "Problem with the configuration system!" 1; fi
+  if check_firewall_start; then [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
   else
     set_firewall_start
-    if check_firewall_start
-      then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
-      else { >&2 echo -e "\033[31m! Problem with $FWS_FILE!\033[0m"; _exit 1; }
-    fi
+    if check_firewall_start; then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
+    else _warn "Problem with $FWS_FILE!" 1; fi
   fi
   if $EXT_DRIVE; then
     [ $VERBOSE ] && echo "- '$SC_NAME' is installed on external drive."
     if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' is in place and ok."
     else set_postmount
-      if check_postmount
-        then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
-        else { >&2 echo -e "\033[31m! Problem with $PM_FILE!\033[0m"; _exit 1; }
-      fi
+      if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
+      else _warn "Problem with $PM_FILE!" 1; fi
     fi
-  else
-    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
+  else [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
 }
 
@@ -895,7 +881,7 @@ shield_up() { $DEBUG && debug "shield_up"
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
-    [ -r "$BL_FILE" ] || { >&2 echo -e "\033[31m! $BL_FILE not readable!\033[0m"; _exit 1; }
+    [ -r "$BL_FILE" ] || _warn "$BL_FILE not readable!" 1
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
@@ -943,14 +929,14 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
 }
 
 update_iplist() { $DEBUG && debug "update_iplist $*"
-  [ $VERBOSE ] && echo -e "\033[1;36mUpdating directives file from sources and custom lists...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mUpdating blocking directives file from sources and custom lists...\033[0m"
   [ -s "$SRC_LIST" ] || get_def_srclst # change to -e when ready to deal with empty sources file
   trap "/bin/rm -f "$TMP_FILE" >/dev/null 2>&1; exit" INT TERM EXIT
   
   if [ "$1" ]; then # $1 set means using cache
     [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
     if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
-    else 2>&1 echo "! Blocklist sources cache is empty!"; _exit 1; fi
+    else _warn "Blocklist sources cache is empty!" 1; fi
   elif [ -s "$SRC_LIST" ]; then
     :>"$TMP_FILE"
     # Process each source url
@@ -964,10 +950,10 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
         { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } | strip_netset_file >>"$TMP_FILE"; } 3>&1; } | { read _EC; exit $_EC; } }
         _EC=$?
         [ $VERBOSE ] && echo -e "\033[0m"
-        [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || >&2 echo -e "\033[31m! Wget error code $_EC! Could not download $URL\033[0m"
+        [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || _warn "Wget error code $_EC! Could not download $URL"
       done
-      if [ $_NBOK -eq 0 ]; then >&2 echo -e "\033[31m! Could not get any list! Exiting\033[0m"; _exit 1; fi
-      [ $_NBOK -eq $_TOT ] || >&2 echo -e "\033[31m! Downloaded only $_NBOK / $_TOT list(s)!\033[0m"
+      if [ $_NBOK -eq 0 ]; then _warn "Could not get any list! Exiting!" 1; fi
+      [ $_NBOK -eq $_TOT ] || _warn "Downloaded only $_NBOK / $_TOT list(s)!"
     }
     [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
     /bin/cp -f "$TMP_FILE" "$SRC_BL_CACHE"
@@ -975,13 +961,13 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
     :>"$TMP_FILE"
   fi
   if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
-    [ $VERBOSE ] && echo "- Adding netset from custom blocklist(s)..."
+    [ $VERBOSE ] && echo "- Adding directives from custom blocklist(s)..."
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   elif [ $VERBOSE ]; then echo "- No custom custom blocklist(s) found."
   fi
-  if [ ! -s "$TMP_FILE" ]; then >&2 echo -e "\033[31m! We have no directives! Exiting!\033[0m"; _exit 1; fi
+  if [ ! -s "$TMP_FILE" ]; then _warn "We have no blocking directives! Exiting!" 1; fi
   if [ -x "$IPR_BIN" ]; then
-    [ $VERBOSE ] && echo "- Optimizing and reducing netset (using iprange)..."
+    [ $VERBOSE ] && echo "- Optimizing and reducing directives (using iprange)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
   else
     [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
@@ -991,25 +977,25 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 
   # processing whitelist if any
   if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
-    [ $VERBOSE ] && echo -e "\033[1;36mGenerating whitelist directives from custom list(s)...\033[0m"
+    [ $VERBOSE ] && echo -e "\033[1;36mGenerating bypassing directives from custom list(s)...\033[0m"
     strip_netset_file $CUST_WL_FILE >"$TMP_FILE"
     
     if [ -s "$TMP_FILE" ]; then
       if [ -x "$IPR_BIN" ]; then
         if [ "$($IPR_BIN --common "$BL_FILE" "$TMP_FILE")" ]; then
-          [ "$VERBOSE" ] && echo "- Optimizing and reducing netset (using iprange)..."
+          [ "$VERBOSE" ] && echo "- Optimizing and reducing directives (using iprange)..."
           $IPR_BIN --ipset-reduce 20 "$TMP_FILE" >"$WL_FILE"
         else
-          echo '- No IP in common with blocklist directives, skipping whitelist directives.'
+          echo '- No IP in common with blocking directives, skipping bypassing directives.'
         fi
       else
         [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
         /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq >"$WL_FILE"
       fi
-      else echo '- No IP set found, custom whitelist is empty.'
+      else echo '- No directives were found: custom whitelist is empty.'
     fi
     [ $VERBOSE ] && echo "- Done."
-  elif [ $VERBOSE ]; then echo "- No custom custom whitelist(s) found."
+  elif [ $VERBOSE ]; then echo "- No custom whitelist(s) found."
   fi
   
   /bin/rm -f "$TMP_FILE" 2>/dev/null
@@ -1496,7 +1482,7 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 #    MAIN ROUTINE
 #
 ###############################################
-[ $# = 0 ] && { >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; _exit 1; }
+[ $# = 0 ] && { _warn "No parameter!"; print_help; _exit 1; }
 [ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
@@ -1525,9 +1511,9 @@ fi
 
 PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*[[:space:]]*[[:digit:]]*//g')"
 case $(echo "$PARAM"|/usr/bin/wc -w) in
-  0) >&2 echo -e "\033[31m! No parameter!\033[0m"; print_help; _exit 1 ;;
+  0) _warn "No parameter!"; print_help; _exit 1 ;;
   1) PARAM="$(echo "$PARAM"|/bin/sed 's/ //g')" ;;
-  *) >&2 echo -e "\033[31m! Too many parameters!\033[0m"; print_help; _exit 1 ;;
+  *) _warn "Too many parameters!"; print_help; _exit 1 ;;
 esac
 
 if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
@@ -1598,7 +1584,7 @@ case "$PARAM" in
   '_down') VERBOSE=1; shield_down ;;
   '_upgrade') _upgrade ;;
   
-  *) >&2 echo -e "\033[31m! Unknown Parameter $2!\033[0m"; print_help; _exit 1 ;;
+  *) _warn "Unknown Parameter $2!"; print_help; _exit 1 ;;
 esac
 
 _exit 0
