@@ -140,7 +140,7 @@ else DEBUG=false STDERR=/dev/null
 fi
 
 _exit() { $DEBUG && debug "exiting with code: $1"; exit $1; }
-_warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; }
+_warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$2" ] && _exit $2; }
 
 # -------------- LOGD FUNCTIONS ---------------
 # Aegis logging daemon
@@ -663,9 +663,8 @@ echo "- Downloading:"
     echo -e "\033[0m- Script installed to $SC_NICEPATH"
   else
     echo -ne "\033[0m"
-    _warn "Wget error code $?! Could not download $DL_PATH"
     /bin/rm -f "$DL_PATH"
-    _exit 1
+    _warn "Wget error code $?! Could not download $DL_PATH" 1
   fi
   check_web && install_web
   _exit 0
@@ -683,7 +682,7 @@ upgrade() { $DEBUG && debug "upgrade"
     echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
     UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
     UPGRADE_VER=$(/usr/bin/wget -qO- --no-check-certificate "$SC_DEV_REPO/version")
-    [ -z "$UPGRADE_VER" ] && { _warn "Could not get version!";_exit 1; }
+    [ -z "$UPGRADE_VER" ] && _warn "Could not get version!" 1
   else
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)"
@@ -694,10 +693,7 @@ upgrade() { $DEBUG && debug "upgrade"
       elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
       else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS         \033[0m"
       fi
-    else
-      _warn "Could not check what is the latest version online!"
-      _exit 1
-    fi
+    else _warn "Could not check what is the latest version online!" 1; fi
     UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
     UPGRADE_VER="$SC_LAST_VERS"
   fi
@@ -716,9 +712,8 @@ get_def_srclst() { $DEBUG && debug "get_def_srclst"
     if /usr/bin/wget -qO "$SRC_LIST" --no-check-certificate "$SRC_LIST_URL"; then
       [ $VERBOSE ] && echo -e "- Default list was downloaded."
     else
-      _warn "Wget error code $?! Could not download $SRC_LIST_URL"
       /bin/rm -f "$SRC_LIST"
-      _exit 1
+      _warn "Wget error code $?! Could not download $SRC_LIST_URL" 1
     fi
   fi
 }
@@ -757,21 +752,19 @@ install_web() { $DEBUG && debug "install_web"
     echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   else
     echo -ne "\033[0m"
-    _warn "Wget error code $?! Could not download $DL_PATH"
     /bin/rm -f "$DL_PATH"
-    _exit 1
+    _warn "Wget error code $?! Could not download $DL_PATH" 1
   fi
   echo -ne "\033[35m"
   if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
     strip_sh_file "$DL_PATH"
-    \/bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+    /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
     echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   else
     echo -ne "\033[0m"
-    _warn "Wget error code $?! Could not download $DL_PATH"
     /bin/rm -f "$DL_PATH"
-    _exit 1
+    _warn "Wget error code $?! Could not download $DL_PATH" 1
   fi
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
@@ -817,30 +810,22 @@ shield_init() { $DEBUG && debug "shield_init"
   [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   ipset -q destroy $IPSET_TMP
-  if check_conf
-    then [ $VERBOSE ] && echo "- Configuration file is set."
-    else { _warn "Problem with the configuration system!"; _exit 1; }
-  fi
-  if check_firewall_start; then
-    [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
+  if check_conf; then [ $VERBOSE ] && echo "- Configuration file is set."
+  else _warn "Problem with the configuration system!" 1; fi
+  if check_firewall_start; then [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
   else
     set_firewall_start
-    if check_firewall_start
-      then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
-      else { _warn "Problem with $FWS_FILE!"; _exit 1; }
-    fi
+    if check_firewall_start; then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
+    else _warn "Problem with $FWS_FILE!" 1; fi
   fi
   if $EXT_DRIVE; then
     [ $VERBOSE ] && echo "- '$SC_NAME' is installed on external drive."
     if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' is in place and ok."
     else set_postmount
-      if check_postmount
-        then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
-        else { _warn "Problem with $PM_FILE!"; _exit 1; }
-      fi
+      if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
+      else _warn "Problem with $PM_FILE!" 1; fi
     fi
-  else
-    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
+  else [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
   fi
 }
 
@@ -896,7 +881,7 @@ shield_up() { $DEBUG && debug "shield_up"
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
-    [ -r "$BL_FILE" ] || { _warn "$BL_FILE not readable!"; _exit 1; }
+    [ -r "$BL_FILE" ] || _warn "$BL_FILE not readable!" 1
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
@@ -951,7 +936,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   if [ "$1" ]; then # $1 set means using cache
     [ $VERBOSE ] && echo "- Using cached directives for sources (offline)."
     if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_FILE"
-    else _warn "Blocklist sources cache is empty!"; _exit 1; fi
+    else _warn "Blocklist sources cache is empty!" 1; fi
   elif [ -s "$SRC_LIST" ]; then
     :>"$TMP_FILE"
     # Process each source url
@@ -967,7 +952,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
         [ $VERBOSE ] && echo -e "\033[0m"
         [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || _warn "Wget error code $_EC! Could not download $URL"
       done
-      if [ $_NBOK -eq 0 ]; then _warn "Could not get any list! Exiting!"; _exit 1; fi
+      if [ $_NBOK -eq 0 ]; then _warn "Could not get any list! Exiting!" 1; fi
       [ $_NBOK -eq $_TOT ] || _warn "Downloaded only $_NBOK / $_TOT list(s)!"
     }
     [ $VERBOSE ] && echo "- Creating offline cache for directives from sources..."
@@ -980,7 +965,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
     strip_netset_file $CUST_BL_FILE >>"$TMP_FILE"
   elif [ $VERBOSE ]; then echo "- No custom custom blocklist(s) found."
   fi
-  if [ ! -s "$TMP_FILE" ]; then _warn "We have no blocking directives! Exiting!"; _exit 1; fi
+  if [ ! -s "$TMP_FILE" ]; then _warn "We have no blocking directives! Exiting!" 1; fi
   if [ -x "$IPR_BIN" ]; then
     [ $VERBOSE ] && echo "- Optimizing and reducing directives (using iprange)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_FILE" > "$BL_FILE"
@@ -1021,7 +1006,7 @@ info() { $DEBUG && debug "info"
   echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
-    else _warn "Something is wrong with installation!"
+    else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
   echo -ne "- Checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
@@ -1032,7 +1017,7 @@ info() { $DEBUG && debug "info"
     elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo -e "\033[35m- New version available: $SC_LAST_VERS       \033[0m"
     else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS       \033[0m"
     fi
-  else _warn "Could not check what is the latest version online!"
+  else echo -e "\033[31m! Could not check what is the latest version online!\033[0m"
   fi
   if check_path
     then echo "- '$SC_NAME' is in PATH."
