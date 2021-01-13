@@ -710,9 +710,9 @@ upgrade() { $DEBUG && debug "upgrade"
 # get default sources list (from bolemo github)
 get_def_srclst() { $DEBUG && debug "get_def_srclst"
   if [ ! -s "$SRC_LIST" ]; then
-    [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty!"
+    [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty! Trying to download default list..."
     SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
-    _download "$SRC_LIST_URL" "$SRC_LIST"
+    [ $VERBOSE ] && _download "$SRC_LIST_URL" "$SRC_LIST" || _download "$SRC_LIST_URL" "$SRC_LIST" >/dev/null
     [ $VERBOSE ] && echo -e "- Default list was downloaded."
   fi
 }
