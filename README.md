@@ -151,24 +151,24 @@ It has been kindly compiled by Voxel and does not require Entware or an external
 
 * [firmware Addon for R7500/R7800]:
 
-`cd /opt/tmp`
-`wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk`
-`/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`
+`cd /opt/tmp`<br>
+`wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk`<br>
+`/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`<br>
 `rm iprange_1.0.4-1_ipq806x.ipk`
 
 * [firmware Addon for R8900/R9000]:
 
-`cd /opt/tmp`
-`wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_r9000.ipk`
-`/bin/opkg install iprange_1.0.4-1_r9000.ipk`
+`cd /opt/tmp`<br>
+`wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_r9000.ipk`<br>
+`/bin/opkg install iprange_1.0.4-1_r9000.ipk`<br>
 `rm iprange_1.0.4-1_r9000.ipk`
 
 ### with Entware
 It has been kindly compiled by Voxel and ipk is available on his website:
 
-`cd /opt/tmp`
-`wget http://voxel-firmware.com/Downloads/iprange_1.0.4-1_cortex-a15-3x.ipk`
-`/opt/bin/opkg install iprange_1.0.4-1_cortex-a15-3x.ipk`
+`cd /opt/tmp`<br>
+`wget http://voxel-firmware.com/Downloads/iprange_1.0.4-1_cortex-a15-3x.ipk`<br>
+`/opt/bin/opkg install iprange_1.0.4-1_cortex-a15-3x.ipk`<br>
 `rm iprange_1.0.4-1_cortex-a15-3x.ipk`
 
 
