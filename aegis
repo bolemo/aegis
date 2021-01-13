@@ -650,22 +650,26 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 : ENV STOP
 # ---------------------------------------------
 
+_download() { # $1=URL, $2=DEST, $3=OPTS
+  echo -ne "\033[35m"
+  if ! /usr/bin/wget -qO "$2" $3 "$1"; then
+    echo -ne "\033[0m"
+    /bin/rm -f "$2"
+    _warn "Wget error code $?! Could not download $1" 1
+  fi
+  echo -ne "\033[0m"
+}
+
 do_upgrade() { $DEBUG && debug "do_upgrade"
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _PROG='--show-progress --no-check-certificate';
   [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    strip_sh_file "$DL_PATH"
-    /bin/mv "$DL_PATH" "$SC_NICEPATH"
-    /bin/chmod +x "$SC_NICEPATH"
-    echo -e "\033[0m- Script installed to $SC_NICEPATH"
-  else
-    echo -ne "\033[0m"
-    /bin/rm -f "$DL_PATH"
-    _warn "Wget error code $?! Could not download $DL_PATH" 1
-  fi
+  _download "$UPGRADE_URL" "$DL_PATH" $_PROG
+  strip_sh_file "$DL_PATH"
+  /bin/mv "$DL_PATH" "$SC_NICEPATH"
+  /bin/chmod +x "$SC_NICEPATH"
+  echo -e "\033[0m- Script installed to $SC_NICEPATH"
   check_web && install_web
   _exit 0
 }
