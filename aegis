@@ -827,7 +827,7 @@ print_log() { $DEBUG && debug "print_log"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI=$_UPT ;; *) _TAIL=$1 _LSCI=0 ;; esac
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "/bin/rm -f $_LSC >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
-  _RSIZE=0$(wc -l <$LOG_FILE)
+  _RSIZE=$(wc -l <$LOG_FILE)
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
@@ -855,7 +855,7 @@ $1$2>'$(cat $_LSC)'{ts[++b]=$1;l[b]=$0} END
   printf("%s: Blocked %s %s packet %s %s:\033[1;35m%s%s\033[0m %s %s:\033[1;33m%s%s\033[0m\n",PT,DIR,PROTO,DIR1,IFACE,REM,RPT,DIR2,LNM,LOC,LPT)
 } print $1$2 >"'$_LSC'"}'; do
   [ 0$_LSCI -eq 0 ] && break 2;
-  _ASIZE=0$(wc -l <$LOG_FILE); if [ $_ASIZE -ge $_RSIZE ]; then _RSIZE=$_ASIZE; else _RSIZE=$_ASIZE; break; fi
+  _ASIZE=$(wc -l <$LOG_FILE); if [ 0$_ASIZE -ge 0$_RSIZE ]; then _RSIZE=$_ASIZE; else _RSIZE=$_ASIZE; break; fi
   sleep 1
 done <$LOG_FILE; done
 /bin/rm -f $_LSC >/dev/null 2>&1
@@ -1145,8 +1145,8 @@ _status() { $DEBUG && debug "|---> _status"
   # -- DST CHAIN
   chain_status dst
   # -- SRC & DST
-  if [ 0$_S_CK -eq 0$_D_CK ]; then                                               _CK=$((_CK+_S_CK))
-    if [ 0$_S_PB -eq 0$_D_PB ]; then                                             _PB=$((_PB+_S_PB))
+  if [ $_S_CK -eq $_D_CK ]; then                                                 _CK=$((_CK+_S_CK))
+    if [ $_S_PB -eq $_D_PB ]; then                                               _PB=$((_PB+_S_PB))
     else                                                                         _PB=$((_PB+(_S_PB|_D_PB)))
     fi
   else                                                                           _PB=$((_PB+CK_IPT_CH))                                                                           
