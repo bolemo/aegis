@@ -827,7 +827,7 @@ print_log() { $DEBUG && debug "print_log"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI=$_UPT ;; *) _TAIL=$1 _LSCI=0 ;; esac
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "/bin/rm -f $_LSC >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
-  _RSIZE=$(wc -l <$LOG_FILE)
+  _RSIZE=0$(wc -l <$LOG_FILE)
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
@@ -854,8 +854,8 @@ $1$2>'$(cat $_LSC)'{ts[++b]=$1;l[b]=$0} END
   if (RPT) {RPT=":"RPT}; if (LPT) {LPT=":"LPT}
   printf("%s: Blocked %s %s packet %s %s:\033[1;35m%s%s\033[0m %s %s:\033[1;33m%s%s\033[0m\n",PT,DIR,PROTO,DIR1,IFACE,REM,RPT,DIR2,LNM,LOC,LPT)
 } print $1$2 >"'$_LSC'"}'; do
-  [ "$_LSCI" -eq 0 ] && break 2;
-  _ASIZE=$(wc -l <$LOG_FILE); [ $_ASIZE -ge $_RSIZE ] && _RSIZE=$_ASIZE || { _RSIZE=$_ASIZE; break; }
+  [ 0$_LSCI -eq 0 ] && break 2;
+  _ASIZE=0$(wc -l <$LOG_FILE); if [ $_ASIZE -ge $_RSIZE ]; then _RSIZE=$_ASIZE; else _RSIZE=$_ASIZE; break; fi
   sleep 1
 done <$LOG_FILE; done
 /bin/rm -f $_LSC >/dev/null 2>&1
@@ -1054,20 +1054,21 @@ WN_MASK=255  #8 bits
 # ---------------------------------------------
 
 chain_status() { $DEBUG && debug "chain_status $*"
-  [ "$1" = 'src' ] && { _DIR='-s'; _PUT='-i'; _IPTBL_CH=$IPTBL_SRC; _RULE='DROP'; } || { _DIR='-d'; _PUT='-o'; _IPTBL_CH=$IPTBL_DST; _RULE='REJECT'; }
+  if [ "$1" == 'src' ]; then _DIR='-s'; _PUT='-i'; _IPTBL_CH=$IPTBL_SRC; _RULE='DROP'
+                        else _DIR='-d'; _PUT='-o'; _IPTBL_CH=$IPTBL_DST; _RULE='REJECT'; fi
   _CH_CK=0
   _CH_PB=0
   _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $_IPTBL_CH")"
-  _SL="$(echo $_CH_IPT|/usr/bin/cut -d: -f1)"
+  _SL=0$(echo $_CH_IPT|/usr/bin/cut -d: -f1)
   if [ "$_CH_IPT" ]; then
-    _LL=$((_SL+$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
-    if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1)" = $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
+    _LL=$((_SL+0$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
+    if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1) -eq $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
       _CL=$_SL # current line
       local _MKTMP="$(/bin/mktemp /tmp/${SC_ABR}_tmp_XXXXXX)"
       echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"" >$_MKTMP
       while read -r _BPL; do
         [ -z "$_BPL" ] && break
-        [ "$(echo $_BPL|/usr/bin/cut -d: -f1)" != "$_CL" ] && { _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; }
+        if [ 0$(echo $_BPL|/usr/bin/cut -d: -f1) -ne $_CL ]; then _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; fi
         case "$_BPL" in
           *"$_DIR $_WAN_INET $_PUT $WAN_IF"*) # we have WAN with correct inet
             if [ $((_CH_CK&CK_IPT_WAN_BP)) -eq 0 ]; then                          _CH_CK=$((_CH_CK+CK_IPT_WAN_BP))
@@ -1099,7 +1100,8 @@ chain_status() { $DEBUG && debug "chain_status $*"
     else                                                                         _CH_PB=$((_CH_PB+CK_IPT_CH))
     fi
   fi
-  [ "$1" = 'src' ] && { _S_CK=$_CH_CK; _S_PB=$_CH_PB; _S_IPT=$_CH_IPT; } || { _D_CK=$_CH_CK; _D_PB=$_CH_PB; _D_IPT=$_CH_IPT; }
+  if [ "$1" == 'src' ]; then _S_CK=$_CH_CK; _S_PB=$_CH_PB; _S_IPT=$_CH_IPT
+                        else _D_CK=$_CH_CK; _D_PB=$_CH_PB; _D_IPT=$_CH_IPT; fi
 }
 
 _status() { $DEBUG && debug "|---> _status"
@@ -1152,7 +1154,7 @@ _status() { $DEBUG && debug "|---> _status"
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
   if [ "$_IFO_IPT" ]; then
-    _TCT=$(echo "$_IFO_IPT"|/usr/bin/wc -l)
+    _TCT=0$(echo "$_IFO_IPT"|/usr/bin/wc -l)
     # checking VPN tunnel interface rules
     if [ "$TUN_IF" ]; then
       _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
@@ -1467,8 +1469,8 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 #    MAIN ROUTINE
 #
 ###############################################
-[ $# = 0 ] && { _warn "No parameter!"; print_help; _exit 1; }
-[ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
+if [ $# -eq 0 ]; then _warn "No parameter!"; print_help; _exit 1; fi
+[ "$1" == "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
 
