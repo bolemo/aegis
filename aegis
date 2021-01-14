@@ -1236,7 +1236,7 @@ _status >/dev/null
   fi
   
   if [ $_PB -ne 0 ]; then
-    echo -ne '\033[1;31mErrors:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_PB)" || echo ''
+    echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
@@ -1252,7 +1252,7 @@ _status >/dev/null
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo -ne '\033[1;35mWarnings:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_WN)" || echo ''
+    echo -ne '\033[1;35mWarnings:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_WN)" || echo ''
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo -e "\033[35m- directives: shield blocklist is different than file.\033[0m";;
       $WN_BL_FILE_MISS) echo -e "\033[35m- directives: shield blocklist is set but file is missing.\033[0m";;
@@ -1271,7 +1271,7 @@ _status >/dev/null
  
   [ $VERBOSE ] || return 0
 
-  echo -ne '\033[1;36mDetailed status:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_CK)" || echo ''
+  echo -ne '\033[1;36mDetailed status:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_CK)" || echo ''
   echo "- Active WAN interface is '$WAN_IF'."
   [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
@@ -1293,7 +1293,7 @@ _status >/dev/null
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&    echo "- iptables: WAN interface IFO rules are set."
   fi
   
-  [ "$VERBOSE" -lt 2 ] && return 0
+  [ 0$VERBOSE -lt 2 ] && return 0
 
   # Status file
   echo -ne "\033[1;36mLast shield uprear report:\033[0m"
@@ -1400,7 +1400,7 @@ _status >/dev/null
     echo -e '\n- No status file found.'
   fi
   
-  [ "$VERBOSE" -lt 3 ] && return 0
+  [ 0$VERBOSE -lt 3 ] && return 0
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
