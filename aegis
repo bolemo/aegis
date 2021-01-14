@@ -117,7 +117,9 @@ INFO_LOGD_MASK=3
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $CONF_DIR $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() 2>>"$STDERR" _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
+get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
+  if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
+} >>"$STDERR" 2>&1
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -365,7 +367,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
 
-  get_ipt; $DEBUG && echo "$_IPT"|/usr/bin/awk '{print "   "$0}' >>"$STDERR"
+  get_ipt
   #Define grep to find inaccurate ifaces (used for clean-ups)
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
