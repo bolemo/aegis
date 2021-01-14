@@ -1059,7 +1059,7 @@ chain_status() { $DEBUG && debug "chain_status $*"
   _CH_CK=0
   _CH_PB=0
   _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $_IPTBL_CH")"
-  _SL=0$(echo $_CH_IPT|/usr/bin/cut -d: -f1)
+  _SL=$((0$(echo $_CH_IPT|/usr/bin/cut -d: -f1)))
   if [ "$_CH_IPT" ]; then
     _LL=$((_SL+0$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
     if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1) -eq $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
