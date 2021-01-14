@@ -180,16 +180,16 @@ while :; do
     local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
     if [ "\$FIRST_MSG_LINE" ]; then
       local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
-      if [ "\${FIRST_MSG_LINE%%:*}" -gt "\$FIRST_EXT_TS" ]; then :>$LOGD_TMP
+      if [ 0\${FIRST_MSG_LINE%%:*} -gt 0\$FIRST_EXT_TS ]; then :>$LOGD_TMP
         /usr/bin/awk '\$0=="'"\$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-        if [ "\$NUMLINES" -lt "\$(lc $LOGD_TMP)" ]
+        if [ 0\$NUMLINES -lt 0\$(lc $LOGD_TMP) ]
           then /usr/bin/tail -n \$NUMLINES $LOGD_TMP >$LOG_FILE
           else /bin/cat $LOGD_TMP >$LOG_FILE
         fi
         $($DEBUG && echo "debug \"log-message 1st aegis record is more recent than log-aegis 1st record: kept older records from log-aegis up to \$NUMLINES\"")
       else :>$LOG_FILE $($DEBUG && echo "; debug 'log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis'")
       fi
-    elif [ "\$NUMLINES" -lt "\$(lc $LOG_FILE)" ]
+    elif [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
        then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
           $($DEBUG && echo "debug \"no aegis log record in log-message; kept only \$NUMLINES records\"")
     fi
@@ -267,13 +267,13 @@ _set_ipt_bypass_for_if_inet_pos() { $DEBUG && debug "_set_ipt_bypass_for_if_inet
 # Bypass for interface inet $1=iface, $2=inet, $3=pos
   _RET=0
   _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $2 -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
-  if [ "$_BP_POS" != "$3" ]; then
+  if [ 0$_BP_POS -ne 0$3 ]; then
     echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_SRC" $3 -s $2 -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$INFO_IPT_IB_SRC_NEW
   fi
   _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $2 -o $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
-  if [ "$_BP_POS" != "$3" ]; then
+  if [ 0$_BP_POS -ne 0$3 ]; then
     echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_DST" $3 -d $2 -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
     _RET=$((_RET+INFO_IPT_IB_DST_NEW))
@@ -285,8 +285,8 @@ _set_ipt_for_if_pos() { $DEBUG && debug "_set_ipt_for_if_pos $*"
   _IF="$1"
   _POS=$2
   _CT=$(echo "$_IPT"|/bin/grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
-  if [ "$_CT" -ne 4 ]; then
-    if [ "$_CT" ] && [ "$_CT" -ne 0 ]; then
+  if [ 0$_CT -ne 4 ]; then
+    if [ 0$_CT -ne 0 ]; then
       # something is messed up with rules; deleting what is left
       echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       _RET=$INFO_IPT_IF_PBM
@@ -407,13 +407,13 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     # apply whitelist
     _POS=$((1+_POS)) 
     _WL_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/$IPSET_WL_NAME/=")"
-    if [ "$_WL_POS" -ne "$_POS" ]; then
+    if [ 0$_WL_POS -ne 0$_POS ]; then
       [ "$_WL_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_SRC" $_POS -m set --match-set "$IPSET_WL_NAME" src -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_SRC_NEW))
     fi
     _WL_POS="$(echo "$_IPT_DST"|/bin/sed -n "/$IPSET_WL_NAME/=")"
-    if [ "$_WL_POS" -ne "$_POS" ]; then
+    if [ 0$_WL_POS -ne 0$_POS ]; then
       [ "$_WL_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "$IPSET_WL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
       $IPT_BIN -I "$IPTBL_DST" $_POS -m set --match-set "$IPSET_WL_NAME" dst -m comment --comment "in $SC_ABR whitelist" -j RETURN
       NFO_IPT=$((NFO_IPT+INFO_IPT_WL_DST_NEW))
@@ -428,13 +428,13 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   if sc_conf get log.enabled >/dev/null; then
     _POS=$((1+_POS))
     _LOG_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j LOG/=")"
-    if [ "$_LOG_POS" != "$_POS" ]; then
+    if [ 0$_LOG_POS -ne 0$_POS ]; then
       [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_SRC" -j LOG --log-prefix "[$SC_NAME] "
       $IPT_BIN -I "$IPTBL_SRC" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_SRC_NEW))
     fi
     _LOG_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j LOG/=")"
-    if [ "$_LOG_POS" != "$_POS" ]; then
+    if [ 0$_LOG_POS -ne 0$_POS ]; then
       [ "$_LOG_POS" ] && $IPT_BIN -D "$IPTBL_DST" -j LOG --log-prefix "[$SC_NAME] "
       $IPT_BIN -I "$IPTBL_DST" $_POS -j LOG --log-prefix "[$SC_NAME] "
       NFO_IPT=$((NFO_IPT+INFO_IPT_LOG_DST_NEW))
@@ -448,12 +448,12 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   fi
   _POS=$((1+_POS))
   _DROP_POS="$(echo "$_IPT_SRC"|/bin/sed -n "/-j DROP/=")"
-  if [ "$_DROP_POS" != "$_POS" ]; then
+  if [ 0$_DROP_POS -ne 0$_POS ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_SRC"|/bin/grep -F -- "-j DROP"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_SRC" $_POS -m comment --comment "$SC_ABR drop incoming" -j DROP
   fi
   _DROP_POS="$(echo "$_IPT_DST"|/bin/sed -n "/-j REJECT/=")"
-  if [ "$_DROP_POS" != "$_POS" ]; then
+  if [ 0$_DROP_POS -ne 0$_POS ]; then
     [ "$_DROP_POS" ] && echo "$_IPT_DST"|/bin/grep -F -- "-j REJECT"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
     $IPT_BIN -I "$IPTBL_DST" $_POS -m comment --comment "$SC_ABR reject outgoing" -j REJECT --reject-with icmp-admin-prohibited
   fi
