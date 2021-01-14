@@ -1501,11 +1501,15 @@ case $(echo "$PARAM"|/usr/bin/wc -w) in
   *) _warn "Too many parameters!"; print_help; _exit 1 ;;
 esac
 
-if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
-  [ -z "${ARGS##* -v *}" ] && VERBOSE=1
-  [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
-  [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
-fi
+# Verbosity
+case $ARGS in
+  *' -q '*)   unset VERBOSE ;;
+  *' -v '*)   VERBOSE=1 ;;
+  *' -vv '*)  VERBOSE=2 ;;
+  *' -vvv '*) VERBOSE=3 ;;
+  *) VERBOSE= ;;
+esac
+
 _refresh_args() {
   [ -z "${ARGS##* -custom-only *}" ]   && RF_OFFLN=1   || RF_OFFLN=
 }
@@ -1520,16 +1524,16 @@ _shield_args() {
   
   sc_conf commit
 }
-_log_args() {
-  case $ARGS in
-    *' -enable '*)     sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
-    *' -live '*) print_log 0 ;;
-    *' -get-history '*) sc_conf get log.len ;;
-    *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
-  esac
-}
+
+_log_args() { case $ARGS in
+  *' -enable '*)           sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+  *' -disable '*)          sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+  *' -show '*)             [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
+  *' -live '*)             print_log 0 ;;
+  *' -get-history '*)      sc_conf get log.len ;;
+  *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
+esac; }
+  
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=
   [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1 || RM_SYMLINK=
@@ -1537,7 +1541,7 @@ _clean_args() {
   [ -z "${ARGS##* -rm-log *}" ]        && RM_LOG=1     || RM_LOG=
 }
 
-[ "$QUIET" ] && exec>/dev/null
+[ -z ${VERBOSE+x} ] && exec >/dev/null
 
 sc_init
 
