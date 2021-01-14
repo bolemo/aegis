@@ -1090,10 +1090,10 @@ chain_status() { $DEBUG && debug "chain_status $*"
         esac
         _CL=$((_CL+1))
       done <$_MKTMP; /bin/rm -f $_MKTMP
-      if [ "$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1)" = $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
+      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1) -eq $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ "$(echo "$_CH_IPT"|/bin/grep -F -- 'LOG'|/usr/bin/cut -d: -f1)" = $_CL ]; then            _CH_CK=$((_CH_CK+CK_IPT_LOG))
+      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- 'LOG'|/usr/bin/cut -d: -f1) -eq $_CL ]; then            _CH_CK=$((_CH_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
       [ $_CL -eq $_LL ] ||                                                       _CH_PB=$((_CH_PB+CK_IPT_CH))
