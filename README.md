@@ -1,11 +1,11 @@
 # Aegis
-A firewall blocklist script for Netgear R7800, R8900 & R9000 Routers with Voxel firmware.
-Should work with several other Netgear routers as well.
+A firewall blocklist script for Netgear R7500, R7800, R8900, R9000 and Orbi Routers [with Voxel firmware].
+Might work with several other Netgear routers supporting Voxel firmware as well.
 
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.6.2
+1.6.3
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -51,7 +51,7 @@ Or if you want to make sure aegis is (re)started each time, use: `15 3 * * * /bi
 * Create /opt/scripts if it does not exist
 
 ***If installing iprange with Entware:***
-* iprange will be installed from Entware, so location is according to your Entware setup
+* iprange will be installed in /opt/bin
 
 ***If installing iprange without Entware (on internal memory):***
 * iprange will be installed in /usr/bin
@@ -107,11 +107,11 @@ The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
 ### Custom blocklists
-You can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis update`, it will integrate your custom list to the master blocklist.
+You can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis refresh`, it will integrate your custom list to the master blocklist.
 You can have several custom black lists, beside aegis.blacklist, any file named aegis-*[SOMETHING]*.blacklist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ### Custom whitelists
-You can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis update`, it will integrate your custom list to the master whitelist.
+You can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master whitelist.
 You can have several custom white lists, beside aegis.whitelist, any file named aegis-*[SOMETHING]*.whitelist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ## Web Companion

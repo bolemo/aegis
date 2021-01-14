@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.2"
+SC_VERS="1.6.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -117,7 +117,9 @@ INFO_LOGD_MASK=3
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $CONF_DIR $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() 2>>"$STDERR" _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
+get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
+  if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
+} >>"$STDERR" 2>&1
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -148,13 +150,13 @@ _warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
-_logd_logmsg() {
+_logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
   elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
   else _warn "No log-message or log_message found!"; return 1
   fi
 }
-_logd_start() {
+_logd_start() { $DEBUG && debug "_logd_start"
 if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
@@ -217,8 +219,8 @@ EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
-_logd_stop() { [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
-_logd_status() { [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
+_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
+_logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
@@ -330,15 +332,12 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     # else keeping existing blocklist
     fi
-  else
-    if [ -r "$BL_FILE" ]; then
+  elif [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
       _cipset_create_set_file $IPSET_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
-    else
-    # no netset file, exiting with _IPS=0
-      _exit 1
-    fi
+  else # no netset file, exiting with _IPS=0
+    $DEBUG && debug "no ipset or file blocking directives! Exiting..."; _exit 1
   fi
   
   # creating ipset whitelist if needed
@@ -368,7 +367,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
 
-  get_ipt; $DEBUG && echo "$_IPT"|/usr/bin/awk '{print "   "$0}' >>"$STDERR"
+  get_ipt
   #Define grep to find inaccurate ifaces (used for clean-ups)
   [ "$TUN_IF" ] && _GREP="/bin/grep -v '\($WAN_IF\|$TUN_IF\)'" || _GREP="/bin/grep -vF '$WAN_IF'"
   #Creating our iptables chains if not already set
@@ -650,22 +649,25 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 : ENV STOP
 # ---------------------------------------------
 
+_download() { # $1=URL, $2=DEST, $3=OPTS
+  echo -ne "\033[35m"
+  if ! /usr/bin/wget -qO "$2" $3 --show-progress --no-check-certificate "$1"; then
+    echo -ne "\033[0m"
+    /bin/rm -f "$2"
+    _warn "Wget error code $?! Could not download $1" 1
+  fi
+  echo -ne "\033[0m"
+}
+
 do_upgrade() { $DEBUG && debug "do_upgrade"
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress --no-check-certificate';
-  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "$UPGRADE_URL"; then
-    strip_sh_file "$DL_PATH"
-    /bin/mv "$DL_PATH" "$SC_NICEPATH"
-    /bin/chmod +x "$SC_NICEPATH"
-    echo -e "\033[0m- Script installed to $SC_NICEPATH"
-  else
-    echo -ne "\033[0m"
-    /bin/rm -f "$DL_PATH"
-    _warn "Wget error code $?! Could not download $DL_PATH" 1
-  fi
+  [ "$DEVMODE" ] && _PROG="--no-cache" || _PROG=''
+  _download "$UPGRADE_URL" "$DL_PATH" "$_PROG"
+  strip_sh_file "$DL_PATH"
+  /bin/mv "$DL_PATH" "$SC_NICEPATH"
+  /bin/chmod +x "$SC_NICEPATH"
+  echo -e "\033[0m- Script installed to $SC_NICEPATH"
   check_web && install_web
   _exit 0
 }
@@ -707,14 +709,10 @@ upgrade() { $DEBUG && debug "upgrade"
 # get default sources list (from bolemo github)
 get_def_srclst() { $DEBUG && debug "get_def_srclst"
   if [ ! -s "$SRC_LIST" ]; then
-    [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty!"
+    [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty! Trying to download default list..."
     SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
-    if /usr/bin/wget -qO "$SRC_LIST" --no-check-certificate "$SRC_LIST_URL"; then
-      [ $VERBOSE ] && echo -e "- Default list was downloaded."
-    else
-      /bin/rm -f "$SRC_LIST"
-      _warn "Wget error code $?! Could not download $SRC_LIST_URL" 1
-    fi
+    [ $VERBOSE ] && _download "$SRC_LIST_URL" "$SRC_LIST" || _download "$SRC_LIST_URL" "$SRC_LIST" >/dev/null
+    [ $VERBOSE ] && echo -e "- Default list was downloaded."
   fi
 }
 
@@ -744,28 +742,15 @@ install_web() { $DEBUG && debug "install_web"
   fi
   echo "- Downloading $WEB_NAME:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  _PROG='--show-progress --no-check-certificate';
-  [ "$DEVMODE" ] && _PROG="--no-cache $_PROG"
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}.htm"; then
-    /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
-    echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
-  else
-    echo -ne "\033[0m"
-    /bin/rm -f "$DL_PATH"
-    _warn "Wget error code $?! Could not download $DL_PATH" 1
-  fi
-  echo -ne "\033[35m"
-  if /usr/bin/wget -qO "$DL_PATH" $_PROG "${UPGRADE_URL}_web.cgi"; then
-    strip_sh_file "$DL_PATH"
-    /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-    /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-    echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-  else
-    echo -ne "\033[0m"
-    /bin/rm -f "$DL_PATH"
-    _warn "Wget error code $?! Could not download $DL_PATH" 1
-  fi
+  [ "$DEVMODE" ] && _PROG='--no-cache' || _PROG=''
+  _download "${UPGRADE_URL}.htm" "$DL_PATH" "$_PROG"
+  /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
+  echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
+  _download "${UPGRADE_URL}_web.cgi" "$DL_PATH" "$_PROG"
+  strip_sh_file "$DL_PATH"
+  /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
@@ -1251,7 +1236,7 @@ _status >/dev/null
   fi
   
   if [ $_PB -ne 0 ]; then
-    echo -ne '\033[1;31mErrors:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_PB)" || echo ''
+    echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
@@ -1267,7 +1252,7 @@ _status >/dev/null
   fi
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo -ne '\033[1;35mWarnings:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_WN)" || echo ''
+    echo -ne '\033[1;35mWarnings:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_WN)" || echo ''
     case "$((_WN&WN_BL_FILE_NTLD))" in
       $WN_BL_FILE_DIFF) echo -e "\033[35m- directives: shield blocklist is different than file.\033[0m";;
       $WN_BL_FILE_MISS) echo -e "\033[35m- directives: shield blocklist is set but file is missing.\033[0m";;
@@ -1286,7 +1271,7 @@ _status >/dev/null
  
   [ $VERBOSE ] || return 0
 
-  echo -ne '\033[1;36mDetailed status:\033[0m'; [ "$VERBOSE" -ge 2 ] && echo " (CODE: $_CK)" || echo ''
+  echo -ne '\033[1;36mDetailed status:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_CK)" || echo ''
   echo "- Active WAN interface is '$WAN_IF'."
   [ "$TUN_IF" ] && echo "- Active VPN tunnel is '$TUN_IF'." || echo "- no VPN tunnel found."
   # dates
@@ -1308,7 +1293,7 @@ _status >/dev/null
     [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&    echo "- iptables: WAN interface IFO rules are set."
   fi
   
-  [ "$VERBOSE" -lt 2 ] && return 0
+  [ 0$VERBOSE -lt 2 ] && return 0
 
   # Status file
   echo -ne "\033[1;36mLast shield uprear report:\033[0m"
@@ -1415,7 +1400,7 @@ _status >/dev/null
     echo -e '\n- No status file found.'
   fi
   
-  [ "$VERBOSE" -lt 3 ] && return 0
+  [ 0$VERBOSE -lt 3 ] && return 0
   
   if [ $((_CK+_PB)) -ne 0 ]; then
     echo -e "\033[1;36miptables:\033[0m"
@@ -1516,11 +1501,15 @@ case $(echo "$PARAM"|/usr/bin/wc -w) in
   *) _warn "Too many parameters!"; print_help; _exit 1 ;;
 esac
 
-if [ -z "${ARGS##* -q *}" ]; then QUIET=1; else
-  [ -z "${ARGS##* -v *}" ] && VERBOSE=1
-  [ -z "${ARGS##* -vv *}" ] && VERBOSE=2
-  [ -z "${ARGS##* -vvv *}" ] && VERBOSE=3
-fi
+# Verbosity
+case $ARGS in
+  *' -q '*)   unset VERBOSE ;;
+  *' -v '*)   VERBOSE=1 ;;
+  *' -vv '*)  VERBOSE=2 ;;
+  *' -vvv '*) VERBOSE=3 ;;
+  *) VERBOSE= ;;
+esac
+
 _refresh_args() {
   [ -z "${ARGS##* -custom-only *}" ]   && RF_OFFLN=1   || RF_OFFLN=
 }
@@ -1535,16 +1524,16 @@ _shield_args() {
   
   sc_conf commit
 }
-_log_args() {
-  case $ARGS in
-    *' -enable '*)     sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -disable '*)    sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-    *' -show '*) [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
-    *' -live '*) print_log 0 ;;
-    *' -get-history '*) sc_conf get log.len ;;
-    *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
-  esac
-}
+
+_log_args() { case $ARGS in
+  *' -enable '*)           sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+  *' -disable '*)          sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+  *' -show '*)             [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
+  *' -live '*)             print_log 0 ;;
+  *' -get-history '*)      sc_conf get log.len ;;
+  *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
+esac; }
+  
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=
   [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1 || RM_SYMLINK=
@@ -1552,7 +1541,7 @@ _clean_args() {
   [ -z "${ARGS##* -rm-log *}" ]        && RM_LOG=1     || RM_LOG=
 }
 
-[ "$QUIET" ] && exec>/dev/null
+[ -z ${VERBOSE+x} ] && exec >/dev/null
 
 sc_init
 
