@@ -1059,16 +1059,16 @@ chain_status() { $DEBUG && debug "chain_status $*"
   _CH_CK=0
   _CH_PB=0
   _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $_IPTBL_CH")"
-  _SL=$((0$(echo $_CH_IPT|/usr/bin/cut -d: -f1)))
+  _SL=$(echo $_CH_IPT|/usr/bin/cut -d: -f1)
   if [ "$_CH_IPT" ]; then
-    _LL=$((_SL+0$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
-    if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1) -eq $_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
+    _LL=$((_SL+$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
+    if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1) -eq 0$_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
       _CL=$_SL # current line
       local _MKTMP="$(/bin/mktemp /tmp/${SC_ABR}_tmp_XXXXXX)"
       echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"" >$_MKTMP
       while read -r _BPL; do
         [ -z "$_BPL" ] && break
-        if [ 0$(echo $_BPL|/usr/bin/cut -d: -f1) -ne $_CL ]; then _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; fi
+        if [ 0$(echo $_BPL|/usr/bin/cut -d: -f1) -ne 0$_CL ]; then _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; fi
         case "$_BPL" in
           *"$_DIR $_WAN_INET $_PUT $WAN_IF"*) # we have WAN with correct inet
             if [ $((_CH_CK&CK_IPT_WAN_BP)) -eq 0 ]; then                          _CH_CK=$((_CH_CK+CK_IPT_WAN_BP))
@@ -1090,13 +1090,13 @@ chain_status() { $DEBUG && debug "chain_status $*"
         esac
         _CL=$((_CL+1))
       done <$_MKTMP; /bin/rm -f $_MKTMP
-      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1) -eq $_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
+      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1) -eq 0$_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
         _CL=$((_CL+1))
       fi
-      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- 'LOG'|/usr/bin/cut -d: -f1) -eq $_CL ]; then            _CH_CK=$((_CH_CK+CK_IPT_LOG))
+      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- 'LOG'|/usr/bin/cut -d: -f1) -eq 0$_CL ]; then            _CH_CK=$((_CH_CK+CK_IPT_LOG))
         _CL=$((_CL+1))
       fi
-      [ $_CL -eq $_LL ] ||                                                       _CH_PB=$((_CH_PB+CK_IPT_CH))
+      [ 0$_CL -eq 0$_LL ] ||                                                     _CH_PB=$((_CH_PB+CK_IPT_CH))
     else                                                                         _CH_PB=$((_CH_PB+CK_IPT_CH))
     fi
   fi
@@ -1145,8 +1145,8 @@ _status() { $DEBUG && debug "|---> _status"
   # -- DST CHAIN
   chain_status dst
   # -- SRC & DST
-  if [ $_S_CK -eq $_D_CK ]; then                                                 _CK=$((_CK+_S_CK))
-    if [ $_S_PB -eq $_D_PB ]; then                                               _PB=$((_PB+_S_PB))
+  if [ 0$_S_CK -eq 0$_D_CK ]; then                                               _CK=$((_CK+_S_CK))
+    if [ 0$_S_PB -eq 0$_D_PB ]; then                                             _PB=$((_PB+_S_PB))
     else                                                                         _PB=$((_PB+(_S_PB|_D_PB)))
     fi
   else                                                                           _PB=$((_PB+CK_IPT_CH))                                                                           
@@ -1154,7 +1154,7 @@ _status() { $DEBUG && debug "|---> _status"
   # -- IFO (INPUT, FORWARD, OUTPUT)
   _IFO_IPT="$(echo "$_IPT"|/bin/grep -F -- "-m set --match-set $IPSET_BL_NAME")"
   if [ "$_IFO_IPT" ]; then
-    _TCT=0$(echo "$_IFO_IPT"|/usr/bin/wc -l)
+    _TCT=$(echo "$_IFO_IPT"|/usr/bin/wc -l)
     # checking VPN tunnel interface rules
     if [ "$TUN_IF" ]; then
       _CT=$(echo "$_IFO_IPT"|/bin/grep -cF -- "$TUN_IF"); _TCT=$((_TCT-_CT))
