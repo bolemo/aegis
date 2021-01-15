@@ -342,12 +342,12 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   # creating the lock file to advertise that shield IS BEING (re)-built
   get_ipt; AIPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
   
-  if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then
+  if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); else
     /usr/bin/awk '$1=="-D"{sub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
     /usr/bin/awk '{system("'$IPT_COM' -w "$0)}' $WIPTF
     get_ipt; echo "$_IPT" >$AIPTF
-    /usr/bin/diff -q $WIPTF $AIPTF >/dev/null || NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
-  else NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); fi
+    /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
+  fi
   
   #Removing any trace of whitelist if not used and if any
   $_DWL && { ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL)); INFO_IPS_WL_DEL; }
@@ -1206,8 +1206,8 @@ _status >/dev/null
       $INFO_IPS_WL_SWAP) echo '- directives: ipset whitelist was updated from file.' ;;
       $INFO_IPS_WL_DEL) echo '- directives: ipset whitelist was unset.' ;;
     esac
-    if  [ $((INFO_IPT&INFO_IPT_KEEP)) -ne 0 ] then echo "- iptables: rules were already set."; _P_IPT=true
-    elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ] then echo "- iptables: rules were (re)set."; _P_IPT=true
+    if  [ $((INFO_IPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "- iptables: rules were already set."; _P_IPT=true
+    elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."; _P_IPT=true
     else _P_IPT=false; fi
     if $_P_IPT; then
       [ $((INFO_IPT&INFO_IPT_WIF)) -eq 0 ] && echo "- iptables: rules for WAN interface in place."
