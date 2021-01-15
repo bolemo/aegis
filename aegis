@@ -297,7 +297,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     _cipset_create_set_file $IPSET_WL_NAME $WL_FILE
     NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
-  _cipset_end
   
   if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF))
     if ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
@@ -311,6 +310,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   else _TIF=false; _TBW=false; fi
   if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG)); else _LOG=false; fi
   $_WL && NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
+  
+  _cipset_end
   
   WIPTF=/tmp/aegis_wipt
   {
@@ -356,6 +357,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_LOG && _logd_start || _logd_stop; NFO_LOGD=$?
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
+  /bin/rm -f "$WIPTF"
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
   $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
