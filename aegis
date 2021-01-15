@@ -191,7 +191,7 @@ EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
-_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
+[() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF; } 2>/dev/null
 _logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
@@ -239,8 +239,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
-  NFO_IPS=0; NFO_IPT=0
-  _logd_status; NFO_LOGD=$?
+  NFO_IPS=0 NFO_IPT=0 NFO_LOGD=0
   _cipset_init
   # creating ipset blocklist if needed
   if _cipset_copy_set $IPSET_BL_NAME; then
@@ -310,7 +309,11 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       if _cipset_inet_in_bl $TUN_INET; then NFO_IPT=$((NFO_IPT+INFO_IPT_TIB)); _TBW=true
     else _TBW=false; fi; else _TBW=false; fi
   else _TIF=false; _TBW=false; fi
-  if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG)); else _LOG=false; fi
+  if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
+    _logd_start; NFO_LOGD=$?
+  else _LOG=false
+    _logd_stop; NFO_LOGD=$?
+  fi
   $_WL && NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   
   WIPTF=/tmp/aegis_wipt
