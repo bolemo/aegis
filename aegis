@@ -356,7 +356,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   #Log daemon
   if $_LOG; then if _logd_status; then NFO_LOGD=$INFO_LOGD_KEEP_ON; else _logd_start; NFO_LOGD=$?; fi
   elif _logd_status; then _logd_stop; NFO_LOGD=$INFO_LOGD_STOPPED; else NFO_LOGD=$INFO_LOGD_KEEP_OFF; fi
-  fi
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
