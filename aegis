@@ -45,68 +45,40 @@ INFO_FROM_FWS=1       # _ x
 INFO_FROM_PM=2        # x _
 INFO_FROM_SC=3        # x x
 
-# INFO IPSET (7 bits)
+# INFO IPSET (5 bits)
 INFO_IPS_SHIFT=2
-INFO_IPS_MASK=127
-                      # . . . . . _ _  PBM, BL FILE MISSING
-INFO_IPS_BL_SAME=1    # . . . . . _ x  KEEP
-INFO_IPS_BL_MISS=2    # . . . . . x _  KEEP
-INFO_IPS_BL_LOAD=3    # . . . . . x x
-INFO_IPS_BL_MASK=3    # . . . . . x x
-INFO_IPS_WL_SAME=4    # . . _ . x . .  SAME => KEEP
-INFO_IPS_WL_KEEP=8    # . . _ x . . .  KEEP
-INFO_IPS_WL_LOAD=16   # . . x _ _ . .
-INFO_IPS_WL_SWAP=20   # . . x _ x . . = RELOAD
-INFO_IPS_WL_DEL=24    # . . x x _ . . => was there, was deleted
-                      # . . _ _ _ . . => was not there, was not loaded
-INFO_IPS_WL_MASK=28   # . . x x x . .
-INFO_IPS_WB_NDD=32    # . x . . . . .
-INFO_IPS_TB_NDD=64    # x . . . . . .
+INFO_IPS_MASK=31
+                      # . . . _ _  PBM, BL FILE MISSING
+INFO_IPS_BL_SAME=1    # . . . _ x  KEEP
+INFO_IPS_BL_MISS=2    # . . . x _  KEEP
+INFO_IPS_BL_LOAD=3    # . . . x x
+INFO_IPS_BL_MASK=3    # . . . x x
+INFO_IPS_WL_SAME=4    # _ . x . .  SAME => KEEP
+INFO_IPS_WL_KEEP=8    # _ x . . .  KEEP
+INFO_IPS_WL_LOAD=16   # x _ _ . .
+INFO_IPS_WL_SWAP=20   # x _ x . . = RELOAD
+INFO_IPS_WL_DEL=24    # x x _ . . => was there, was deleted
+                      # _ _ _ . . => was not there, was not loaded
+INFO_IPS_WL_MASK=28   # x x x . .
 
-# INFO IPTABLES (18 bits)
-INFO_IPT_SHIFT=9
-INFO_IPT_MASK=262143
-INFO_IPT_SRC_KEEP=1        # . . . . . . . . . . . . . . . . . x (or NEW)
-INFO_IPT_DST_KEEP=2        # . . . . . . . . . . . . . . . . x . (or NEW)
+# INFO IPTABLES (8 bits)
+INFO_IPT_SHIFT=7
+INFO_IPT_MASK=255
+INFO_IPT_KEEP=1       # . . . . . . . x
+INFO_IPT_RUN=2        # . . . . . . x .
+INFO_IPT_PBM=0        # . . . . . . _ _
 
-INFO_IPT_IB_PBM=4          # . . . . . . . . . . . . . . . x . .
+INFO_IPT_WIF=4        # . . . . . x . .
+INFO_IPT_TIF=8        # . . . . x . . .
 
-INFO_IPT_IB_SRC_NEW=1 # . x
-INFO_IPT_IB_DST_NEW=2 # x .
+INFO_IPT_WIB=16       # . . . x . . . .
+INFO_IPT_TIB=32       # . . x . . . . .
 
-INFO_IPT_WB_SHIFT=3
-INFO_IPT_WB_SRC_NEW=8      # . . . . . . . . . . . . . . x . . . (or KEEP)
-INFO_IPT_WB_DST_NEW=16     # . . . . . . . . . . . . . x . . . . (or KEEP)
-
-INFO_IPT_TB_SHIFT=5
-INFO_IPT_TB_SRC_NEW=32     # . . . . . . . . . . . . x . . . . . (or KEEP)
-INFO_IPT_TB_DST_NEW=64     # . . . . . . . . . . . x . . . . . . (or KEEP)
-
-INFO_IPT_WL=128            # . . . . . . . . . . x . . . . . . .
-INFO_IPT_WL_SRC_NEW=256    # . . . . . . . . . x . . . . . . . . (or KEEP)
-INFO_IPT_WL_DST_NEW=512    # . . . . . . . . x . . . . . . . . . (or KEEP)
-INFO_IPT_LOG=1024          # . . . . . . . x . . . . . . . . . .
-INFO_IPT_LOG_SRC_NEW=2048  # . . . . . . x . . . . . . . . . . . (or KEEP)
-INFO_IPT_LOG_DST_NEW=4096  # . . . . . x . . . . . . . . . . . . (or KEEP)
-
-INFO_IPT_IF_NEW=1  # _ x
-INFO_IPT_IF_KEEP=2 # x _
-INFO_IPT_IF_PBM=3  # x x
-
-INFO_IPT_WAN_SHIFT=13
-INFO_IPT_WAN_NEW=8192      # . . . _ x . . . . . . . . . . . . .
-INFO_IPT_WAN_KEEP=16384    # . . . x _ . . . . . . . . . . . . .
-INFO_IPT_WAN_PBM=24576     # . . . x x . . . . . . . . . . . . .
-
-INFO_IPT_TUN_SHIFT=15
-INFO_IPT_TUN_NEW=32768     # . _ x . . . . . . . . . . . . . . .
-INFO_IPT_TUN_KEEP=65536    # . x _ . . . . . . . . . . . . . . .
-INFO_IPT_TUN_PBM=98304     # . x x . . . . . . . . . . . . . . .
-
-INFO_IPT_IFO_PBM=131072    # x . . . . . . . . . . . . . . . . .
+INFO_IPT_WL=64        # . x . . . . . .
+INFO_IPT_LOG=128      # x . . . . . . .
 
 # INFO LOGD (2 bits) and _logd_start return code
-INFO_LOGD_SHIFT=27
+INFO_LOGD_SHIFT=15
 INFO_LOGD_STARTED=0        # _ _
 INFO_LOGD_STOPPED=1        # _ x
 INFO_LOGD_KEEP_ON=2        # x _
@@ -263,52 +235,11 @@ _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
 #
 ###############################################
 
-_set_ipt_bypass_for_if_inet_pos() { $DEBUG && debug "_set_ipt_bypass_for_if_inet_pos $*"
-# Bypass for interface inet $1=iface, $2=inet, $3=pos
-  _RET=0
-  _BP_POS="$(echo "$_IPT_SRC"|/bin/grep -nF -- "-s $2 -i $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
-  if [ 0$_BP_POS -ne 0$3 ]; then
-    echo "$_IPT_SRC"|/bin/grep -F -- "-i $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
-    $IPT_BIN -I "$IPTBL_SRC" $3 -s $2 -i $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
-    _RET=$INFO_IPT_IB_SRC_NEW
-  fi
-  _BP_POS="$(echo "$_IPT_DST"|/bin/grep -nF -- "-d $2 -o $1 -m comment --comment \"$SC_ABR inet bypass\""|cut -d: -f1)"
-  if [ 0$_BP_POS -ne 0$3 ]; then
-    echo "$_IPT_DST"|/bin/grep -F -- "-o $1 -j RETURN"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
-    $IPT_BIN -I "$IPTBL_DST" $3 -d $2 -o $1 -m comment --comment "$SC_ABR inet bypass" -j RETURN
-    _RET=$((_RET+INFO_IPT_IB_DST_NEW))
-  fi
-  return $_RET
-}
-
-_set_ipt_for_if_pos() { $DEBUG && debug "_set_ipt_for_if_pos $*"
-  _IF="$1"
-  _POS=$2
-  _CT=$(echo "$_IPT"|/bin/grep -cF -- "$_IF -m set --match-set $IPSET_BL_NAME")
-  if [ 0$_CT -ne 4 ]; then
-    if [ 0$_CT -ne 0 ]; then
-      # something is messed up with rules; deleting what is left
-      echo "$_IPT"|/bin/grep -F -- "$_IF -m set --match-set $IPSET_BL_NAME"|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
-      _RET=$INFO_IPT_IF_PBM
-    else
-      _RET=$INFO_IPT_IF_NEW
-    fi
-    $IPT_BIN -I INPUT $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
-    $IPT_BIN -I OUTPUT $_POS -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
-    $IPT_BIN -I FORWARD $_POS -i $_IF -m set --match-set "$IPSET_BL_NAME" src -m comment --comment "incoming in $SC_ABR blacklist" -j "$IPTBL_SRC"
-    $IPT_BIN -I FORWARD $((_POS*2)) -o $_IF -m set --match-set "$IPSET_BL_NAME" dst -m comment --comment "outgoing in $SC_ABR blacklist" -j "$IPTBL_DST"
-  else
-    _RET=$INFO_IPT_IF_KEEP
-  fi
-  return $_RET
-}
-
 shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
   NFO_IPS=0; NFO_IPT=0
-  :>"$SHIELD_LOCK" # creating the lock file to advertise that shield IS BEING (re)-built
   _logd_status; NFO_LOGD=$?
   _cipset_init
   # creating ipset blocklist if needed
@@ -342,6 +273,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   # creating ipset whitelist if needed
   [ -r "$WL_FILE" ] && _WL=true || _WL=false
+  _DWL=false
   if _cipset_copy_set $IPSET_WL_NAME; then
     # ipset whitelist is already in place
     if $_WL; then
@@ -359,25 +291,27 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       # else we want to keep it
         NFO_IPS=$((NFO_IPS+INFO_IPS_WL_KEEP))
       fi
-    #else it will be destroyed later
+    else _DWL=true  #it will be destroyed later
     fi
   elif $_WL; then
     # netset file exists, so creating whitelist ipset from it
     _cipset_create_set_file $IPSET_WL_NAME $WL_FILE
     NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
   fi
-
-
+  _cipset_end
   
-  [ "$WAN_IF" ] && _WIF=true || _WIF=false
-  [ "$TUN_IF" ] && _TIF=true || _TIF=false
-  if $_WIF && ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
-    if _cipset_inet_in_bl $WAN_INET; then NFO_IPS=$((NFO_IPS+INFO_IPS_WB_NDD)); _WBW=true      
-  else _WBW=false; fi; else _WBW=false; fi
-  if $_TIF && ! sc_conf get tun.no_bypass >/dev/null; then TUN_INET=$(inet_for_if $TUN_IF)
-    if _cipset_inet_in_bl $TUN_INET; then NFO_IPS=$((NFO_IPS+INFO_IPS_TB_NDD)); _TBW=true
-  else _TBW=false; fi; else _TBW=false; fi
-  sc_conf get log.enabled >/dev/null && _LOG=true || _LOG=false
+  if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF))
+    if ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
+      if _cipset_inet_in_bl $WAN_INET; then NFO_IPT=$((NFO_IPT+INFO_IPT_WIB)); _WBW=true      
+    else _WBW=false; fi; else _WBW=false; fi
+  else _WIF=false; _WBW=false; fi
+  if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF))
+    if ! sc_conf get tun.no_bypass >/dev/null; then TUN_INET=$(inet_for_if $TUN_IF)
+      if _cipset_inet_in_bl $TUN_INET; then NFO_IPT=$((NFO_IPT+INFO_IPT_TIB)); _TBW=true
+    else _TBW=false; fi; else _TBW=false; fi
+  else _TIF=false; _TBW=false; fi
+  if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG)); else _LOG=false; fi
+  $_WL && NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   
   WIPTF=/tmp/aegis_wipt
   {
@@ -406,22 +340,20 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
            echo "-A $IPTBL_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
   } >$WIPTF
 
-  get_ipt; _IPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
+  # creating the lock file to advertise that shield IS BEING (re)-built
+  get_ipt; AIPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
   
   if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then
-    /usr/bin/awk '$1!="-A"{next} ; {sub(/-A/,"-D")}1'
-    /bin/sed "s/^-A/$IPT_COM -D/" $AIPTF|while read _CMD; do eval "$_CMD"; done
-    /bin/cat $WIPTF
-  fi
+    /usr/bin/awk '$1=="-D"{sub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
+    /usr/bin/awk '{system("'$IPT_COM' -w "$0)}' $WIPTF
+    get_ipt; echo "$_IPT" >$AIPTF
+    /usr/bin/diff -q $WIPTF $AIPTF >/dev/null || NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
+  else NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); fi
   
-  #Removing any trace of whitelist if any
-    echo "/bin/grep -F -- "$IPSET_WL_NAME" $_IPTF|/bin/sed "s/^-A/$IPT_COM -D/"|while read _CMD; do eval "$_CMD"; done
-  $_WL || ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
-
-
+  #Removing any trace of whitelist if not used and if any
+  $_DWL && { ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL)); INFO_IPS_WL_DEL; }
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
-  _cipset_end
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
   $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
@@ -1272,11 +1204,14 @@ _status >/dev/null
       $INFO_IPS_WL_SWAP) echo '- directives: ipset whitelist was updated from file.' ;;
       $INFO_IPS_WL_DEL) echo '- directives: ipset whitelist was unset.' ;;
     esac
-    if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
-      then echo "- iptables: shield inbound chain was set."
-      else echo "- iptables: shield inbound chain was already set."
+    if  [ $((INFO_IPT&INFO_IPT_KEEP)) -ne 0 ] then echo "- iptables: rules were already set."; _P_IPT=true
+    elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ] then echo "- iptables: rules were (re)set."; _P_IPT=true
+    else _P_IPT=false; fi
+    if $_P_IPT; then
+      [ $((INFO_IPT&INFO_IPT_WIF)) -eq 0 ] && echo "- iptables: WAN interface."
+      
+    else echo "! iptables: rules were UNSUCCESSFULLY (re)set!";
     fi
-    if [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ]
       then echo '- iptables: shield outbound chain was set.'
       else echo '- iptables: shield outbound chain was already set.'
     fi
