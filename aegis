@@ -134,7 +134,7 @@ if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF; fi;
+local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
@@ -239,7 +239,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
-  NFO_IPS=0 NFO_IPT=0 NFO_LOGD=0
+  NFO_IPS=0; NFO_IPT=0
   _cipset_init
   # creating ipset blocklist if needed
   if _cipset_copy_set $IPSET_BL_NAME; then
@@ -354,7 +354,9 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_DWL && ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   
   #Log daemon
-  if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
+  if $_LOG; then if _logd_status; then NFO_LOGD=$INFO_LOGD_KEEP_ON; else _logd_start; NFO_LOGD=$?; fi
+  elif _logd_status; then _logd_stop; NFO_LOGD=$INFO_LOGD_STOPPED; else NFO_LOGD=$INFO_LOGD_KEEP_OFF; fi
+  fi
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
