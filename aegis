@@ -344,7 +344,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   get_ipt; AIPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
   
   if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); else
-    /usr/bin/awk '$1=="-D"{sub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
+    /usr/bin/awk '$1=="-A"{gsub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
     /usr/bin/awk '{system("'$IPT_COM' -w "$0)}' $WIPTF
     get_ipt; echo "$_IPT" >$AIPTF
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
