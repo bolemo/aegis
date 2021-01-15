@@ -132,7 +132,7 @@ _logd_start() { $DEBUG && debug "_logd_start"
 if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null
     then $DEBUG && debug "returning with code INFO_LOGD_KEEP_ON"; return $INFO_LOGD_KEEP_ON
-    else $DEBUG && debug "stopping log daemon"; _logd_stop; return $?;
+    else $DEBUG && debug "stopping log daemon"; _logd_stop; return $?
   fi
 fi
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
@@ -353,10 +353,10 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   fi
   
   #Removing any trace of whitelist if not used and if any
-  $_DWL && { ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL)); INFO_IPS_WL_DEL; }
+  $_DWL && ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   
   #Log daemon
-  $_LOG && _logd_start || _logd_stop; NFO_LOGD=$?
+  if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
