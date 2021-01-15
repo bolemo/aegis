@@ -344,7 +344,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   get_ipt; AIPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
   
   if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); else
-    /usr/bin/awk '$1=="-A"{gsub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
+    /usr/bin/awk '$1=="-A"{sub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
     /usr/bin/awk '{system("'$IPT_COM' -w "$0)}' $WIPTF
     get_ipt; echo "$_IPT" >$AIPTF
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
@@ -1212,12 +1212,12 @@ _status >/dev/null
     elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."; _P_IPT=true
     else _P_IPT=false; fi
     if $_P_IPT; then
-      [ $((INFO_IPT&INFO_IPT_WIF)) -eq 0 ] && echo "- iptables: rules for WAN interface in place."
-      [ $((INFO_IPT&INFO_IPT_TIF)) -eq 0 ] && echo "- iptables: rules for VPN interface in place."
-      [ $((INFO_IPT&INFO_IPT_WIB)) -eq 0 ] && echo "- iptables: WAN network range bypass rules in place."
-      [ $((INFO_IPT&INFO_IPT_TIB)) -eq 0 ] && echo "- iptables: VPN network range bypass rules in place."
-      [ $((INFO_IPT&INFO_IPT_WL)) -eq 0 ]  && echo "- iptables: whitelist bypass rules in place."
-      [ $((INFO_IPT&INFO_IPT_LOG)) -eq 0 ] && echo "- iptables: logging rules in place."
+      [ $((INFO_IPT&INFO_IPT_WIF)) -ne 0 ] && echo "- iptables: rules for WAN interface in place."
+      [ $((INFO_IPT&INFO_IPT_TIF)) -ne 0 ] && echo "- iptables: rules for VPN interface in place."
+      [ $((INFO_IPT&INFO_IPT_WIB)) -ne 0 ] && echo "- iptables: WAN network range bypass rules in place."
+      [ $((INFO_IPT&INFO_IPT_TIB)) -ne 0 ] && echo "- iptables: VPN network range bypass rules in place."
+      [ $((INFO_IPT&INFO_IPT_WL)) -ne 0 ]  && echo "- iptables: whitelist bypass rules in place."
+      [ $((INFO_IPT&INFO_IPT_LOG)) -ne 0 ] && echo "- iptables: logging rules in place."
     else echo "! iptables: rules were UNSUCCESSFULLY (re)set!"; fi
  
     case "$INFO_LOGD" in
