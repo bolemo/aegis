@@ -133,7 +133,7 @@ if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
-sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
+if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
 local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
@@ -149,9 +149,11 @@ while :; do
   local NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
+    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)"
+    # first line in rotated message log
     if [ "\$FIRST_MSG_LINE" ]; then
-      local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
+      local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)"
+      # first timestamp in our log
       if [ 0\${FIRST_MSG_LINE%%:*} -gt 0\$FIRST_EXT_TS ]; then :>$LOGD_TMP
         /usr/bin/awk '\$0=="'"\$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
         if [ 0\$NUMLINES -lt 0\$(lc $LOGD_TMP) ]
@@ -168,13 +170,14 @@ while :; do
   else :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
   fi
   /bin/rm -f $LOGD_TMP
-     # using LOG_FILE>LOGD_TMP>LOG_FILE allow to keep same inode for LOG_FILE
-     # now, LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
+  # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
+  # now LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local C=1; local FC=false; local D=1
   while /usr/bin/awk -F: '/\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
     sleep 2 & wait \$!
     [ "\$INODE" != "\$(inode)" ] && break
-    if [ \$C -eq 10 ]; then # check every C x 2 seconds
+    if [ \$C -eq 10 ]; then
+      # check every 20 seconds
       if ! $IPT_BIN -w -C $IPTBL_SRC -j LOG --log-prefix "[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
