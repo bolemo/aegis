@@ -131,10 +131,10 @@ _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
 _logd_start() { $DEBUG && debug "_logd_start"
 if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
-  else _logd_stop; return $?; fi
+  else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local LOG_MSG=$(_logd_logmsg); if [ $? -ne 0 ]; then $DEBUG && debug "returning with code INFO_LOGD_KEEP_OFF"; return $INFO_LOGD_KEEP_OFF; fi;
+local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF; fi;
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
@@ -191,7 +191,7 @@ EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
-_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF; } 2>/dev/null
+_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
 _logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
