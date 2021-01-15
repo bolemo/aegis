@@ -1208,66 +1208,13 @@ _status >/dev/null
     elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ] then echo "- iptables: rules were (re)set."; _P_IPT=true
     else _P_IPT=false; fi
     if $_P_IPT; then
-      [ $((INFO_IPT&INFO_IPT_WIF)) -eq 0 ] && echo "- iptables: WAN interface."
-      
-    else echo "! iptables: rules were UNSUCCESSFULLY (re)set!";
-    fi
-      then echo '- iptables: shield outbound chain was set.'
-      else echo '- iptables: shield outbound chain was already set.'
-    fi
-    [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '- iptables: some irrelevant bypass rules had to be removed.'
-    if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WB_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound WAN network range bypass rules were set.'
-        else echo '- iptables: inbound WAN network range bypass rules were kept.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_WB_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound WAN network range bypass rules were set.'
-        else echo '- iptables: outbound WAN network range bypass rules were kept.'
-      fi
-    else echo '- iptables: WAN network range bypass rules were not needed or manually skipped.'
-    fi
-    if [ $((INFO_IPS & INFO_IPS_TB_NDD)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound VPN network range bypass rules were set.'
-        else echo '- iptables: inbound VPN network range bypass rules were kept.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_TB_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound VPN network range bypass rules were set.'
-        else echo '- iptables: outbound VPN network range bypass rules were kept.'
-      fi
-    else [ "$INFO_TUN" ] && echo '- iptables: VPN network range bypass rules were not needed or manually skipped.'
-    fi
-    if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound whitelist rules were set.'
-        else echo '- iptables: inbound whitelist rules were kept.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_WL_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound whitelist rules were set.'
-        else echo '- iptables: outbound whitelist rules were kept.'
-      fi
-    fi
-    if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
-        then echo '- iptables: inbound logging rules were set.'
-        else echo '- iptables: inbound logging rules were kept.'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
-        then echo '- iptables: outbound logging rules were set.'
-        else echo '- iptables: outbound logging rules were kept.'
-      fi
-    fi
-    
-    [ $((INFO_IPT & INFO_IPT_IFO_PBM)) -ne 0 ] && echo '- iptables: some irrelevant IFO rules had to be removed.'
-    if [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq $INFO_IPT_WAN_PBM ]; then echo '- iptables: WAN interface IFO rules had to be reset.'
-    elif [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -ne 0 ]; then echo '- iptables: WAN interface IFO rules were set.'
-    elif [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -ne 0 ]; then echo '- iptables: WAN interface IFO rules were kept.'
-    fi
-    if [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq $INFO_IPT_TUN_PBM ]; then echo '- iptables: VPN tunnel IFO rules had to be reset.'
-    elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo '- iptables: VPN tunnel IFO rules were set.'
-    elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo '- iptables: VPN tunnel IFO rules were kept.'
-    fi
+      [ $((INFO_IPT&INFO_IPT_WIF)) -eq 0 ] && echo "- iptables: rules for WAN interface in place."
+      [ $((INFO_IPT&INFO_IPT_TIF)) -eq 0 ] && echo "- iptables: rules for VPN interface in place."
+      [ $((INFO_IPT&INFO_IPT_WIB)) -eq 0 ] && echo "- iptables: WAN network range bypass rules in place."
+      [ $((INFO_IPT&INFO_IPT_TIB)) -eq 0 ] && echo "- iptables: VPN network range bypass rules in place."
+      [ $((INFO_IPT&INFO_IPT_WL)) -eq 0 ]  && echo "- iptables: whitelist bypass rules in place."
+      [ $((INFO_IPT&INFO_IPT_LOG)) -eq 0 ] && echo "- iptables: logging rules in place."
+    else echo "! iptables: rules were UNSUCCESSFULLY (re)set!"; fi
  
     case "$INFO_LOGD" in
       $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
