@@ -123,18 +123,20 @@ LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
-  if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
-  elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
+  if   test -e '/var/log/log-message'; then echo '/var/log/log-message'; return 0
+  elif test -e '/var/log/log_message'; then echo '/var/log/log_message'; return 0
   else _warn "No log-message or log_message found!"; return 1
   fi
 }
 _logd_start() { $DEBUG && debug "_logd_start"
 if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
-  if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
-  else _logd_stop; return $?; fi
+  if _logd_logmsg >/dev/null
+    then $DEBUG && debug "returning with code INFO_LOGD_KEEP_ON"; return $INFO_LOGD_KEEP_ON
+    else $DEBUG && debug "stopping log daemon"; _logd_stop; return $?;
+  fi
 fi
 sc_conf get log.len >/dev/null || { sc_conf set log.len=5000; sc_conf commit; }
-local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
+local LOG_MSG=$(_logd_logmsg); if [ $? -ne 0 ]; then $DEBUG && debug "returning with code INFO_LOGD_KEEP_OFF"; return $INFO_LOGD_KEEP_OFF; fi;
 cat >"$LOGD_TMP" <<EOF
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
