@@ -191,7 +191,7 @@ EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
-[() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF; } 2>/dev/null
+_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF; } 2>/dev/null
 _logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
@@ -309,11 +309,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       if _cipset_inet_in_bl $TUN_INET; then NFO_IPT=$((NFO_IPT+INFO_IPT_TIB)); _TBW=true
     else _TBW=false; fi; else _TBW=false; fi
   else _TIF=false; _TBW=false; fi
-  if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG))
-    _logd_start; NFO_LOGD=$?
-  else _LOG=false
-    _logd_stop; NFO_LOGD=$?
-  fi
+  if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG)); else _LOG=false; fi
   $_WL && NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   
   WIPTF=/tmp/aegis_wipt
@@ -355,6 +351,9 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   #Removing any trace of whitelist if not used and if any
   $_DWL && { ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL)); INFO_IPS_WL_DEL; }
+  
+  #Log daemon
+  $_LOG && _logd_start || _logd_stop; NFO_LOGD=$?
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   
