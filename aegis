@@ -657,8 +657,10 @@ strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} 
 
 strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' $*; }
 
-
-is_ipv4 { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
+# ---------------------------------------------
+: ENV START
+# ---------------------------------------------
+is_ipv4() { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
 
 ip_in_if_inet() {
   [ -z "$2" ] && return 1
@@ -672,6 +674,9 @@ EOF
   E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
   [ $T -ge $S -a $T -le $E ] && return 0 || return 1
 }
+# ---------------------------------------------
+: ENV STOP
+# ---------------------------------------------
 
 ###############################################
 #
