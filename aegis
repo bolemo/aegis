@@ -182,7 +182,7 @@ while :; do
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
         elif \$FC; then $($DEBUG && echo "debug 'shield is unlocked, this is second check: killing daemon';") kill \$(cat $LOGD_PID)
-        $($DEBUG && echo "else debug 'shield is unlocked but waiting for second check'"); fi
+        $($DEBUG && echo "else debug 'shield is unlocked but waiting for second check';") fi
         FC=true; C=5
       else FC=false; C=1; fi
     else C=\$((C+1)); fi
