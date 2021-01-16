@@ -921,6 +921,7 @@ test_ip() { # $1: IP to test, ($2: IF)
   if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
     then echo "- IP address $1 is blocked by the router."
     else echo "- IP address $1 is not blocked by the router."
+  fi
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
     "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $1 && echo "- IP address $1 is in Aegis blocklist directives." ;;
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $1 && echo "- IP address $1 is in Aegis whitelist directives." ;;
@@ -1362,7 +1363,7 @@ if [ -z "${ARGS##* %devmode*% *}" ]; then
   echo "Arguments: '$ARGS'"
 fi
 
-PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*[[:space:]]*[[:digit:]]*//g')"
+PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*[[:space:]]*[[:digit:].]*//g')"
 case $(echo "$PARAM"|/usr/bin/wc -w) in
   0) _warn "No parameter!"; print_help; _exit 1 ;;
   1) PARAM="$(echo "$PARAM"|/bin/sed 's/ //g')" ;;
