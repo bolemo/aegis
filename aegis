@@ -149,11 +149,9 @@ while :; do
   local NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)"
-    # first line in rotated message log
+    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
     if [ "\$FIRST_MSG_LINE" ]; then
-      local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)"
-      # first timestamp in our log
+      local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
       if [ 0\${FIRST_MSG_LINE%%:*} -gt 0\$FIRST_EXT_TS ]; then :>$LOGD_TMP
         /usr/bin/awk '\$0=="'"\$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
         if [ 0\$NUMLINES -lt 0\$(lc $LOGD_TMP) ]
@@ -195,7 +193,7 @@ cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
 _logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID); return $?; } 2>/dev/null
-_logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
+_logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF ; }
 
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
@@ -357,8 +355,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_DWL && ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
   
   #Log daemon
-  if $_LOG; then if _logd_status; then NFO_LOGD=$INFO_LOGD_KEEP_ON; else _logd_start; NFO_LOGD=$?; fi
-  elif _logd_status; then _logd_stop; NFO_LOGD=$INFO_LOGD_STOPPED; else NFO_LOGD=$INFO_LOGD_KEEP_OFF; fi
+  if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
