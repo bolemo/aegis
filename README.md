@@ -95,6 +95,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `upgrade` - downloads and installs latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
+* `test -ip=`IP  - test if IP is blocked or not by aegis
 ### GENERAL OPTIONS (can be used with any command)
 * `-v` + verbose mode (level 1)
 * `-vv` + verbose mode (level 2)
