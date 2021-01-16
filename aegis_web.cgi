@@ -162,26 +162,6 @@ status() {
       [ $((INFO_IPT&INFO_IPT_WL)) -ne 0 ]  && echo "<li>iptables: whitelist bypass rules in place.</li>"
       [ $((INFO_IPT&INFO_IPT_LOG)) -ne 0 ] && echo "<li>iptables: logging rules in place.</li>"
     else echo "<li><strong>iptables: rules were UNSUCCESSFULLY (re)set!</strong></li>"; fi
-    if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
-        then echo "<li>iptables: inbound logging rules were set.</li>"
-        else echo "<li>iptables: inbound logging rules were kept.</li>"
-      fi
-      if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
-        then echo "<li>iptables: outbound logging rules were set.</li>"
-        else echo "<li>iptables: outbound logging rules were kept.</li>"
-      fi
-    fi
-    
-    [ $((INFO_IPT & INFO_IPT_IFO_PBM)) -ne 0 ] && echo "<li>iptables: some irrelevant IFO rules had to be removed.</li>"
-    if [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq $INFO_IPT_WAN_PBM ]; then echo "<li>iptables: WAN interface IFO rules had to be reset.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -ne 0 ]; then echo "<li>iptables: WAN interface IFO rules were set.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -ne 0 ]; then echo "<li>iptables: WAN interface IFO rules were kept.</li>"
-    fi
-    if [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq $INFO_IPT_TUN_PBM ]; then echo "<li>iptables: VPN tunnel IFO rules had to be reset.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were set.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were kept.</li>"
-    fi
     case "$INFO_LOGD" in
       $INFO_LOGD_KEEP_OFF) echo '<li>log daemon: was already off.</li>';;
       $INFO_LOGD_KEEP_ON) echo '<li>log daemon: was already on.</li>';;
