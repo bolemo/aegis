@@ -657,6 +657,19 @@ strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} 
 
 strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' $*; }
 
+ip_in_if_inet() {
+  [ -z "$2" ] && return 1
+  _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
+  OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
+$1.$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
+EOF
+  IFS=$OLDIFS
+  T=$(((T3<<24)+(T2<<16)+(T1<<8)+T0))
+  S=$(((S3<<24)+(S2<<16)+(S1<<8)+S0))
+  E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
+  [ $T -ge $S -a $T -le $E ] && return 0 || return 1
+}
+
 ###############################################
 #
 #    INIT FUNCTIONS
@@ -893,6 +906,20 @@ info() { $DEBUG && debug "info"
   [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
   # check web compagnon
   check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
+}
+
+test_ip() { # $1: IP to test, ($2: IF)
+  echo -e "\033[1;36mTesting IP $1:\033[0m"
+  if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
+    then echo "- IP address $1 is blocked by the router."
+    else echo "- IP address $1 is not blocked by the router."
+  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
+    "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $1 && echo "- IP address $1 is in Aegis blocklist directives." ;;
+    "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $1 && echo "- IP address $1 is in Aegis whitelist directives." ;;
+  esac; done
+  _ip_in_if_inet $1 $WAN_IF && echo "- IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF))."
+  _ip_in_if_inet $1 $TUN_IF && echo "- IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF))."
+  exit 0
 }
 
 #---------------------------- _STATUS ----------------------------
@@ -1395,6 +1422,7 @@ case "$PARAM" in
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
+  'test') [ -z "${ARGS##* -ip=*}" ] && _IP=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || exit 1; test_ip $_IP ;;
   'log') _log_args ;;
   'upgrade') upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
