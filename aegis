@@ -1324,6 +1324,7 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '" \033[1;35mupgrade\033[0m            - downloads and installs latest version"'
 '" \033[1;35mweb -install\033[0m       - downloads and installs $WEB_NAME"'
 '" \033[1;35mweb -remove\033[0m        - removes $WEB_NAME"'
+'" \033[1;35mtest -ip=\033[0mIP        - test if IP is blocked or not by $SC_NAME"'
 '"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m"'
 '" \033[1;36m-v\033[0m                 + verbose mode (level 1)"'
 '" \033[1;36m-vv\033[0m                + verbose mode (level 2)"'
@@ -1431,7 +1432,7 @@ case "$PARAM" in
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
-  'test') [ -z "${ARGS##* -ip=*}" ] && _IP=$(echo "$ARGS"|/bin/sed 's/.* -ip=\([[:digit:].]\+\) .*/\1/') || exit 1; is_ipv4 $_IP || exit 1; test_ip $_IP ;;
+  'test') [ -z "${ARGS##* -ip=*}" ] && _IP=$(echo "$ARGS"|/bin/sed 's/.* -ip=\([[:digit:].]\+\) .*/\1/') && is_ipv4 $_IP && test_ip $_IP || _warn "Invalid IP" 1 ;;
   'log') _log_args ;;
   'upgrade') upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
