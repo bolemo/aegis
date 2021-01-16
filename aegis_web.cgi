@@ -151,67 +151,17 @@ status() {
       $INFO_IPS_WL_SWAP)                      echo "<li>directives: ipset whitelist was updated from file.</li>" ;;
       $INFO_IPS_WL_DEL)                       echo "<li>directives: ipset whitelist was unset.</li>" ;;
     esac
-    if [ $((INFO_IPT & INFO_IPT_SRC_KEEP)) -eq 0 ]
-      then echo "<li>iptables: shield inbound chain was set.</li>"
-      else echo "<li>iptables: shield inbound chain was already set.</li>"
-    fi
-    if [ $((INFO_IPT & INFO_IPT_DST_KEEP)) -eq 0 ]
-      then echo "<li>iptables: shield outbound chain was set.</li>"
-      else echo "<li>iptables: shield outbound chain was already set.</li>"
-    fi
-    [ $((INFO_IPT & INFO_IPT_IB_PBM)) -ne 0 ] && echo '<li>iptables: some irrelevant bypass rules had to be removed.</li>'
-    if [ $((INFO_IPS & INFO_IPS_WB_NDD)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WB_SRC_NEW)) -ne 0 ]
-        then echo '<li>iptables: inbound WAN network range bypass rules were set.</li>'
-        else echo '<li>iptables: inbound WAN network range bypass rules were kept.</li>'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_WB_DST_NEW)) -ne 0 ]
-        then echo '<li>iptables: outbound WAN network range bypass rules were set.</li>'
-        else echo '<li>iptables: outbound WAN network range bypass rules were kept.</li>'
-      fi
-    else echo '<li>iptables: WAN network range bypass rules were not needed or manually skipped.</li>'
-    fi
-    if [ $((INFO_IPS & INFO_IPS_TB_NDD)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_TB_SRC_NEW)) -ne 0 ]
-        then echo '<li>iptables: inbound VPN network range bypass rules were set.</li>'
-        else echo '<li>iptables: inbound VPN network range bypass rules were kept.</li>'
-      fi
-      if [ $((INFO_IPT & INFO_IPT_TB_DST_NEW)) -ne 0 ]
-        then echo '<li>iptables: outbound VPN network range bypass rules were set.</li>'
-        else echo '<li>iptables: outbound VPN network range bypass rules were kept.</li>'
-      fi
-    else [ "$INFO_TUN" ] && echo '<li>iptables: VPN network range bypass rules were not needed or manually skipped.</li>'
-    fi
-    if [ $((INFO_IPT & INFO_IPT_WL)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_WL_SRC_NEW)) -ne 0 ]
-        then echo "<li>iptables: inbound whitelist rules were set.</li>"
-        else echo "<li>iptables: inbound whitelist rules were kept.</li>"
-      fi
-      if [ $((INFO_IPT & INFO_IPT_WL_DST_NEW)) -ne 0 ]
-        then echo "<li>iptables: outbound whitelist rules were set.</li>"
-        else echo "<li>iptables: outbound whitelist rules were kept.</li>"
-      fi
-    fi
-    if [ $((INFO_IPT & INFO_IPT_LOG)) -ne 0 ]; then
-      if [ $((INFO_IPT & INFO_IPT_LOG_SRC_NEW)) -ne 0 ]
-        then echo "<li>iptables: inbound logging rules were set.</li>"
-        else echo "<li>iptables: inbound logging rules were kept.</li>"
-      fi
-      if [ $((INFO_IPT & INFO_IPT_LOG_DST_NEW)) -ne 0 ]
-        then echo "<li>iptables: outbound logging rules were set.</li>"
-        else echo "<li>iptables: outbound logging rules were kept.</li>"
-      fi
-    fi
-    
-    [ $((INFO_IPT & INFO_IPT_IFO_PBM)) -ne 0 ] && echo "<li>iptables: some irrelevant IFO rules had to be removed.</li>"
-    if [ $((INFO_IPT & INFO_IPT_WAN_PBM)) -eq $INFO_IPT_WAN_PBM ]; then echo "<li>iptables: WAN interface IFO rules had to be reset.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_WAN_NEW)) -ne 0 ]; then echo "<li>iptables: WAN interface IFO rules were set.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_WAN_KEEP)) -ne 0 ]; then echo "<li>iptables: WAN interface IFO rules were kept.</li>"
-    fi
-    if [ $((INFO_IPT & INFO_IPT_TUN_PBM)) -eq $INFO_IPT_TUN_PBM ]; then echo "<li>iptables: VPN tunnel IFO rules had to be reset.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_TUN_NEW)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were set.</li>"
-    elif [ $((INFO_IPT & INFO_IPT_TUN_KEEP)) -ne 0 ]; then echo "<li>iptables: VPN tunnel IFO rules were kept.</li>"
-    fi
+    if  [ $((INFO_IPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "<li>iptables: rules were already set."; _P_IPT=true
+    elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ]; then echo "<li>iptables: rules were (re)set."; _P_IPT=true
+    else _P_IPT=false; fi
+    if $_P_IPT; then
+      [ $((INFO_IPT&INFO_IPT_WIF)) -ne 0 ] && echo "<li>iptables: rules for WAN interface in place.</li>"
+      [ $((INFO_IPT&INFO_IPT_TIF)) -ne 0 ] && echo "<li>iptables: rules for VPN interface in place.</li>"
+      [ $((INFO_IPT&INFO_IPT_WIB)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules in place.</li>"
+      [ $((INFO_IPT&INFO_IPT_TIB)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules in place.</li>"
+      [ $((INFO_IPT&INFO_IPT_WL)) -ne 0 ]  && echo "<li>iptables: whitelist bypass rules in place.</li>"
+      [ $((INFO_IPT&INFO_IPT_LOG)) -ne 0 ] && echo "<li>iptables: logging rules in place.</li>"
+    else echo "<li><strong>iptables: rules were UNSUCCESSFULLY (re)set!</strong></li>"; fi
     case "$INFO_LOGD" in
       $INFO_LOGD_KEEP_OFF) echo '<li>log daemon: was already off.</li>';;
       $INFO_LOGD_KEEP_ON) echo '<li>log daemon: was already on.</li>';;
@@ -349,19 +299,6 @@ refreshLog() {
   _getLog
 }
 
-_ip_in_if_inet() {
-  [ -z "$2" ] && return 1
-  _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
-  OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
-$1.$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
-EOF
-  IFS=$OLDIFS
-  T=$(((T3<<24)+(T2<<16)+(T1<<8)+T0))
-  S=$(((S3<<24)+(S2<<16)+(S1<<8)+S0))
-  E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
-  [ $T -ge $S -a $T -le $E ] && return 0 || return 1
-}
-
 checkIp() {
   aegis_env
   IP="$ARG"
@@ -372,8 +309,8 @@ checkIp() {
     "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis blocklist directives.<br />" ;;
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis whitelist directives.<br />" ;;
   esac; done
-  _ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF)).<br />"
-  _ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF)).<br />"
+  ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF)).<br />"
+  ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF)).<br />"
   echo "---<br />"
 }
 

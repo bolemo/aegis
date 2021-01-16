@@ -5,7 +5,7 @@ Might work with several other Netgear routers supporting Voxel firmware as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.6.3
+1.6.4
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -95,6 +95,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `upgrade` - downloads and installs latest version
 * `web -install` - downloads and installs the Web Companion
 * `web -remove`  - removes the Web Companion
+* `test -ip=`IP  - test if IP is blocked or not by aegis
 ### GENERAL OPTIONS (can be used with any command)
 * `-v` + verbose mode (level 1)
 * `-vv` + verbose mode (level 2)
