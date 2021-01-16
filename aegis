@@ -657,6 +657,9 @@ strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} 
 
 strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' $*; }
 
+
+is_ipv4 { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
+
 ip_in_if_inet() {
   [ -z "$2" ] && return 1
   _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -1422,7 +1425,7 @@ case "$PARAM" in
   'status') status_term ;;
   'help') print_help ;;
   'info') info ;;
-  'test') [ -z "${ARGS##* -ip=*}" ] && _IP=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || exit 1; test_ip $_IP ;;
+  'test') [ -z "${ARGS##* -ip=*}" ] && _IP=$(echo "$ARGS"|/bin/sed 's/.* -ip=\([[:digit:].]\+\) .*/\1/') || exit 1; is_ipv4 $_IP || exit 1; test_ip $_IP ;;
   'log') _log_args ;;
   'upgrade') upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
