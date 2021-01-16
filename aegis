@@ -879,10 +879,12 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
         [ $VERBOSE ] && echo -e "- iprange not installed, passing optimization and reduction process.\n- Removing duplicates..."
         /usr/bin/sort "$TMP_FILE"|/usr/bin/uniq >"$WL_FILE"
       fi
-      else echo '- No directives were found: custom whitelist is empty.'
+    else echo '- No directives were found: custom whitelist is empty.'
+      /bin/rm -f "$WL_FILE" 2>/dev/null
     fi
     [ $VERBOSE ] && echo "- Done."
   elif [ $VERBOSE ]; then echo "- No custom whitelist(s) found."
+    /bin/rm -f "$WL_FILE" 2>/dev/null
   fi
   
   /bin/rm -f "$TMP_FILE" 2>/dev/null
