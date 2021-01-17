@@ -1144,17 +1144,16 @@ _status >/dev/null
     echo "- Shield is unset."
   elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=2
     echo "- Shield is down."
-  else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
-      echo -ne "- \033[1;32mShield is up\033[0m"
-      [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
-      [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-      echo -e ".\n- Filtering $_BLC IP adresses."
-      [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
-    else _RETVAL=3
-       echo -e "- \033[1;31mSomething is not right!\033[0m"
-    fi
-    if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
+  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
+    echo -ne "- \033[1;32mShield is up\033[0m"
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
+    echo -e ".\n- Filtering $_BLC IP adresses."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
+  else _RETVAL=3
+     echo -e "- \033[1;31mSomething is not right!\033[0m"
   fi
+  if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
   
   if [ $_PB -ne 0 ]; then
     echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
