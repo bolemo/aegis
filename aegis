@@ -722,7 +722,7 @@ shield_init() { $DEBUG && debug "shield_init"
 #
 ###############################################
 
-print_log() { $DEBUG && debug "print_log"
+print_log() { $DEBUG && debug "print_log $*"
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
