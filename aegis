@@ -662,7 +662,7 @@ strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[
 # ---------------------------------------------
 is_ipv4() { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
 
-ip_in_if_inet() {
+ip_in_if_inet() { $DEBUG && debug "ip_in_if_inet $*"
   [ -z "$2" ] && return 1
   _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
   OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
@@ -672,6 +672,7 @@ EOF
   T=$(((T3<<24)+(T2<<16)+(T1<<8)+T0))
   S=$(((S3<<24)+(S2<<16)+(S1<<8)+S0))
   E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
+  $DEBUG && debug "T:$T S:$S E:$E"
   [ $T -ge $S -a $T -le $E ] && return 0 || return 1
 }
 # ---------------------------------------------
