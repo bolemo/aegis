@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.4"
+SC_VERS="1.6.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -346,7 +346,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); else
     /usr/bin/awk '$1=="-A"{sub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
-    /usr/bin/awk '{system("'$IPT_COM' -w "$0)}' $WIPTF
+    /usr/bin/awk '$1=="-A"{a[i++]="-I"substr($0,3); next} {system("'$IPT_COM' -w "$0)} END {while(i--){system("'$IPT_COM' -w "a[i])}}' $WIPTF
     get_ipt; echo "$_IPT" >$AIPTF
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
   fi
