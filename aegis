@@ -752,7 +752,7 @@ print_log() { $DEBUG && debug "print_log $*"
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
-  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:_RSIZE"
+  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
