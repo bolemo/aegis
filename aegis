@@ -96,7 +96,23 @@ get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
   if [ "$IPR_BIN" ]; then echo $_IP|iprange -
-  else _IP=$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/NETWORK|PREFIX/ {ORS="/";print $2}');echo ${_IP%?}; fi
+  else
+    OLDIFS=$IFS
+    IFS=/ read -r N PX <<EOF
+$_IP
+EOF
+    IFS=. read -r N3 N2 N1 N0 <<EOF
+$N
+EOF
+    IFS=$OLDIFS
+    if [ $PX -eq 32 ]; then echo "$N/$PX"
+    elif [ $PX -gt 24 ]; then echo "$N3.$N2.$N1.$(IV=$((1<<(32-PX)));MK=$((256-IV));echo $((N0&MK)))/$PX"
+    elif [ $PX -gt 16 ]; then echo "$N3.$N2.$(IV=$((1<<(24-PX)));MK=$((256-IV));echo $((N1&MK))).0/$PX"
+    elif [ $PX -gt 8 ]; then  echo "$N3.$(IV=$((1<<(16-PX)));MK=$((256-IV));echo $((N2&MK))).0.0/$PX"
+    elif [ $PX -gt 0 ]; then  echo "$(IV=$((1<<(8-PX)));MK=$((256-IV));echo $((N3&MK))).0.0.0/$PX"
+    else echo "0.0.0.0/0"
+    fi
+  fi
 }
 
 # ---------------------------------------------
