@@ -664,16 +664,37 @@ is_ipv4() { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
 
 ip_in_if_inet() { $DEBUG && debug "ip_in_if_inet $*"
   [ -z "$2" ] && return 1
-  _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
-  OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
-$1.$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
+  _inminmax() { IV=$((1<<$1));MK=$((256-IV));MIN=$(($2&MK));MAX=$((MIN+IV-1)); [ $3 -lt $MIN -o $3 -gt $MAX ] && return 1 || return 0; }
+  T="$1"
+  OLDIFS=$IFS
+IFS=/ read -r N PX <<EOF
+$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')
+EOF
+IFS=. read -r T3 T2 T1 T0 N3 N2 N1 N0 <<EOF
+$T.$N
 EOF
   IFS=$OLDIFS
-  T=$(((T3<<24)+(T2<<16)+(T1<<8)+T0))
-  S=$(((S3<<24)+(S2<<16)+(S1<<8)+S0))
-  E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
-  $DEBUG && debug "T:$T S:$S E:$E"
-  [ $T -ge $S -a $T -le $E ] && return 0 || return 1
+  if [ $PX -eq 32 ]; then
+    [ "$T" != "$N" ] && return 1
+  elif [ $PX -gt 24 ]; then
+    [ $T3 -ne $N3 -o $T2 -ne $N2 -o $T1 -ne $N1 ] && return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  elif [ $PX -gt 16 ]; then
+    [ $T3 -ne $N3 -o $T2 -ne $N2 ] && return 1
+    _inminmax $((24-PX)) $N1 $T1 || return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  elif [ $PX -gt 8 ]; then
+    [ $T3 -ne $N3 ] && exit 1
+    _inminmax $((16-PX)) $N2 $T2 || return 1
+    _inminmax $((24-PX)) $N1 $T1 || return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  elif [ $PX -gt 0 ]; then
+    _inminmax $((8-PX)) $N3 $T3 || return 1
+    _inminmax $((16-PX)) $N2 $T2 || return 1
+    _inminmax $((24-PX)) $N1 $T1 || return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  fi
+  return 0  
 }
 # ---------------------------------------------
 : ENV STOP
