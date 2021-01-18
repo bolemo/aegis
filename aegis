@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.6"
+SC_VERS="1.6.7"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -749,9 +749,10 @@ print_log() { $DEBUG && debug "print_log $*"
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI="${_UPT}000" ;; *) _TAIL=$1 _LSCI=0 ;; esac
-  _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "/bin/rm -f $_LSC >/dev/null 2>&1; exit" INT TERM
+  _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
+  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:_RSIZE"
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
@@ -770,7 +771,7 @@ function pline(iface){
      else {LOC=namefromip(SRC); LNM="LAN"}
   } else return 0;
   return 1;}
-$1$2>'$(cat $_LSC)'{ts[++b]=$1;l[b]=$0} END
+$1$2>0'$(/bin/cat "$_LSC")'{ts[++b]=$1;l[b]=$0} END
 {c=floored(b-'$_TAIL');while (c++<b){
   PT=strftime("%F %T", ('$_BT'+ts[c]));
   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
