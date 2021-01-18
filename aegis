@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.5"
+SC_VERS="1.6.7"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -96,7 +96,23 @@ get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
   if [ "$IPR_BIN" ]; then echo $_IP|iprange -
-  else _IP=$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/NETWORK|PREFIX/ {ORS="/";print $2}');echo ${_IP%?}; fi
+  else
+    OLDIFS=$IFS
+    IFS=/ read -r N PX <<EOF
+$_IP
+EOF
+    IFS=. read -r N3 N2 N1 N0 <<EOF
+$N
+EOF
+    IFS=$OLDIFS
+    if [ $PX -eq 32 ]; then echo "$N/$PX"
+    elif [ $PX -gt 24 ]; then echo "$N3.$N2.$N1.$(IV=$((1<<(32-PX)));MK=$((256-IV));echo $((N0&MK)))/$PX"
+    elif [ $PX -gt 16 ]; then echo "$N3.$N2.$(IV=$((1<<(24-PX)));MK=$((256-IV));echo $((N1&MK))).0/$PX"
+    elif [ $PX -gt 8 ]; then  echo "$N3.$(IV=$((1<<(16-PX)));MK=$((256-IV));echo $((N2&MK))).0.0/$PX"
+    elif [ $PX -gt 0 ]; then  echo "$(IV=$((1<<(8-PX)));MK=$((256-IV));echo $((N3&MK))).0.0.0/$PX"
+    else echo "0.0.0.0/0"
+    fi
+  fi
 }
 
 # ---------------------------------------------
@@ -662,17 +678,39 @@ strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[
 # ---------------------------------------------
 is_ipv4() { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
 
-ip_in_if_inet() {
+ip_in_if_inet() { $DEBUG && debug "ip_in_if_inet $*"
   [ -z "$2" ] && return 1
-  _IP="$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')"
-  OLDIFS=$IFS; IFS=. read -r T3 T2 T1 T0 E3 E2 E1 E0 S3 S2 S1 S0 << EOF
-$1.$(/bin/ipcalc.sh $_IP|/usr/bin/awk -F= '/BROADCAST|NETWORK/ {ORS=".";print $2}')
+  _inminmax() { IV=$((1<<$1));MK=$((256-IV));MIN=$(($2&MK));MAX=$((MIN+IV-1)); [ $3 -lt $MIN -o $3 -gt $MAX ] && return 1 || return 0; }
+  T="$1"
+  OLDIFS=$IFS
+IFS=/ read -r N PX <<EOF
+$(/usr/sbin/ip -4 addr show $2|/usr/bin/awk 'NR==2 {print $2;exit}')
+EOF
+IFS=. read -r T3 T2 T1 T0 N3 N2 N1 N0 <<EOF
+$T.$N
 EOF
   IFS=$OLDIFS
-  T=$(((T3<<24)+(T2<<16)+(T1<<8)+T0))
-  S=$(((S3<<24)+(S2<<16)+(S1<<8)+S0))
-  E=$(((E3<<24)+(E2<<16)+(E1<<8)+E0))
-  [ $T -ge $S -a $T -le $E ] && return 0 || return 1
+  if [ $PX -eq 32 ]; then
+    [ "$T" != "$N" ] && return 1
+  elif [ $PX -gt 24 ]; then
+    [ $T3 -ne $N3 -o $T2 -ne $N2 -o $T1 -ne $N1 ] && return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  elif [ $PX -gt 16 ]; then
+    [ $T3 -ne $N3 -o $T2 -ne $N2 ] && return 1
+    _inminmax $((24-PX)) $N1 $T1 || return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  elif [ $PX -gt 8 ]; then
+    [ $T3 -ne $N3 ] && exit 1
+    _inminmax $((16-PX)) $N2 $T2 || return 1
+    _inminmax $((24-PX)) $N1 $T1 || return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  elif [ $PX -gt 0 ]; then
+    _inminmax $((8-PX)) $N3 $T3 || return 1
+    _inminmax $((16-PX)) $N2 $T2 || return 1
+    _inminmax $((24-PX)) $N1 $T1 || return 1
+    _inminmax $((32-PX)) $N0 $T0 || return 1
+  fi
+  return 0  
 }
 # ---------------------------------------------
 : ENV STOP
@@ -722,14 +760,15 @@ shield_init() { $DEBUG && debug "shield_init"
 #
 ###############################################
 
-print_log() { $DEBUG && debug "print_log"
+print_log() { $DEBUG && debug "print_log $*"
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
-  case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI=$_UPT ;; *) _TAIL=$1 _LSCI=0 ;; esac
-  _LSC=/tmp/aegis_lsc; echo "$_LSCI">$_LSC; trap "/bin/rm -f $_LSC >/dev/null 2>&1; exit" INT TERM
+  case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI="${_UPT}000" ;; *) _TAIL=$1 _LSCI=0 ;; esac
+  _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
+  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
@@ -748,7 +787,7 @@ function pline(iface){
      else {LOC=namefromip(SRC); LNM="LAN"}
   } else return 0;
   return 1;}
-$1$2>'$(cat $_LSC)'{ts[++b]=$1;l[b]=$0} END
+$1$2>0'$(/bin/cat "$_LSC")'{ts[++b]=$1;l[b]=$0} END
 {c=floored(b-'$_TAIL');while (c++<b){
   PT=strftime("%F %T", ('$_BT'+ts[c]));
   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
@@ -928,8 +967,8 @@ test_ip() { # $1: IP to test, ($2: IF)
     "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $1 && echo "- IP address $1 is in Aegis blocklist directives." ;;
     "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $1 && echo "- IP address $1 is in Aegis whitelist directives." ;;
   esac; done
-  ip_in_if_inet $1 $WAN_IF && echo "- IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF))."
-  ip_in_if_inet $1 $TUN_IF && echo "- IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF))."
+  ip_in_if_inet $1 $WAN_IF && echo "- IP address $1 is in the WAN network range ($(inet_for_if $WAN_IF))."
+  ip_in_if_inet $1 $TUN_IF && echo "- IP address $1 is in the VPN network range ($(inet_for_if $TUN_IF))."
   exit 0
 }
 
@@ -1144,17 +1183,16 @@ _status >/dev/null
     echo "- Shield is unset."
   elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=2
     echo "- Shield is down."
-  else if [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
-      echo -ne "- \033[1;32mShield is up\033[0m"
-      [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
-      [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-      echo -e ".\n- Filtering $_BLC IP adresses."
-      [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
-    else _RETVAL=3
-       echo -e "- \033[1;31mSomething is not right!\033[0m"
-    fi
-    if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
+  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
+    echo -ne "- \033[1;32mShield is up\033[0m"
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
+    echo -e ".\n- Filtering $_BLC IP adresses."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
+  else _RETVAL=3
+     echo -e "- \033[1;31mSomething is not right!\033[0m"
   fi
+  if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
   
   if [ $_PB -ne 0 ]; then
     echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
