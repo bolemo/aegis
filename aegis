@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.7"
+SC_VERS="1.6.8"
 SC_NAME="aegis"
 SC_ABR="aegis"
 IPR_BIN="$(/usr/bin/which iprange)"
@@ -36,8 +36,8 @@ else
   TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
-STDERR=/dev/null
 } >/dev/null 2>&1
+DEBUG=false STDERR=/dev/null
 
 # INFO FROM (2 bits)
 INFO_FROM_MASK=3
