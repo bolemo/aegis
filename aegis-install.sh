@@ -40,18 +40,18 @@ else
   BASE_DIR="/root"
   echo "aegis will be installed on internal memory $BASE_DIR"
 fi
-[ -d $BASE_DIR ] || { >&2 echo "$BASE_DIR does not exist!"; exit 1; }
+if ! test -d $BASE_DIR; then >&2 echo "$BASE_DIR does not exist!"; exit 1; fi
 
 echo "Creating directory (if not already existing): /opt/scripts"
-[ -d "/opt/scripts" ] || mkdir -p "/opt/scripts"
+if ! test -d "/opt/scripts"; then mkdir -p "/opt/scripts"; fi
 echo "Creating directory (if not already existing): $BASE_DIR/bolemo"
-[ -d "$BASE_DIR/bolemo" ] || mkdir "$BASE_DIR/bolemo"
+if ! test -d "$BASE_DIR/bolemo"; then mkdir "$BASE_DIR/bolemo"; fi
 echo "Creating symlink (if not already existing): /opt/bolemo"
-[ -L "/opt/bolemo" ] && [ -d "/opt/bolemo" ] || ln -sfn "$BASE_DIR/bolemo" "/opt/bolemo"
+if ! test -L "/opt/bolemo" || ! test -d "/opt/bolemo"; then ln -sfn "$BASE_DIR/bolemo" "/opt/bolemo"; fi
 echo "Creating subdirectories in bolemo: scripts, etc"
-[ -d "$BASE_DIR/bolemo/scripts" ] || mkdir "$BASE_DIR/bolemo/scripts"
-[ -d "$BASE_DIR/bolemo/etc" ] || mkdir "$BASE_DIR/bolemo/etc"
-[ -d "$BASE_DIR/bolemo/www" ] || mkdir "$BASE_DIR/bolemo/www"
+if ! test -d "$BASE_DIR/bolemo/scripts"; then mkdir "$BASE_DIR/bolemo/scripts"; fi
+if ! test -d "$BASE_DIR/bolemo/etc"; then mkdir "$BASE_DIR/bolemo/etc"; fi
+if ! test -d "$BASE_DIR/bolemo/www"; then mkdir "$BASE_DIR/bolemo/www"; fi
 
 echo "Downloading and installing aegis..."
 VERS="$($WGET_PATH -qO- --no-check-certificate "$AEGIS_VER_URL")"
@@ -66,7 +66,7 @@ if [ -s "/opt/bolemo/etc/aegis.sources" ]
   then echo "An aegis sources file already exists, keeping it."
   else
     echo "Downloading aegis default sources file..."
-    WGET_PATH -qO- --no-check-certificate "$AEGIS_SRC_URL" >/opt/bolemo/etc/aegis.sources
+    $WGET_PATH -qO- --no-check-certificate "$AEGIS_SRC_URL" >/opt/bolemo/etc/aegis.sources
 fi
 
 # symlink
