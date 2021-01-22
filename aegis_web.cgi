@@ -395,6 +395,6 @@ case $CMD in
 esac
 
 # lighttpd empty response fix:
-echo ' ';
+echo ' '
 
 exit 0
