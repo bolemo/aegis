@@ -12,7 +12,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 SC_VERS="1.6.8"
 SC_NAME="aegis"
 SC_ABR="aegis"
-RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
+#RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
 IPR_BIN="$(/usr/bin/which iprange)"
 IPT_COM='iptables'
 IPT_BIN="/usr/sbin/$IPT_COM"
