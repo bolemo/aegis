@@ -33,6 +33,7 @@ $HTTP["url"] =~ "/bolemo/" {
 }
 EOF
   /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
+  /etc/init.d/lighttpd restart
 }
 
 uninstall() {
