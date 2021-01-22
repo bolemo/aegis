@@ -4,7 +4,7 @@ wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protoc
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
 wcLHTTPD_CONF='/etc/lighttpd/conf.d'
-wcLHTTPD_WC_CONF="$LHTTPD_CONF/31-aegis.conf"
+wcLHTTPD_WC_CONF="$wcLHTTPD_CONF/31-aegis.conf"
 
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
