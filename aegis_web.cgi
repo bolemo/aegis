@@ -3,6 +3,8 @@ wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
 wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
+wcLHTTPD_CONF='/etc/lighttpd/conf.d'
+wcLHTTPD_WC_CONF="$LHTTPD_CONF/31-aegis.conf"
 
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
@@ -23,10 +25,21 @@ $wcUCI aegis_web commit
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
+install() {
+  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"
+cat >"/opt/bolemo/etc/lighttpd_aegis_web.conf <<EOF
+$HTTP["url"] =~ "/bolemo/" {
+    cgi.assign = ( "aegis_web.cgi" => "/opt/bolemo/www/cgi-bin/aegis_web.cgi" )
+}
+EOF
+  /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
+}
+
 uninstall() {
   /bin/rm -f /opt/bolemo/etc/config/aegis_web
   /bin/rm -f /tmp/aegis_web
-  /bin/rm -rf $wcDAT_DIR
+  /bin/rm -rf "$wcDAT_DIR"
+  /bin/rm -rf "$wcLHTTPD_WC_CONF"
 } 2>/dev/null
 
 aegis_env() eval "$($wcAEGIS_BIN _env)" # source environment we need from aegis
@@ -358,6 +371,7 @@ protoInfo() {
 
 # MAIN
 case $CMD in
+# called from ajax, expecting output for lighttpd
   init) init;;
   info) info;;
   status) status;;
@@ -368,6 +382,12 @@ case $CMD in
   print_list) printList;;
   save_list) saveList;;
   proto_info) protoInfo;;
-  uninstall) uninstall;;
+# called from aegis only
+  install) install; exit;;
+  uninstall) uninstall; exit;;
 esac
+
+# lighttpd empty response fix:
+echo ' ';
+
 exit 0
