@@ -25,7 +25,7 @@ $wcUCI aegis_web commit
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
-install() {
+postinstall() {
   if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
     cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
 $HTTP["url"] =~ "/bolemo/" {
@@ -391,7 +391,7 @@ case $CMD in
   save_list) saveList;;
   proto_info) protoInfo;;
 # called from aegis only
-  install) install; exit;;
+  postinstall) postinstall; exit;;
   uninstall) uninstall; exit;;
 esac
 
