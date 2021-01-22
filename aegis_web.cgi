@@ -261,9 +261,15 @@ _getLog() {
   _ST=$($wcUCI get aegis_web.log.pos)
   _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
   _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
+  # attach_device depends on router model
+  #if orbi; then
+  #  _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\n\"}$2==\""ip"\"{print $8;exit}'
+  #else
+    _NSDEVCMD='$1==\""ip"\"{print $3;exit}'
+  #fi
   /usr/bin/awk -F: '
 function namefromip(ip){
-  cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
+  cmd="/usr/bin/awk '"'$_NSDEVCMD'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
   if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
   if (nm) {nm=nm"<q>"ip"</q>"} else {nm=ip}
   return nm}
