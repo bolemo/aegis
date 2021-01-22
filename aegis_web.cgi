@@ -26,14 +26,15 @@ $wcUCI aegis_web commit
 } 2>/dev/null
 
 install() {
-  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"
-cat >"/opt/bolemo/etc/lighttpd_aegis_web.conf <<EOF
+  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
+    cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
 $HTTP["url"] =~ "/bolemo/" {
     cgi.assign = ( "aegis_web.cgi" => "/opt/bolemo/www/cgi-bin/aegis_web.cgi" )
 }
 EOF
-  /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
-  /etc/init.d/lighttpd restart
+    /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
+    /etc/init.d/lighttpd restart
+  fi
 }
 
 uninstall() {
