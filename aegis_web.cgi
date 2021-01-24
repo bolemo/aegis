@@ -303,10 +303,11 @@ function pline(iface){
 
 log() {
 #  aegis_env
+  [ "$(cat /module_name)" == "RBR50" ] && MAX=150 || MAX=300
   case $ARG in
     ''|*[!0-9]*) LEN=100 ;;
     *) if [ $ARG -lt 1 ]; then LEN=1
-       elif [ $ARG -gt 300 ]; then LEN=300
+       elif [ $ARG -gt $MAX ]; then LEN=$MAX
        else LEN=$ARG
        fi ;;
   esac
