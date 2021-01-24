@@ -601,7 +601,7 @@ upgrade() { $DEBUG && debug "upgrade"
     UPGRADE_VER="$SC_LAST_VERS"
   fi
   if [ ! "$DEVMODE" ]; then
-    echo -n "$_ASK"
+    echo -n "$_ASK "
     case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) _exit 0 ;; esac
   fi
   do_upgrade
