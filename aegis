@@ -778,7 +778,7 @@ print_log() { $DEBUG && debug "print_log $*"
   fi
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
-  cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
+  nm="";cmd="/usr/bin/awk '"'$_NSDEVCMD'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
   if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
   if (nm) {nm=nm"("ip")"} else {nm=ip}
   return nm}
