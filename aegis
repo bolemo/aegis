@@ -771,6 +771,11 @@ print_log() { $DEBUG && debug "print_log $*"
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
   $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"
+  if [ "$(cat /module_name)" == "RBR50" ] ; then
+    _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
+  else
+    _NSDEVCMD='$1==\""ip"\"{print $3;exit}'
+  fi
 while :; do while /usr/bin/awk -F: '
 function namefromip(ip){
   cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
