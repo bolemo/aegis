@@ -3,6 +3,8 @@ wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
 wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/master/data/net-protocols.csv'
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
+wcLHTTPD_CONF='/etc/lighttpd/conf.d'
+wcLHTTPD_WC_CONF="$wcLHTTPD_CONF/31-aegis.conf"
 
 if [ $QUERY_STRING ]; then
   CMD=$(echo "$QUERY_STRING"|/bin/sed 's/cmd=\([^&]*\).*/\1/')
@@ -23,10 +25,23 @@ $wcUCI aegis_web commit
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
+postinstall() {
+  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
+    cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
+$HTTP["url"] =~ "/bolemo/" {
+    cgi.assign = ( "aegis_web.cgi" => "/opt/bolemo/www/cgi-bin/aegis_web.cgi" )
+}
+EOF
+    /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
+    /etc/init.d/lighttpd restart
+  fi
+}
+
 uninstall() {
   /bin/rm -f /opt/bolemo/etc/config/aegis_web
   /bin/rm -f /tmp/aegis_web
-  /bin/rm -rf $wcDAT_DIR
+  /bin/rm -rf "$wcDAT_DIR"
+  /bin/rm -rf "$wcLHTTPD_WC_CONF"
 } 2>/dev/null
 
 aegis_env() eval "$($wcAEGIS_BIN _env)" # source environment we need from aegis
@@ -247,10 +262,16 @@ _getLog() {
   _ST=$($wcUCI get aegis_web.log.pos)
   _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
   _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
+  # attach_device depends on router model
+  if [ "$(cat /module_name)" == "RBR50" ] ; then
+    _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
+  else
+    _NSDEVCMD='$1==\""ip"\"{print $3;exit}'
+  fi
   /usr/bin/awk -F: '
 function namefromip(ip){
-  cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $3;exit}'"'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
-  if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
+  nm="";cmd="/usr/bin/awk '"'$_NSDEVCMD'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
+  if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
   if (nm) {nm=nm"<q>"ip"</q>"} else {nm=ip}
   return nm}
 function protoname(proto){
@@ -282,10 +303,11 @@ function pline(iface){
 
 log() {
 #  aegis_env
+  [ "$(cat /module_name)" == "RBR50" ] && MAX=150 || MAX=300
   case $ARG in
     ''|*[!0-9]*) LEN=100 ;;
     *) if [ $ARG -lt 1 ]; then LEN=1
-       elif [ $ARG -gt 300 ]; then LEN=300
+       elif [ $ARG -gt $MAX ]; then LEN=$MAX
        else LEN=$ARG
        fi ;;
   esac
@@ -358,6 +380,7 @@ protoInfo() {
 
 # MAIN
 case $CMD in
+# called from ajax, expecting output for lighttpd
   init) init;;
   info) info;;
   status) status;;
@@ -368,6 +391,12 @@ case $CMD in
   print_list) printList;;
   save_list) saveList;;
   proto_info) protoInfo;;
-  uninstall) uninstall;;
+# called from aegis only
+  postinstall) postinstall; exit;;
+  uninstall) uninstall; exit;;
 esac
+
+# lighttpd empty response fix:
+echo ' '
+
 exit 0
