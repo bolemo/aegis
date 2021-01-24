@@ -589,16 +589,19 @@ upgrade() { $DEBUG && debug "upgrade"
     if [ "$SC_LAST_VERS" ]; then
       _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
       _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- This is already the latest version.            ";_exit 0
+      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- You have already the latest version: $SC_VERS"
+        _ASK="? ($SC_VERS). Do you want to reapply it (y/n)?"
       elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
-      else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS         \033[0m"
+        _ASK="? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
+      else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS!        \033[0m"
+        _ASK="? Do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
       fi
     else _warn "Could not check what is the latest version online!" 1; fi
     UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
     UPGRADE_VER="$SC_LAST_VERS"
   fi
   if [ ! "$DEVMODE" ]; then
-    echo -n "? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)? "
+    echo -n "$_ASK"
     case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) _exit 0 ;; esac
   fi
   do_upgrade
