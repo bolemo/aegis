@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.9"
+SC_VERS="1.6.10"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -587,14 +587,14 @@ upgrade() { $DEBUG && debug "upgrade"
     echo -ne "- Checking latest available version...\r"
     SC_LAST_VERS="$(last_avail_version)"
     if [ "$SC_LAST_VERS" ]; then
-      _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
-      _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-      if [ $_LOC_VERS -eq $_REM_VERS ]; then echo "- You have already the latest version: $SC_VERS     "
+      if [ "$SC_VERS" == "$SC_LAST_VERS" ]; then echo "- You have already the latest version: $SC_VERS     "
         _ASK="? Do you want to reapply it (y/n)?"
-      elif [ $_LOC_VERS -lt $_REM_VERS ]; then echo "- New version available: $SC_LAST_VERS         "
-        _ASK="? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
-      else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
-        _ASK="? Do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
+      else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
+        if [ "$VERS_ARRAY" != "$SORT_ARRAY" ]; then echo "- New version available: $SC_LAST_VERS         "
+          _ASK="? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
+        else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
+          _ASK="? Do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
+        fi
       fi
     else _warn "Could not check what is the latest version online!" 1; fi
     UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
