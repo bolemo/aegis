@@ -141,6 +141,7 @@ To stop logging, just use `aegis log -disable` (if aegis is up, it will desactiv
 ## iprange
 iprange is a great little utility dealing that is now part of the FireHOL project.
 Aegis works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
+**Since February 2021, Voxel's firmwares already include iprange**
 
 The install script offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
 
