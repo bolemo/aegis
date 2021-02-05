@@ -146,8 +146,6 @@ Aegis works fine without iprange installed, but it is recommanded to install it 
 
 The install script offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
 
-**For Orbi, it can only be installed through Entware for now.**
-
 ### without Entware
 If you did not install it from the install script, you can install manually.
 It has been kindly compiled by Voxel and does not require Entware or an external drive.
