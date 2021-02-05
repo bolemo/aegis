@@ -5,11 +5,11 @@ Might work with several other Netgear routers supporting Voxel firmware as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.6.9
+1.6.10
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* It is not mandatory, but it is strongly recommanded to have iprange installed (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
+* Although not mandatory, the binary iprange is strongly recommanded to benefit some optimizations. If you are using the latest Voxel firmware, iprange is already preinstalled. If you are using an older firmware, it is possible to install iprange (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
 * The script can be installed either on the router internal memory (no extra USB drive required) or an external (USB) drive (like the one on which you may have installed Entware). If installed on external drive (recommanded), it will survive firmware upgrades and factory resets.
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 * If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is not needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
@@ -142,9 +142,9 @@ To stop logging, just use `aegis log -disable` (if aegis is up, it will desactiv
 iprange is a great little utility dealing that is now part of the FireHOL project.
 Aegis works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
 
-The install script offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
+**Since February 2021, Voxel's firmwares already include iprange.**
 
-**For Orbi, it can only be installed through Entware for now.**
+The install script offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
 
 ### without Entware
 If you did not install it from the install script, you can install manually.
