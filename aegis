@@ -58,24 +58,51 @@ INFO_FROM_FWS=1       # _ x
 INFO_FROM_PM=2        # x _
 INFO_FROM_SC=3        # x x
 
-# INFO IPSET (5 bits)
+# INFO IPSET (15 bits)
 INFO_IPS_SHIFT=2
 INFO_IPS_MASK=31
-                      # . . . _ _  PBM, BL FILE MISSING
-INFO_IPS_BL_SAME=1    # . . . _ x  KEEP
-INFO_IPS_BL_MISS=2    # . . . x _  KEEP
-INFO_IPS_BL_LOAD=3    # . . . x x
-INFO_IPS_BL_MASK=3    # . . . x x
-INFO_IPS_WL_SAME=4    # _ . x . .  SAME => KEEP
-INFO_IPS_WL_KEEP=8    # _ x . . .  KEEP
-INFO_IPS_WL_LOAD=16   # x _ _ . .
-INFO_IPS_WL_SWAP=20   # x _ x . . = RELOAD
-INFO_IPS_WL_DEL=24    # x x _ . . => was there, was deleted
-                      # _ _ _ . . => was not there, was not loaded
-INFO_IPS_WL_MASK=28   # x x x . .
+                           # . . . . . . . . . . . . . _ _  PBM, BL FILE MISSING
+INFO_IPS_BL_SAME=1         # . . . . . . . . . . . . . _ x  KEEP
+INFO_IPS_BL_MISS=2         # . . . . . . . . . . . . . x _  KEEP
+INFO_IPS_BL_LOAD=3         # . . . . . . . . . . . . . x x
+INFO_IPS_BL_MASK=3         # . . . . . . . . . . . . . x x
+
+INFO_IPS_WAN_BL_SAME=4     # . . . . . . . . . . . _ x . .  KEEP
+INFO_IPS_WAN_BL_MISS=8     # . . . . . . . . . . . x _ . .  DEL
+INFO_IPS_WAN_BL_LOAD=12    # . . . . . . . . . . . x x . .
+INFO_IPS_WAN_BL_MASK=12    # . . . . . . . . . . . x x . .
+
+INFO_IPS_TUN_BL_SAME=16    # . . . . . . . . . _ x . . . .  KEEP
+INFO_IPS_TUN_BL_MISS=32    # . . . . . . . . . x _ . . . .  DEL
+INFO_IPS_TUN_BL_LOAD=48    # . . . . . . . . . x x . . . .
+INFO_IPS_TUN_BL_MASK=48    # . . . . . . . . . x x . . . .
+
+INFO_IPS_WL_SAME=64        # . . . . . . _ . x . . . . . .  SAME => KEEP
+INFO_IPS_WL_KEEP=128       # . . . . . . _ x . . . . . . .  KEEP
+INFO_IPS_WL_LOAD=256       # . . . . . . x _ _ . . . . . .
+INFO_IPS_WL_SWAP=320       # . . . . . . x _ x . . . . . . = RELOAD
+INFO_IPS_WL_DEL=384        # . . . . . . x x _ . . . . . . => was there, was deleted
+                           # . . . . . . _ _ _ . . . . . . => was not there, was not loaded
+INFO_IPS_WL_MASK=448       # . . . . . . x x x . . . . . .
+
+INFO_IPS_WAN_WL_SAME=512   # . . . _ . x . . . . . . . . .  SAME => KEEP
+INFO_IPS_WAN_WL_KEEP=1024  # . . . _ x . . . . . . . . . .  KEEP
+INFO_IPS_WAN_WL_LOAD=2048  # . . . x _ _ . . . . . . . . .
+INFO_IPS_WAN_WL_SWAP=2560  # . . . x _ x . . . . . . . . . = RELOAD
+INFO_IPS_WAN_WL_DEL=3072   # . . . x x _ . . . . . . . . . => was there, was deleted
+                           # . . . _ _ _ . . . . . . . . . => was not there, was not loaded
+INFO_IPS_WAN_WL_MASK=3584  # . . . x x x . . . . . . . . .
+
+INFO_IPS_TUN_WL_SAME=4096  # _ . x . . . . . . . . . . . .  SAME => KEEP
+INFO_IPS_TUN_WL_KEEP=8192  # _ x . . . . . . . . . . . . .  KEEP
+INFO_IPS_TUN_WL_LOAD=16384 # x _ _ . . . . . . . . . . . .
+INFO_IPS_TUN_WL_SWAP=20480 # x _ x . . . . . . . . . . . . = RELOAD
+INFO_IPS_TUN_WL_DEL=24576  # x x _ . . . . . . . . . . . . => was there, was deleted
+                           # _ _ _ . . . . . . . . . . . . => was not there, was not loaded
+INFO_IPS_TUN_WL_MASK=28672 # x x x . . . . . . . . . . . .
 
 # INFO IPTABLES (8 bits)
-INFO_IPT_SHIFT=7
+INFO_IPT_SHIFT=17
 INFO_IPT_MASK=255
 INFO_IPT_KEEP=1       # . . . . . . . x
 INFO_IPT_RUN=2        # . . . . . . x .
@@ -91,7 +118,7 @@ INFO_IPT_WL=64        # . x . . . . . .
 INFO_IPT_LOG=128      # x . . . . . . .
 
 # INFO LOGD (2 bits) and _logd_start return code
-INFO_LOGD_SHIFT=15
+INFO_LOGD_SHIFT=25
 INFO_LOGD_STARTED=0        # _ _
 INFO_LOGD_STOPPED=1        # _ x
 INFO_LOGD_KEEP_ON=2        # x _
@@ -535,8 +562,12 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
   fi
   
-  #Removing any trace of whitelist if not used and if any
-  $_DWL && ipset -q destroy "$IPSET_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
+  #Removing any trace of unused ipsets and if any
+  $_DWBL && ipset -q destroy "$IPSET_WAN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
+  $_DTBL && ipset -q destroy "$IPSET_TUN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
+  $_DWL  && ipset -q destroy "$IPSET_WL_NAME"     && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
+  $_DWWL && ipset -q destroy "$IPSET_WL_WAN_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
+  $_DTWL && ipset -q destroy "$IPSET_WL_TUN_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
   
   #Log daemon
   if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
