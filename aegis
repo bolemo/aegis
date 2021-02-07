@@ -615,7 +615,6 @@ CUST_TUN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn.blacklist"
 CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 CUST_WAN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan.whitelist"
 CUST_TUN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn.whitelist"
-TMP_FILE="/tmp/$SC_NAME.tmp"
 TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
@@ -1061,7 +1060,6 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
   [ -e "$BL_FILE" ] && /bin/rm -f "$BL_FILE"
   [ -e "$WL_FILE" ] && /bin/rm -f "$WL_FILE"
   [ $VERBOSE ] && echo "- Removed directives files."
-  [ -e "$TMP_FILE" ] && /bin/rm -f "$TMP_FILE"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
 }
@@ -1198,7 +1196,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 
 info() { $DEBUG && debug "info"
   echo -e "\033[1;36mInfo:\033[0m"
-  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ] && [ -d $(dirname "$TMP_FILE") ];
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ]
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
