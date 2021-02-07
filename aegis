@@ -135,7 +135,7 @@ get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
-  echo $_IP|"$IPR_BIN" -
+  echo $_IP|$IPR_BIN -
 }
 
 # ---------------------------------------------
@@ -241,13 +241,10 @@ _cipset_trap() { $DEBUG && debug "_cipset_trap"; _cipset_end; exit; }
 _cipset_init() { _CIPSET_DIR=$(/bin/mktemp -d "/tmp/${SC_ABR}_XXXXXX"); trap "_cipset_trap" TERM INT; $DEBUG && debug "_cipset_init (dir: $_CIPSET_DIR)"; } 2>>"$STDERR"
 _cipset_end() { if [ -d "$_CIPSET_DIR" ]; then /bin/rm -rf $_CIPSET_DIR; fi; trap - TERM INT; $DEBUG && debug "_cipset_end"; } 2>>"$STDERR"
 _cipset_copy_set() { $DEBUG && debug "_cipset_copy_set $*"
-  if [ "$IPR_BIN" ]
-    then return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1)
-    else return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF'|/usr/bin/sort >"$_CIPSET_DIR/$1"; } 3>&1)
-  fi
+  return $({ { ipset -q -L "$1" 3>&1; echo $? >&3; }|/usr/bin/awk 'NR==1,/Members:/ {next};NF' >"$_CIPSET_DIR/$1"; } 3>&1)
 } 2>>"$STDERR"
 _cipset_diff_set_file() { $DEBUG && debug "_cipset_diff_set_file $*"
-  if [ "$IPR_BIN" ]; then $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"; else /usr/bin/diff -q "$_CIPSET_DIR/$1" "$2" >/dev/null; fi
+  $IPR_BIN --quiet "$_CIPSET_DIR/$1" --diff "$2"
   return $?
 } 2>>"$STDERR"
 _cipset_swap_set_file() { $DEBUG && debug "_cipset_swap_set_file $*"
@@ -260,13 +257,10 @@ _cipset_create_set_file() { $DEBUG && debug "_cipset_create_set_file $*"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
 } 2>>"$STDERR"
 _cipset_inet_in_bl() { $DEBUG && debug "_cipset_inet_in_bl $*"
-  [ -z "$IPR_BIN" ] && return 0 # we return true because without iprange, we are not checking thus we want the BP
-  [ -z "$(echo "$1" | iprange "$_CIPSET_DIR/$IPSET_BL_NAME" --common - )" ] && return 1 || return 0
+  [ -z "$(echo "$1" | $IPR_BIN "$_CIPSET_DIR/$IPSET_BL_NAME" --common - )" ] && return 1 || return 0
 } 2>>"$STDERR"
 _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
-  if [ "$IPR_BIN" ]; then $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2
-  else /bin/grep -oE '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/([0-9]{1,2})' "$_CIPSET_DIR/$1"|/usr/bin/awk -F / '{ count[$2]++ } END { for (mask in count) total+=count[mask]*2^(32-mask); print total }'
-  fi
+  $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2
 } 2>>"$STDERR"
 
 ###############################################
