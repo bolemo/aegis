@@ -1187,7 +1187,7 @@ info() { $DEBUG && debug "info"
     else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
   fi
   # check iprange binary
-  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo "- 'iprange' is not installed."
+  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo -e "\033[31m! iprange is not installed!\033[0m"
   # check web compagnon
   check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
 }
