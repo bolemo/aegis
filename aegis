@@ -268,8 +268,8 @@ process_directive {
       _NFO=$INFO_DIR__SWAP
     else _NFO=$INFO_DIR__KEEP # else keeping existing ipset
     fi
-  elif [ -r "$WAN_BL_FILE" ]; then _RET=0 # file exists, so creating ipset from it
-      _cipset_create_set_file $IPSET_WAN_BL_NAME $WAN_BL_FILE
+  elif [ -r "$2" ]; then _RET=0 # file exists, so creating ipset from it
+      _cipset_create_set_file $1 $2
       _NFO=$INFO_DIR__LOAD
   else _RET=1; _NFO=$INFO_DIR__DEST # no file
   fi
@@ -814,7 +814,7 @@ shield_up() { $DEBUG && debug "shield_up"
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
-    [ -r "$BL_FILE" ] || _warn "$BL_FILE not readable!" 1
+    [ -r "$ALL_BL_FILE" ] || _warn "$BL_FILE not readable!" 1
     [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
@@ -986,7 +986,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 
 info() { $DEBUG && debug "info"
   echo -e "\033[1;36mInfo:\033[0m"
-  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$BL_FILE") ]
+  if [ -r "$SRC_LIST" ] && [ -d $(dirname "$ALL_BL_FILE") ]
     then echo -n "- '$SC_NAME' version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! Something is wrong with installation!\033[0m"
   fi
