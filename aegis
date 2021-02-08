@@ -407,7 +407,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       if $_WWL; then
         if $_RELOAD_WTD; then _RELOAD=true
         # checking if ipset and file are identical
-        elif _cipset_diff_set_file $IPSET_WAN_WL_NAME $WL_FILE
+        elif _cipset_diff_set_file $IPSET_WAN_WL_NAME $WAN_WL_FILE
           then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_SAME))
           else _RELOAD=true
         fi
