@@ -9,33 +9,34 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.10"
+SC_VERS="1.7.0"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
 IPR_BIN="$(/usr/bin/which iprange)"
 IPT_COM='iptables'
 IPT_BIN="/usr/sbin/$IPT_COM"
-IPTBL_SRC="${SC_ABR}_src"
+#IPTBL_SRC="${SC_ABR}_src"
 IPTBL_WAN_SRC="${SC_ABR}_wan_src"
 IPTBL_TUN_SRC="${SC_ABR}_vpn_src"
-IPTBL_DST="${SC_ABR}_dst"
+#IPTBL_DST="${SC_ABR}_dst"
 IPTBL_WAN_DST="${SC_ABR}_wan_dst"
 IPTBL_TUN_DST="${SC_ABR}_vpn_dst"
-IPSET_BL_NAME="${SC_ABR}_bl"
+IPSET_BL_NAME="${SC_ABR}_all_bl"
 IPSET_WAN_BL_NAME="${SC_ABR}_wan_bl"
-IPSET_TUN_BL_NAME="${SC_ABR}_vpn__bl"
-IPSET_WL_NAME="${SC_ABR}_wl"
+IPSET_TUN_BL_NAME="${SC_ABR}_vpn_bl"
+IPSET_WL_NAME="${SC_ABR}_all_wl"
 IPSET_WAN_WL_NAME="${SC_ABR}_wan_wl"
 IPSET_TUN_WL_NAME="${SC_ABR}_vpn_wl"
-IPSET_TMP="${IPSET_BL_NAME}_tmp"
+IPSET_TMP="${SC_ABR}_tmp"
 ROOT_DIR="/opt/bolemo"
-BL_FILE="$ROOT_DIR/etc/${SC_NAME}.bl.directives"
-WAN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}.wan.bl.directives"
-TUN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}.vpn.bl.directives"
-WL_FILE="$ROOT_DIR/etc/${SC_NAME}.wl.directives"
-WAN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}.wan.wl.directives"
-TUN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}.vpn.wl.directives"
+PETC_DIR="$ROOT_DIR/etc/.${SC_ABR}"
+BL_FILE="$PETC_DIR/all.bl.dir"
+WAN_BL_FILE="$PETC_DIR/wan.bl.dir"
+TUN_BL_FILE="$PETC_DIR/tun.bl.dir"
+WL_FILE="$PETC_DIR/all.bp.dir"
+WAN_WL_FILE="$PETC_DIR/wan.bp.dir"
+TUN_WL_FILE="$PETC_DIR/tun.bp.dir"
 INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
@@ -543,8 +544,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_DWBL && ipset -q destroy "$IPSET_WAN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
   $_DTBL && ipset -q destroy "$IPSET_TUN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
   $_DWL  && ipset -q destroy "$IPSET_WL_NAME"     && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
-  $_DWWL && ipset -q destroy "$IPSET_WL_WAN_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
-  $_DTWL && ipset -q destroy "$IPSET_WL_TUN_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
+  $_DWWL && ipset -q destroy "$IPSET_WAN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
+  $_DTWL && ipset -q destroy "$IPSET_TUN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
   
   #Log daemon
   if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
@@ -585,13 +586,13 @@ _pm() { $DEBUG && debug "_pm $*"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
-SRC_BL_CACHE="$ROOT_DIR/etc/$SC_NAME.bl.src.cache"
+SRC_BL_CACHE="$PETC_DIR/all.src.bl.cache"
 CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
-CUST_WAN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan.blacklist"
-CUST_TUN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn.blacklist"
+CUST_WAN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan-blacklist"
+CUST_TUN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn-blacklist"
 CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
-CUST_WAN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan.whitelist"
-CUST_TUN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn.whitelist"
+CUST_WAN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan-whitelist"
+CUST_TUN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn-whitelist"
 TMP_HTML="/tmp/$SC_NAME-html.tmp"
 WWW_PATH="$ROOT_DIR/www"
 FWS_DIR="/opt/scripts"
@@ -909,6 +910,7 @@ EOF
 sc_init() { $DEBUG && debug "sc_init"
   check_path || set_path
   [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc"
+  [ -d "$PETC_DIR" ] || /bin/mkdir "$PETC_DIR"
   check_conf || set_conf
   [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH"
   [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo'
@@ -1033,10 +1035,8 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
   ipset -q destroy "$IPSET_WL_NAME"
   ipset -q destroy "$IPSET_TMP"
   [ $VERBOSE ] && echo "- Cleaned ipsets."
-  [ -e "$SRC_BL_CACHE" ] && /bin/rm -f "$SRC_BL_CACHE"
-  [ -e "$BL_FILE" ] && /bin/rm -f "$BL_FILE"
-  [ -e "$WL_FILE" ] && /bin/rm -f "$WL_FILE"
-  [ $VERBOSE ] && echo "- Removed directives files."
+  [ -e "$PETC_DIR" ] && /bin/rm -rf "$PETC_DIR"
+  [ $VERBOSE ] && echo "- Removed directives cache."
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   [ $VERBOSE ] && echo -e "- Removed temporary files.\n- Done."
 }
