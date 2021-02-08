@@ -32,10 +32,10 @@ IPSET_TUN_WL_NAME="${SC_ABR}_vpn_wl"
 IPSET_TMP="${SC_ABR}_tmp"
 ROOT_DIR="/opt/bolemo"
 PETC_DIR="$ROOT_DIR/etc/.${SC_ABR}"
-BL_FILE="$PETC_DIR/all.bl.dir"
+ALL_BL_FILE="$PETC_DIR/all.bl.dir"
 WAN_BL_FILE="$PETC_DIR/wan.bl.dir"
 TUN_BL_FILE="$PETC_DIR/tun.bl.dir"
-WL_FILE="$PETC_DIR/all.bp.dir"
+ALL_WL_FILE="$PETC_DIR/all.bp.dir"
 WAN_WL_FILE="$PETC_DIR/wan.bp.dir"
 TUN_WL_FILE="$PETC_DIR/tun.bp.dir"
 INFO_FILE="/tmp/${SC_ABR}_status"
@@ -285,10 +285,10 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); else _TIF=false; fi
   _cipset_init
   # creating ipset ALL blocklist if needed
-  process_directive $IPSET_ALL_BL_NAME $BL_FILE && _ABL=true || _ABL=false
+  process_directive $IPSET_ALL_BL_NAME $ALL_BL_FILE && _ABL=true || _ABL=false
   NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
   # creating ipset ALL whitelist if needed
-  process_directive $IPSET_ALL_WL_NAME $WL_FILE && _AWL=true || _AWL=false
+  process_directive $IPSET_ALL_WL_NAME $ALL_WL_FILE && _AWL=true || _AWL=false
   NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
   if $_WIF; then
     # creating ipset WAN blocklist if needed
@@ -897,7 +897,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   if [ -s "$TMP_DIR/all.bl" ]; then
     [ $VERBOSE ] && echo "- Reducing directives..."
-    $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.bl" >"$BL_FILE"
+    $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.bl" >"$ALL_BL_FILE"
   else
     _warn "We have no blocking directives! Exiting!" 1
   fi
@@ -912,7 +912,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   if [ -s "$TMP_DIR/all.pro.wl" ]; then
     [ $VERBOSE ] && echo "- Reducing directives..."
-    $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.pro.wl" >"$WL_FILE"
+    $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.pro.wl" >"$ALL_WL_FILE"
   else
     [ $VERBOSE ] && echo "- No IP in common with blocking directives, skipping bypassing directives."
     /bin/rm -f "$WL_FILE" 2>/dev/null
