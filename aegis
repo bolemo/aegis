@@ -250,7 +250,7 @@ clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_
 #    ENGINE-START
 #
 ###############################################
-process_directive {
+process_directive() {
 # $1: IPSET / $2: FILE
   if _cipset_copy_set $1; then # an ipset is already loaded
     if [ -r "$2" ]; then _RET=0
@@ -283,13 +283,16 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_IPS=0; NFO_IPT=0
   if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF)); else _WIF=false; fi
   if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); else _TIF=false; fi
+  
   _cipset_init
+  
   # creating ipset ALL blocklist if needed
   process_directive $IPSET_ALL_BL_NAME $ALL_BL_FILE && _ABL=true || _ABL=false
   NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
   # creating ipset ALL whitelist if needed
   process_directive $IPSET_ALL_WL_NAME $ALL_WL_FILE && _AWL=true || _AWL=false
   NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
+  
   if $_WIF; then
     # creating ipset WAN blocklist if needed
     process_directive $IPSET_WAN_BL_NAME $WAN_BL_FILE && _WBL=true || _WBL=false
@@ -297,8 +300,11 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     # creating ipset WAN whitelist if needed
     process_directive $IPSET_WAN_WL_NAME $WAN_WL_FILE && _WWL=true || _WWL=false
     NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
-  else _WBL=false; _WWL=false
-  fi
+    if ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
+      if _cipset_inet_in_bl $WAN_INET $IPSET_WAN_BL_NAME; then NFO_IPT=$((NFO_IPT+INFO_IPT_WIB)); _WBW=true      
+    else _WBW=false; fi; else _WBW=false; fi
+  else _WBL=false; _WWL=false; _WBW=false; fi
+  
   if $_TIF; then
     # creating ipset TUN blocklist if needed
     process_directive $IPSET_TUN_BL_NAME $TUN_BL_FILE && _TBL=true || _TBL=false
@@ -306,19 +312,11 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     # creating ipset TUN whitelist if needed
     process_directive $IPSET_TUN_WL_NAME $TUN_WL_FILE && _TWL=true || _TWL=false
     NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
-  else _TBL=false; _TWL=false
-  fi
-  
-  if $_WIF; then
-    if ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
-      if _cipset_inet_in_bl $WAN_INET $IPSET_WAN_BL_NAME; then NFO_IPT=$((NFO_IPT+INFO_IPT_WIB)); _WBW=true      
-    else _WBW=false; fi; else _WBW=false; fi
-  else _WBW=false; fi
-  if $_TIF; then
     if ! sc_conf get tun.no_bypass >/dev/null; then TUN_INET=$(inet_for_if $TUN_IF)
       if _cipset_inet_in_bl $TUN_INET $IPSET_TUN_BL_NAME; then NFO_IPT=$((NFO_IPT+INFO_IPT_TIB)); _TBW=true
     else _TBW=false; fi; else _TBW=false; fi
-  else _TBW=false; fi
+  else _TBL=false; _TWL=false; _TBW=false; fi
+  
   if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG)); else _LOG=false; fi
   $_WL && NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
   
