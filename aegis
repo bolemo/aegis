@@ -60,51 +60,26 @@ INFO_FROM_FWS=1       # _ x
 INFO_FROM_PM=2        # x _
 INFO_FROM_SC=3        # x x
 
-# INFO IPSET (15 bits)
-INFO_IPS_SHIFT=2
-INFO_IPS_MASK=31
-                           # . . . . . . . . . . . . . _ _  PBM, BL FILE MISSING
-INFO_IPS_BL_SAME=1         # . . . . . . . . . . . . . _ x  KEEP
-INFO_IPS_BL_MISS=2         # . . . . . . . . . . . . . x _  KEEP
-INFO_IPS_BL_LOAD=3         # . . . . . . . . . . . . . x x
-INFO_IPS_BL_MASK=3         # . . . . . . . . . . . . . x x
+# INFO DIRECTIVES (18 bits)
+INFO_DIR_SHIFT=2
+INFO_DIR_MASK=524287
 
-INFO_IPS_WAN_BL_SAME=4     # . . . . . . . . . . . _ x . .  KEEP
-INFO_IPS_WAN_BL_MISS=8     # . . . . . . . . . . . x _ . .  DEL
-INFO_IPS_WAN_BL_LOAD=12    # . . . . . . . . . . . x x . .
-INFO_IPS_WAN_BL_MASK=12    # . . . . . . . . . . . x x . .
+INFO_DIR__SAME=1   # _ _ x SAME => KEEP
+INFO_DIR__KEEP=2   # _ x _ KEEP
+INFO_DIR__LOAD=4   # x _ _
+INFO_DIR__SWAP=5   # x _ x RELOAD
+INFO_DIR__DEST=6   # x x _ => was there, was destroyed
+                   # _ _ _ => was not there, was not loaded
+INFO_DIR__MASK=7   # x x x
 
-INFO_IPS_TUN_BL_SAME=16    # . . . . . . . . . _ x . . . .  KEEP
-INFO_IPS_TUN_BL_MISS=32    # . . . . . . . . . x _ . . . .  DEL
-INFO_IPS_TUN_BL_LOAD=48    # . . . . . . . . . x x . . . .
-INFO_IPS_TUN_BL_MASK=48    # . . . . . . . . . x x . . . .
-
-INFO_IPS_WL_SAME=64        # . . . . . . _ . x . . . . . .  SAME => KEEP
-INFO_IPS_WL_KEEP=128       # . . . . . . _ x . . . . . . .  KEEP
-INFO_IPS_WL_LOAD=256       # . . . . . . x _ _ . . . . . .
-INFO_IPS_WL_SWAP=320       # . . . . . . x _ x . . . . . . = RELOAD
-INFO_IPS_WL_DEL=384        # . . . . . . x x _ . . . . . . => was there, was deleted
-                           # . . . . . . _ _ _ . . . . . . => was not there, was not loaded
-INFO_IPS_WL_MASK=448       # . . . . . . x x x . . . . . .
-
-INFO_IPS_WAN_WL_SAME=512   # . . . _ . x . . . . . . . . .  SAME => KEEP
-INFO_IPS_WAN_WL_KEEP=1024  # . . . _ x . . . . . . . . . .  KEEP
-INFO_IPS_WAN_WL_LOAD=2048  # . . . x _ _ . . . . . . . . .
-INFO_IPS_WAN_WL_SWAP=2560  # . . . x _ x . . . . . . . . . = RELOAD
-INFO_IPS_WAN_WL_DEL=3072   # . . . x x _ . . . . . . . . . => was there, was deleted
-                           # . . . _ _ _ . . . . . . . . . => was not there, was not loaded
-INFO_IPS_WAN_WL_MASK=3584  # . . . x x x . . . . . . . . .
-
-INFO_IPS_TUN_WL_SAME=4096  # _ . x . . . . . . . . . . . .  SAME => KEEP
-INFO_IPS_TUN_WL_KEEP=8192  # _ x . . . . . . . . . . . . .  KEEP
-INFO_IPS_TUN_WL_LOAD=16384 # x _ _ . . . . . . . . . . . .
-INFO_IPS_TUN_WL_SWAP=20480 # x _ x . . . . . . . . . . . . = RELOAD
-INFO_IPS_TUN_WL_DEL=24576  # x x _ . . . . . . . . . . . . => was there, was deleted
-                           # _ _ _ . . . . . . . . . . . . => was not there, was not loaded
-INFO_IPS_TUN_WL_MASK=28672 # x x x . . . . . . . . . . . .
+INFO_DIR_ALL=0
+INFO_DIR_WAN=6
+INFO_DIR_TUN=12
+INFO_DIR_BL=0
+INFO_DIR_WL=3
 
 # INFO IPTABLES (8 bits)
-INFO_IPT_SHIFT=17
+INFO_IPT_SHIFT=20
 INFO_IPT_MASK=255
 INFO_IPT_KEEP=1       # . . . . . . . x
 INFO_IPT_RUN=2        # . . . . . . x .
@@ -120,7 +95,7 @@ INFO_IPT_WL=64        # . x . . . . . .
 INFO_IPT_LOG=128      # x . . . . . . .
 
 # INFO LOGD (2 bits) and _logd_start return code
-INFO_LOGD_SHIFT=25
+INFO_LOGD_SHIFT=28
 INFO_LOGD_STARTED=0        # _ _
 INFO_LOGD_STOPPED=1        # _ x
 INFO_LOGD_KEEP_ON=2        # x _
@@ -275,6 +250,31 @@ clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_
 #    ENGINE-START
 #
 ###############################################
+process_directive {
+# $1: IPSET / $2: FILE
+  if _cipset_copy_set $1; then # an ipset is already loaded
+    if [ -r "$2" ]; then _RET=0
+      if $_RELOAD_WTD; then _RELOAD=true
+      elif _cipset_diff_set_file $1 $2 # checking if ipset and file are identical
+        then _RELOAD=false; _NFO=$INFO_DIR__SAME
+        else _RELOAD=true
+      fi
+    else # no file
+      _RELOAD=false
+      _NFO=$INFO_DIR__MISS
+    fi
+    if $_RELOAD; then # reload is asked for; so need to swap ipset
+      _cipset_swap_set_file $1 $2
+      _NFO=$INFO_DIR__SWAP
+    else _NFO=$INFO_DIR__KEEP # else keeping existing ipset
+    fi
+  elif [ -r "$WAN_BL_FILE" ]; then _RET=0 # file exists, so creating ipset from it
+      _cipset_create_set_file $IPSET_WAN_BL_NAME $WAN_BL_FILE
+      _NFO=$INFO_DIR__LOAD
+  else _RET=1; _NFO=$INFO_DIR__DEST # no file
+  fi
+  echo $_NFO; return $_RET
+}
 
 shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
@@ -285,176 +285,28 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); else _TIF=false; fi
   _cipset_init
   # creating ipset ALL blocklist if needed
-  if _cipset_copy_set $IPSET_ALL_BL_NAME; then
-    # an ipset blocklist is already loaded
-    if [ -r "$BL_FILE" ]; then
-      if $_RELOAD_WTD; then _RELOAD=true
-      # checking if ipset and file are identical
-      elif _cipset_diff_set_file $IPSET_ALL_BL_NAME $BL_FILE
-        then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
-        else _RELOAD=true
-      fi
-    else
-      # blocklist file is missing!
-      _RELOAD=false
-      NFO_IPS=$((NFO_IPS+INFO_IPS_BL_MISS))
-    fi
-    if $_RELOAD; then
-    # reload is asked for; so need to swap ipset
-      _cipset_swap_set_file $IPSET_ALL_BL_NAME $BL_FILE
-      NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
-    # else keeping existing blocklist
-    fi
-  elif [ -r "$BL_FILE" ]; then
-    # netset file exists, so creating blocklist ipset from it
-      _cipset_create_set_file $IPSET_ALL_BL_NAME $BL_FILE
-      NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
-  else # no netset file, exiting with _IPS=0
-    $DEBUG && debug "no ipset or file blocking directives! Exiting..."; _exit 1
-  fi
-  
-  # creating ipset WAN blocklist if needed
+  process_directive $IPSET_ALL_BL_NAME $BL_FILE && _ABL=true || _ABL=false
+  NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
+  # creating ipset ALL whitelist if needed
+  process_directive $IPSET_ALL_WL_NAME $WL_FILE && _AWL=true || _AWL=false
+  NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
   if $_WIF; then
-    if _cipset_copy_set $IPSET_WAN_BL_NAME; then
-      # an ipset blocklist is already loaded
-      if [ -r "$WAN_BL_FILE" ]; then _WBL=true
-        if $_RELOAD_WTD; then _RELOAD=true
-        # checking if ipset and file are identical
-        elif _cipset_diff_set_file $IPSET_WAN_BL_NAME $WAN_BL_FILE
-          then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_BL_SAME))
-          else _RELOAD=true
-        fi
-      else # no WAN blocklist file
-        _RELOAD=false
-        NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_BL_MISS))
-      fi
-      if $_RELOAD; then
-      # reload is asked for; so need to swap ipset
-        _cipset_swap_set_file $IPSET_WAN_BL_NAME $WAN_BL_FILE
-        NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_BL_LOAD))
-      # else keeping existing blocklist
-      fi
-    elif [ -r "$WAN_BL_FILE" ]; then _WBL=true
-      # netset file exists, so creating blocklist ipset from it
-        _cipset_create_set_file $IPSET_WAN_BL_NAME $WAN_BL_FILE
-        NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_BL_LOAD))
-    else _WBL=false # no netset file, WAN blocklist is optionnal
-    fi
-  else _WBL=false
+    # creating ipset WAN blocklist if needed
+    process_directive $IPSET_WAN_BL_NAME $WAN_BL_FILE && _WBL=true || _WBL=false
+    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
+    # creating ipset WAN whitelist if needed
+    process_directive $IPSET_WAN_WL_NAME $WAN_WL_FILE && _WWL=true || _WWL=false
+    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
+  else _WBL=false; _WWL=false
   fi
-  
-  # creating ipset VPN blocklist if needed
   if $_TIF; then
-    if _cipset_copy_set $IPSET_TUN_BL_NAME; then _TBL=true
-      # an ipset blocklist is already loaded
-      if [ -r "$TUN_BL_FILE" ]; then
-        if $_RELOAD_WTD; then _RELOAD=true
-        # checking if ipset and file are identical
-        elif _cipset_diff_set_file $IPSET_TUN_BL_NAME $TUN_BL_FILE
-          then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_BL_SAME))
-          else _RELOAD=true
-        fi
-      else # no VPN blocklist file
-        _RELOAD=false
-        NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_BL_MISS))
-      fi
-      if $_RELOAD; then
-      # reload is asked for; so need to swap ipset
-        _cipset_swap_set_file $IPSET_TUN_BL_NAME $TUN_BL_FILE
-        NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_BL_LOAD))
-      # else keeping existing blocklist
-      fi
-    elif [ -r "$TUN_BL_FILE" ]; then _TBL=true
-      # netset file exists, so creating blocklist ipset from it
-        _cipset_create_set_file $IPSET_TUN_BL_NAME $TUN_BL_FILE
-        NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_BL_LOAD))
-    else _TBL=false # no netset file, TUN blocklist is optionnal
-    fi
-  else _TBL=false
-  fi
-  
-  # creating ipset whitelist if needed
-  [ -r "$WL_FILE" ] && _WL=true || _WL=false
-  if _cipset_copy_set $IPSET_ALL_WL_NAME; then
-    # ipset whitelist is already in place
-    if $_WL; then
-      if $_RELOAD_WTD; then _RELOAD=true
-      # checking if ipset and file are identical
-      elif _cipset_diff_set_file $IPSET_ALL_WL_NAME $WL_FILE
-        then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SAME))
-        else _RELOAD=true
-      fi
-      if $_RELOAD; then
-      # reload is asked for; so need to swap ipset
-        _cipset_swap_set_file $IPSET_ALL_WL_NAME $WL_FILE
-        NFO_IPS=$((NFO_IPS+INFO_IPS_WL_SWAP))
-      else
-      # else we want to keep it
-        NFO_IPS=$((NFO_IPS+INFO_IPS_WL_KEEP))
-      fi
-    fi
-  elif $_WL; then
-    # netset file exists, so creating whitelist ipset from it
-    _cipset_create_set_file $IPSET_ALL_WL_NAME $WL_FILE
-    NFO_IPS=$((NFO_IPS+INFO_IPS_WL_LOAD))
-  fi
-  
-  # creating ipset whitelist if needed
-  if $_WIF; then
-    [ -r "$WAN_WL_FILE" ] && _WWL=true || _WWL=false
-    if _cipset_copy_set $IPSET_WAN_WL_NAME; then
-      # ipset whitelist is already in place
-      if $_WWL; then
-        if $_RELOAD_WTD; then _RELOAD=true
-        # checking if ipset and file are identical
-        elif _cipset_diff_set_file $IPSET_WAN_WL_NAME $WAN_WL_FILE
-          then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_SAME))
-          else _RELOAD=true
-        fi
-        if $_RELOAD; then
-        # reload is asked for; so need to swap ipset
-          _cipset_swap_set_file $IPSET_WAN_WL_NAME $WAN_WL_FILE
-          NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_SWAP))
-        else
-        # else we want to keep it
-          NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_KEEP))
-        fi
-      fi
-    elif $_WWL; then
-      # netset file exists, so creating whitelist ipset from it
-      _cipset_create_set_file $IPSET_WAN_WL_NAME $WAN_WL_FILE
-      NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_LOAD))
-    fi
-  else _WWL=false
-  fi
-  
-  # creating ipset whitelist if needed
-  if $_TIF; then
-    [ -r "$TUN_WL_FILE" ] && _TWL=true || _TWL=false
-    if _cipset_copy_set $IPSET_TUN_WL_NAME; then
-      # ipset whitelist is already in place
-      if $_TWL; then
-        if $_RELOAD_WTD; then _RELOAD=true
-        # checking if ipset and file are identical
-        elif _cipset_diff_set_file $IPSET_TUN_WL_NAME $TUN_WL_FILE
-          then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_SAME))
-          else _RELOAD=true
-        fi
-        if $_RELOAD; then
-        # reload is asked for; so need to swap ipset
-          _cipset_swap_set_file $IPSET_TUN_WL_NAME $TUN_WL_FILE
-          NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_SWAP))
-        else
-        # else we want to keep it
-          NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_KEEP))
-        fi
-      fi
-    elif $_TWL; then
-      # netset file exists, so creating whitelist ipset from it
-      _cipset_create_set_file $IPSET_TUN_WL_NAME $TUN_WL_FILE
-      NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_LOAD))
-    fi
-  else _TWL=false
+    # creating ipset TUN blocklist if needed
+    process_directive $IPSET_TUN_BL_NAME $TUN_BL_FILE && _TBL=true || _TBL=false
+    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
+    # creating ipset TUN whitelist if needed
+    process_directive $IPSET_TUN_WL_NAME $TUN_WL_FILE && _TWL=true || _TWL=false
+    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
+  else _TBL=false; _TWL=false
   fi
   
   if $_WIF; then
