@@ -495,8 +495,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # TUN DST
   $_TBW && echo "-A $IPTBL_TUN_DST -d $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_TBL && echo "-A IPTBL_TUN_DST -m set ! --match-set $IPSET_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A IPTBL_TUN_DST -m set ! --match-set $IPSET_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] \""
@@ -504,17 +504,17 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # TUN SRC
   $_TBW && echo "-A $IPTBL_TUN_SRC -s $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_TBL && echo "-A IPTBL_TUN_SRC -m set ! --match-set $IPSET_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A IPTBL_TUN_SRC -m set ! --match-set $IPSET_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
-           echo "-A $IPTBL_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
+           echo "-A $IPTBL_TUN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
 
   # WAN DST
   $_WBW && echo "-A $IPTBL_WAN_DST -d $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_WBL && echo "-A IPTBL_WAN_DST -m set ! --match-set $IPSET_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A IPTBL_WAN_DST -m set ! --match-set $IPSET_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WAN_WL_NAME dst -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_DST -j LOG --log-prefix \"[$SC_ABR] \""
@@ -522,12 +522,12 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # WAN SRC
   $_WBW && echo "-A $IPTBL_WAN_SRC -s $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_WBL && echo "-A IPTBL_WAN_SRC -m set ! --match-set $IPSET_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A IPTBL_WAN_SRC -m set ! --match-set $IPSET_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
-           echo "-A $IPTBL_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
+           echo "-A $IPTBL_WAN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
   } >$WIPTF
 
   # creating the lock file to advertise that shield IS BEING (re)-built
