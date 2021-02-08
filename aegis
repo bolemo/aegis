@@ -275,8 +275,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
   NFO_IPS=0; NFO_IPT=0
-  if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF)); fi
-  if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); fi
+  if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF)); else _WIF=false; fi
+  if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); else _TIF=false; fi
   _cipset_init
   # creating ipset common blocklist if needed
   if _cipset_copy_set $IPSET_BL_NAME; then
@@ -400,7 +400,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   fi
   
   # creating ipset whitelist if needed
-  if $_WIF
+  if $_WIF; then
     [ -r "$WAN_WL_FILE" ] && _WWL=true || _WWL=false
     _DWWL=false
     if _cipset_copy_set $IPSET_WAN_WL_NAME; then
@@ -431,7 +431,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   fi
   
   # creating ipset whitelist if needed
-  if $_TIF
+  if $_TIF; then
     [ -r "$TUN_WL_FILE" ] && _TWL=true || _TWL=false
     _DTWL=false
     if _cipset_copy_set $IPSET_TUN_WL_NAME; then
