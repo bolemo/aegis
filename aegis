@@ -22,7 +22,7 @@ IPTBL_TUN_SRC="${SC_ABR}_vpn_src"
 #IPTBL_DST="${SC_ABR}_dst"
 IPTBL_WAN_DST="${SC_ABR}_wan_dst"
 IPTBL_TUN_DST="${SC_ABR}_vpn_dst"
-IPSET_BL_NAME="${SC_ABR}_all_bl"
+IPSET_ALL_BL_NAME="${SC_ABR}_all_bl"
 IPSET_WAN_BL_NAME="${SC_ABR}_wan_bl"
 IPSET_TUN_BL_NAME="${SC_ABR}_vpn_bl"
 IPSET_WL_NAME="${SC_ABR}_all_wl"
@@ -258,11 +258,14 @@ _cipset_create_set_file() { $DEBUG && debug "_cipset_create_set_file $*"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' "$_CIPSET_DIR/$1" | ipset restore
 } 2>>"$STDERR"
 _cipset_inet_in_bl() { $DEBUG && debug "_cipset_inet_in_bl $*"
-  [ -z "$(echo "$1" | $IPR_BIN "$_CIPSET_DIR/$IPSET_BL_NAME" --common - )" ] && return 1 || return 0
+  [ -z "$(echo "$1" | $IPR_BIN "$_CIPSET_DIR/$IPSET_ALL_BL_NAME" --common - )" ] && return 1 || return 0
 } 2>>"$STDERR"
 _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
   $IPR_BIN "$_CIPSET_DIR/$1" -C|/usr/bin/cut -d, -f2
 } 2>>"$STDERR"
+
+# ------- NON ENV SCRIPT WIDE FUNCTIONS -------
+clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_BIN -q -X "$SET"; done }
 
 ###############################################
 #
@@ -278,13 +281,13 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF)); else _WIF=false; fi
   if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); else _TIF=false; fi
   _cipset_init
-  # creating ipset common blocklist if needed
-  if _cipset_copy_set $IPSET_BL_NAME; then
+  # creating ipset ALL blocklist if needed
+  if _cipset_copy_set $IPSET_ALL_BL_NAME; then
     # an ipset blocklist is already loaded
     if [ -r "$BL_FILE" ]; then
       if $_RELOAD_WTD; then _RELOAD=true
       # checking if ipset and file are identical
-      elif _cipset_diff_set_file $IPSET_BL_NAME $BL_FILE
+      elif _cipset_diff_set_file $IPSET_ALL_BL_NAME $BL_FILE
         then _RELOAD=false; NFO_IPS=$((NFO_IPS+INFO_IPS_BL_SAME))
         else _RELOAD=true
       fi
@@ -295,20 +298,19 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     fi
     if $_RELOAD; then
     # reload is asked for; so need to swap ipset
-      _cipset_swap_set_file $IPSET_BL_NAME $BL_FILE
+      _cipset_swap_set_file $IPSET_ALL_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
     # else keeping existing blocklist
     fi
   elif [ -r "$BL_FILE" ]; then
     # netset file exists, so creating blocklist ipset from it
-      _cipset_create_set_file $IPSET_BL_NAME $BL_FILE
+      _cipset_create_set_file $IPSET_ALL_BL_NAME $BL_FILE
       NFO_IPS=$((NFO_IPS+INFO_IPS_BL_LOAD))
   else # no netset file, exiting with _IPS=0
     $DEBUG && debug "no ipset or file blocking directives! Exiting..."; _exit 1
   fi
   
   # creating ipset WAN blocklist if needed
-  _DWBL=false
   if $_WIF; then
     if _cipset_copy_set $IPSET_WAN_BL_NAME; then
       # an ipset blocklist is already loaded
@@ -320,7 +322,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
           else _RELOAD=true
         fi
       else # no WAN blocklist file
-        _DWBL=true
         _RELOAD=false
         NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_BL_MISS))
       fi
@@ -340,7 +341,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   fi
   
   # creating ipset VPN blocklist if needed
-  _DTBL=false
   if $_TIF; then
     if _cipset_copy_set $IPSET_TUN_BL_NAME; then _TBL=true
       # an ipset blocklist is already loaded
@@ -352,7 +352,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
           else _RELOAD=true
         fi
       else # no VPN blocklist file
-        _DTBL=true  #it will be destroyed later
         _RELOAD=false
         NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_BL_MISS))
       fi
@@ -373,7 +372,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   # creating ipset whitelist if needed
   [ -r "$WL_FILE" ] && _WL=true || _WL=false
-  _DWL=false
   if _cipset_copy_set $IPSET_WL_NAME; then
     # ipset whitelist is already in place
     if $_WL; then
@@ -391,7 +389,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
       # else we want to keep it
         NFO_IPS=$((NFO_IPS+INFO_IPS_WL_KEEP))
       fi
-    else _DWL=true  #it will be destroyed later
     fi
   elif $_WL; then
     # netset file exists, so creating whitelist ipset from it
@@ -402,7 +399,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   # creating ipset whitelist if needed
   if $_WIF; then
     [ -r "$WAN_WL_FILE" ] && _WWL=true || _WWL=false
-    _DWWL=false
     if _cipset_copy_set $IPSET_WAN_WL_NAME; then
       # ipset whitelist is already in place
       if $_WWL; then
@@ -420,7 +416,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
         # else we want to keep it
           NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_KEEP))
         fi
-      else _DWWL=true  #it will be destroyed later
       fi
     elif $_WWL; then
       # netset file exists, so creating whitelist ipset from it
@@ -433,7 +428,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   # creating ipset whitelist if needed
   if $_TIF; then
     [ -r "$TUN_WL_FILE" ] && _TWL=true || _TWL=false
-    _DTWL=false
     if _cipset_copy_set $IPSET_TUN_WL_NAME; then
       # ipset whitelist is already in place
       if $_TWL; then
@@ -451,7 +445,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
         # else we want to keep it
           NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_KEEP))
         fi
-      else _DTWL=true  #it will be destroyed later
       fi
     elif $_TWL; then
       # netset file exists, so creating whitelist ipset from it
@@ -495,8 +488,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # TUN DST
   $_TBW && echo "-A $IPTBL_TUN_DST -d $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] \""
@@ -504,8 +497,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # TUN SRC
   $_TBW && echo "-A $IPTBL_TUN_SRC -s $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
@@ -513,8 +506,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # WAN DST
   $_WBW && echo "-A $IPTBL_WAN_DST -d $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WAN_WL_NAME dst -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_DST -j LOG --log-prefix \"[$SC_ABR] \""
@@ -522,8 +515,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 
   # WAN SRC
   $_WBW && echo "-A $IPTBL_WAN_SRC -s $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
   $_WL &&  echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
@@ -540,12 +533,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
   fi
   
-  #Removing any trace of unused ipsets and if any
-  $_DWBL && ipset -q destroy "$IPSET_WAN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
-  $_DTBL && ipset -q destroy "$IPSET_TUN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
-  $_DWL  && ipset -q destroy "$IPSET_WL_NAME"     && NFO_IPS=$((NFO_IPS+INFO_IPS_WL_DEL))
-  $_DWWL && ipset -q destroy "$IPSET_WAN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_WAN_WL_DEL))
-  $_DTWL && ipset -q destroy "$IPSET_TUN_WL_NAME" && NFO_IPS=$((NFO_IPS+INFO_IPS_TUN_WL_DEL))
+  #Removing any trace of unused ipsets and if any (used ones won't be deleted)
+  clean_ipset
   
   #Log daemon
   if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
@@ -856,7 +845,6 @@ clean_web() { $DEBUG && debug "clean_web"
 strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$1"; }
 
 strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' $*; }
-
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
@@ -990,7 +978,7 @@ shield_down() { $DEBUG && debug "shield_down"
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
   _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
-  ipset -q destroy "$IPSET_BL_NAME"; ipset -q destroy "$IPSET_WL_NAME"; ipset -q destroy "$IPSET_TMP"; [ $VERBOSE ] && echo "- Cleaned ipsets."
+  clean_ipset; [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ $VERBOSE ] && echo "- Shield down."
 }
 
@@ -1005,9 +993,7 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
   _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
   [ $RM_LOG ] && { /bin/rm -f $LOG_FILE 2>/dev/null; [ $VERBOSE ] && echo "- Removed log file."; }
-  ipset -q destroy "$IPSET_BL_NAME"
-  ipset -q destroy "$IPSET_WL_NAME"
-  ipset -q destroy "$IPSET_TMP"
+  clean_ipset
   [ $VERBOSE ] && echo "- Cleaned ipsets."
   [ -e "$PETC_DIR" ] && /bin/rm -rf "$PETC_DIR"
   [ $VERBOSE ] && echo "- Removed directives cache."
