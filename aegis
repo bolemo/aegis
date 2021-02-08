@@ -915,7 +915,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.pro.wl" >"$ALL_WL_FILE"
   else
     [ $VERBOSE ] && echo "- No IP in common with blocking directives, skipping bypassing directives."
-    /bin/rm -f "$WL_FILE" 2>/dev/null
+    /bin/rm -f "$ALL_WL_FILE" 2>/dev/null
   fi
   
   # --------- WAN SPECIFIC LISTS ---------
