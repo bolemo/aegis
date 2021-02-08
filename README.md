@@ -5,11 +5,11 @@ Might work with several other Netgear routers supporting Voxel firmware as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.6.10
+1.7.0
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
-* Although not mandatory, the binary iprange is strongly recommanded to benefit some optimizations. If you are using the latest Voxel firmware, iprange is already preinstalled. If you are using an older firmware, it is possible to install iprange (either on the internal flash `/usr/bin`, or through Entware). The install script will offer to install iprange on the internal flash (R7800 and R9000 only for now, but Entware should support any model). You can decide to install it separately or not at all.
+* The binary iprange (included with latest Voxel's firmwares) is now mandatory. If for some reason you are using an older Voxel firmware, it is possible to install iprange (either on the internal flash `/usr/bin`, or through Entware), and in that case, the install script will offer to install iprange on the internal flash (R7800 and R9000 only) or Entware.
 * The script can be installed either on the router internal memory (no extra USB drive required) or an external (USB) drive (like the one on which you may have installed Entware). If installed on external drive (recommanded), it will survive firmware upgrades and factory resets.
 * This script will be creating `firewall-start.sh` in `/opt/scripts`; that is a way to define custom iptables in Voxel's Firmwares. If you are already using your own `/opt/scripts/firewall-start.sh`, a line will be added to it to allow this script to work. The clean process will remove that line leaving the rest of `/opt/scripts/firewall-start.sh` in place.
 * If installed on external drive, this script will be creating `post-mount.sh` in `(DRIVE)/autorun/scripts`; that is a way to automatically execute code when a drive is connected in Voxel's Firmwares. If you are already using your own `post-mount.sh` (using Entware for example), a line will be added to it to allow this script to automatically work after reboot when on external drive (this is not needed when in internal memory). The clean process will remove that line leaving the rest of `post-mount.sh` in place.
@@ -140,37 +140,10 @@ To stop logging, just use `aegis log -disable` (if aegis is up, it will desactiv
 
 ## iprange
 iprange is a great little utility dealing that is now part of the FireHOL project.
-Aegis works fine without iprange installed, but it is recommanded to install it as it allows great optimizations.
+Aegis needs iprange installed, as it allows great optimizations.
 
 **Since February 2021, Voxel's firmwares already include iprange.**
 
-The install script offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
-
-### without Entware
-If you did not install it from the install script, you can install manually.
-It has been kindly compiled by Voxel and does not require Entware or an external drive.
-
-* [firmware Addon for R7500/R7800]:
-
-`cd /opt/tmp`<br>
-`wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_ipq806x.ipk`<br>
-`/bin/opkg install iprange_1.0.4-1_ipq806x.ipk`<br>
-`rm iprange_1.0.4-1_ipq806x.ipk`
-
-* [firmware Addon for R8900/R9000]:
-
-`cd /opt/tmp`<br>
-`wget https://voxel-firmware.com/Downloads/iprange_1.0.4-1_r9000.ipk`<br>
-`/bin/opkg install iprange_1.0.4-1_r9000.ipk`<br>
-`rm iprange_1.0.4-1_r9000.ipk`
-
-### with Entware
-It has been kindly compiled by Voxel and ipk is available on his website:
-
-`cd /opt/tmp`<br>
-`wget http://voxel-firmware.com/Downloads/iprange_1.0.4-1_cortex-a15-3x.ipk`<br>
-`/opt/bin/opkg install iprange_1.0.4-1_cortex-a15-3x.ipk`<br>
-`rm iprange_1.0.4-1_cortex-a15-3x.ipk`
-
+wWith older firmwares, the install script wikl offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).`
 
 The source is here: https://github.com/firehol/iprange
