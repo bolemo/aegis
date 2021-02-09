@@ -282,8 +282,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
   NFO_IPS=0; NFO_IPT=0
-  if [ "$WAN_IF" ]; then _WIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_WIF)); else _WIF=false; fi
-  if [ "$TUN_IF" ]; then _TIF=true; NFO_IPT=$((NFO_IPT+INFO_IPT_TIF)); else _TIF=false; fi
+  [ "$WAN_IF" ] && _WIF=true || _WIF=false
+  [ "$TUN_IF" ] && _TIF=true || _TIF=false
   
   _cipset_init
   
@@ -302,7 +302,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     process_directive $IPSET_WAN_WL_NAME $WAN_WL_FILE && _WWL=true || _WWL=false
     NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
     if ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
-      if _cipset_inet_in_bl $WAN_INET $IPSET_WAN_BL_NAME; then NFO_IPT=$((NFO_IPT+INFO_IPT_WIB)); _WBW=true      
+      if _cipset_inet_in_bl $WAN_INET $IPSET_WAN_BL_NAME; then _WBW=true      
     else _WBW=false; fi; else _WBW=false; fi
   else _WBL=false; _WWL=false; _WBW=false; fi
   
@@ -314,12 +314,11 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
     process_directive $IPSET_TUN_WL_NAME $TUN_WL_FILE && _TWL=true || _TWL=false
     NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
     if ! sc_conf get tun.no_bypass >/dev/null; then TUN_INET=$(inet_for_if $TUN_IF)
-      if _cipset_inet_in_bl $TUN_INET $IPSET_TUN_BL_NAME; then NFO_IPT=$((NFO_IPT+INFO_IPT_TIB)); _TBW=true
+      if _cipset_inet_in_bl $TUN_INET $IPSET_TUN_BL_NAME; then _TBW=true
     else _TBW=false; fi; else _TBW=false; fi
   else _TBL=false; _TWL=false; _TBW=false; fi
   
-  if sc_conf get log.enabled >/dev/null; then _LOG=true; NFO_IPT=$((NFO_IPT+INFO_IPT_LOG)); else _LOG=false; fi
-  $_WL && NFO_IPT=$((NFO_IPT+INFO_IPT_WL))
+  sc_conf get log.enabled >/dev/null && _LOG=true || _LOG=false
   
   _cipset_end
   
@@ -344,7 +343,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_TBW && echo "-A $IPTBL_TUN_DST -d $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
   $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_WL &&  echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] \""
            echo "-A $IPTBL_TUN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
@@ -353,7 +352,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_TBW && echo "-A $IPTBL_TUN_SRC -s $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
   $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_WL &&  echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
            echo "-A $IPTBL_TUN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
@@ -362,7 +361,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_WBW && echo "-A $IPTBL_WAN_DST -d $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
   $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_WL &&  echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WAN_WL_NAME dst -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_DST -j LOG --log-prefix \"[$SC_ABR] \""
            echo "-A $IPTBL_WAN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
@@ -371,7 +370,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   $_WBW && echo "-A $IPTBL_WAN_SRC -s $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
   $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_WL &&  echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
            echo "-A $IPTBL_WAN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
@@ -381,8 +380,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   get_ipt; AIPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
   
   if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); else
-    /usr/bin/awk '$1=="-A"{sub(/-A/,"-D"); system("'$IPT_COM' -w "$0)}' $AIPTF
-    /usr/bin/awk '$1=="-A"{a[i++]="-I"substr($0,3); next} {system("'$IPT_COM' -w "$0)} END {while(i--){system("'$IPT_COM' -w "a[i])}}' $WIPTF
+    /usr/bin/awk '$1=="-A"{sub(/-A/,"-D"); system("'$IPT_BIN' -w "$0)}' $AIPTF
+    /usr/bin/awk '$1=="-A"{a[i++]="-I"substr($0,3); next} {system("'$IPT_BIN' -w "$0)} END {while(i--){system("'$IPT_BIN' -w "a[i])}}' $WIPTF
     get_ipt; echo "$_IPT" >$AIPTF
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
   fi
@@ -395,6 +394,17 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
+  
+  #Getting status fingerprint
+  NFO_FGP=0
+  $_WIF && NFO_FGP=$((NFO_FGP+1))
+  $_TIF && NFO_FGP=$((NFO_FGP+2))
+  $_LOG && NFO_FGP=$((NFO_FGP+4))
+  $_WBW && NFO_FGP=$((NFO_FGP+8))
+  $_WBL && NFO_FGP=$((NFO_FGP+16))
+  $_TBW && NFO_FGP=$((NFO_FGP+32))
+  $_TBL && NFO_FGP=$((NFO_FGP+64))
+  $_TWL && NFO_FGP=$((NFO_FGP+128))
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
   $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
