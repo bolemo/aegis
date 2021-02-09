@@ -1053,9 +1053,12 @@ WN_MASK=255  #8 bits
 
 chain_status() { $DEBUG && debug "chain_status $*"
 # $1: chain
-  case "$1" in *src) _DIR='-s'; _PUT='-i'; _RULE='DROP' ;;
-               *dst) _DIR='-d'; _PUT='-o'; _RULE='REJECT' ;;
-               *) _warn "invalid chain $1!" 1 ;; esac
+  case "$1" in *_src) _DIR='-s'; _PUT='-i'; _RULE='DROP' ;;
+               *_dst) _DIR='-d'; _PUT='-o'; _RULE='REJECT' ;;
+  esac
+  case "$1" in *_wan_*) _CIF='wan' ;;
+               *_tun_*) _CIF='tun' ;;
+  esac
   _CH_CK=0 _CH_PB=0
   _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $1")"
   _SL=$(echo $_CH_IPT|/usr/bin/cut -d: -f1)
