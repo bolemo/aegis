@@ -78,24 +78,15 @@ INFO_DIR_TUN=12
 INFO_DIR_BL=0
 INFO_DIR_WL=3
 
-# INFO IPTABLES (8 bits)
+# INFO IPTABLES (2 bits)
 INFO_IPT_SHIFT=20
 INFO_IPT_MASK=255
-INFO_IPT_KEEP=1       # . . . . . . . x
-INFO_IPT_RUN=2        # . . . . . . x .
-INFO_IPT_PBM=0        # . . . . . . _ _
-
-INFO_IPT_WIF=4        # . . . . . x . .
-INFO_IPT_TIF=8        # . . . . x . . .
-
-INFO_IPT_WIB=16       # . . . x . . . .
-INFO_IPT_TIB=32       # . . x . . . . .
-
-INFO_IPT_WL=64        # . x . . . . . .
-INFO_IPT_LOG=128      # x . . . . . . .
+INFO_IPT_KEEP=1       # . x
+INFO_IPT_RUN=2        # x .
+INFO_IPT_PBM=0        # _ _
 
 # INFO LOGD (2 bits) and _logd_start return code
-INFO_LOGD_SHIFT=28
+INFO_LOGD_SHIFT=22
 INFO_LOGD_STARTED=0        # _ _
 INFO_LOGD_STOPPED=1        # _ x
 INFO_LOGD_KEEP_ON=2        # x _
