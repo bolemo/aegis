@@ -80,13 +80,17 @@ INFO_DIR_WL=3
 
 # INFO IPTABLES (2 bits)
 INFO_IPT_SHIFT=20
-INFO_IPT_MASK=255
+INFO_IPT_MASK=3
 INFO_IPT_KEEP=1       # . x
 INFO_IPT_RUN=2        # x .
 INFO_IPT_PBM=0        # _ _
 
+# INFO SHIELD FINGERPRINT (6 bits)
+INFO_FGP_SHIFT=22
+INFO_FGP_MASK=31
+
 # INFO LOGD (2 bits) and _logd_start return code
-INFO_LOGD_SHIFT=22
+INFO_LOGD_SHIFT=28
 INFO_LOGD_STARTED=0        # _ _
 INFO_LOGD_STOPPED=1        # _ x
 INFO_LOGD_KEEP_ON=2        # x _
@@ -386,16 +390,15 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
   
-  #Getting status fingerprint
+  #Getting status fingerprint (6 bits)
   NFO_FGP=0
-  $_WIF && NFO_FGP=$((NFO_FGP+1))
-  $_TIF && NFO_FGP=$((NFO_FGP+2))
-  $_LOG && NFO_FGP=$((NFO_FGP+4))
-  $_WBW && NFO_FGP=$((NFO_FGP+8))
-  $_WBL && NFO_FGP=$((NFO_FGP+16))
-  $_TBW && NFO_FGP=$((NFO_FGP+32))
-  $_TBL && NFO_FGP=$((NFO_FGP+64))
-  $_TWL && NFO_FGP=$((NFO_FGP+128))
+  # no need to take _WIF ot _TIF in consideration as we have $WAN_IF and $TUN_IF
+  $_LOG && NFO_FGP=$((NFO_FGP+1))
+  $_WBW && NFO_FGP=$((NFO_FGP+2))
+  $_WBL && NFO_FGP=$((NFO_FGP+4))
+  $_TBW && NFO_FGP=$((NFO_FGP+8))
+  $_TBL && NFO_FGP=$((NFO_FGP+16))
+  $_TWL && NFO_FGP=$((NFO_FGP+32))
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
   $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
