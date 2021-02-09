@@ -252,6 +252,7 @@ clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_
 ###############################################
 process_directive() {
 # $1: IPSET / $2: FILE
+  _NFO=0
   if _cipset_copy_set $1; then # an ipset is already loaded
     if [ -r "$2" ]; then _RET=0
       if $_RELOAD_WTD; then _RELOAD=true
@@ -273,7 +274,7 @@ process_directive() {
       _NFO=$INFO_DIR__LOAD
   else _RET=1; _NFO=$INFO_DIR__DEST # no file
   fi
-  echo $_NFO; return $_RET
+  return $_RET
 }
 
 shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
@@ -1051,11 +1052,12 @@ WN_MASK=255  #8 bits
 # ---------------------------------------------
 
 chain_status() { $DEBUG && debug "chain_status $*"
-  if [ "$1" == 'src' ]; then _DIR='-s'; _PUT='-i'; _IPTBL_CH=$IPTBL_SRC; _RULE='DROP'
-                        else _DIR='-d'; _PUT='-o'; _IPTBL_CH=$IPTBL_DST; _RULE='REJECT'; fi
-  _CH_CK=0
-  _CH_PB=0
-  _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $_IPTBL_CH")"
+# $1: chain
+  case "$1" in *src) _DIR='-s'; _PUT='-i'; _RULE='DROP' ;;
+               *dst) _DIR='-d'; _PUT='-o'; _RULE='REJECT' ;;
+               *) _warn "invalid chain $1!" 1 ;; esac
+  _CH_CK=0 _CH_PB=0
+  _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $1")"
   _SL=$(echo $_CH_IPT|/usr/bin/cut -d: -f1)
   if [ "$_CH_IPT" ]; then
     _LL=$((_SL+$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
