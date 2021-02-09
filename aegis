@@ -429,10 +429,10 @@ SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
 SRC_BL_CACHE="$PETC_DIR/all.src.bl.cache"
-CUST_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
+CUST_ALL_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
 CUST_WAN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan-blacklist"
 CUST_TUN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn-blacklist"
-CUST_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
+CUST_ALL_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.whitelist"
 CUST_WAN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan-whitelist"
 CUST_TUN_WL_FILE="$ROOT_DIR/etc/${SC_NAME}*.vpn-whitelist"
 TMP_HTML="/tmp/$SC_NAME-html.tmp"
@@ -888,9 +888,9 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   
   # processing common custom blacklist if any
-  if ( for F in $CUST_BL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_ALL_BL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding global blocking directives from custom blocklist(s)..."
-    $IPR_BIN "$TMP_DIR/src.bl" $CUST_BL_FILE >"$TMP_DIR/all.bl"
+    $IPR_BIN "$TMP_DIR/src.bl" $CUST_ALL_BL_FILE >"$TMP_DIR/all.bl"
   elif [ $VERBOSE ]; then echo "- No custom global blocklist(s) found."
   fi
   if [ -s "$TMP_DIR/all.bl" ]; then
@@ -901,9 +901,9 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 
   # processing custom common whitelists if any
   :>"$TMP_DIR/all.wl"
-  if ( for F in $CUST_WL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_ALL_WL_FILE; do test -r $F || exit 1; done; ); then
     [ $VERBOSE ] && echo "Defining global bypassing directives from custom whitelist(s)..."
-    $IPR_BIN $CUST_WL_FILE >"$TMP_DIR/all.wl"
+    $IPR_BIN $CUST_ALL_WL_FILE >"$TMP_DIR/all.wl"
     $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/all.wl" >"$TMP_DIR/all.pro.wl"
   elif [ $VERBOSE ]; then echo "- No custom global whitelist(s) found."
   fi
