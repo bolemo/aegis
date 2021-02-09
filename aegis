@@ -325,7 +325,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   WIPTF=/tmp/aegis_wipt
   {
-  $_TIF && echo "-N $IPTBL_TUN_DST
+  $_TIF && echo "-N $IPTBL_TUN_DST"
   $_TIF && echo "-N $IPTBL_TUN_SRC"
   $_WIF && echo "-N $IPTBL_WAN_DST"
   $_WIF && echo "-N $IPTBL_WAN_SRC"
