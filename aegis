@@ -1156,14 +1156,23 @@ _status() { $DEBUG && debug "|---> _status"
   
   _cipset_end
   
+  read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
+  
+  if [ $_ODNA -eq $_DNA ]; then _CK=$((_CK+STA_DNA)); else
+  
+  fi
+  [ "$_OWAN" == "$_WAN" ]     && _CK=$((_CK+STA_WIF)) || _PB=$((_PB+STA_WIF))
+  [ "$_OWINET" == "$_WINET" ] && _CK=$((_CK+STA_WINET)) || _PB=$((_PB+STA_WINET))
+  [ "$_OTUN" == "$_TUN" ]     && _CK=$((_CK+STA_TIF)) || _PB=$((_PB+STA_TIF))
+  [ "$_OTINET" == "$_TINET" ] && _CK=$((_CK+STA_TINET)) || _PB=$((_PB+STA_TINET))
+  
   EIPTF=/tmp/aegis_eipt AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
   express_ipt_dna >$EIPTF
   express_ipt_dna "$INFO_FILE" >$OIPTF
-#  read _NFO _DNA _WAN _WINET _TUN _TINET <"$INFO_FILE"
   get_ipt; echo "$_IPT" >$AIPTF
-  
-  /usr/bin/diff -q $EIPTF $AIPTF >&- && echo 'E==A' # _CK=$((_CK+STA_IPT))
-  /usr/bin/diff -q $OIPTF $AIPTF >&- && echo 'O==A'
+ 
+  /usr/bin/diff -q $EIPTF $AIPTF >&- && _CK=$((_CK+STA_OIPT)) || _PB=$((_PB+STA_OIPT))
+  /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_EIPT)) || _PB=$((_PB+STA_EIPT))
   
   _WN=0; _PB=0
   _BLC=0; _WLC=0
