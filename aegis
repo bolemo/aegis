@@ -282,6 +282,7 @@ express_ipt_dna() { $DEBUG && debug "express_ipt_dna $*"
   $_WIF && echo "-A OUTPUT -o $_WAN -m comment --comment \"jump to $SC_ABR WAN dst chain\" -j $IPTBL_WAN_DST"
   $_TIF && echo "-A OUTPUT -o $_TUN -m comment --comment \"jump to $SC_ABR VPN dst chain\" -j $IPTBL_TUN_DST"
 
+  if $_TIF; then
   # TUN DST
   $_TBW && echo "-A $IPTBL_TUN_DST -d $_TINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
   if $_ABL; then
@@ -307,7 +308,9 @@ express_ipt_dna() { $DEBUG && debug "express_ipt_dna $*"
   $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
            echo "-A $IPTBL_TUN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
-
+  fi
+  
+  if $_WIF; then
   # WAN DST
   $_WBW && echo "-A $IPTBL_WAN_DST -d $_WINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
   if $_ABL; then
@@ -333,6 +336,7 @@ express_ipt_dna() { $DEBUG && debug "express_ipt_dna $*"
   $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
            echo "-A $IPTBL_WAN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
+  fi
 }
   
 ###############################################
