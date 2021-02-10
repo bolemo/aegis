@@ -95,16 +95,17 @@ INFO_LOGD_MASK=3
 
 # SHIELD DNA (8 bits)
 #DNA_SHIFT=
-DNA_MASK=255
+DNA_MASK=511
 
 DNA_LOG=1
-DNA_AWL=2
-DNA_WBW=4
-DNA_WBL=8
-DNA_WWL=16
-DNA_TBW=32
-DNA_TBL=64
-DNA_TWL=128
+DNA_ABL=2
+DNA_AWL=4
+DNA_WBW=8
+DNA_WBL=16
+DNA_WWL=32
+DNA_TBW=64
+DNA_TBL=128
+DNA_TWL=256
 
 # --------------- ENV FUNCTIONS ---------------
 
@@ -249,13 +250,14 @@ _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
 # ------- NON ENV SCRIPT WIDE FUNCTIONS -------
 clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_BIN -q -X "$SET"; done }
 
-express_shield_dna() { $DEBUG && debug "express_shield_dna $*"
+express_ipt_dna() { $DEBUG && debug "express_shield_dna $*"
 # $1: status file, if not: we already have vars
-if [ "$1" ]; then
-  read _NFO _DNA _WAN _WINET _TUN _TINET <"$1"
+  [ "$1" ] && read _NFO _DNA _WAN _WINET _TUN _TINET <"$1"
+  
   [ "$_WAN" ] && _WIF=true || _WIF=false
   [ "$_TUN" ] && _TIF=true || _TIF=false
   [ $((_DNA&DNA_LOG)) -ne 0 ] && _LOG=true || _LOG=false
+  [ $((_DNA&DNA_ABL)) -ne 0 ] && _ABL=true || _ABL=false
   [ $((_DNA&DNA_AWL)) -ne 0 ] && _AWL=true || _AWL=false
   [ $((_DNA&DNA_WBW)) -ne 0 ] && _WBW=true || _WBW=false
   [ $((_DNA&DNA_WBL)) -ne 0 ] && _WBL=true || _WBL=false
@@ -263,7 +265,6 @@ if [ "$1" ]; then
   [ $((_DNA&DNA_TBW)) -ne 0 ] && _TBW=true || _TBW=false
   [ $((_DNA&DNA_TBL)) -ne 0 ] && _TBL=true || _TBL=false
   [ $((_DNA&DNA_TWL)) -ne 0 ] && _TWL=true || _TWL=false
-fi
   
   $_TIF && echo "-N $IPTBL_TUN_DST"
   $_TIF && echo "-N $IPTBL_TUN_SRC"
@@ -353,100 +354,47 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
-  NFO_IPS=0; NFO_IPT=0
-  [ "$WAN_IF" ] && _WIF=true || _WIF=false
-  [ "$TUN_IF" ] && _TIF=true || _TIF=false
+  NFO_DIR=0 NFO_IPT=0 _DNA=0 _WAN=$WAN_IF _TUN=$TUN_IF
   
   _cipset_init
   
   # creating ipset ALL blocklist if needed
-  process_directive $IPSET_ALL_BL_NAME $ALL_BL_FILE && _ABL=true || _ABL=false
-  NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
+  process_directive $IPSET_ALL_BL_NAME $ALL_BL_FILE && _DNA=$((_DNA+DNA_ABL))
+  NFO_DIR=$((NFO_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
   # creating ipset ALL whitelist if needed
-  process_directive $IPSET_ALL_WL_NAME $ALL_WL_FILE && _AWL=true || _AWL=false
-  NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
+  process_directive $IPSET_ALL_WL_NAME $ALL_WL_FILE && _DNA=$((_DNA+DNA_AWL))
+  NFO_DIR=$((NFO_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
   
-  if $_WIF; then
+  if [ "$_WAN" ]; then
     # creating ipset WAN blocklist if needed
-    process_directive $IPSET_WAN_BL_NAME $WAN_BL_FILE && _WBL=true || _WBL=false
-    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
+    process_directive $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL))
+    NFO_DIR=$((NFO_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
     # creating ipset WAN whitelist if needed
-    process_directive $IPSET_WAN_WL_NAME $WAN_WL_FILE && _WWL=true || _WWL=false
-    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
-    if ! sc_conf get wan.no_bypass >/dev/null; then WAN_INET=$(inet_for_if $WAN_IF)
-      if _cipset_inet_in_bl $WAN_INET $IPSET_WAN_BL_NAME; then _WBW=true      
-    else _WBW=false; fi; else _WBW=false; fi
-  else _WBL=false; _WWL=false; _WBW=false; fi
+    process_directive $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
+    NFO_DIR=$((NFO_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
+    if ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
+      _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
+    fi
+  fi
   
-  if $_TIF; then
+  if [ "$_TUN" ]; then
     # creating ipset TUN blocklist if needed
-    process_directive $IPSET_TUN_BL_NAME $TUN_BL_FILE && _TBL=true || _TBL=false
-    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
+    process_directive $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL))
+    NFO_DIR=$((NFO_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
     # creating ipset TUN whitelist if needed
-    process_directive $IPSET_TUN_WL_NAME $TUN_WL_FILE && _TWL=true || _TWL=false
-    NFO_IPS=$((NFO_IPS+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
-    if ! sc_conf get tun.no_bypass >/dev/null; then TUN_INET=$(inet_for_if $TUN_IF)
-      if _cipset_inet_in_bl $TUN_INET $IPSET_TUN_BL_NAME; then _TBW=true
-    else _TBW=false; fi; else _TBW=false; fi
-  else _TBL=false; _TWL=false; _TBW=false; fi
+    process_directive $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
+    NFO_DIR=$((NFO_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
+    if ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
+      _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
+    fi
+  fi
   
-  sc_conf get log.enabled >/dev/null && _LOG=true || _LOG=false
+  sc_conf get log.enabled >/dev/null && _DNA=$((_DNA+DNA_LOG))
   
   _cipset_end
   
   WIPTF=/tmp/aegis_wipt
-  {
-  $_TIF && echo "-N $IPTBL_TUN_DST"
-  $_TIF && echo "-N $IPTBL_TUN_SRC"
-  $_WIF && echo "-N $IPTBL_WAN_DST"
-  $_WIF && echo "-N $IPTBL_WAN_SRC"
-
-  # IFO
-  $_WIF && echo "-A INPUT -i $WAN_IF -m comment --comment \"jump to $SC_ABR WAN src chain\" -j $IPTBL_WAN_SRC"
-  $_TIF && echo "-A INPUT -i $TUN_IF -m comment --comment \"jump to $SC_ABR VPN src chain\" -j $IPTBL_TUN_SRC"
-  $_WIF && echo "-A FORWARD -i $WAN_IF -m comment --comment \"jump to $SC_ABR WAN src chain\" -j $IPTBL_WAN_SRC"
-  $_WIF && echo "-A FORWARD -o $WAN_IF -m comment --comment \"jump to $SC_ABR WAN dst chain\" -j $IPTBL_WAN_DST"
-  $_TIF && echo "-A FORWARD -i $TUN_IF -m comment --comment \"jump to $SC_ABR VPN src chain\" -j $IPTBL_TUN_SRC"
-  $_TIF && echo "-A FORWARD -o $TUN_IF -m comment --comment \"jump to $SC_ABR VPN dst chain\" -j $IPTBL_TUN_DST"
-  $_WIF && echo "-A OUTPUT -o $WAN_IF -m comment --comment \"jump to $SC_ABR WAN dst chain\" -j $IPTBL_WAN_DST"
-  $_TIF && echo "-A OUTPUT -o $TUN_IF -m comment --comment \"jump to $SC_ABR VPN dst chain\" -j $IPTBL_TUN_DST"
-
-  # TUN DST
-  $_TBW && echo "-A $IPTBL_TUN_DST -d $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_AWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
-  $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
-  $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] \""
-           echo "-A $IPTBL_TUN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
-
-  # TUN SRC
-  $_TBW && echo "-A $IPTBL_TUN_SRC -s $TUN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_AWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
-  $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
-  $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
-           echo "-A $IPTBL_TUN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
-
-  # WAN DST
-  $_WBW && echo "-A $IPTBL_WAN_DST -d $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_AWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
-  $_WWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WAN_WL_NAME dst -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
-  $_LOG && echo "-A $IPTBL_WAN_DST -j LOG --log-prefix \"[$SC_ABR] \""
-           echo "-A $IPTBL_WAN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
-
-  # WAN SRC
-  $_WBW && echo "-A $IPTBL_WAN_SRC -s $WAN_INET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
-  $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
-        || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
-  $_AWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
-  $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
-  $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
-           echo "-A $IPTBL_WAN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
-  } >$WIPTF
+  express_ipt_dna >$WIPTF
 
   # creating the lock file to advertise that shield IS BEING (re)-built
   get_ipt; AIPTF=$SHIELD_LOCK; echo "$_IPT" >$AIPTF
@@ -462,12 +410,13 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   clean_ipset
   
   #Log daemon
-  if $_LOG; then _logd_start; else _logd_stop; fi; NFO_LOGD=$?
+  [ $((_DNA&DNA_LOG)) -ne 0 ] && _logd_start || _logd_stop
+  NFO_LOGD=$?
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
   
-  echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
+  echo -n "$((NFO_FROM+(NFO_DIR<<INFO_DIR_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $_DNA $_WAN $_WINET $_TUN $_TINET" >"$INFO_FILE"
   $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
 } 2>>"$STDERR"
 
