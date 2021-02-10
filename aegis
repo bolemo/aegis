@@ -85,17 +85,26 @@ INFO_IPT_KEEP=1       # . x
 INFO_IPT_RUN=2        # x .
 INFO_IPT_PBM=0        # _ _
 
-# INFO SHIELD FINGERPRINT (6 bits)
-INFO_FGP_SHIFT=22
-INFO_FGP_MASK=31
-
 # INFO LOGD (2 bits) and _logd_start return code
-INFO_LOGD_SHIFT=28
+INFO_LOGD_SHIFT=22
 INFO_LOGD_STARTED=0        # _ _
 INFO_LOGD_STOPPED=1        # _ x
 INFO_LOGD_KEEP_ON=2        # x _
 INFO_LOGD_KEEP_OFF=3       # x x
 INFO_LOGD_MASK=3
+
+# SHIELD DNA (8 bits)
+#DNA_SHIFT=
+DNA_MASK=255
+
+DNA_LOG=1
+DNA_AWL=2
+DNA_WBW=4
+DNA_WBL=8
+DNA_WWL=16
+DNA_TBW=32
+DNA_TBL=64
+DNA_TWL=128
 
 # --------------- ENV FUNCTIONS ---------------
 
@@ -240,6 +249,74 @@ _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
 # ------- NON ENV SCRIPT WIDE FUNCTIONS -------
 clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_BIN -q -X "$SET"; done }
 
+express_shield_dna() { $DEBUG && debug "express_shield_dna $*"
+# $1: status file, if not: we already have vars
+if [ "$1" ]; then
+  read _NFO _DNA _WAN _WINET _TUN _TINET <"$1"
+  [ "$_WAN" ] && _WIF=true || _WIF=false
+  [ "$_TUN" ] && _TIF=true || _TIF=false
+  [ $((_DNA&DNA_LOG)) -ne 0 ] && _LOG=true || _LOG=false
+  [ $((_DNA&DNA_AWL)) -ne 0 ] && _AWL=true || _AWL=false
+  [ $((_DNA&DNA_WBW)) -ne 0 ] && _WBW=true || _WBW=false
+  [ $((_DNA&DNA_WBL)) -ne 0 ] && _WBL=true || _WBL=false
+  [ $((_DNA&DNA_WWL)) -ne 0 ] && _WWL=true || _WWL=false
+  [ $((_DNA&DNA_TBW)) -ne 0 ] && _TBW=true || _TBW=false
+  [ $((_DNA&DNA_TBL)) -ne 0 ] && _TBL=true || _TBL=false
+  [ $((_DNA&DNA_TWL)) -ne 0 ] && _TWL=true || _TWL=false
+fi
+  
+  $_TIF && echo "-N $IPTBL_TUN_DST"
+  $_TIF && echo "-N $IPTBL_TUN_SRC"
+  $_WIF && echo "-N $IPTBL_WAN_DST"
+  $_WIF && echo "-N $IPTBL_WAN_SRC"
+
+  # IFO
+  $_WIF && echo "-A INPUT -i $_WAN -m comment --comment \"jump to $SC_ABR WAN src chain\" -j $IPTBL_WAN_SRC"
+  $_TIF && echo "-A INPUT -i $_TUN -m comment --comment \"jump to $SC_ABR VPN src chain\" -j $IPTBL_TUN_SRC"
+  $_WIF && echo "-A FORWARD -i $_WAN -m comment --comment \"jump to $SC_ABR WAN src chain\" -j $IPTBL_WAN_SRC"
+  $_WIF && echo "-A FORWARD -o $_WAN -m comment --comment \"jump to $SC_ABR WAN dst chain\" -j $IPTBL_WAN_DST"
+  $_TIF && echo "-A FORWARD -i $_TUN -m comment --comment \"jump to $SC_ABR VPN src chain\" -j $IPTBL_TUN_SRC"
+  $_TIF && echo "-A FORWARD -o $_TUN -m comment --comment \"jump to $SC_ABR VPN dst chain\" -j $IPTBL_TUN_DST"
+  $_WIF && echo "-A OUTPUT -o $_WAN -m comment --comment \"jump to $SC_ABR WAN dst chain\" -j $IPTBL_WAN_DST"
+  $_TIF && echo "-A OUTPUT -o $_TUN -m comment --comment \"jump to $SC_ABR VPN dst chain\" -j $IPTBL_TUN_DST"
+
+  # TUN DST
+  $_TBW && echo "-A $IPTBL_TUN_DST -d $_TINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
+  $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] \""
+           echo "-A $IPTBL_TUN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
+
+  # TUN SRC
+  $_TBW && echo "-A $IPTBL_TUN_SRC -s $_TINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
+  $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
+           echo "-A $IPTBL_TUN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
+
+  # WAN DST
+  $_WBW && echo "-A $IPTBL_WAN_DST -d $_WINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_WWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WAN_WL_NAME dst -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
+  $_LOG && echo "-A $IPTBL_WAN_DST -j LOG --log-prefix \"[$SC_ABR] \""
+           echo "-A $IPTBL_WAN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
+
+  # WAN SRC
+  $_WBW && echo "-A $IPTBL_WAN_SRC -s $_WINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
+        || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  $_AWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
+  $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
+  $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
+           echo "-A $IPTBL_WAN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
+}
+  
 ###############################################
 #
 #    ENGINE-START
@@ -389,16 +466,6 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
   /bin/rm -f "$WIPTF"
-  
-  #Getting status fingerprint (6 bits)
-  NFO_FGP=0
-  # no need to take _WIF ot _TIF in consideration as we have $WAN_IF and $TUN_IF
-  $_LOG && NFO_FGP=$((NFO_FGP+1))
-  $_WBW && NFO_FGP=$((NFO_FGP+2))
-  $_WBL && NFO_FGP=$((NFO_FGP+4))
-  $_TBW && NFO_FGP=$((NFO_FGP+8))
-  $_TBL && NFO_FGP=$((NFO_FGP+16))
-  $_TWL && NFO_FGP=$((NFO_FGP+32))
   
   echo -ne "$((NFO_FROM+(NFO_IPS<<INFO_IPS_SHIFT)+(NFO_IPT<<INFO_IPT_SHIFT)+(NFO_LOGD<<INFO_LOGD_SHIFT))) $WAN_IF $TUN_IF" > "$INFO_FILE"
   $DEBUG && debug "<---| shield_uprear [$INFO_FILE -> $(/bin/cat $INFO_FILE)]"
