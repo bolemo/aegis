@@ -283,8 +283,12 @@ express_ipt_dna() { $DEBUG && debug "express_shield_dna $*"
 
   # TUN DST
   $_TBW && echo "-A $IPTBL_TUN_DST -d $_TINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  if $_ABL; then
   $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  else
+  $_TBL && echo "-A $IPTBL_TUN_DST -m set ! --match-set $IPSET_TUN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  fi
   $_AWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] \""
@@ -292,8 +296,12 @@ express_ipt_dna() { $DEBUG && debug "express_shield_dna $*"
 
   # TUN SRC
   $_TBW && echo "-A $IPTBL_TUN_SRC -s $_TINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  if $_ABL; then
   $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  else
+  $_TBL && echo "-A $IPTBL_TUN_SRC -m set ! --match-set $IPSET_TUN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  fi
   $_AWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
@@ -301,8 +309,12 @@ express_ipt_dna() { $DEBUG && debug "express_shield_dna $*"
 
   # WAN DST
   $_WBW && echo "-A $IPTBL_WAN_DST -d $_WINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  if $_ABL; then
   $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_ALL_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  else
+  $_WBL && echo "-A $IPTBL_WAN_DST -m set ! --match-set $IPSET_WAN_BL_NAME dst -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  fi
   $_AWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_DST -m set --match-set $IPSET_WAN_WL_NAME dst -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_DST -j LOG --log-prefix \"[$SC_ABR] \""
@@ -310,8 +322,12 @@ express_ipt_dna() { $DEBUG && debug "express_shield_dna $*"
 
   # WAN SRC
   $_WBW && echo "-A $IPTBL_WAN_SRC -s $_WINET -m comment --comment \"$SC_ABR inet bypass\" -j RETURN"
+  if $_ABL; then
   $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN" \
         || echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_ALL_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  else
+  $_WBL && echo "-A $IPTBL_WAN_SRC -m set ! --match-set $IPSET_WAN_BL_NAME src -m comment --comment \"not in $SC_ABR blocklists\" -j RETURN"
+  fi
   $_AWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_WWL && echo "-A $IPTBL_WAN_SRC -m set --match-set $IPSET_WAN_WL_NAME src -m comment --comment \"in $SC_ABR WAN whitelist\" -j RETURN"
   $_LOG && echo "-A $IPTBL_WAN_SRC -j LOG --log-prefix \"[$SC_ABR] \""
@@ -326,8 +342,8 @@ express_ipt_dna() { $DEBUG && debug "express_shield_dna $*"
 process_directive() {
 # $1: IPSET / $2: FILE
   _NFO=0
-  if _cipset_copy_set $1; then # an ipset is already loaded
-    if [ -r "$2" ]; then _RET=0
+  if _cipset_copy_set $1; then _RET=0 # an ipset is already loaded
+    if [ -r "$2" ]; then
       if $_RELOAD_WTD; then _RELOAD=true
       elif _cipset_diff_set_file $1 $2 # checking if ipset and file are identical
         then _RELOAD=false; _NFO=$INFO_DIR__SAME
@@ -1071,72 +1087,37 @@ WN_MASK=255  #8 bits
 : ENV EOF
 # ---------------------------------------------
 
-chain_status() { $DEBUG && debug "chain_status $*"
-# $1: chain
-  case "$1" in *_src) _DIR='-s'; _PUT='-i'; _RULE='DROP' ;;
-               *_dst) _DIR='-d'; _PUT='-o'; _RULE='REJECT' ;;
-  esac
-  case "$1" in *_wan_*) _CIF='wan' ;;
-               *_tun_*) _CIF='tun' ;;
-  esac
-  _CH_CK=0 _CH_PB=0
-  _CH_IPT="$(echo "$_IPT"|/bin/grep -nF -- "-A $1")"
-  _SL=$(echo $_CH_IPT|/usr/bin/cut -d: -f1)
-  if [ "$_CH_IPT" ]; then
-    _LL=$((_SL+$(echo "$_CH_IPT"|/usr/bin/wc -l)-1))
-    if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "-j $_RULE"|/usr/bin/cut -d: -f1) -eq 0$_LL ]; then _CH_CK=$((_CH_CK+CK_IPT_CH))
-      _CL=$_SL # current line
-      local _MKTMP="$(/bin/mktemp /tmp/${SC_ABR}_tmp_XXXXXX)"
-      echo "$_CH_IPT"|/bin/grep -F -- "-m comment --comment \"$SC_ABR inet bypass\"" >$_MKTMP
-      while read -r _BPL; do
-        [ -z "$_BPL" ] && break
-        if [ 0$(echo $_BPL|/usr/bin/cut -d: -f1) -ne 0$_CL ]; then _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2; fi
-        case "$_BPL" in
-          *"$_DIR $_WAN_INET $_PUT $WAN_IF"*) # we have WAN with correct inet
-            if [ $((_CH_CK&CK_IPT_WAN_BP)) -eq 0 ]; then                          _CH_CK=$((_CH_CK+CK_IPT_WAN_BP))
-            elif [ $((_CH_PB&CK_IPT_WAN_BP)) -eq 0 ]; then                        _CH_PB=$((_CH_PB+CK_IPT_WAN_BP))
-            fi ;;
-          *"$_PUT $WAN_IF "*) # we have WAN with wrong inet
-            [ $((_CH_PB&CK_IPT_WAN_BP)) -eq 0 ] &&                                _CH_PB=$((_CH_PB+CK_IPT_WAN_BP))
-            ;;
-          *"$_DIR $_TUN_INET $_PUT $TUN_IF "*)
-            if [ $((_CH_CK&CK_IPT_TUN_BP)) -eq 0 ]; then                          _CH_CK=$((_CH_CK+CK_IPT_TUN_BP))
-            elif [ $((_CH_PB&CK_IPT_TUN_BP)) -eq 0 ]; then                        _CH_PB=$((_CH_PB+CK_IPT_TUN_BP))
-            fi ;;
-          *"$_PUT $TUN_IF "*) # we have TUN with wrong inet
-            [ $((_CH_PB&CK_IPT_TUN_BP)) -eq 0 ] &&                                _CH_PB=$((_CH_PB+CK_IPT_TUN_BP))
-            ;;
-          *) # we found a non matching interface
-            _CH_PB=$((_CH_PB+CK_IPT_CH)); break 2
-            ;;
-        esac
-        _CL=$((_CL+1))
-      done <$_MKTMP; /bin/rm -f $_MKTMP
-      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- "$IPSET_WL_NAME"|/usr/bin/cut -d: -f1) -eq 0$_CL ]; then _CH_CK=$((_CH_CK+CK_IPT_WL))
-        _CL=$((_CL+1))
-      fi
-      if [ 0$(echo "$_CH_IPT"|/bin/grep -F -- 'LOG'|/usr/bin/cut -d: -f1) -eq 0$_CL ]; then            _CH_CK=$((_CH_CK+CK_IPT_LOG))
-        _CL=$((_CL+1))
-      fi
-      [ 0$_CL -eq 0$_LL ] ||                                                     _CH_PB=$((_CH_PB+CK_IPT_CH))
-    else                                                                         _CH_PB=$((_CH_PB+CK_IPT_CH))
+directive_status() {
+# $1: IPSET / $2: FILE
+  _NFO=0
+  if _cipset_copy_set $1; then _RET=0 # ipset is loaded
+    if [ -r "$2" ]; then
+      _cipset_diff_set_file $1 $2 && _NFO=$INFO_DIR__SAME # loaded == file
+      # else loaded != file _NFO=0
+    else _NFO=$INFO_DIR__MISS # no file
     fi
+  elif [ -r "$2" ]; then _RET=0 # file exists, but not loaded
+      _NFO=$INFO_DIR__LOAD
+  else _RET=1; _NFO=$INFO_DIR__DEST # no file, not loaded
   fi
-  if [ "$1" == 'src' ]; then _S_CK=$_CH_CK; _S_PB=$_CH_PB; _S_IPT=$_CH_IPT
-                        else _D_CK=$_CH_CK; _D_PB=$_CH_PB; _D_IPT=$_CH_IPT; fi
+  return $_RET
 }
 
 _status() { $DEBUG && debug "|---> _status"
-  _CK=0; _WN=0; _PB=0
-  _BLC=0; _WLC=0
-  _logd_status; _LOGD=$?
-  _cipset_init
-  
   # CHECK ENVIRONMENT
+  _CK=0
   # check firewall-start.sh script
   check_firewall_start &&                                                        _CK=$((_CK+CK_FWS))
   # check post-mount.sh script if script on external drive
   $EXT_DRIVE && check_postmount &&                                               _CK=$((_CK+CK_PM))
+  
+  
+  _WN=0; _PB=0
+  _BLC=0; _WLC=0
+  _logd_status; _LOGD=$?
+  _cipset_init
+  
+  
 
   # CHECK BLOCKLIST (IPS, FILE)
   if _cipset_copy_set $IPSET_BL_NAME; then                                       _CK=$((_CK+CK_IPS_BL))
