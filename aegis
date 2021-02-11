@@ -1092,7 +1092,7 @@ directive_status() {
       fi
     else _NFO=$INFO_DIR__MISS # loaded but no file
     fi
-  elif [ -r "$2" ]; then _RET=0 # file exists, but not loaded
+  elif [ -r "$2" ]; then _RET=1 # file exists, but not loaded
       _NFO=$INFO_DIR__LOAD
   else _RET=1 # no file, not loaded
   fi
@@ -1125,28 +1125,28 @@ _status() { $DEBUG && debug "|---> _status"
   
   if [ "$_WAN" ]; then
     # WAN blocklist
-    directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL))
+    directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL)); _BLOK=$?
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
     _WBLC=$_CNT
     # WAN whitelist
     directive_status $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
     _WWLC=$_CNT
-    if ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
+    if [ $_BLOK -eq 0 ] && ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
       _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
     fi
   fi
   
   if [ "$_TUN" ]; then
     # TUN blocklist
-    directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL))
+    directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL)); _BLOK=$?
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
     _TBLC=$_CNT
     # TUN whitelist
     directive_status $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
     _TWLC=$_CNT
-    if ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
+    if [ $_BLOK -eq 0 ] && ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
       _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
     fi
   fi
