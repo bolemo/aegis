@@ -1132,8 +1132,8 @@ _status() { $DEBUG && debug "|---> _status"
     directive_status $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
     _WWLC=$_CNT
-    if [ $_BLOK -eq 0 ] && ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
-      _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
+    if ! sc_conf get wan.no_bypass >&-; then _WINET=$(inet_for_if $_WAN)
+      [ $_BLOK -eq 0 ] && _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
     fi
   fi
   
@@ -1146,8 +1146,8 @@ _status() { $DEBUG && debug "|---> _status"
     directive_status $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
     _TWLC=$_CNT
-    if [ $_BLOK -eq 0 ] && ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
-      _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
+    if ! sc_conf get tun.no_bypass >&-; then _TINET=$(inet_for_if $_TUN)
+      [ $_BLOK -eq 0 ] && _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
     fi
   fi
   
