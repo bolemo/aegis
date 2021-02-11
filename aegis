@@ -1101,6 +1101,7 @@ _status() { $DEBUG && debug "|---> _status"
     
   # CHECK DIRECTIVES
   _DIR=0 _DNA=0 _WAN=$WAN_IF _TUN=$TUN_IF
+  _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
   
   _cipset_init
   
