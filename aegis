@@ -240,7 +240,7 @@ _cipset_create_set_file() { $DEBUG && debug "_cipset_create_set_file $*"
   /usr/bin/awk '{l[c++]=$0} END {print "create '$1' hash:net family inet maxelem "c; while(d<c){print "add '$1' "l[d++]}}' "$_CIPSET_DIR/$1" | $IPS_BIN restore
 } 2>>"$STDERR"
 _cipset_inet_in_bl() { $DEBUG && debug "_cipset_inet_in_bl $*"
-    [ -z "$(echo "$1" | $IPR_BIN "$_CIPSET_DIR/$IPSET_ALL_BL_NAME" --common - )" ] && return 1
+    [ -s "$_CIPSET_DIR/$IPSET_ALL_BL_NAME" ] && [ -z "$(echo "$1" | $IPR_BIN "$_CIPSET_DIR/$IPSET_ALL_BL_NAME" --common - )" ] && return 1
     [ -s "$_CIPSET_DIR/$2" ] && [ -z "$(echo "$1" | $IPR_BIN "$_CIPSET_DIR/$2" --common - )" ] && return 1
     return 0
 } 2>>"$STDERR"
@@ -1067,6 +1067,8 @@ STA_WIF=8
 STA_WINET=16
 STA_TIF=32
 STA_TINET=64
+STA_OIPT=128
+STA_OK_MASK=252
 
 # ---------------------------------------------
 : ENV EOF
@@ -1095,9 +1097,9 @@ _status() { $DEBUG && debug "|---> _status"
   # CHECK ENVIRONMENT
   _CK=0
   # check firewall-start.sh script
-  check_firewall_start &&                                                        _CK=$((_CK+STA_FWS))
+  check_firewall_start &&          _CK=$((_CK+STA_FWS))
   # check post-mount.sh script if script on external drive
-  $EXT_DRIVE && check_postmount &&                                               _CK=$((_CK+STA_PM))
+  $EXT_DRIVE && check_postmount && _CK=$((_CK+STA_PM))
     
   # CHECK DIRECTIVES
   _DIR=0 _DNA=0 _WAN=$WAN_IF _TUN=$TUN_IF
@@ -1148,19 +1150,20 @@ _status() { $DEBUG && debug "|---> _status"
   
   read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
   
-  [ $_ODNA -ne $_DNA ]        && _CK=$((_CK+STA_DNA))
-  [ "$_OWAN" != "$_WAN" ]     && _CK=$((_CK+STA_WIF))
-  [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+STA_WINET))
-  [ "$_OTUN" != "$_TUN" ]     && _CK=$((_CK+STA_TIF))
-  [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+STA_TINET))
+  [ $_ODNA -eq $_DNA ]        && _CK=$((_CK+STA_DNA))
+  [ "$_OWAN" == "$_WAN" ]     && _CK=$((_CK+STA_WIF))
+  [ "$_OWINET" == "$_WINET" ] && _CK=$((_CK+STA_WINET))
+  [ "$_OTUN" == "$_TUN" ]     && _CK=$((_CK+STA_TIF))
+  [ "$_OTINET" == "$_TINET" ] && _CK=$((_CK+STA_TINET))
   
-  EIPTF=/tmp/aegis_eipt AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
-  express_ipt_dna >$EIPTF
+  AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
   express_ipt_dna "$INFO_FILE" >$OIPTF
   get_ipt; echo "$_IPT" >$AIPTF
  
-  /usr/bin/diff -q $EIPTF $AIPTF >&- && _CK=$((_CK+STA_OIPT)) || _PB=$((_PB+STA_OIPT))
-  /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_EIPT)) || _PB=$((_PB+STA_EIPT))
+  /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_OIPT))
+  
+  /bin/rm -rf $OIPTF
+  /bin/rm -rf $AIPTF
   
   _logd_status; _LOGD=$?
   
@@ -1172,8 +1175,16 @@ netset_exists() { test -e "$BL_FILE"; return $?; }
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
-#  set -- $(_status); _CK=$1; _PB=$2; _WN=$3; _BLC=$4; _WLC=$5; _LOGD=$6
+#  set -- $(_status); _CK=$1 _DNA=$2 _ABLC=$3 _AWLC=$4 _WBLC=$5 _WWLC=$6 _TBLC=$7 _TWLC=$8 _LOGD=$9
 _status >/dev/null
+
+  [ $_CK -ge $STA_OK_MASK ]
+
+
+
+
+
+
 
   echo -e '\033[1;36mStatus:\033[0m'
   if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
