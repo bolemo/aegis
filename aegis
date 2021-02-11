@@ -1125,7 +1125,7 @@ _status() { $DEBUG && debug "|---> _status"
   
   if [ "$_WAN" ]; then
     # WAN blocklist
-    directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL)); _BLOK=$?
+    directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
     _WBLC=$_CNT
     # WAN whitelist
@@ -1133,13 +1133,13 @@ _status() { $DEBUG && debug "|---> _status"
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
     _WWLC=$_CNT
     if ! sc_conf get wan.no_bypass >&-; then _WINET=$(inet_for_if $_WAN)
-      [ $_BLOK -eq 0 ] && _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
+      [ $((_DNA&(DNA_ABL+DNA_WBL))) -ne 0 ] && _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
     fi
   fi
   
   if [ "$_TUN" ]; then
     # TUN blocklist
-    directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL)); _BLOK=$?
+    directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
     _TBLC=$_CNT
     # TUN whitelist
@@ -1147,7 +1147,7 @@ _status() { $DEBUG && debug "|---> _status"
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
     _TWLC=$_CNT
     if ! sc_conf get tun.no_bypass >&-; then _TINET=$(inet_for_if $_TUN)
-      [ $_BLOK -eq 0 ] && _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
+      [ $((_DNA&(DNA_ABL+DNA_TBL))) -ne 0 ] && _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
     fi
   fi
   
@@ -1156,26 +1156,26 @@ _status() { $DEBUG && debug "|---> _status"
   _cipset_end
   
   _IF=0
-  [ "$_WAN" ]                   && _IF=$((_IF+STA_IF_WAN))
-  [ "$_TUN" ]                   && _IF=$((_IF+STA_IF_TUN))
+  [ "$_WAN" ] && _IF=$((_IF+STA_IF_WAN))
+  [ "$_TUN" ] && _IF=$((_IF+STA_IF_TUN))
 
   get_ipt
   
-  if [ -r "$INFO_FILE" ]; then     _CK=$((_CK+STA_NDOWN))
+  if [ -r "$INFO_FILE" ]; then                                    _CK=$((_CK+STA_NDOWN))
     read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
   
-    [ $_ODNA -ne $_DNA ]        && _CK=$((_CK+STA_DNA))
-    [ "$_OWAN" != "$_WAN" ]     && _CK=$((_CK+STA_WIF))
-    [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+STA_WINET))
-    [ "$_OTUN" != "$_TUN" ]     && _CK=$((_CK+STA_TIF))
-    [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+STA_TINET))
+    [ $_ODNA -ne $_DNA ] &&                                       _CK=$((_CK+STA_DNA))
+    [ "$_OWAN" != "$_WAN" ] &&                                    _CK=$((_CK+STA_WIF))
+    [ $((_DNA+DNA_WBW)) -ne 0 ] && [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+STA_WINET))
+    [ "$_OTUN" != "$_TUN" ] &&                                    _CK=$((_CK+STA_TIF))
+    [ $((_DNA+DNA_TBW)) -ne 0 ] && [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+STA_TINET))
 
     AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
     express_ipt_dna "$INFO_FILE" >$OIPTF
     echo "$_IPT" >$AIPTF
-    ! /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_IPT))
+    ! /usr/bin/diff -q $OIPTF $AIPTF >&- &&                       _CK=$((_CK+STA_IPT))
     /bin/rm -rf $OIPTF; /bin/rm -rf $AIPTF
-  elif [ $_DNA -gt $DNA_LOG ] || [ "$_IPT" ]; then _CK=$((_CK+STA_NDOWN))
+  elif [ $_DNA -gt $DNA_LOG ] || [ "$_IPT" ]; then                _CK=$((_CK+STA_NDOWN))
   fi
   
   _logd_status; _LOGD=$?
