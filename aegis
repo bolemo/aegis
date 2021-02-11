@@ -375,7 +375,9 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   NFO_FROM=$1
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
-  NFO_DIR=0 NFO_IPT=0 _DNA=0 _WAN=$WAN_IF _TUN=$TUN_IF
+  NFO_DIR=0 NFO_IPT=0 _DNA=0
+  sc_conf get wan >&- && _WAN=$WAN_IF
+  sc_conf get tun >&- && _TUN=$TUN_IF
   
   _cipset_init
   
@@ -1067,8 +1069,9 @@ STA_WIF=8
 STA_WINET=16
 STA_TIF=32
 STA_TINET=64
-STA_OIPT=128
-STA_OK_MASK=252
+STA_IPT=128
+STA_NDOWN=256
+STA_OK=509
 
 # ---------------------------------------------
 : ENV EOF
@@ -1102,8 +1105,9 @@ _status() { $DEBUG && debug "|---> _status"
   $EXT_DRIVE && check_postmount && _CK=$((_CK+STA_PM))
     
   # CHECK DIRECTIVES
-  _DIR=0 _DNA=0 _WAN=$WAN_IF _TUN=$TUN_IF
-  _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
+  _DIR=0 _DNA=0 _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
+  sc_conf get wan >&- && _WAN=$WAN_IF
+  sc_conf get tun >&- && _TUN=$TUN_IF
   
   _cipset_init
   
@@ -1148,22 +1152,24 @@ _status() { $DEBUG && debug "|---> _status"
   
   _cipset_end
   
-  read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
+  get_ipt
   
-  [ $_ODNA -eq $_DNA ]        && _CK=$((_CK+STA_DNA))
-  [ "$_OWAN" == "$_WAN" ]     && _CK=$((_CK+STA_WIF))
-  [ "$_OWINET" == "$_WINET" ] && _CK=$((_CK+STA_WINET))
-  [ "$_OTUN" == "$_TUN" ]     && _CK=$((_CK+STA_TIF))
-  [ "$_OTINET" == "$_TINET" ] && _CK=$((_CK+STA_TINET))
+  if [ -r "$INFO_FILE" ]; then     _CK=$((_CK+STA_NDOWN))
+    read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
   
-  AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
-  express_ipt_dna "$INFO_FILE" >$OIPTF
-  get_ipt; echo "$_IPT" >$AIPTF
- 
-  /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_OIPT))
-  
-  /bin/rm -rf $OIPTF
-  /bin/rm -rf $AIPTF
+    [ $_ODNA -ne $_DNA ]        && _CK=$((_CK+STA_DNA))
+    [ "$_OWAN" != "$_WAN" ]     && _CK=$((_CK+STA_WIF))
+    [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+STA_WINET))
+    [ "$_OTUN" != "$_TUN" ]     && _CK=$((_CK+STA_TIF))
+    [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+STA_TINET))
+
+    AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
+    express_ipt_dna "$INFO_FILE" >$OIPTF
+    echo "$_IPT" >$AIPTF
+    ! /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_IPT))
+    /bin/rm -rf $OIPTF; /bin/rm -rf $AIPTF
+  elif [ $_DNA -gt $DNA_LOG ] || [ "$_IPT" ]; then _CK=$((_CK+STA_NDOWN))
+  fi
   
   _logd_status; _LOGD=$?
   
@@ -1178,15 +1184,25 @@ status_term() { $DEBUG && debug "status_term"
 #  set -- $(_status); _CK=$1 _DNA=$2 _ABLC=$3 _AWLC=$4 _WBLC=$5 _WWLC=$6 _TBLC=$7 _TWLC=$8 _LOGD=$9
 _status >/dev/null
 
-  [ $_CK -ge $STA_OK_MASK ]
-
-
-
-
-
-
-
   echo -e '\033[1;36mStatus:\033[0m'
+  
+  if [ $_CK -eq 0 ]; then _RETVAL=1
+    echo "- Shield is unset."
+  elif [ $_CK -le $CK_ENV_MASK ]; then _RETVAL=2
+    echo "- Shield is down."
+  elif [ $_CK -ge $STA_OK ]; then _RETVAL=0
+    echo -ne "- \033[1;32mShield is up\033[0m"
+    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
+    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
+    echo -e ".\n- Filtering $_BLC IP adresses."
+    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
+
+
+
+
+
+
+  
   if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
     echo "- Shield is unset."
   elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=2
