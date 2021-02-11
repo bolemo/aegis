@@ -1058,35 +1058,15 @@ test_ip() { # $1: IP to test, ($2: IF)
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
-CK_FWS=1             # CK PB
-CK_PM=2              # CK PB
-CK_ENV_MASK=3
-CK_IPS_BL=4          # CK PB
-CK_IPS_WL=8          # CK PB
-CK_IPT_CH=16         # CK PB
-CK_IPT_WAN_BP=32     # CK PB WN
-CK_IPT_TUN_BP=64     # CK PB WN
-CK_IPT_WL=128        # CK PB
-CK_IPT_LOG=256       # CK ..
-PB_IPT_IFO=256       # .. PB
-CK_IPT_TUN=512       # CK PB
-CK_IPT_WAN=1024      # CK PB
-PB_IPT_WAN_MISS=2048 # .. PB
+STA_FWS=1
+STA_PM=2
+STA_ENV_MASK=3
 
-WN_BL_FILE_DIFF=1   # . . . . . . _ x
-WN_BL_FILE_MISS=2   # . . . . . . x _
-WN_BL_FILE_NTLD=3   # . . . . . . x x
-WN_WL_FILE_DIFF=4   # . . . . _ x . .
-WN_WL_FILE_MISS=8   # . . . . x _ . .
-WN_WL_FILE_NTLD=12  # . . . . x x . .
-WN_TUN_MISS=16      # . . . x . . . .
-# 32 CK_IPT_WAN_BP -> WAN BYPASS MISSING
-# 64 CK_IPT_TUN_BP -> TUN BYPASS MISSING
-WN_LOG_DIFF=128     # x . . . . . . .
-
-CK_MASK=2047 #11 bits
-PB_MASK=4095 #12 bits
-WN_MASK=255  #8 bits
+STA_DNA=4
+STA_WIF=8
+STA_WINET=16
+STA_TIF=32
+STA_TINET=64
 
 # ---------------------------------------------
 : ENV EOF
@@ -1094,8 +1074,9 @@ WN_MASK=255  #8 bits
 
 directive_status() {
 # $1: IPSET / $2: FILE
-  _NFO=0
+  _NFO=0 _CNT=0
   if _cipset_copy_set $1; then _RET=0 # ipset is loaded
+    _CNT=$(_cipset_count_set $1)
     if [ -r "$2" ]; then
       if _cipset_diff_set_file $1 $2
         then _NFO=$INFO_DIR__SAME # loaded == file
@@ -1114,27 +1095,33 @@ _status() { $DEBUG && debug "|---> _status"
   # CHECK ENVIRONMENT
   _CK=0
   # check firewall-start.sh script
-  check_firewall_start &&                                                        _CK=$((_CK+CK_FWS))
+  check_firewall_start &&                                                        _CK=$((_CK+STA_FWS))
   # check post-mount.sh script if script on external drive
-  $EXT_DRIVE && check_postmount &&                                               _CK=$((_CK+CK_PM))
+  $EXT_DRIVE && check_postmount &&                                               _CK=$((_CK+STA_PM))
     
   # CHECK DIRECTIVES
   _DIR=0 _DNA=0 _WAN=$WAN_IF _TUN=$TUN_IF
+  
   _cipset_init
+  
   # ALL blocklist
   directive_status $IPSET_ALL_BL_NAME $ALL_BL_FILE && _DNA=$((_DNA+DNA_ABL))
   _DIR=$((_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
+  _ABLC=$_CNT
   # ALL whitelist
   directive_status $IPSET_ALL_WL_NAME $ALL_WL_FILE && _DNA=$((_DNA+DNA_AWL))
   _DIR=$((_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
+  _AWLC=$_CNT
   
   if [ "$_WAN" ]; then
     # WAN blocklist
     directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
+    _WBLC=$_CNT
     # WAN whitelist
     directive_status $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
+    _WWLC=$_CNT
     if ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
       _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
     fi
@@ -1144,9 +1131,11 @@ _status() { $DEBUG && debug "|---> _status"
     # TUN blocklist
     directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
+    _TBLC=$_CNT
     # TUN whitelist
     directive_status $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
+    _TWLC=$_CNT
     if ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
       _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
     fi
@@ -1158,13 +1147,11 @@ _status() { $DEBUG && debug "|---> _status"
   
   read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
   
-  if [ $_ODNA -eq $_DNA ]; then _CK=$((_CK+STA_DNA)); else
-  
-  fi
-  [ "$_OWAN" == "$_WAN" ]     && _CK=$((_CK+STA_WIF)) || _PB=$((_PB+STA_WIF))
-  [ "$_OWINET" == "$_WINET" ] && _CK=$((_CK+STA_WINET)) || _PB=$((_PB+STA_WINET))
-  [ "$_OTUN" == "$_TUN" ]     && _CK=$((_CK+STA_TIF)) || _PB=$((_PB+STA_TIF))
-  [ "$_OTINET" == "$_TINET" ] && _CK=$((_CK+STA_TINET)) || _PB=$((_PB+STA_TINET))
+  [ $_ODNA -ne $_DNA ]        && _CK=$((_CK+STA_DNA))
+  [ "$_OWAN" != "$_WAN" ]     && _CK=$((_CK+STA_WIF))
+  [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+STA_WINET))
+  [ "$_OTUN" != "$_TUN" ]     && _CK=$((_CK+STA_TIF))
+  [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+STA_TINET))
   
   EIPTF=/tmp/aegis_eipt AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
   express_ipt_dna >$EIPTF
@@ -1174,12 +1161,10 @@ _status() { $DEBUG && debug "|---> _status"
   /usr/bin/diff -q $EIPTF $AIPTF >&- && _CK=$((_CK+STA_OIPT)) || _PB=$((_PB+STA_OIPT))
   /usr/bin/diff -q $OIPTF $AIPTF >&- && _CK=$((_CK+STA_EIPT)) || _PB=$((_PB+STA_EIPT))
   
-  _WN=0; _PB=0
-  _BLC=0; _WLC=0
   _logd_status; _LOGD=$?
   
-  echo -n "$_CK $_PB $_WN $_BLC $_WLC $_LOGD"
-  $DEBUG && debug "<---| _status [$_CK $_PB $_WN $_BLC $_WLC $_LOGD]"
+  echo -n "$_CK $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
+  $DEBUG && debug "<---| _status [$_CK $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
 } 2>>"$STDERR"
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
