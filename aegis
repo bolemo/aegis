@@ -1073,6 +1073,9 @@ STA_IPT=128
 STA_NDOWN=256
 STA_OK=509
 
+STA_IF_WAN=1
+STA_IF_TUN=2
+
 # ---------------------------------------------
 : ENV EOF
 # ---------------------------------------------
@@ -1152,6 +1155,10 @@ _status() { $DEBUG && debug "|---> _status"
   
   _cipset_end
   
+  _IF=0
+  [ "$_WAN" ]                   && _IF=$((_IF+STA_IF_WAN))
+  [ "$_TUN" ]                   && _IF=$((_IF+STA_IF_TUN))
+
   get_ipt
   
   if [ -r "$INFO_FILE" ]; then     _CK=$((_CK+STA_NDOWN))
@@ -1173,15 +1180,15 @@ _status() { $DEBUG && debug "|---> _status"
   
   _logd_status; _LOGD=$?
   
-  echo -n "$_CK $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
-  $DEBUG && debug "<---| _status [$_CK $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
+  echo -n "$_CK $_IF $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
+  $DEBUG && debug "<---| _status [$_CK $_IF $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
 } 2>>"$STDERR"
 
 netset_exists() { test -e "$BL_FILE"; return $?; }
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
-#  set -- $(_status); _CK=$1 _DNA=$2 _ABLC=$3 _AWLC=$4 _WBLC=$5 _WWLC=$6 _TBLC=$7 _TWLC=$8 _LOGD=$9
+#  set -- $(_status); _CK=$1 _IF=$2 _DNA=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _LOGD=$10
 _status >/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
@@ -1192,31 +1199,19 @@ _status >/dev/null
     echo "- Shield is down."
   elif [ $_CK -ge $STA_OK ]; then _RETVAL=0
     echo -ne "- \033[1;32mShield is up\033[0m"
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-    echo -e ".\n- Filtering $_BLC IP adresses."
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
-
-
-
-
-
-
-  
-  if [ $((_CK+_PB)) -eq 0 ]; then _RETVAL=1
-    echo "- Shield is unset."
-  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then _RETVAL=2
-    echo "- Shield is down."
-  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then _RETVAL=0
-    echo -ne "- \033[1;32mShield is up\033[0m"
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-    echo -e ".\n- Filtering $_BLC IP adresses."
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "- Bypassing $_WLC IP adresses."
+    [ $((_IF&STA_IF_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
+    [ $((_IF&STA_IF_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
+    echo -e ".\n- Blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses."
+    echo "- Bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses."
   else _RETVAL=3
      echo -e "- \033[1;31mSomething is not right!\033[0m"
   fi
   if [ $_LOGD -eq 0 ]; then echo "- Logging is enabled."; else echo "- Logging is disabled."; fi
+
+  _exit $_RETVAL
+  
+  #_____
+
   
   if [ $_PB -ne 0 ]; then
     echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
