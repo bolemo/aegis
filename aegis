@@ -1184,7 +1184,12 @@ _status() { $DEBUG && debug "|---> _status"
   $DEBUG && debug "<---| _status [$_CK $_IF $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
 } 2>>"$STDERR"
 
-netset_exists() { test -e "$BL_FILE"; return $?; }
+netset_exists() {
+  test -e "$ALL_BL_FILE" && return 0
+  sc_conf get wan >&- && [ "$WAN_IF" ] && test -e "$WAN_BL_FILE" && return 0
+  sc_conf get tun >&- && [ "$TUN_IF" ] && test -e "$TUN_BL_FILE" && return 0
+  return 1
+}
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
