@@ -602,9 +602,10 @@ BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
 SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
 SC_MAIN_REPO="$SC_BASE_REPO/master"
 SC_DEV_REPO="$SC_BASE_REPO/dev"
+REPO="$SC_MAIN_REPO" # can be overriden to change repo
 
 last_avail_version() { $DEBUG && debug "last_avail_version"
-  [ "$DEVMODE" ] && VERSION_URL="$SC_DEV_REPO/version" || VERSION_URL="$SC_MAIN_REPO/version"
+  VERSION_URL="$REPO/version"
   /usr/bin/wget -qO- --no-check-certificate "$VERSION_URL"
 }
 
@@ -625,8 +626,7 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 do_upgrade() { $DEBUG && debug "do_upgrade"
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  [ "$DEVMODE" ] && _PROG="--no-cache" || _PROG=''
-  _download "$UPGRADE_URL" "$DL_PATH" "$_PROG"
+  _download "$UPGRADE_URL" "$DL_PATH" "--no-cache"
   strip_sh_file "$DL_PATH"
   /bin/mv "$DL_PATH" "$SC_NICEPATH"
   /bin/chmod +x "$SC_NICEPATH"
@@ -636,39 +636,32 @@ echo "- Downloading:"
 }
 
 _upgrade() { $DEBUG && debug "_upgrade"
-  UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"; UPGRADE_VER="$SC_LAST_VERS"
+  UPGRADE_URL="$REPO/$SC_NAME"; UPGRADE_VER="$SC_LAST_VERS"
   do_upgrade
 }
 
 upgrade() { $DEBUG && debug "upgrade"
   echo -e "\033[1;36mUpgrading:\033[0m"
   echo "- Version installed: $SC_VERS"
-  if [ "$DEVMODE" ]; then
-    echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
-    UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
-    UPGRADE_VER=$(/usr/bin/wget -qO- --no-check-certificate "$SC_DEV_REPO/version")
-    [ -z "$UPGRADE_VER" ] && _warn "Could not get version!" 1
-  else
-    echo -ne "- Checking latest available version...\r"
-    SC_LAST_VERS="$(last_avail_version)"
-    if [ "$SC_LAST_VERS" ]; then
-      if [ "$SC_VERS" == "$SC_LAST_VERS" ]; then echo "- You have already the latest version: $SC_VERS     "
-        _ASK="? Do you want to reapply it (y/n)?"
-      else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
-        if [ "$VERS_ARRAY" == "$SORT_ARRAY" ]; then echo "- New version available: $SC_LAST_VERS         "
-          _ASK="? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
-        else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
-          _ASK="? Do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
-        fi
+  echo -ne "- Checking latest available version...\r"
+  SC_LAST_VERS="$(last_avail_version)"
+  if [ "$SC_LAST_VERS" ]; then
+    if [ "$SC_VERS" == "$SC_LAST_VERS" ]; then echo "- You have already the latest version: $SC_VERS     "
+      _ASK="? Do you want to reapply it (y/n)?"
+    else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
+      if [ "$VERS_ARRAY" == "$SORT_ARRAY" ]; then echo "- New version available: $SC_LAST_VERS         "
+        _ASK="? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
+      else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
+        _ASK="? Do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
       fi
-    else _warn "Could not check what is the latest version online!" 1; fi
-    UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
-    UPGRADE_VER="$SC_LAST_VERS"
-  fi
-  if [ ! "$DEVMODE" ]; then
-    echo -n "$_ASK "
-    case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) _exit 0 ;; esac
-  fi
+    fi
+  else _warn "Could not check what is the latest version online!" 1; fi
+  UPGRADE_URL="$REPO/$SC_NAME"
+  UPGRADE_VER="$SC_LAST_VERS"
+  
+  echo -n "$_ASK "
+  case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p '' YN </dev/tty;[ -n "$YN" ] && echo "$YN" && break;done)" in Y|y|yes|Yes|YES) : ;; *) _exit 0 ;; esac
+  
   do_upgrade
 }
 
@@ -676,7 +669,7 @@ upgrade() { $DEBUG && debug "upgrade"
 get_def_srclst() { $DEBUG && debug "get_def_srclst"
   if [ ! -s "$SRC_LIST" ]; then
     [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty! Trying to download default list..."
-    SRC_LIST_URL="$SC_MAIN_REPO/$SC_NAME.sources"
+    SRC_LIST_URL="$REPO/$SC_NAME.sources"
     [ $VERBOSE ] && _download "$SRC_LIST_URL" "$SRC_LIST" || _download "$SRC_LIST_URL" "$SRC_LIST" >/dev/null
     [ $VERBOSE ] && echo -e "- Default list was downloaded."
   fi
@@ -698,18 +691,10 @@ check_web() { $DEBUG && debug "check_web"
 install_web() { $DEBUG && debug "install_web"
   [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null
   [ -d "$WWW_PATH/cgi-bin" ] || mkdir "$WWW_PATH/cgi-bin"
-  if [ -z "$UPGRADE_URL" ]; then
-    if [ "$DEVMODE" ]; then
-      echo "- Devmode on, force downloading from '$SC_DEV_REPO'..."
-      UPGRADE_URL="$SC_DEV_REPO/$SC_NAME"
-    else
-      UPGRADE_URL="$SC_MAIN_REPO/$SC_NAME"
-    fi
-  fi
+  [ -z "$UPGRADE_URL" ] && UPGRADE_URL="$REPO/$SC_NAME"
   echo "- Downloading $WEB_NAME:"
   DL_PATH="/tmp/$SC_NAME.dl"
-  [ "$DEVMODE" ] && _PROG='--no-cache' || _PROG=''
-  _download "${UPGRADE_URL}.htm" "$DL_PATH" "$_PROG"
+  _download "${UPGRADE_URL}.htm" "$DL_PATH" "--no-cache"
   /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
   echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   _download "${UPGRADE_URL}_web.cgi" "$DL_PATH" "$_PROG"
@@ -1035,12 +1020,18 @@ info() { $DEBUG && debug "info"
   # check web compagnon
   check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
 }
-
+in
 test_ip() { # $1: IP to test, ($2: IF)
   echo -e "\033[1;36mTesting IP $1:\033[0m"
-  if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
-    then echo "- IP address $1 is blocked by the router."
-    else echo "- IP address $1 is not blocked by the router."
+  if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >&- | /bin/grep -qF 'sendto: Operation not permitted'
+    then echo "- IP address $1 is blocked by the router for WAN interface."
+    else echo "- IP address $1 is not blocked by the router for WAN interface."
+  fi
+  if [ "$TUN_IF" ]; then
+    if /usr/bin/traceroute -q1 -m1 -w1 -i $TUN_IF $1 38 2>&1 >&- | /bin/grep -qF 'sendto: Operation not permitted'
+      then echo "- IP address $1 is blocked by the router for VPN tunnel."
+      else echo "- IP address $1 is not blocked by the router for VPN tunnel."
+    fi
   fi
   $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
     "$IPSET_ALL_BL_NAME") $IPS_BIN -q test $IPSET_ALL_BL_NAME $1 && echo "- IP address $1 is in Aegis ALL blocking directives." ;;
@@ -1051,7 +1042,7 @@ test_ip() { # $1: IP to test, ($2: IF)
     "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $1 && echo "- IP address $1 is in Aegis VPN bypassing directives." ;;
   esac; done
   ip_in_if_inet $1 $WAN_IF && echo "- IP address $1 is in the WAN network range ($(inet_for_if $WAN_IF))."
-  ip_in_if_inet $1 $TUN_IF && echo "- IP address $1 is in the VPN network range ($(inet_for_if $TUN_IF))."
+  [ "$TUN_IF" ] && ip_in_if_inet $1 $TUN_IF && echo "- IP address $1 is in the VPN network range ($(inet_for_if $TUN_IF))."
   exit 0
 }
 
@@ -1109,8 +1100,8 @@ _status() { $DEBUG && debug "|---> _status"
     
   # CHECK DIRECTIVES
   _DIR=0 _DNA=0 _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
-  sc_conf get wan >&- && _WAN=$WAN_IF
-  sc_conf get tun >&- && _TUN=$TUN_IF
+  _WAN=$WAN_IF
+  _TUN=$TUN_IF
   
   _cipset_init
   
@@ -1412,26 +1403,6 @@ ARGS=" $* "
 
 $DEBUG && debug "main routing with args: $ARGS"
 
-if [ -z "${ARGS##* %devmode*% *}" ]; then
-  if [ "${ARGS##* %devmode% *}" ]; then
-    _DEV="$(echo "$ARGS"|/bin/sed 's/[^%]*%devmode \([^%]*\)%[^%]*/\1/')"
-    echo "dev: '$_DEV'"
-    if [ -z "${_DEV##*cmd=*}" ]; then
-      _CMD="$(echo "$_DEV"|/bin/sed 's/.*cmd=\([^,$]*\).*/\1/')"
-      echo "Executing command: '$_CMD'"
-      eval "$_CMD"
-    fi
-    if [ -z "${_DEV##*repo=*}" ]; then
-      _REPO="$(echo "$_DEV"|/bin/sed 's/.*repo=\([^,$]*\).*/\1/')"
-      SC_DEV_REPO="$SC_BASE_REPO/$_REPO"
-      echo "Using git path: '$SC_DEV_REPO'"
-    fi
-  fi
-  DEVMODE=1
-  ARGS="${ARGS% %devmode*% *} ${ARGS#* %devmode*% }"
-  echo "Arguments: '$ARGS'"
-fi
-
 PARAM="$(echo "$ARGS" | /bin/sed 's/-[[:alpha:]=]*[[:space:]]*[[:digit:].]*//g')"
 case $(echo "$PARAM"|/usr/bin/wc -w) in
   0) _warn "No parameter!"; print_help; _exit 1 ;;
@@ -1462,7 +1433,6 @@ _shield_args() {
   
   sc_conf commit
 }
-
 _log_args() { case $ARGS in
   *' -enable '*)           sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
   *' -disable '*)          sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
@@ -1471,20 +1441,21 @@ _log_args() { case $ARGS in
   *' -get-history '*)      sc_conf get log.len ;;
   *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
 esac; }
-  
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=
   [ -z "${ARGS##* -rm-symlink *}" ]    && RM_SYMLINK=1 || RM_SYMLINK=
   [ -z "${ARGS##* -rm-web *}" ]        && RM_WEB=1     || RM_WEB=
   [ -z "${ARGS##* -rm-log *}" ]        && RM_LOG=1     || RM_LOG=
 }
+_repo_args() {
+  [ -z "${ARGS##* -version=[^ ]* }" ]  && REPO=$(echo "$ARGS"|/bin/sed 's/.* -repo=\([[:word:]]\+\) .*/\1/')
+}
 
 [ -z ${VERBOSE+x} ] && exec >/dev/null
 
 sc_init
 
-if [ $DEVMODE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Developer mode\033[0m"; VERBOSE=3
-elif [ $VERBOSE ]; then echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"; fi
+[ $VERBOSE ] && echo -e "\033[7;31m$SC_NAME $SC_VERS - Verbose mode [level $VERBOSE]\033[0m"
 
 case "$PARAM" in
   'up') _shield_args;
@@ -1502,7 +1473,7 @@ case "$PARAM" in
   'info') info ;;
   'test') [ -z "${ARGS##* -ip=*}" ] && _IP=$(echo "$ARGS"|/bin/sed 's/.* -ip=\([[:digit:].]\+\) .*/\1/') && is_ipv4 $_IP && test_ip $_IP || _warn "Invalid IP" 1 ;;
   'log') _log_args ;;
-  'upgrade') upgrade ;;
+  'upgrade') _repo_args; upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
   
   # calls for outside helpers (html)
@@ -1510,7 +1481,7 @@ case "$PARAM" in
   '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
   '_refresh') _refresh_args; _shield_args; VERBOSE=1; update_iplist $RF_OFFLN; shield_up 1 ;;
   '_down') VERBOSE=1; shield_down ;;
-  '_upgrade') _upgrade ;;
+  '_upgrade') _repo_args; _upgrade ;;
   
   *) _warn "Unknown Parameter $2!"; print_help; _exit 1 ;;
 esac
