@@ -1020,7 +1020,7 @@ info() { $DEBUG && debug "info"
   # check web compagnon
   check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
 }
-in
+
 test_ip() { # $1: IP to test, ($2: IF)
   echo -e "\033[1;36mTesting IP $1:\033[0m"
   if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >&- | /bin/grep -qF 'sendto: Operation not permitted'
