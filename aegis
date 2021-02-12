@@ -69,7 +69,7 @@ INFO_DIR__KEEP=2   # _ x _ KEEP
 INFO_DIR__LOAD=4   # x _ _
 INFO_DIR__SWAP=5   # x _ x RELOAD
 INFO_DIR__DEST=6   # x x _ => was there, was destroyed
-                   # _ _ _ => was not there, was not loaded
+INFO_DIR__MISS=0   # _ _ _ => was not there, was not loaded
 INFO_DIR__DIFF=7   # x x x used for status
 INFO_DIR__MASK=7   # x x x
 
@@ -1171,8 +1171,8 @@ _status() { $DEBUG && debug "|---> _status"
   
   _logd_status; _LOGD=$?
   
-  echo -n "$_CK $_IF $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
-  $DEBUG && debug "<---| _status [$_CK $_IF $_DNA $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
+  echo -n "$_CK $_IF $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
+  $DEBUG && debug "<---| _status [$_CK $_IF $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
 } 2>>"$STDERR"
 
 netset_exists() {
@@ -1184,7 +1184,8 @@ netset_exists() {
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
-#  set -- $(_status); _CK=$1 _IF=$2 _DNA=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _LOGD=$10
+#  set -- $(_status); _CK=$1 _IF=$2 _DNA=$3 _DIR=$4 _ABLC=$5 _AWLC=$6 _WBLC=$7 _WWLC=$8 _TBLC=$9 _TWLC=$10 _LOGD=$11
+#  read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
 _status >/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
@@ -1214,15 +1215,21 @@ _status >/dev/null
     [ $((_CK&CK_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
     $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     if [ $((_CK&STA_DNA)) -ne 0 ]; then
-      [ "$((_DNA&DNA_LOG))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_ABL))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_AWL))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_WBW))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_WBL))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_WWL))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_TBW))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_TBL))" -ne 0 ] && :;
-      [ "$((_DNA&DNA_TWL))" -ne 0 ] && :;
+       _parse_dir() { case "$1" in
+      #  "$INFO_DIR__SAME") ;;
+         "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 file changed since $SC_NAME was upreared!\033[0m";; # loaded != file
+         "$INFO_DIR__MISS") echo -e "\033[31m- directives: $2 file is missing!\033[0m";; # loaded but no file
+         "$INFO_DIR__LOAD") echo -e "\033[31m- directives: $2 file was created after $SC_NAME was upreared!\033[0m";; # file exists, but not loaded
+       esac; }
+#      _ODIR=$((_ONFO_DIR>>INFO_DIR_SHIFT))
+      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
+      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN blocklist'
+      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN blocklist'
+      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
+      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN whitelist'
+      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN whitelist'
+
+#      [ $((_DNA&DNA_TWL)) -ne $((_ODNA&DNA_TWL)) ] && :;
     fi
     [ $((_CK&STA_WIF)) -ne 0 ] &&             echo -e "\033[31m- WAN: interface changed since $SC_NAME was upreared!\033[0m"
     [ $((_CK&STA_WINET)) -ne 0 ] &&           echo -e "\033[31m- WAN: network range changed since $SC_NAME was upreared!\033[0m"
@@ -1231,16 +1238,16 @@ _status >/dev/null
     [ $((_CKSTA_IPT)) -ne 0 ] &&              echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
 
  
-    [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
-    [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no whitelist is set!\033[0m"
-    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: shield chains are not right!\033[0m"
-    [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: WAN network range bypass rules are not right!\033[0m"
-    [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: VPN network range bypass rules are not right!\033[0m"
-    [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: whitelist rules are not right!\033[0m"
-    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo -e "\033[31m- iptables: VPN tunnel IFO rules are corrupted!\033[0m"
-    [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo -e "\033[31m- iptables: WAN interface IFO rules are corrupted!\033[0m"
-    [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra shield IFO rules were found (likely from an old interface)!\033[0m"
+#    [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
+#    [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no whitelist is set!\033[0m"
+#    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: shield chains are not right!\033[0m"
+#    [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: WAN network range bypass rules are not right!\033[0m"
+#    [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&  echo -e "\033[31m- iptables: VPN network range bypass rules are not right!\033[0m"
+#    [ $((_PB&CK_IPT_WL)) -ne 0 ] &&  echo -e "\033[31m- iptables: whitelist rules are not right!\033[0m"
+#    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo -e "\033[31m- iptables: VPN tunnel IFO rules are corrupted!\033[0m"
+#    [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo -e "\033[31m- iptables: WAN interface IFO rules are corrupted!\033[0m"
+#    [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
+#    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra shield IFO rules were found (likely from an old interface)!\033[0m"
   fi
   
   _exit $_RETVAL
