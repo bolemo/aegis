@@ -1195,19 +1195,19 @@ _status >/dev/null
     echo "- Shield is \033[1;35mdown\033[0m."
   elif [ $_CK -le $STA_OK ]; then _RETVAL=0
     echo -ne "- Shield is \033[1;32mup\033[0m"
-    _STRBLC="ALL: $_ABLC" _STRWLC="ALL: $_AWLC"
+    _STRBLC="global: $_ABLC" _STRWLC="global: $_AWLC"
     if [ $((_IF&STA_IF_WAN)) -ne 0 ]; then echo -n " for WAN interface ($WAN_IF)"
-      _STRBLC="$_STRBLC, WAN: $_WBLC" _STRWLC="$_STRWLC, WAN: $_WWLC"
+      _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"
     fi
     if [ $((_IF&STA_IF_TUN)) -ne 0 ]; then echo -n " and VPN tunnel ($TUN_IF)"
-      _STRBLC="$_STRBLC, VPN: $_TBLC" _STRWLC="$_STRWLC, VPN: $_TWLC"
+      _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
     fi
     echo -e ".\n- Blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC)."
     echo "- Bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
   else _RETVAL=3
      echo -e "- \033[1;31mSomething is not right!\033[0m"
   fi
-  if [ $_LOGD -eq 0 ]; then echo -ne "- Logging is \033[1;32menabled\033[0m."; else echo -ne "- Logging is \033[1;35mdisabled\033[0m."; fi
+  if [ $_LOGD -eq 0 ]; then echo -e "- Logging is \033[1;32menabled\033[0m."; else echo -ne "- Logging is \033[1;35mdisabled\033[0m."; fi
 
   _exit $_RETVAL
   
