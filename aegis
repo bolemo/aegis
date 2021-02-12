@@ -1209,15 +1209,28 @@ _status >/dev/null
   fi
   if [ $_LOGD -eq 0 ]; then echo -e "- Logging is \033[1;32menabled\033[0m."; else echo -ne "- Logging is \033[1;35mdisabled\033[0m."; fi
 
-  _exit $_RETVAL
-  
-  #_____
-
-  
   if [ $_RETVAL -eq 3 ]; then
-    echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
-    [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
-    [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
+    echo -e '\033[1;31mErrors:\033[0m'
+    [ $((_CK&CK_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
+    $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
+    if [ $((_CK&STA_DNA)) -ne 0 ]; then
+      [ "$((_DNA&DNA_LOG))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_ABL))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_AWL))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_WBW))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_WBL))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_WWL))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_TBW))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_TBL))" -ne 0 ] && :;
+      [ "$((_DNA&DNA_TWL))" -ne 0 ] && :;
+    fi
+    [ $((_CK&STA_WIF)) -ne 0 ] &&             echo -e "\033[31m- WAN: interface changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&STA_WINET)) -ne 0 ] &&           echo -e "\033[31m- WAN: network range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&STA_TIF)) -ne 0 ] &&             echo -e "\033[31m- VPN: tunnel changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CKSTA_TINET)) -ne 0 ] &&            echo -e "\033[31m- VPN: tunnel range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CKSTA_IPT)) -ne 0 ] &&              echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
+
+ 
     [ $((_PB&CK_IPS_BL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no blocklist is set!\033[0m"
     [ $((_PB&CK_IPS_WL)) -ne 0 ] &&  echo -e "\033[31m- ipset: no whitelist is set!\033[0m"
     [ $((_PB&CK_IPT_CH)) -ne 0 ] &&  echo -e "\033[31m- iptables: shield chains are not right!\033[0m"
@@ -1229,6 +1242,9 @@ _status >/dev/null
     [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo -e "\033[31m- iptables: WAN interface ($WAN_IF) IFO rules are missing!\033[0m"
     [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo -e "\033[31m- iptables: Extra shield IFO rules were found (likely from an old interface)!\033[0m"
   fi
+  
+  _exit $_RETVAL
+  
   
   if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
     echo -ne '\033[1;35mWarnings:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_WN)" || echo ''
