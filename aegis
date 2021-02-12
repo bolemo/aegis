@@ -376,8 +376,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   [ "$2" ] && _RELOAD_WTD=true || _RELOAD_WTD=false
 
   NFO_DIR=0 NFO_IPT=0 _DNA=0
-  sc_conf get wan >&- && _WAN=$WAN_IF
-  sc_conf get tun >&- && _TUN=$TUN_IF
+  sc_conf get wan >/dev/null && _WAN=$WAN_IF
+  sc_conf get tun >/dev/null && _TUN=$TUN_IF
   
   _cipset_init
   
@@ -433,7 +433,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   clean_ipset
   
   #Log daemon
-  [ $((_DNA&DNA_LOG)) -ne 0 ] && _logd_start || _logd_stop
+  if [ $((_DNA&DNA_LOG)) -ne 0 ]; then _logd_start; else _logd_stop; fi
   NFO_LOGD=$?
   
   /bin/rm -f "$SHIELD_LOCK" # removing the lock file
@@ -1023,12 +1023,12 @@ info() { $DEBUG && debug "info"
 
 test_ip() { # $1: IP to test, ($2: IF)
   echo -e "\033[1;36mTesting IP $1:\033[0m"
-  if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >&- | /bin/grep -qF 'sendto: Operation not permitted'
+  if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
     then echo "- IP address $1 is blocked by the router for WAN interface."
     else echo "- IP address $1 is not blocked by the router for WAN interface."
   fi
   if [ "$TUN_IF" ]; then
-    if /usr/bin/traceroute -q1 -m1 -w1 -i $TUN_IF $1 38 2>&1 >&- | /bin/grep -qF 'sendto: Operation not permitted'
+    if /usr/bin/traceroute -q1 -m1 -w1 -i $TUN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
       then echo "- IP address $1 is blocked by the router for VPN tunnel."
       else echo "- IP address $1 is not blocked by the router for VPN tunnel."
     fi
@@ -1123,7 +1123,7 @@ _status() { $DEBUG && debug "|---> _status"
     directive_status $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
     _WWLC=$_CNT
-    if ! sc_conf get wan.no_bypass >&-; then _WINET=$(inet_for_if $_WAN)
+    if ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
       [ $((_DNA&(DNA_ABL+DNA_WBL))) -ne 0 ] && _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
     fi
   fi
@@ -1137,7 +1137,7 @@ _status() { $DEBUG && debug "|---> _status"
     directive_status $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
     _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
     _TWLC=$_CNT
-    if ! sc_conf get tun.no_bypass >&-; then _TINET=$(inet_for_if $_TUN)
+    if ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
       [ $((_DNA&(DNA_ABL+DNA_TBL))) -ne 0 ] && _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
     fi
   fi
@@ -1164,7 +1164,7 @@ _status() { $DEBUG && debug "|---> _status"
     AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
     express_ipt_dna "$INFO_FILE" >$OIPTF
     echo "$_IPT" >$AIPTF
-    ! /usr/bin/diff -q $OIPTF $AIPTF >&- &&                       _CK=$((_CK+STA_IPT))
+    ! /usr/bin/diff -q $OIPTF $AIPTF >/dev/null &&                _CK=$((_CK+STA_IPT))
     /bin/rm -rf $OIPTF; /bin/rm -rf $AIPTF
   elif [ $_DNA -gt $DNA_LOG ] || [ "$_IPT" ]; then                _CK=$((_CK+STA_NDOWN))
   fi
@@ -1177,8 +1177,8 @@ _status() { $DEBUG && debug "|---> _status"
 
 netset_exists() {
   test -e "$ALL_BL_FILE" && return 0
-  sc_conf get wan >&- && [ "$WAN_IF" ] && test -e "$WAN_BL_FILE" && return 0
-  sc_conf get tun >&- && [ "$TUN_IF" ] && test -e "$TUN_BL_FILE" && return 0
+  sc_conf get wan >/dev/null && [ "$WAN_IF" ] && test -e "$WAN_BL_FILE" && return 0
+  sc_conf get tun >/dev/null && [ "$TUN_IF" ] && test -e "$TUN_BL_FILE" && return 0
   return 1
 }
 
