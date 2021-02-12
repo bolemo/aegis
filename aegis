@@ -1448,7 +1448,7 @@ _clean_args() {
   [ -z "${ARGS##* -rm-log *}" ]        && RM_LOG=1     || RM_LOG=
 }
 _repo_args() {
-  [ -z "${ARGS##* -repo=[^ ]* }" ]  && REPO=$(echo "$ARGS"|/bin/sed 's/.* -repo=\([[:word:]]\+\) .*/\1/')
+  [ -z "${ARGS##* -repo=[^ ]* }" ]  && REPO="$(echo "$ARGS"|/bin/sed 's/.* -repo=\([[:word:]]\+\) .*/\1/')"
 }
 
 [ -z ${VERBOSE+x} ] && exec >/dev/null
