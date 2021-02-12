@@ -1214,7 +1214,7 @@ _status >/dev/null
   #_____
 
   
-  if [ $_PB -ne 0 ]; then
+  if [ $_RETVAL -eq 3 ]; then
     echo -ne '\033[1;31mErrors:\033[0m'; [ 0$VERBOSE -ge 2 ] && echo " (CODE: $_PB)" || echo ''
     [ $((_PB&CK_FWS)) -ne 0 ] &&     echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
     [ $((_PB&CK_PM)) -ne 0 ] &&      echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
