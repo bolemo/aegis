@@ -917,7 +917,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   
   # processing common custom blacklist if any
-  if ( for F in $CUST_ALL_BL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_ALL_BL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "- Adding global blocking directives from custom blocklist(s)..."
     $IPR_BIN "$TMP_DIR/src.bl" $CUST_ALL_BL_FILE >"$TMP_DIR/all.bl"
   elif [ $VERBOSE ]; then echo "- No custom global blocklist(s) found."
@@ -930,7 +930,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 
   # processing custom common whitelists if any
   :>"$TMP_DIR/all.wl"
-  if ( for F in $CUST_ALL_WL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_ALL_WL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "Defining global bypassing directives from custom whitelist(s)..."
     $IPR_BIN $CUST_ALL_WL_FILE >"$TMP_DIR/all.wl"
     $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/all.wl" >"$TMP_DIR/all.pro.wl"
@@ -945,7 +945,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # --------- WAN SPECIFIC LISTS ---------
   # processing custom WAN blocklists if any
   :>"$TMP_DIR/wan.bl"
-  if ( for F in $CUST_WAN_BL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_WAN_BL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "Defining WAN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN $CUST_WAN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/wan.bl"
   elif [ $VERBOSE ]; then echo "- No custom WAN specific blocklist(s) found."
@@ -957,7 +957,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   # processing custom WAN whitelists if any
   :>"$TMP_DIR/wan.wl"
-  if ( for F in $CUST_WAN_WL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_WAN_WL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "Defining WAN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN $CUST_WAN_WL_FILE "$TMP_DIR/all.wl" >"$TMP_DIR/wan.wl"
     $IPR_BIN --common "$TMP_DIR/wan.bl" "$TMP_DIR/wan.wl" >"$TMP_DIR/wan.pro.wl"
@@ -972,7 +972,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # --------- VPN SPECIFIC LISTS ---------
   # processing custom VPN blocklists if any
   :>"$TMP_DIR/tun.bl"
-  if ( for F in $CUST_TUN_BL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_TUN_BL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "Defining VPN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN $CUST_TUN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/tun.bl"
   elif [ $VERBOSE ]; then echo "- No custom VPN blocklist(s) found."
@@ -984,7 +984,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   # processing custom TUN whitelists if any
   :>"$TMP_DIR/tun.wl"
-  if ( for F in $CUST_TUN_WL_FILE; do test -r $F || exit 1; done; ); then
+  if ( for F in $CUST_TUN_WL_FILE; do test -r $F || _exit 1; done; ); then
     [ $VERBOSE ] && echo "Defining VPN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN $CUST_TUN_WL_FILE "$TMP_DIR/all.wl" >"$TMP_DIR/tun.wl"
     $IPR_BIN --common "$TMP_DIR/tun.bl" "$TMP_DIR/tun.wl" >"$TMP_DIR/tun.pro.wl"
@@ -1043,7 +1043,7 @@ test_ip() { # $1: IP to test, ($2: IF)
   esac; done
   ip_in_if_inet $1 $WAN_IF && echo "- IP address $1 is in the WAN network range ($(inet_for_if $WAN_IF))."
   ip_in_if_inet $1 $TUN_IF && echo "- IP address $1 is in the VPN network range ($(inet_for_if $TUN_IF))."
-  exit 0
+  _exit 0
 }
 
 #---------------------------- _STATUS ----------------------------
