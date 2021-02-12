@@ -735,7 +735,7 @@ is_ipv4() { /usr/sbin/ip route get $1; return $?; } >/dev/null 2>>"$STDERR"
 ip_in_if_inet() { $DEBUG && debug "ip_in_if_inet $*"
   [ -z "$2" ] && return 1
   _INET="$(/bin/mktemp /tmp/$SC_ABR.inet.tmp-XXXXXX)"
-  echo "$2" >"$_INET"
+  inet_for_if $2 >"$_INET"
   [ "$(echo "$1" | $IPR_BIN --common "$_INET" -)" ] && _RET=0 || _RET=1
   /bin/rm -rf "$_INET"
   return $_RET
@@ -1042,7 +1042,7 @@ test_ip() { # $1: IP to test, ($2: IF)
     "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $1 && echo "- IP address $1 is in Aegis VPN bypassing directives." ;;
   esac; done
   ip_in_if_inet $1 $WAN_IF && echo "- IP address $1 is in the WAN network range ($(inet_for_if $WAN_IF))."
-  [ "$TUN_IF" ] && ip_in_if_inet $1 $TUN_IF && echo "- IP address $1 is in the VPN network range ($(inet_for_if $TUN_IF))."
+  ip_in_if_inet $1 $TUN_IF && echo "- IP address $1 is in the VPN network range ($(inet_for_if $TUN_IF))."
   exit 0
 }
 
