@@ -1271,12 +1271,12 @@ _status >/dev/null
     "$INFO_DIR__DEST") echo "- $2 directives were cleared.";;
     "$INFO_DIR__MISS") echo "- no $2 directives were found.";;
   esac; }
-  _parse_odir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
-  _parse_odir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
-  _parse_odir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
-  _parse_odir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
-  _parse_odir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
-  _parse_odir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+  _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
+  _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
+  _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
+  _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
+  _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
+  _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
   
   if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "- iptables: rules were already set."
   elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."
