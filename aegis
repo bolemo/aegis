@@ -1245,8 +1245,8 @@ _status >/dev/null
   [ $((_IF&STA_IF_WAN)) -ne 0 ] && echo "- shield is active for WAN interface '$WAN_IF'."
   [ $((_IF&STA_IF_TUN)) -ne 0 ] && echo "- shield is active for VPN tunnel '$TUN_IF'."
   # dates
-  _gentimeforlist() [ -e "$1" ] && echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")" \
-                                || echo "- no $2 directives were generated.";
+  _gentimeforlist() { if [ -e "$1" ]; then echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")"
+                                      else echo "- no $2 directives were generated."; fi; }
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ "$SRC_BL_CACHE" ] && echo "- sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)"
   _gentimeforlist "$ALL_BL_FILE" "global blocklist"
