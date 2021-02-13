@@ -1282,15 +1282,15 @@ _status >/dev/null
   elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."
   fi
   # _ODNA
-  [ $((_OIPT&DNA_LOG)) -ne 0 ]; then echo "- iptables: logging rules were set."
-  [ $((_OIPT&DNA_ABL)) -ne 0 ]; then echo "- iptables: global blocking rules were set."
-  [ $((_OIPT&DNA_AWL)) -ne 0 ]; then echo "- iptables: global bypassing rules were set."
-  [ $((_OIPT&DNA_WBW)) -ne 0 ]; then echo "- iptables: WAN network bypassing rules were set."
-  [ $((_OIPT&DNA_WBL)) -ne 0 ]; then echo "- iptables: WAN blocking rules were set."
-  [ $((_OIPT&DNA_WWL)) -ne 0 ]; then echo "- iptables: WAN bypassing rules were set."
-  [ $((_OIPT&DNA_TBW)) -ne 0 ]; then echo "- iptables: VPN network bypassing rules were set."
-  [ $((_OIPT&DNA_TBL)) -ne 0 ]; then echo "- iptables: VPN blocking rules were set."
-  [ $((_OIPT&DNA_TWL)) -ne 0 ]; then echo "- iptables: VPN bypassing rules were set."
+  [ $((_OIPT&DNA_LOG)) -ne 0 ] && echo "- iptables: logging rules were set."
+  [ $((_OIPT&DNA_ABL)) -ne 0 ] && echo "- iptables: global blocking rules were set."
+  [ $((_OIPT&DNA_AWL)) -ne 0 ] && echo "- iptables: global bypassing rules were set."
+  [ $((_OIPT&DNA_WBW)) -ne 0 ] && echo "- iptables: WAN network bypassing rules were set."
+  [ $((_OIPT&DNA_WBL)) -ne 0 ] && echo "- iptables: WAN blocking rules were set."
+  [ $((_OIPT&DNA_WWL)) -ne 0 ] && echo "- iptables: WAN bypassing rules were set."
+  [ $((_OIPT&DNA_TBW)) -ne 0 ] && echo "- iptables: VPN network bypassing rules were set."
+  [ $((_OIPT&DNA_TBL)) -ne 0 ] && echo "- iptables: VPN blocking rules were set."
+  [ $((_OIPT&DNA_TWL)) -ne 0 ] && echo "- iptables: VPN bypassing rules were set."
 
   case "$INFO_LOGD" in
     $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
