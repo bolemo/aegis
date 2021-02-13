@@ -930,7 +930,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom common whitelists if any
   :>"$TMP_DIR/all.wl"
   if ( for F in $CUST_ALL_WL_FILE; do test -r $F || _exit 1; done; ); then
-    [ $VERBOSE ] && echo "Defining global bypassing directives from custom whitelist(s)..."
+    [ $VERBOSE ] && echo "- Defining global bypassing directives from custom whitelist(s)..."
     $IPR_BIN $CUST_ALL_WL_FILE >"$TMP_DIR/all.wl"
     $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/all.wl" >"$TMP_DIR/all.pro.wl"
   elif [ $VERBOSE ]; then echo "- No custom global whitelist(s) found."
@@ -945,7 +945,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom WAN blocklists if any
   :>"$TMP_DIR/wan.bl"
   if ( for F in $CUST_WAN_BL_FILE; do test -r $F || _exit 1; done; ); then
-    [ $VERBOSE ] && echo "Defining WAN specific blocking directives from custom blocklist(s)..."
+    [ $VERBOSE ] && echo "- Defining WAN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN $CUST_WAN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/wan.bl"
   elif [ $VERBOSE ]; then echo "- No custom WAN specific blocklist(s) found."
   fi
@@ -957,7 +957,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom WAN whitelists if any
   :>"$TMP_DIR/wan.wl"
   if ( for F in $CUST_WAN_WL_FILE; do test -r $F || _exit 1; done; ); then
-    [ $VERBOSE ] && echo "Defining WAN specific bypassing directives from custom whitelist(s)..."
+    [ $VERBOSE ] && echo "- Defining WAN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN $CUST_WAN_WL_FILE "$TMP_DIR/all.wl" >"$TMP_DIR/wan.wl"
     $IPR_BIN --common "$TMP_DIR/wan.bl" "$TMP_DIR/wan.wl" >"$TMP_DIR/wan.pro.wl"
   elif [ $VERBOSE ]; then echo "- No custom WAN whitelist(s) found."
@@ -972,7 +972,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom VPN blocklists if any
   :>"$TMP_DIR/tun.bl"
   if ( for F in $CUST_TUN_BL_FILE; do test -r $F || _exit 1; done; ); then
-    [ $VERBOSE ] && echo "Defining VPN specific blocking directives from custom blocklist(s)..."
+    [ $VERBOSE ] && echo "- Defining VPN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN $CUST_TUN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/tun.bl"
   elif [ $VERBOSE ]; then echo "- No custom VPN blocklist(s) found."
   fi
@@ -984,7 +984,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom TUN whitelists if any
   :>"$TMP_DIR/tun.wl"
   if ( for F in $CUST_TUN_WL_FILE; do test -r $F || _exit 1; done; ); then
-    [ $VERBOSE ] && echo "Defining VPN specific bypassing directives from custom whitelist(s)..."
+    [ $VERBOSE ] && echo "- Defining VPN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN $CUST_TUN_WL_FILE "$TMP_DIR/all.wl" >"$TMP_DIR/tun.wl"
     $IPR_BIN --common "$TMP_DIR/tun.bl" "$TMP_DIR/tun.wl" >"$TMP_DIR/tun.pro.wl"
   elif [ $VERBOSE ]; then echo "- No custom VPN whitelist(s) found."
@@ -1216,7 +1216,7 @@ _status >/dev/null
     [ $((_CK&CK_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
     $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     if [ $((_CK&STA_DNA)) -ne 0 ]; then
-       _parse_dir() { case "$1&INFO_DIR__MASK" in
+       _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
          "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 file changed since $SC_NAME was upreared!\033[0m";; # loaded != file
          "$INFO_DIR__MISS") echo -e "\033[31m- directives: $2 file is missing!\033[0m";; # loaded but no file
          "$INFO_DIR__LOAD") echo -e "\033[31m- directives: $2 file was created after $SC_NAME was upreared!\033[0m";; # file exists, but not loaded
@@ -1232,11 +1232,12 @@ _status >/dev/null
     [ $((_CK&STA_WINET)) -ne 0 ] &&           echo -e "\033[31m- WAN: network range changed since $SC_NAME was upreared!\033[0m"
     [ $((_CK&STA_TIF)) -ne 0 ] &&             echo -e "\033[31m- VPN: tunnel changed since $SC_NAME was upreared!\033[0m"
     [ $((_CKSTA_TINET)) -ne 0 ] &&            echo -e "\033[31m- VPN: tunnel range changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CKSTA_OIPT)) -ne 0 ] &&             echo -e "\033[31m- iptables: $SC_NAME rules could not be set properly during last uprear!\033[0m"
+    [ $((_CKSTA_OIPT)) -ne 0 ] &&             echo -e "\033[31m- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!\033[0m"
     [ $((_CKSTA_IPT)) -ne 0 ] &&              echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
   fi
   
   [ $VERBOSE ] || _exit $_RETVAL
+  
   _OFROM=$((_ONFO&INFO_FROM_MASK))
   _ODIR=$(((_ONFO>>INFO_DIR_SHIFT)&INFO_DIR_MASK))
   _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
@@ -1245,8 +1246,7 @@ _status >/dev/null
   [ $((_IF&STA_IF_WAN)) -ne 0 ] && echo "- shield is active for WAN interface '$WAN_IF'."
   [ $((_IF&STA_IF_TUN)) -ne 0 ] && echo "- shield is active for VPN tunnel '$TUN_IF'."
   # dates
-  _gentimeforlist() { if [ -e "$1" ]; then echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")"
-                                      else echo "- no $2 directives were generated."; fi; }
+  _gentimeforlist() [ -e "$1" ] && echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")";
   echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ "$SRC_BL_CACHE" ] && echo "- sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)"
   _gentimeforlist "$ALL_BL_FILE" "global blocklist"
@@ -1263,13 +1263,13 @@ _status >/dev/null
     $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
   esac
   echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
-  _parse_odir() { case "$1&INFO_DIR__MASK" in
+  _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
     "$INFO_DIR__SAME") echo "- loaded $2 directives were already identical to the ones to load.";;
     "$INFO_DIR__KEEP") echo "! loaded $2 directives were kept as new ones could not be found!";;
     "$INFO_DIR__LOAD") echo "- $2 directives were loaded.";;
     "$INFO_DIR__SWAP") echo "- $2 directives were reloaded.";;
     "$INFO_DIR__DEST") echo "- $2 directives were cleared.";;
-    "$INFO_DIR__MISS") echo "- no $2 directives were found.";;
+    "$INFO_DIR__MISS") :;;
   esac; }
   _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
   _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
@@ -1280,9 +1280,18 @@ _status >/dev/null
   
   if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "- iptables: rules were already set."
   elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."
-  else echo "! iptables: rules were UNSUCCESSFULLY (re)set!"; fi
+  fi
   # _ODNA
-  
+  [ $((_OIPT&DNA_LOG)) -ne 0 ]; then echo "- iptables: logging rules were set."
+  [ $((_OIPT&DNA_ABL)) -ne 0 ]; then echo "- iptables: global blocking rules were set."
+  [ $((_OIPT&DNA_AWL)) -ne 0 ]; then echo "- iptables: global bypassing rules were set."
+  [ $((_OIPT&DNA_WBW)) -ne 0 ]; then echo "- iptables: WAN network bypassing rules were set."
+  [ $((_OIPT&DNA_WBL)) -ne 0 ]; then echo "- iptables: WAN blocking rules were set."
+  [ $((_OIPT&DNA_WWL)) -ne 0 ]; then echo "- iptables: WAN bypassing rules were set."
+  [ $((_OIPT&DNA_TBW)) -ne 0 ]; then echo "- iptables: VPN network bypassing rules were set."
+  [ $((_OIPT&DNA_TBL)) -ne 0 ]; then echo "- iptables: VPN blocking rules were set."
+  [ $((_OIPT&DNA_TWL)) -ne 0 ]; then echo "- iptables: VPN bypassing rules were set."
+
   case "$INFO_LOGD" in
     $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
     $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
