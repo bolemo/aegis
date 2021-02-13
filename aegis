@@ -1216,7 +1216,7 @@ _status >/dev/null
     [ $((_CK&CK_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
     $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     if [ $((_CK&STA_DNA)) -ne 0 ]; then
-       _parse_dir() { case "$1" in
+       _parse_dir() { case "$1&INFO_DIR__MASK" in
          "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 file changed since $SC_NAME was upreared!\033[0m";; # loaded != file
          "$INFO_DIR__MISS") echo -e "\033[31m- directives: $2 file is missing!\033[0m";; # loaded but no file
          "$INFO_DIR__LOAD") echo -e "\033[31m- directives: $2 file was created after $SC_NAME was upreared!\033[0m";; # file exists, but not loaded
@@ -1263,7 +1263,7 @@ _status >/dev/null
     $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
   esac
   echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
-  _parse_odir() { case "$1" in
+  _parse_odir() { case "$1&INFO_DIR__MASK" in
     "$INFO_DIR__SAME") echo "- loaded $2 directives were already identical to the ones to load.";;
     "$INFO_DIR__KEEP") echo "! loaded $2 directives were kept as new ones could not be found!";;
     "$INFO_DIR__LOAD") echo "- $2 directives were loaded.";;
