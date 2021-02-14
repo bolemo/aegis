@@ -1259,11 +1259,11 @@ _status >/dev/null
   esac
   echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
   _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
-    "$INFO_DIR__SAME") echo "- loaded $2 directives were already identical to the ones to load.";;
-    "$INFO_DIR__KEEP") echo "! loaded $2 directives were kept as new ones could not be found!";;
-    "$INFO_DIR__LOAD") echo "- $2 directives were loaded.";;
-    "$INFO_DIR__SWAP") echo "- $2 directives were reloaded.";;
-    "$INFO_DIR__DEST") echo "- $2 directives were cleared.";;
+    "$INFO_DIR__SAME") echo "- directives: $2 was already properly set.";;
+    "$INFO_DIR__KEEP") echo "! directives: loaded $2 was kept as new ones could not be found!";;
+    "$INFO_DIR__LOAD") echo "- directives: $2 was loaded.";;
+    "$INFO_DIR__SWAP") echo "- directives: $2 was reloaded.";;
+    "$INFO_DIR__DEST") echo "- directives: $2 was unloaded.";;
     "$INFO_DIR__MISS") :;;
   esac; }
   _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
@@ -1273,19 +1273,21 @@ _status >/dev/null
   _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
   _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
   
-  if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "- iptables: rules were already set."
-  elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."
+  if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "- iptables: rules were already set with:"
+  elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set with:"
   fi
   # _ODNA
-  [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo "- iptables: logging rules were set."
-  [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo "- iptables: global blocking rules were set."
-  [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo "- iptables: global bypassing rules were set."
-  [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo "- iptables: WAN network bypassing rules were set."
-  [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo "- iptables: WAN blocking rules were set."
-  [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo "- iptables: WAN bypassing rules were set."
-  [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo "- iptables: VPN network bypassing rules were set."
-  [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo "- iptables: VPN blocking rules were set."
-  [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo "- iptables: VPN bypassing rules were set."
+  _AND=''
+  [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -ne "  . logging" && _AND=','
+  [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -ne "$_AND\n  . global blocking" && _AND=','
+  [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -ne "$_AND\n  . global bypassing" && _AND=','
+  [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -ne "$_AND\n  . WAN network bypassing" && _AND=','
+  [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -ne "$_AND\n  . WAN blocking" && _AND=','
+  [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -ne "$_AND\n  . WAN bypassing" && _AND=','
+  [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -ne "$_AND\n  . VPN network bypassing" && _AND=','
+  [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -ne "$_AND\n  . VPN blocking" && _AND=','
+  [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -ne "$_AND\n  . VPN bypassing"
+  echo '.'
 
   case "$INFO_LOGD" in
     $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
