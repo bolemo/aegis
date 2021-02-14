@@ -1285,15 +1285,15 @@ _status >/dev/null
   elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set."
   fi
   # _ODNA
-  [ $((_OIPT&DNA_LOG)) -ne 0 ] && echo "- iptables: logging rules were set."
-  [ $((_OIPT&DNA_ABL)) -ne 0 ] && echo "- iptables: global blocking rules were set."
-  [ $((_OIPT&DNA_AWL)) -ne 0 ] && echo "- iptables: global bypassing rules were set."
-  [ $((_OIPT&DNA_WBW)) -ne 0 ] && echo "- iptables: WAN network bypassing rules were set."
-  [ $((_OIPT&DNA_WBL)) -ne 0 ] && echo "- iptables: WAN blocking rules were set."
-  [ $((_OIPT&DNA_WWL)) -ne 0 ] && echo "- iptables: WAN bypassing rules were set."
-  [ $((_OIPT&DNA_TBW)) -ne 0 ] && echo "- iptables: VPN network bypassing rules were set."
-  [ $((_OIPT&DNA_TBL)) -ne 0 ] && echo "- iptables: VPN blocking rules were set."
-  [ $((_OIPT&DNA_TWL)) -ne 0 ] && echo "- iptables: VPN bypassing rules were set."
+  [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo "- iptables: logging rules were set."
+  [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo "- iptables: global blocking rules were set."
+  [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo "- iptables: global bypassing rules were set."
+  [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo "- iptables: WAN network bypassing rules were set."
+  [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo "- iptables: WAN blocking rules were set."
+  [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo "- iptables: WAN bypassing rules were set."
+  [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo "- iptables: VPN network bypassing rules were set."
+  [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo "- iptables: VPN blocking rules were set."
+  [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo "- iptables: VPN bypassing rules were set."
 
   case "$INFO_LOGD" in
     $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
@@ -1302,29 +1302,24 @@ _status >/dev/null
     $INFO_LOGD_STARTED)  echo '- log daemon: was turned on.';;
   esac
   
-  _exit $_RETVAL
- 
- 
+  [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
-  [ 0$VERBOSE -lt 3 ] && return 0
+  echo -e "\033[1;36m$SC_NAME iptables rules:\033[0m"
+  [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
+  $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
+    case "$_SET" in
+      "$IPSET_ALL_BL_NAME") _NAME='general blocking directives' ;;
+      "$IPSET_ALL_WL_NAME") _NAME='general bypassing directives' ;;
+      "$IPSET_WAN_BL_NAME") _NAME='WAN specific blocking directives' ;;
+      "$IPSET_WAN_WL_NAME") _NAME='WAN specific bypassing directives' ;;
+      "$IPSET_TUN_BL_NAME") _NAME='VPN specific blocking directives' ;;
+      "$IPSET_TUN_WL_NAME") _NAME='VPN specific bypassing directives' ;;
+      *) _NAME="$_SET" ;;
+    esac
+    echo -e "\033[1;36mipset '$_NAME':\033[0m"
+    $IPS_BIN -L -t $_SET|/bin/sed 's/^/- /'
+  done
   
-  if [ $((_CK+_PB)) -ne 0 ]; then
-    echo -e "\033[1;36miptables:\033[0m"
-    [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
-    $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
-      case "$_SET" in
-        "$IPSET_ALL_BL_NAME") _NAME='general blocking directives' ;;
-        "$IPSET_ALL_WL_NAME") _NAME='general bypassing directives' ;;
-        "$IPSET_WAN_BL_NAME") _NAME='WAN specific blocking directives' ;;
-        "$IPSET_WAN_WL_NAME") _NAME='WAN specific bypassing directives' ;;
-        "$IPSET_TUN_BL_NAME") _NAME='VPN specific blocking directives' ;;
-        "$IPSET_TUN_WL_NAME") _NAME='VPN specific bypassing directives' ;;
-        *) _NAME="$_SET" ;;
-      esac
-      echo -e "\033[1;36mipset '$_NAME':\033[0m"
-      $IPS_BIN -L -t $_SET|/bin/sed 's/^/- /'
-    done
-  fi
   _exit $_RETVAL
 }
 
@@ -1369,7 +1364,6 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m"'
 '" \033[1;36m-v\033[0m                 + verbose mode (level 1)"'
 '" \033[1;36m-vv\033[0m                + verbose mode (level 2)"'
-'" \033[1;36m-vvv\033[0m               + verbose mode (level 3)"'
 '" \033[1;36m-q\033[0m                 + quiet mode (no output)"
 }
 
@@ -1397,7 +1391,6 @@ case $ARGS in
   *' -q '*)   unset VERBOSE ;;
   *' -v '*)   VERBOSE=1 ;;
   *' -vv '*)  VERBOSE=2 ;;
-  *' -vvv '*) VERBOSE=3 ;;
   *) VERBOSE= ;;
 esac
 
