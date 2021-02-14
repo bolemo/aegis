@@ -1289,7 +1289,7 @@ _status >/dev/null
   [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
   echo '.'
 
-  case "$INFO_LOGD" in
+  case "$_OLOGD" in
     $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
     $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
     $INFO_LOGD_STOPPED)  echo '- log daemon: was turned off.';;
