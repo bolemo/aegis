@@ -1053,22 +1053,15 @@ test_ip() { # $1: IP to test, ($2: IF)
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
-STA_FWS=1
-STA_PM=2
-STA_ENV=3
+STA_FWS=1 STA_PM=2 STA_ENV=3
 
 STA_DNA=4
-STA_WIF=8
-STA_WINET=16
-STA_TIF=32
-STA_TINET=64
-STA_IPT=128
-STA_OIPT=256
-STA_NDOWN=512
-STA_OK=515
+STA_WIF=8     STA_WINET=16
+STA_TIF=32    STA_TINET=64
+STA_IPT=128   STA_OIPT=256
+STA_NDOWN=512 STA_OK=515
 
-STA_IF_WAN=1
-STA_IF_TUN=2
+STA_IF_WAN=1  STA_IF_TUN=2
 
 # ---------------------------------------------
 : ENV EOF
@@ -1102,8 +1095,7 @@ _status() { $DEBUG && debug "|---> _status"
     
   # CHECK DIRECTIVES
   _DIR=0 _DNA=0 _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
-  _WAN=$WAN_IF
-  _TUN=$TUN_IF
+  _WAN=$WAN_IF _TUN=$TUN_IF
   
   _cipset_init
   
@@ -1195,11 +1187,11 @@ _status >/dev/null
   echo -e '\033[1;36mStatus:\033[0m'
   
   if [ $_CK -eq 0 ]; then _RETVAL=1
-    echo "- Shield is unset."
+    echo "- shield is unset."
   elif [ $_CK -le $STA_ENV ]; then _RETVAL=2
-    echo "- Shield is \033[1;35mdown\033[0m."
+    echo "- shield is \033[1;35mdown\033[0m."
   elif [ $_CK -le $STA_OK ]; then _RETVAL=0
-    echo -ne "- Shield is \033[1;32mup\033[0m"
+    echo -ne "- shield is \033[1;32mup\033[0m"
     _STRBLC="global: $_ABLC" _STRWLC="global: $_AWLC"
     if [ $((_IF&STA_IF_WAN)) -ne 0 ]; then echo -n " for WAN interface ($WAN_IF)"
       _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"
@@ -1207,12 +1199,12 @@ _status >/dev/null
     if [ $((_IF&STA_IF_TUN)) -ne 0 ]; then echo -n " and VPN tunnel ($TUN_IF)"
       _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
     fi
-    echo -e ".\n- Blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC)."
-    echo "- Bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
+    echo -e ".\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC)."
+    echo "- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
   else _RETVAL=3
-     echo -e "- \033[1;31mSomething is not right!\033[0m"
+     echo -e "- \033[1;31msomething is not right!\033[0m"
   fi
-  if [ $_LOGD -eq 0 ]; then echo -e "- Logging is \033[1;32menabled\033[0m."; else echo -ne "- Logging is \033[1;35mdisabled\033[0m."; fi
+  if [ $_LOGD -eq 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."; else echo -ne "- Logging is \033[1;35mdisabled\033[0m."; fi
 
   if [ $_RETVAL -eq 3 ]; then
     echo -e '\033[1;31mErrors:\033[0m'
@@ -1245,12 +1237,12 @@ _status >/dev/null
   _ODIR=$(((_ONFO>>INFO_DIR_SHIFT)&INFO_DIR_MASK))
   _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
   _OLOGD=$(((_ONFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
-  echo -ne '\033[1;36mDetailed status:\033[0m'
+  echo -e '\033[1;36mDetailed status:\033[0m'
   [ $((_IF&STA_IF_WAN)) -ne 0 ] && echo "- shield is active for WAN interface '$WAN_IF'."
   [ $((_IF&STA_IF_TUN)) -ne 0 ] && echo "- shield is active for VPN tunnel '$TUN_IF'."
   # dates
   _gentimeforlist() { [ -e "$1" ] && echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
-  echo "- Actual router time: $(/bin/date +'%Y-%m-%d %X')"
+  echo "- actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ "$SRC_BL_CACHE" ] && echo "- sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)"
   _gentimeforlist "$ALL_BL_FILE" "global blocklist"
   _gentimeforlist "$WAN_BL_FILE" "WAN specific blocklist"
@@ -1304,8 +1296,9 @@ _status >/dev/null
   
   [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
-  echo -e "\033[1;36m$SC_NAME iptables rules:\033[0m"
-  [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
+  echo -e '\033[1;36mExtended status:\033[0m'
+  echo -e "\033[1;36m- $SC_NAME iptables rules:\033[0m"
+  [ -z "$_IPT" ] && echo " - no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/ - iptables /'
   $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
     case "$_SET" in
       "$IPSET_ALL_BL_NAME") _NAME='general blocking directives' ;;
@@ -1314,10 +1307,11 @@ _status >/dev/null
       "$IPSET_WAN_WL_NAME") _NAME='WAN specific bypassing directives' ;;
       "$IPSET_TUN_BL_NAME") _NAME='VPN specific blocking directives' ;;
       "$IPSET_TUN_WL_NAME") _NAME='VPN specific bypassing directives' ;;
-      *) _NAME="$_SET" ;;
+      *) _NAME="'$_SET'" ;;
     esac
-    echo -e "\033[1;36mipset '$_NAME':\033[0m"
-    $IPS_BIN -L -t $_SET|/bin/sed 's/^/- /'
+    echo -e "\033[1;36m- $SC_NAME ipset sets:\033[0m"
+    echo -e "\033[1;36m - $_NAME:\033[0m"
+    $IPS_BIN -L -t $_SET|/bin/sed 's/^/  - /'
   done
   
   _exit $_RETVAL
