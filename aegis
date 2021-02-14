@@ -358,12 +358,12 @@ process_directive() {
         else _RELOAD=true
       fi
     elif $_RELOAD_WTD; then _NFO=$INFO_DIR__DEST; return 1 # no file, we want to destroy the loaded ipset
-    else _RELOAD=false # no file, we want to keep the loaded ipset
+    else _RELOAD=false; _NFO=$INFO_DIR__KEEP # no file, we want to keep the loaded ipset
     fi
     if $_RELOAD; then # reload is asked for; so need to swap ipset
       _cipset_swap_set_file $1 $2
       _NFO=$INFO_DIR__SWAP
-    else _NFO=$INFO_DIR__KEEP # else keeping existing ipset
+    # else keeping existing ipset
     fi
   elif [ -r "$2" ]; then # file exists, so creating ipset from it
       _cipset_create_set_file $1 $2
