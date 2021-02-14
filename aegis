@@ -1297,8 +1297,9 @@ _status >/dev/null
   [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
   echo -e '\033[1;36mExtended status:\033[0m'
-  echo -e "\033[1;36m- $SC_NAME iptables rules:\033[0m"
-  [ -z "$_IPT" ] && echo " - no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/ - iptables /'
+  echo -e "\033[1;37m- $SC_NAME iptables rules:\033[0m"
+  [ -z "$_IPT" ] && echo " - no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/  iptables /'
+  echo -e "\033[1;37m- $SC_NAME ipset sets:\033[0m"
   $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
     case "$_SET" in
       "$IPSET_ALL_BL_NAME") _NAME='general blocking directives' ;;
@@ -1309,9 +1310,8 @@ _status >/dev/null
       "$IPSET_TUN_WL_NAME") _NAME='VPN specific bypassing directives' ;;
       *) _NAME="'$_SET'" ;;
     esac
-    echo -e "\033[1;36m- $SC_NAME ipset sets:\033[0m"
-    echo -e "\033[1;36m - $_NAME:\033[0m"
-    $IPS_BIN -L -t $_SET|/bin/sed 's/^/  - /'
+    echo -e "\033[1;34m - $_NAME:\033[0m"
+    $IPS_BIN -L -t $_SET|/bin/sed 's/^/   /'
   done
   
   _exit $_RETVAL
