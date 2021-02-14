@@ -1273,20 +1273,20 @@ _status >/dev/null
   _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
   _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
   
-  if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "- iptables: rules were already set with:"
-  elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo "- iptables: rules were (re)set with:"
+  if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "- iptables: rules were already set with:"
+  elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "- iptables: rules were (re)set with:"
   fi
   # _ODNA
   _AND=''
-  [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -ne "  . logging" && _AND=','
-  [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -ne "$_AND\n  . global blocking" && _AND=','
-  [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -ne "$_AND\n  . global bypassing" && _AND=','
-  [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -ne "$_AND\n  . WAN network bypassing" && _AND=','
-  [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -ne "$_AND\n  . WAN blocking" && _AND=','
-  [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -ne "$_AND\n  . WAN bypassing" && _AND=','
-  [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -ne "$_AND\n  . VPN network bypassing" && _AND=','
-  [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -ne "$_AND\n  . VPN blocking" && _AND=','
-  [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -ne "$_AND\n  . VPN bypassing"
+  [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
+  [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
+  [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
+  [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
+  [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
+  [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
+  [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
+  [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
+  [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
   echo '.'
 
   case "$INFO_LOGD" in
