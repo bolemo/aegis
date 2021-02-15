@@ -1192,8 +1192,8 @@ _status >/dev/null
 
   if [ $_RETVAL -eq 3 ]; then
     echo -e '\033[1;31mErrors:\033[0m'
-    [ $((_CK&CK_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
-    $EXT_DRIVE && [ $((_CK&CK_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
+    [ $((_CK&STA_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
+    $EXT_DRIVE && [ $((_CK&STA_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     if [ $((_CK&STA_DNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
          "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 file changed since $SC_NAME was upreared!\033[0m";; # loaded != file
