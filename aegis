@@ -65,7 +65,7 @@ INFO_DIR_SHIFT=2
 INFO_DIR_MASK=524287
 
 INFO_DIR__SAME=1   # _ _ x SAME => KEEP
-INFO_DIR__KEEP=2   # _ x _ KEEP
+INFO_DIR__KEEP=2   # _ x _ KEEP (was loaded but no file)
 INFO_DIR__LOAD=4   # x _ _
 INFO_DIR__SWAP=5   # x _ x RELOAD
 INFO_DIR__DEST=6   # x x _ => was there, was destroyed
@@ -1061,7 +1061,7 @@ directive_status() {
         then _NFO=$INFO_DIR__SAME # loaded == file
         else _NFO=$INFO_DIR__DIFF # loaded != file
       fi
-    else _NFO=$INFO_DIR__MISS # loaded but no file
+    else _NFO=$INFO_DIR__KEEP # loaded but no file
     fi
   elif [ -r "$2" ]; then _RET=1; _NFO=$INFO_DIR__LOAD # file exists, but not loaded
   else _RET=1; _NFO=$INFO_DIR__DEST # no file, not loaded
@@ -1197,7 +1197,7 @@ _status >/dev/null
     if [ $((_CK&STA_DNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
          "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 file changed since $SC_NAME was upreared!\033[0m";; # loaded != file
-         "$INFO_DIR__MISS") echo -e "\033[31m- directives: $2 file is missing!\033[0m";; # loaded but no file
+         "$INFO_DIR__KEEP") echo -e "\033[31m- directives: $2 file is missing!\033[0m";; # loaded but no file
          "$INFO_DIR__LOAD") echo -e "\033[31m- directives: $2 file was created after $SC_NAME was upreared!\033[0m";; # file exists, but not loaded
        esac; }
       _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
@@ -1243,11 +1243,11 @@ _status >/dev/null
   esac
   echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
   _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
-    "$INFO_DIR__SAME") echo "- directives: $2 was already properly set.";;
-    "$INFO_DIR__KEEP") echo "! directives: loaded $2 was kept as new ones could not be found!";;
-    "$INFO_DIR__LOAD") echo "- directives: $2 was loaded.";;
-    "$INFO_DIR__SWAP") echo "- directives: $2 was reloaded.";;
-    "$INFO_DIR__DEST") echo "- directives: $2 was unloaded.";;
+    "$INFO_DIR__SAME") echo "- ipset: latest $2 directives were already loaded.";;
+    "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives could be found!";;
+    "$INFO_DIR__LOAD") echo "- ipset: $2 directives were loaded.";;
+    "$INFO_DIR__SWAP") echo "- ipset: $2 directives were reloaded.";;
+    "$INFO_DIR__DEST") echo "- ipset: $2 was unloaded.";;
     "$INFO_DIR__MISS") :;;
   esac; }
   _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
