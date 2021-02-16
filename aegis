@@ -1213,11 +1213,11 @@ _status >/dev/null
 
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors
     echo -e '\033[1;31mProblems:\033[0m'
-    [ $((_CK&CK_FWS)) -eq 0 ] &&       echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
-    [ $((_CK&CK_PMOK)) -eq $CK_PM ] && echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
+    [ $((_CK&CK_FWS)) -eq 0 ] &&               echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
+    [ $((_CK&(CK_EXT+CK_PM))) -eq $CK_EXT ] && echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
-      [ $((_CK&CK_NFO)) -eq 0 ] &&     echo -e "\033[31m- status file is missing!\033[0m"
-      [ $((_CK&CK_UPF)) -eq 0 ] &&     echo -e "\033[31m- shield should be down, but is not!\033[0m"
+      [ $((_CK&CK_NFO)) -eq 0 ] &&             echo -e "\033[31m- status file is missing!\033[0m"
+      [ $((_CK&CK_UPF)) -eq 0 ] &&             echo -e "\033[31m- shield should be down, but is not!\033[0m"
     fi
     if [ $((_CK&CK_DDNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
@@ -1259,8 +1259,8 @@ _status >/dev/null
   _gentimeforlist "$ALL_WL_FILE" "global whitelist"
   _gentimeforlist "$WAN_WL_FILE" "WAN specific whitelist"
   _gentimeforlist "$TUN_WL_FILE" "VPN specific whitelist"
-  [ $((_CK&CK_FWS)) -ne 0 ] &&         echo "- set: firewall-start.sh is set for $SC_NAME."
-  [ $((_CK&CK_PMOK)) -eq $CK_PMOK ] && echo "- set: post-mount.sh is set for $SC_NAME."
+  [ $((_CK&CK_FWS)) -ne 0 ] &&                         echo "- set: firewall-start.sh is set for $SC_NAME."
+  [ $((_CK&(CK_EXT+CK_PM))) -eq $((CK_EXT+CK_PM)) ] && echo "- set: post-mount.sh is set for $SC_NAME."
   case "$_OFROM" in
     $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
     $INFO_FROM_PM)  FROM="post-mount.sh" ;;
