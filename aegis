@@ -1266,44 +1266,45 @@ _status >/dev/null
     $INFO_FROM_PM)  FROM="post-mount.sh" ;;
     $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
   esac
-  [ -r "$INFO_FILE" ] && echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
-  _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
-    "$INFO_DIR__SAME") echo "- ipset: latest $2 was already loaded and conform with directives.";;
-    "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives file could be found for it!";;
-    "$INFO_DIR__LOAD") echo "- ipset: $2 was loaded from file directives.";;
-    "$INFO_DIR__SWAP") echo "- ipset: $2 was reloaded from directives.";;
-    "$INFO_DIR__DEST") echo "- ipset: $2 was unloaded.";;
-    "$INFO_DIR__MISS") :;;
-  esac; }
-  _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
-  _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
-  _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
-  _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
-  _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
-  _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+  if [ -r "$INFO_FILE" ]; then echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+    _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
+      "$INFO_DIR__SAME") echo "- ipset: latest $2 was already loaded and conform with directives.";;
+      "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives file could be found for it!";;
+      "$INFO_DIR__LOAD") echo "- ipset: $2 was loaded from file directives.";;
+      "$INFO_DIR__SWAP") echo "- ipset: $2 was reloaded from directives.";;
+      "$INFO_DIR__DEST") echo "- ipset: $2 was unloaded.";;
+      "$INFO_DIR__MISS") :;;
+    esac; }
+    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
+    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
+    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
+    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
+    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
+    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
   
-  if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "- iptables: rules were already set with:"
-  elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "- iptables: rules were (re)set with:"
+    if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "- iptables: rules were already set with:"
+    elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "- iptables: rules were (re)set with:"
+    fi
+    # _ODNA
+    _AND=''
+    [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
+    [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
+    [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
+    [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
+    [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
+    [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
+    [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
+    [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
+    [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
+    echo '.'
+    # _OLOGD
+    case "$_OLOGD" in
+      $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
+      $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
+      $INFO_LOGD_STOPPED)  echo '- log daemon: was turned off.';;
+      $INFO_LOGD_STARTED)  echo '- log daemon: was turned on.';;
+    esac
   fi
-  # _ODNA
-  _AND=''
-  [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
-  [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
-  [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
-  [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
-  [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
-  [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
-  [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
-  [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
-  [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
-  echo '.'
-
-  case "$_OLOGD" in
-    $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
-    $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
-    $INFO_LOGD_STOPPED)  echo '- log daemon: was turned off.';;
-    $INFO_LOGD_STARTED)  echo '- log daemon: was turned on.';;
-  esac
   
   [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
