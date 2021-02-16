@@ -1037,15 +1037,19 @@ test_ip() { # $1: IP to test, ($2: IF)
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
-STA_FWS=1 STA_PM=2 STA_ENV=3
+CK_EXT=1 CK_PM=2 CK_FWS=4    CK_PMOK=7 CK_UNSET=1 CK_SETOK=8 CK_SET=15
+CK_IWAN=16 CK_ITUN=32
+CK_SND=64                # SHIELD NOT DOWN
 
-STA_DNA=4
-STA_WIF=8     STA_WINET=16
-STA_TIF=32    STA_TINET=64
-STA_IPT=128   STA_OIPT=256
-STA_NDOWN=512 STA_OK=515
+CK_UPOK=127              # SHIELD UP OK
+CK_NFO=128 CK_UPF=256    # INFO FILE & UP FLAG
+CK_DDNA=512 CK_DWIF=1024 CK_DWINET=2048 CK_DTIF=4096 CK_DTINET=8192 CK_DIPT=16384 CK_OIPT=32768
 
-STA_IF_WAN=1  STA_IF_TUN=2
+ST_UNSET=1   # . _ . x
+ST_SETPB=4   # . x . _
+ST_DOWN=2    # _ . x .
+ST_UPPB=8    # x . _ .
+ST_PB=12
 
 # ---------------------------------------------
 : ENV EOF
@@ -1070,89 +1074,94 @@ directive_status() {
 }
 
 _status() { $DEBUG && debug "|---> _status"
-  # CHECK ENVIRONMENT
   _CK=0
-  # check firewall-start.sh script
-  check_firewall_start &&          _CK=$((_CK+STA_FWS))
-  # check post-mount.sh script if script on external drive
-  $EXT_DRIVE && check_postmount && _CK=$((_CK+STA_PM))
-    
-  # CHECK DIRECTIVES
-  _DIR=0 _DNA=0 _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
-  _WAN=$WAN_IF _TUN=$TUN_IF
-  
-  _cipset_init
-  
-  # ALL blocklist
-  directive_status $IPSET_ALL_BL_NAME $ALL_BL_FILE && _DNA=$((_DNA+DNA_ABL))
-  _DIR=$((_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
-  _ABLC=$_CNT
-  # ALL whitelist
-  directive_status $IPSET_ALL_WL_NAME $ALL_WL_FILE && _DNA=$((_DNA+DNA_AWL))
-  _DIR=$((_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
-  _AWLC=$_CNT
-  
-  if [ "$_WAN" ]; then
-    # WAN blocklist
-    directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL))
-    _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
-    _WBLC=$_CNT
-    # WAN whitelist
-    directive_status $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
-    _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
-    _WWLC=$_CNT
-    if ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
-      [ $((_DNA&(DNA_ABL+DNA_WBL))) -ne 0 ] && _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
-    fi
+
+  # CHECK SET ENVIRONMENT
+  check_firewall_start &&  _CK=$((_CK+CK_FWS))   # check firewall-start.sh script
+  if $EXT_DRIVE; then      _CK=$((_CK+CK_EXT))
+    check_postmount &&     _CK=$((_CK+CK_PM))    # check post-mount.sh script if script on external drive
   fi
+  [ $((_CK&CK_SET)) -eq $CK_FWS -o $((_CK&CK_SET)) -eq $CK_SET ] && _CK=$((_CK+CK_SETOK))
   
-  if [ "$_TUN" ]; then
-    # TUN blocklist
-    directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL))
-    _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
-    _TBLC=$_CNT
-    # TUN whitelist
-    directive_status $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
-    _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
-    _TWLC=$_CNT
-    if ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
-      [ $((_DNA&(DNA_ABL+DNA_TBL))) -ne 0 ] && _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
-    fi
-  fi
-  
-  sc_conf get log.enabled >/dev/null && _DNA=$((_DNA+DNA_LOG))
-  
-  _cipset_end
+  # CHECK IF ANY TRACES OF OUR SHIELD IS PRESENT IN THE FIREWALL
+  get_ipt; _IPS="$($IPS_BIN -L -n|/bin/grep -F "$SC_ABR")"
+  [ -z "$_IPT$_IPS" ] ||        _CK=$((_CK+CK_SND))  # shield not down
+  [ -r "$INFO_FILE" ] &&        _CK=$((_CK+CK_NFO))  # info file exists
+  sc_conf get up >/dev/null &&  _CK=$((_CK+CK_UPF))  # shield up flag is on
   
   _IF=0
-  [ "$_WAN" ] && _IF=$((_IF+STA_IF_WAN))
-  [ "$_TUN" ] && _IF=$((_IF+STA_IF_TUN))
-
-  get_ipt
+  _WAN=$WAN_IF; [ "$_WAN" ] &&  _CK=$((_CK+CK_IWAN))
+  _TUN=$TUN_IF; [ "$_TUN" ] &&  _CK=$((_CK+CK_ITUN))
   
-  if [ -r "$INFO_FILE" ]; then                                    _CK=$((_CK+STA_NDOWN))
-    read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
+  # CHECKING DIRECTIVES, IPTABLES... ONLY IF SHIELD IS NOT DOWN
+  if [ $((_CK&CK_SND)) -ne 0 ]; then
+    # CHECK DIRECTIVES
+    _DIR=0 _DNA=0 _ABLC=0 _AWLC=0 _WBLC=0 _WWLC=0 _TBLC=0 _TWLC=0
+    _cipset_init
   
-    [ $_ODNA -ne $_DNA ] &&                                       _CK=$((_CK+STA_DNA))
-    [ "$_OWAN" != "$_WAN" ] &&                                    _CK=$((_CK+STA_WIF))
-    [ $((_DNA+DNA_WBW)) -ne 0 ] && [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+STA_WINET))
-    [ "$_OTUN" != "$_TUN" ] &&                                    _CK=$((_CK+STA_TIF))
-    [ $((_DNA+DNA_TBW)) -ne 0 ] && [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+STA_TINET))
-
-    if [ $((_ONFO&STA_IPT_MASK)) -ne INFO_IPT_PBM ]; then         _CK=$((_CK+STA_OIPT))
-      AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
-      express_ipt_dna "$INFO_FILE" >$OIPTF
-      echo "$_IPT" >$AIPTF
-      ! /usr/bin/diff -q $OIPTF $AIPTF >/dev/null &&              _CK=$((_CK+STA_IPT))
-      /bin/rm -rf $OIPTF; /bin/rm -rf $AIPTF
+    # ALL blocklist
+    directive_status $IPSET_ALL_BL_NAME $ALL_BL_FILE && _DNA=$((_DNA+DNA_ABL))
+    _DIR=$((_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_BL))))
+    _ABLC=$_CNT
+    # ALL whitelist
+    directive_status $IPSET_ALL_WL_NAME $ALL_WL_FILE && _DNA=$((_DNA+DNA_AWL))
+    _DIR=$((_DIR+(_NFO<<(INFO_DIR_ALL+INFO_DIR_WL))))
+    _AWLC=$_CNT
+  
+    if [ "$_WAN" ]; then
+      # WAN blocklist
+      directive_status $IPSET_WAN_BL_NAME $WAN_BL_FILE && _DNA=$((_DNA+DNA_WBL))
+      _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_BL))))
+      _WBLC=$_CNT
+      # WAN whitelist
+      directive_status $IPSET_WAN_WL_NAME $WAN_WL_FILE && _DNA=$((_DNA+DNA_WWL))
+      _DIR=$((_DIR+(_NFO<<(INFO_DIR_WAN+INFO_DIR_WL))))
+      _WWLC=$_CNT
+      if ! sc_conf get wan.no_bypass >/dev/null; then _WINET=$(inet_for_if $_WAN)
+        [ $((_DNA&(DNA_ABL+DNA_WBL))) -ne 0 ] && _cipset_inet_in_bl $_WINET $IPSET_WAN_BL_NAME && _DNA=$((_DNA+DNA_WBW))
+      fi
     fi
-  elif [ $_DNA -gt $DNA_LOG ] || [ "$_IPT" ]; then                _CK=$((_CK+STA_NDOWN))
+  
+    if [ "$_TUN" ]; then
+      # TUN blocklist
+      directive_status $IPSET_TUN_BL_NAME $TUN_BL_FILE && _DNA=$((_DNA+DNA_TBL))
+      _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_BL))))
+      _TBLC=$_CNT
+      # TUN whitelist
+      directive_status $IPSET_TUN_WL_NAME $TUN_WL_FILE && _DNA=$((_DNA+DNA_TWL))
+      _DIR=$((_DIR+(_NFO<<(INFO_DIR_TUN+INFO_DIR_WL))))
+      _TWLC=$_CNT
+      if ! sc_conf get tun.no_bypass >/dev/null; then _TINET=$(inet_for_if $_TUN)
+        [ $((_DNA&(DNA_ABL+DNA_TBL))) -ne 0 ] && _cipset_inet_in_bl $_TINET $IPSET_TUN_BL_NAME && _DNA=$((_DNA+DNA_TBW))
+      fi
+    fi
+    
+    sc_conf get log.enabled >/dev/null && _DNA=$((_DNA+DNA_LOG))
+    _cipset_end
+    
+    if [ $((_CK&CK_NFO)) -ne 0 ]; then # we have info file
+      read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
+  
+      [ $_ODNA -ne $_DNA ] &&                                       _CK=$((_CK+CK_DDNA))
+      [ "$_OWAN" != "$_WAN" ] &&                                    _CK=$((_CK+CK_DWIF))
+      [ $((_DNA+DNA_WBW)) -ne 0 ] && [ "$_OWINET" != "$_WINET" ] && _CK=$((_CK+CK_DWINET))
+      [ "$_OTUN" != "$_TUN" ] &&                                    _CK=$((_CK+CK_DTIF))
+      [ $((_DNA+DNA_TBW)) -ne 0 ] && [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+CK_DTINET))
+
+      if [ $((_ONFO&STA_IPT_MASK)) -ne INFO_IPT_PBM ]; then         _CK=$((_CK+CK_OIPT))
+        AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
+        express_ipt_dna "$INFO_FILE" >$OIPTF
+        echo "$_IPT" >$AIPTF
+        ! /usr/bin/diff -q $OIPTF $AIPTF >/dev/null &&              _CK=$((_CK+CK_DIPT))
+        /bin/rm -rf $OIPTF; /bin/rm -rf $AIPTF
+      fi
+    fi
   fi
   
   _logd_status; _LOGD=$?
   
-  echo -n "$_CK $_IF $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
-  $DEBUG && debug "<---| _status [$_CK $_IF $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
+  echo -n "$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD"
+  $DEBUG && debug "<---| _status [$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC $_LOGD]"
 } 2>>"$STDERR"
 
 netset_exists() {
@@ -1164,37 +1173,48 @@ netset_exists() {
 
 status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
-#  set -- $(_status); _CK=$1 _IF=$2 _DNA=$3 _DIR=$4 _ABLC=$5 _AWLC=$6 _WBLC=$7 _WWLC=$8 _TBLC=$9 _TWLC=$10 _LOGD=$11
+#  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _LOGD=$10
 #  read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
 _status >/dev/null
 
   echo -e '\033[1;36mStatus:\033[0m'
+  _RETVAL=0
   
-  if [ $_CK -eq 0 ]; then _RETVAL=1
-    echo "- shield is unset."
-  elif [ $_CK -le $STA_ENV ]; then _RETVAL=2
-    echo "- shield is \033[1;35mdown\033[0m."
-  elif [ $_CK -le $STA_OK ]; then _RETVAL=0
+  if [ $_CK -le $CK_SET ]; then _RETVAL=$ST_DOWN
+    echo -e "- shield is \033[1;35mdown\033[0m."
+  elif [ $_CK -le $CK_UPOK ]; then
     echo -ne "- shield is \033[1;32mup\033[0m"
     _STRBLC="global: $_ABLC" _STRWLC="global: $_AWLC"
-    if [ $((_IF&STA_IF_WAN)) -ne 0 ]; then echo -n " for WAN interface ($WAN_IF)"
+    if [ $((_CK&CK_IWAN)) -ne 0 ]; then echo -n " for WAN interface ($WAN_IF)"
       _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"
     fi
-    if [ $((_IF&STA_IF_TUN)) -ne 0 ]; then echo -n " and VPN tunnel ($TUN_IF)"
+    if [ $((_CK&CK_ITUN)) -ne 0 ]; then echo -n " and VPN tunnel ($TUN_IF)"
       _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
     fi
     echo -e ".\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC)."
-    echo "- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
-  else _RETVAL=3
-     echo -e "- \033[1;31msomething is not right!\033[0m"
+    echo "- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."  
+  else _RETVAL=$ST_UPPB
+     echo -e "! \033[1;31msomething is not right!\033[0m"
   fi
-  if [ $_LOGD -eq 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."; else echo -ne "- Logging is \033[1;35mdisabled\033[0m."; fi
+  if [ $_LOGD -eq 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."; else echo -e "- Logging is \033[1;35mdisabled\033[0m."; fi
 
-  if [ $_RETVAL -eq 3 ]; then
+  if [ $((_CK&CK_SET)) -le $CK_UNSET ]; then _RETVAL=$((_RETVAL+ST_UNSET))
+    echo "- shield is unset."
+  elif [ $((_CK&CK_SETOK)) -ne 0 ]; then
+    echo -e "- shield is properly set."
+  else                                       _RETVAL=$((_RETVAL+ST_SETPB))
+      echo -e "\033[1;31m! shield is improperly set!\033[0m"
+  fi
+
+  if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors
     echo -e '\033[1;31mErrors:\033[0m'
-    [ $((_CK&STA_FWS)) -eq 0 ] &&              echo -e "\033[31m- set: firewall-start.sh is not set properly for $SC_NAME!\033[0m"
-    $EXT_DRIVE && [ $((_CK&STA_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
-    if [ $((_CK&STA_DNA)) -ne 0 ]; then
+    [ $((_CK&CK_FWS)) -eq 0 ] &&       echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
+    [ $((_CK&CK_PMOK)) -eq $CK_PM ] && echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
+    if [ $((_CK&CK_SND)) -ne 0 ]; then
+      [ $((_CK&CK_NFO)) -ne 0 ] &&     echo -e "\033[31m- status file is missing!\033[0m"
+      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo -e "\033[31m- shield should be down, but is not!\033[0m"
+    fi
+    if [ $((_CK&CK_DDNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
          "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 changed since $SC_NAME was upreared!\033[0m";; # loaded != file
          "$INFO_DIR__KEEP") echo -e "\033[31m- directives: $2 is missing (but loaded in ipset)!\033[0m";; # loaded but no file
@@ -1207,12 +1227,12 @@ _status >/dev/null
       _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
       _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
     fi
-    [ $((_CK&STA_WIF)) -ne 0 ] &&             echo -e "\033[31m- WAN: interface changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CK&STA_WINET)) -ne 0 ] &&           echo -e "\033[31m- WAN: interface subnet range changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CK&STA_TIF)) -ne 0 ] &&             echo -e "\033[31m- VPN: tunnel changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CKSTA_TINET)) -ne 0 ] &&            echo -e "\033[31m- VPN: tunnel subnet range changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CKSTA_OIPT)) -ne 0 ] &&             echo -e "\033[31m- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!\033[0m"
-    [ $((_CKSTA_IPT)) -ne 0 ] &&              echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
+    [ $((_CK&CK_DWIF)) -ne 0 ] &&   echo -e "\033[31m- WAN: interface changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DWINET)) -ne 0 ] && echo -e "\033[31m- WAN: interface subnet range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DTIF)) -ne 0 ] &&   echo -e "\033[31m- VPN: tunnel changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DTINET)) -ne 0 ] && echo -e "\033[31m- VPN: tunnel subnet range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DOIPT)) -ne 0 ] &&  echo -e "\033[31m- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!\033[0m"
+    [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
   fi
   
   [ $VERBOSE ] || _exit $_RETVAL
@@ -1222,8 +1242,8 @@ _status >/dev/null
   _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
   _OLOGD=$(((_ONFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
   echo -e '\033[1;36mDetailed status:\033[0m'
-  [ $((_IF&STA_IF_WAN)) -ne 0 ] && echo "- shield is active for WAN interface '$WAN_IF'."
-  [ $((_IF&STA_IF_TUN)) -ne 0 ] && echo "- shield is active for VPN tunnel '$TUN_IF'."
+  [ $((_CK&CK_IWAN)) -ne 0 ] && echo "- shield is active for WAN interface '$WAN_IF'."
+  [ $((_CK&CK_ITUN)) -ne 0 ] && echo "- shield is active for VPN tunnel '$TUN_IF'."
   # dates
   _gentimeforlist() { [ -e "$1" ] && echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
   echo "- actual router time: $(/bin/date +'%Y-%m-%d %X')"
@@ -1234,14 +1254,14 @@ _status >/dev/null
   _gentimeforlist "$ALL_WL_FILE" "global whitelist"
   _gentimeforlist "$WAN_WL_FILE" "WAN specific whitelist"
   _gentimeforlist "$TUN_WL_FILE" "VPN specific whitelist"
-  [ $((_CK&CK_FWS)) -ne 0 ] &&     echo "- set: firewall-start.sh is set for $SC_NAME."
-  [ $((_CK&CK_PM)) -ne 0 ] &&      echo "- set: post-mount.sh is set for $SC_NAME."
+  [ $((_CK&CK_FWS)) -ne 0 ] &&         echo "- set: firewall-start.sh is set for $SC_NAME."
+  [ $((_CK&CK_PMOK)) -eq $CK_PMOK ] && echo "- set: post-mount.sh is set for $SC_NAME."
   case "$_OFROM" in
     $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
     $INFO_FROM_PM)  FROM="post-mount.sh" ;;
     $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
   esac
-  echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+  [ -r "$INFO_FILE" ] && echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
   _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
     "$INFO_DIR__SAME") echo "- ipset: latest $2 was already loaded and conform with directives.";;
     "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives file could be found for it!";;
