@@ -1196,9 +1196,9 @@ _status >/dev/null
     $EXT_DRIVE && [ $((_CK&STA_PM)) -eq 0 ] && echo -e "\033[31m- set: post-mount.sh is not set properly for $SC_NAME!\033[0m"
     if [ $((_CK&STA_DNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
-         "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 file changed since $SC_NAME was upreared!\033[0m";; # loaded != file
-         "$INFO_DIR__KEEP") echo -e "\033[31m- directives: $2 file is missing!\033[0m";; # loaded but no file
-         "$INFO_DIR__LOAD") echo -e "\033[31m- directives: $2 file was created after $SC_NAME was upreared!\033[0m";; # file exists, but not loaded
+         "$INFO_DIR__DIFF") echo -e "\033[31m- directives: $2 changed since $SC_NAME was upreared!\033[0m";; # loaded != file
+         "$INFO_DIR__KEEP") echo -e "\033[31m- directives: $2 is missing (but loaded in ipset)!\033[0m";; # loaded but no file
+         "$INFO_DIR__LOAD") echo -e "\033[31m- directives: $2 was created after $SC_NAME was upreared!\033[0m";; # file exists, but not loaded
        esac; }
       _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
       _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
@@ -1208,9 +1208,9 @@ _status >/dev/null
       _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
     fi
     [ $((_CK&STA_WIF)) -ne 0 ] &&             echo -e "\033[31m- WAN: interface changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CK&STA_WINET)) -ne 0 ] &&           echo -e "\033[31m- WAN: network range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&STA_WINET)) -ne 0 ] &&           echo -e "\033[31m- WAN: interface subnet range changed since $SC_NAME was upreared!\033[0m"
     [ $((_CK&STA_TIF)) -ne 0 ] &&             echo -e "\033[31m- VPN: tunnel changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CKSTA_TINET)) -ne 0 ] &&            echo -e "\033[31m- VPN: tunnel range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CKSTA_TINET)) -ne 0 ] &&            echo -e "\033[31m- VPN: tunnel subnet range changed since $SC_NAME was upreared!\033[0m"
     [ $((_CKSTA_OIPT)) -ne 0 ] &&             echo -e "\033[31m- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!\033[0m"
     [ $((_CKSTA_IPT)) -ne 0 ] &&              echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
   fi
@@ -1243,10 +1243,10 @@ _status >/dev/null
   esac
   echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
   _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
-    "$INFO_DIR__SAME") echo "- ipset: latest $2 directives were already loaded.";;
-    "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives could be found!";;
-    "$INFO_DIR__LOAD") echo "- ipset: $2 directives were loaded.";;
-    "$INFO_DIR__SWAP") echo "- ipset: $2 directives were reloaded.";;
+    "$INFO_DIR__SAME") echo "- ipset: latest $2 was already loaded and conform with directives.";;
+    "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives file could be found for it!";;
+    "$INFO_DIR__LOAD") echo "- ipset: $2 was loaded from file directives.";;
+    "$INFO_DIR__SWAP") echo "- ipset: $2 was reloaded from directives.";;
     "$INFO_DIR__DEST") echo "- ipset: $2 was unloaded.";;
     "$INFO_DIR__MISS") :;;
   esac; }
