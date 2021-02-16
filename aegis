@@ -1037,7 +1037,7 @@ test_ip() { # $1: IP to test, ($2: IF)
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
-CK_EXT=1 CK_PM=2 CK_FWS=4    CK_PMOK=7 CK_UNSET=1 CK_SETOK=8 CK_SET=15
+CK_EXT=1 CK_PM=2 CK_FWS=4     CK_UNSET=1 CK_SETOK=8 CK_SET=15
 CK_IWAN=16 CK_ITUN=32
 CK_SND=64                # SHIELD NOT DOWN
 CK_NFO=128 CK_UPF=256    # INFO FILE & UP FLAG
@@ -1080,7 +1080,7 @@ _status() { $DEBUG && debug "|---> _status"
   if $EXT_DRIVE; then      _CK=$((_CK+CK_EXT))
     check_postmount &&     _CK=$((_CK+CK_PM))    # check post-mount.sh script if script on external drive
   fi
-  [ $((_CK&CK_SET)) -eq $CK_FWS -o $((_CK&CK_SET)) -eq $CK_SET ] && _CK=$((_CK+CK_SETOK))
+  [ $((_CK&CK_SET)) -eq $CK_FWS -o $((_CK&CK_SET)) -eq $((CK_EXT+CK_PM+CK_FWS)) ] && _CK=$((_CK+CK_SETOK))
   
   # CHECK IF ANY TRACES OF OUR SHIELD IS PRESENT IN THE FIREWALL
   get_ipt; _IPS="$($IPS_BIN -L -n|/bin/grep -F "$SC_ABR")"
@@ -1088,7 +1088,6 @@ _status() { $DEBUG && debug "|---> _status"
   [ -r "$INFO_FILE" ] &&        _CK=$((_CK+CK_NFO))  # info file exists
   sc_conf get up >/dev/null &&  _CK=$((_CK+CK_UPF))  # shield up flag is on
   
-  _IF=0
   _WAN=$WAN_IF; [ "$_WAN" ] &&  _CK=$((_CK+CK_IWAN))
   _TUN=$TUN_IF; [ "$_TUN" ] &&  _CK=$((_CK+CK_ITUN))
   
@@ -1174,12 +1173,15 @@ status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
 #  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _LOGD=$10
 #  read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
+#  [ "$WAN_IF" ] && _WINET=$(inet_for_if $_WAN_IF)
+#  [ "$TUN_IF" ] && _TINET=$(inet_for_if $_TUN_IF)
 _status >/dev/null
+[ "$_ONFO" ] || _ONFO=0; [ "$_ODNA" ] || _ODNA=0
 
   echo -e '\033[1;36mStatus:\033[0m'
   _RETVAL=0
   
-  if [ $_CK -le $CK_SET ]; then _RETVAL=$ST_DOWN
+  if [ $_CK -lt $CK_SND ]; then _RETVAL=$ST_DOWN
     echo -e "- shield is \033[1;35mdown\033[0m."
   elif [ $_CK -le $CK_UPOK ]; then
     echo -ne "- shield is \033[1;32mup\033[0m"
@@ -1195,7 +1197,11 @@ _status >/dev/null
   else _RETVAL=$ST_UPPB
      echo -e "! \033[1;31msomething is not right!\033[0m"
   fi
-  if [ $_LOGD -eq 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."; else echo -e "- Logging is \033[1;35mdisabled\033[0m."; fi
+  
+  if [ $_CK -ge $CK_SND ] && [ $_LOGD -eq 0 ]
+    then echo -e "- logging is \033[1;32menabled\033[0m."
+    else echo -e "- logging is \033[1;35mdisabled\033[0m."
+  fi
 
   if [ $((_CK&CK_SET)) -le $CK_UNSET ]; then _RETVAL=$((_RETVAL+ST_UNSET))
     echo "- shield is unset."
@@ -1206,7 +1212,7 @@ _status >/dev/null
   fi
 
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors
-    echo -e '\033[1;31mErrors:\033[0m'
+    echo -e '\033[1;31mProblems:\033[0m'
     [ $((_CK&CK_FWS)) -eq 0 ] &&       echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
     [ $((_CK&CK_PMOK)) -eq $CK_PM ] && echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
@@ -1226,10 +1232,10 @@ _status >/dev/null
       _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
       _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
     fi
-    [ $((_CK&CK_DWIF)) -ne 0 ] &&   echo -e "\033[31m- WAN: interface changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CK&CK_DWINET)) -ne 0 ] && echo -e "\033[31m- WAN: interface subnet range changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CK&CK_DTIF)) -ne 0 ] &&   echo -e "\033[31m- VPN: tunnel changed since $SC_NAME was upreared!\033[0m"
-    [ $((_CK&CK_DTINET)) -ne 0 ] && echo -e "\033[31m- VPN: tunnel subnet range changed since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DWIF)) -ne 0 ] &&   echo -e "\033[31m- WAN: interface changed from '$_OWAN' to '$WAN_IF' since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DWINET)) -ne 0 ] && echo -e "\033[31m- WAN: interface subnet range changed from $_OWINET to $_WINET since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DTIF)) -ne 0 ] &&   echo -e "\033[31m- VPN: tunnel changed from '$_OTUN' to '$TUN_IF' since $SC_NAME was upreared!\033[0m"
+    [ $((_CK&CK_DTINET)) -ne 0 ] && echo -e "\033[31m- VPN: tunnel subnet range changed from $_OTINET to $_TINET since $SC_NAME was upreared!\033[0m"
     [ $((_CK&CK_DOIPT)) -ne 0 ] &&  echo -e "\033[31m- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!\033[0m"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo -e "\033[31m- iptables: current $SC_NAME rules were modified since last uprear!\033[0m"
   fi
@@ -1246,7 +1252,7 @@ _status >/dev/null
   # dates
   _gentimeforlist() { [ -e "$1" ] && echo "- $2 directives generation time: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
   echo "- actual router time: $(/bin/date +'%Y-%m-%d %X')"
-  [ "$SRC_BL_CACHE" ] && echo "- sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)"
+  [ -r "$SRC_BL_CACHE" ] && echo "- sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")"
   _gentimeforlist "$ALL_BL_FILE" "global blocklist"
   _gentimeforlist "$WAN_BL_FILE" "WAN specific blocklist"
   _gentimeforlist "$TUN_BL_FILE" "VPN specific blocklist"
