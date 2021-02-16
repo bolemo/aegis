@@ -1040,9 +1040,8 @@ test_ip() { # $1: IP to test, ($2: IF)
 CK_EXT=1 CK_PM=2 CK_FWS=4    CK_PMOK=7 CK_UNSET=1 CK_SETOK=8 CK_SET=15
 CK_IWAN=16 CK_ITUN=32
 CK_SND=64                # SHIELD NOT DOWN
-
-CK_UPOK=127              # SHIELD UP OK
 CK_NFO=128 CK_UPF=256    # INFO FILE & UP FLAG
+CK_UPOK=511              # SHIELD UP OK
 CK_DDNA=512 CK_DWIF=1024 CK_DWINET=2048 CK_DTIF=4096 CK_DTINET=8192 CK_DIPT=16384 CK_OIPT=32768
 
 ST_UNSET=1   # . _ . x
@@ -1211,8 +1210,8 @@ _status >/dev/null
     [ $((_CK&CK_FWS)) -eq 0 ] &&       echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
     [ $((_CK&CK_PMOK)) -eq $CK_PM ] && echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
-      [ $((_CK&CK_NFO)) -ne 0 ] &&     echo -e "\033[31m- status file is missing!\033[0m"
-      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo -e "\033[31m- shield should be down, but is not!\033[0m"
+      [ $((_CK&CK_NFO)) -eq 0 ] &&     echo -e "\033[31m- status file is missing!\033[0m"
+      [ $((_CK&CK_UPF)) -eq 0 ] &&     echo -e "\033[31m- shield should be down, but is not!\033[0m"
     fi
     if [ $((_CK&CK_DDNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
