@@ -1312,7 +1312,8 @@ _status >/dev/null
   echo -e "\033[1;37m- $SC_NAME iptables rules:\033[0m"
   [ -z "$_IPT" ] && echo " - no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/  iptables /'
   echo -e "\033[1;37m- $SC_NAME ipset sets:\033[0m"
-  $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
+  [ -z "$_IPS" ] && _IPS="$(IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR")"
+  if [ "$_IPS" ]; then echo "$_IPS"|while read _SET; do
     case "$_SET" in
       "$IPSET_ALL_BL_NAME") _NAME='general blocking directives' ;;
       "$IPSET_ALL_WL_NAME") _NAME='general bypassing directives' ;;
@@ -1324,7 +1325,8 @@ _status >/dev/null
     esac
     echo -e "\033[1;34m - $_NAME:\033[0m"
     $IPS_BIN -L -t $_SET|/bin/sed 's/^/   /'
-  done
+  done; else echo " - no $SC_NAME ipsets are set."
+  fi
   
   _exit $_RETVAL
 }
