@@ -727,8 +727,6 @@ clean_web() { $DEBUG && debug "clean_web"
 ###############################################
 
 strip_sh_file() { /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' "$1"; }
-
-strip_netset_file() { /usr/bin/awk -F'[#;]' 'match($1,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\/[0-9]+)?/){print substr($1,RSTART,RLENGTH)}' $*; }
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
@@ -903,8 +901,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
     { while read -r URL; do
         _TOT=$((_TOT+1))
         [ $VERBOSE ] && echo -e "$_TOT) $URL\033[35m"
-        { { { { /usr/bin/wget $WGET_OPTS "$URL"; echo $? >&3; } | strip_netset_file >>"$TMP_DIR/src.bl"; } 3>&1; } | { read _EC; exit $_EC; } }
-        _EC=$?
+        /usr/bin/wget $WGET_OPTS "$URL" >>"$TMP_DIR/src.bl"; _EC=$?
         [ $VERBOSE ] && echo -e "\033[0m"
         [ $_EC -eq 0 ] && _NBOK=$((_NBOK+1)) || _warn "Wget error code $_EC! Could not download $URL"
       done
