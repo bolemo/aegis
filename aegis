@@ -996,8 +996,8 @@ info() { $DEBUG && debug "info"
   else echo -e "\033[31m! could not check what is the latest version online!\033[0m"
   fi
   if check_path
-    then echo "- '$SC_NAME' is in PATH."
-    else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
+    then echo "- $SC_NAME is in PATH."
+    else echo "- $SC_NAME is not in PATH (you need to use $NICE_PATH)."
   fi
   # check iprange binary
   [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo -e "\033[31m! iprange is not installed!\033[0m"
@@ -1463,11 +1463,11 @@ case "$PARAM" in
         netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- No directives were found! Refresh will be made."; }
         [ $ST_US ] && update_iplist;
         shield_up "$ST_US" "$ST_FW";
-        [ $VERBOSE ] && status_term ;;
-  'down') shield_down; [ $VERBOSE ] && status_term ;;
+        status_term ;;
+  'down') shield_down; status_term ;;
   
-  'unset') _clean_args; clean; [ $VERBOSE ] && status_term ;;
-  'refresh') _refresh_args; update_iplist $RF_OFFLN; sc_conf get up >/dev/null && { shield_up 1; [ $VERBOSE ] && status_term; } ;;
+  'unset') _clean_args; clean; status_term ;;
+  'refresh') _refresh_args; update_iplist $RF_OFFLN; sc_conf get up >/dev/null && { shield_up 1; status_term; } ;;
   
   'status') status_term ;;
   'help') print_help ;;
