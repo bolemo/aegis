@@ -1037,7 +1037,7 @@ test_ip() { # $1: IP to test, ($2: IF)
 : ENV START
 # ---------------------------------------------
 # STATUS VARS
-CK_EXT=1 CK_PM=2 CK_FWS=4     CK_UNSET=1 CK_SETOK=8 CK_SET=15
+CK_PMND=1 CK_PM=3 CK_FWS=4     CK_UNSET=1 CK_SETOK=5 CK_SET=7
 CK_IWAN=16 CK_ITUN=32
 CK_SND=64                # SHIELD NOT DOWN
 CK_NFO=128 CK_UPF=256    # INFO FILE & UP FLAG
@@ -1076,11 +1076,11 @@ _status() { $DEBUG && debug "|---> _status"
   _CK=0
 
   # CHECK SET ENVIRONMENT
-  check_firewall_start &&  _CK=$((_CK+CK_FWS))   # check firewall-start.sh script
-  if $EXT_DRIVE; then      _CK=$((_CK+CK_EXT))
-    check_postmount &&     _CK=$((_CK+CK_PM))    # check post-mount.sh script if script on external drive
+  check_firewall_start &&                _CK=$((_CK+CK_FWS))   # check firewall-start.sh script
+  if $EXT_DRIVE; then check_postmount && _CK=$((_CK+CK_PM))    # check post-mount.sh script if script on external drive
+  else                                   _CK=$((_CK+CK_PMND))  # post-mount.sh not needed
   fi
-  [ $((_CK&CK_SET)) -eq $CK_FWS -o $((_CK&CK_SET)) -eq $((CK_EXT+CK_PM+CK_FWS)) ] && _CK=$((_CK+CK_SETOK))
+#  [ $((_CK&CK_SET)) -eq $CK_FWS -o $((_CK&CK_SET)) -eq $((CK_EXT+CK_PM+CK_FWS)) ] && _CK=$((_CK+CK_SETOK))
   
   # CHECK IF ANY TRACES OF OUR SHIELD IS PRESENT IN THE FIREWALL
   get_ipt; _IPS="$($IPS_BIN -L -n|/bin/grep -F "$SC_ABR")"
@@ -1205,19 +1205,19 @@ _status >/dev/null
 
   if [ $((_CK&CK_SET)) -le $CK_UNSET ]; then _RETVAL=$((_RETVAL+ST_UNSET))
     echo "- shield is unset."
-  elif [ $((_CK&CK_SETOK)) -ne 0 ]; then
+  elif [ $((_CK&CK_SET)) -ge CK_SETOK ]; then
     echo -e "- shield is properly set."
   else                                       _RETVAL=$((_RETVAL+ST_SETPB))
       echo -e "\033[1;31m! shield is improperly set!\033[0m"
   fi
 
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors
-    echo -e '\033[1;31mProblems:\033[0m'
-    [ $((_CK&CK_FWS)) -eq 0 ] &&               echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
-    [ $((_CK&(CK_EXT+CK_PM))) -eq $CK_EXT ] && echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
+    echo -e '\n\033[1;31mProblems:\033[0m'
+    [ $((_CK&CK_FWS)) -eq 0 ] &&        echo -e "\033[31m- set: firewall-start.sh is not set for $SC_NAME!\033[0m"
+    [ $((_CK&CK_PM)) -eq $CK_PMND ] &&  echo -e "\033[31m- set: post-mount.sh is not set for $SC_NAME!\033[0m"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
-      [ $((_CK&CK_NFO)) -eq 0 ] &&             echo -e "\033[31m- status file is missing!\033[0m"
-      [ $((_CK&CK_UPF)) -eq 0 ] &&             echo -e "\033[31m- shield should be down, but is not!\033[0m"
+      [ $((_CK&CK_NFO)) -eq 0 ] &&      echo -e "\033[31m- status file is missing!\033[0m"
+      [ $((_CK&CK_UPF)) -eq 0 ] &&      echo -e "\033[31m- shield should be down, but is not!\033[0m"
     fi
     if [ $((_CK&CK_DDNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
@@ -1246,7 +1246,11 @@ _status >/dev/null
   _ODIR=$(((_ONFO>>INFO_DIR_SHIFT)&INFO_DIR_MASK))
   _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
   _OLOGD=$(((_ONFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
-  echo -e '\033[1;36mDetailed status:\033[0m'
+  echo -e '\n\033[1;36mDetailed status:\033[0m'
+  [ $((_CK&CK_FWS)) -ne 0 ] &&   echo "- set: firewall-start.sh is set for $SC_NAME."
+  case $((_CK&CK_PM)) in $CK_PM) echo "- set: post-mount.sh is set for $SC_NAME." ;;
+                       $CK_PMND) echo "- set: ignoring post-mount.sh ($SC_NAME is on internal memory)." ;;
+  esac
   [ $((_CK&CK_IWAN)) -ne 0 ] && echo "- shield is active for WAN interface '$WAN_IF'."
   [ $((_CK&CK_ITUN)) -ne 0 ] && echo "- shield is active for VPN tunnel '$TUN_IF'."
   # dates
@@ -1259,8 +1263,6 @@ _status >/dev/null
   _gentimeforlist "$ALL_WL_FILE" "global whitelist"
   _gentimeforlist "$WAN_WL_FILE" "WAN specific whitelist"
   _gentimeforlist "$TUN_WL_FILE" "VPN specific whitelist"
-  [ $((_CK&CK_FWS)) -ne 0 ] &&                         echo "- set: firewall-start.sh is set for $SC_NAME."
-  [ $((_CK&(CK_EXT+CK_PM))) -eq $((CK_EXT+CK_PM)) ] && echo "- set: post-mount.sh is set for $SC_NAME."
   case "$_OFROM" in
     $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
     $INFO_FROM_PM)  FROM="post-mount.sh" ;;
@@ -1308,7 +1310,7 @@ _status >/dev/null
   
   [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
-  echo -e '\033[1;36mExtended status:\033[0m'
+  echo -e '\n\033[1;36mExtended status:\033[0m'
   echo -e "\033[1;37m- $SC_NAME iptables rules:\033[0m"
   [ -z "$_IPT" ] && echo " - no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/  iptables /'
   echo -e "\033[1;37m- $SC_NAME ipset sets:\033[0m"
