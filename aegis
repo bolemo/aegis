@@ -643,18 +643,18 @@ _upgrade() { $DEBUG && debug "_upgrade"
 }
 
 upgrade() { $DEBUG && debug "upgrade"
-  echo -e "\033[1;36mUpgrading:\033[0m"
-  echo "- Version installed: $SC_VERS"
-  echo -ne "- Checking latest available version...\r"
+  echo -e "\n\033[1;36mUpgrading:\033[0m"
+  echo "- version installed: $SC_VERS"
+  echo -ne "- checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)"
   if [ "$SC_LAST_VERS" ]; then
-    if [ "$SC_VERS" == "$SC_LAST_VERS" ]; then echo "- You have already the latest version: $SC_VERS     "
-      _ASK="? Do you want to reapply it (y/n)?"
+    if [ "$SC_VERS" == "$SC_LAST_VERS" ]; then echo "- you have already the latest version: $SC_VERS     "
+      _ASK="? do you want to reapply it (y/n)?"
     else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
-      if [ "$VERS_ARRAY" == "$SORT_ARRAY" ]; then echo "- New version available: $SC_LAST_VERS         "
-        _ASK="? Do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
-      else echo -e "\033[35m- This version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
-        _ASK="? Do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
+      if [ "$VERS_ARRAY" == "$SORT_ARRAY" ]; then echo "- new version available: $SC_LAST_VERS         "
+        _ASK="? do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
+      else echo -e "\033[35m- this version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
+        _ASK="? do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
       fi
     fi
   else _warn "Could not check what is the latest version online!" 1; fi
@@ -673,7 +673,7 @@ get_def_srclst() { $DEBUG && debug "get_def_srclst"
     [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty! Trying to download default list..."
     SRC_LIST_URL="$REPO/$SC_NAME.sources"
     [ $VERBOSE ] && _download "$SRC_LIST_URL" "$SRC_LIST" || _download "$SRC_LIST_URL" "$SRC_LIST" >/dev/null
-    [ $VERBOSE ] && echo -e "- Default list was downloaded."
+    [ $VERBOSE ] && echo -e "- default list was downloaded."
   fi
 }
 
@@ -694,7 +694,7 @@ install_web() { $DEBUG && debug "install_web"
   [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH" 2>/dev/null
   [ -d "$WWW_PATH/cgi-bin" ] || mkdir "$WWW_PATH/cgi-bin"
   [ -z "$UPGRADE_URL" ] && UPGRADE_URL="$REPO/$SC_NAME"
-  echo "- Downloading $WEB_NAME:"
+  echo "- downloading $WEB_NAME:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _download "${UPGRADE_URL}.htm" "$DL_PATH" "--no-cache"
   /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
@@ -763,25 +763,25 @@ sc_init() { $DEBUG && debug "sc_init"
 } 2>/dev/null
 
 shield_init() { $DEBUG && debug "shield_init"
-  [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
+  [ $VERBOSE ] && echo -e "\n\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   $IPS_BIN -q -X $IPSET_TMP
-  if check_conf; then [ $VERBOSE ] && echo "- Configuration file is set."
+  if check_conf; then [ $VERBOSE ] && echo "- configuration file is set."
   else _warn "Problem with the configuration system!" 1; fi
-  if check_firewall_start; then [ $VERBOSE ] && echo "- 'firewall-start.sh' is in place and ok."
+  if check_firewall_start; then [ $VERBOSE ] && echo "- firewall-start.sh is in place and ok."
   else
     set_firewall_start
-    if check_firewall_start; then [ $VERBOSE ] && echo "- 'firewall-start.sh' was edited and is now ok."
+    if check_firewall_start; then [ $VERBOSE ] && echo "- firewall-start.sh was edited and is now ok."
     else _warn "Problem with $FWS_FILE!" 1; fi
   fi
   if $EXT_DRIVE; then
-    [ $VERBOSE ] && echo "- '$SC_NAME' is installed on external drive."
-    if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' is in place and ok."
+    [ $VERBOSE ] && echo "- $SC_NAME is installed on external drive."
+    if check_postmount; then [ $VERBOSE ] && echo "- post-mount.sh is in place and ok."
     else set_postmount
-      if check_postmount; then [ $VERBOSE ] && echo "- 'post-mount.sh' was edited and is now ok."
+      if check_postmount; then [ $VERBOSE ] && echo "- post-mount.sh was edited and is now ok."
       else _warn "Problem with $PM_FILE!" 1; fi
     fi
-  else [ $VERBOSE ] && echo "- '$SC_NAME' is installed on internal drive."
+  else [ $VERBOSE ] && echo "- $SC_NAME is installed on internal drive."
   fi
 }
 
@@ -793,8 +793,8 @@ shield_init() { $DEBUG && debug "shield_init"
 
 print_log() { $DEBUG && debug "print_log $*"
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
-  _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
-  echo -e "\033[1;36mLog:\033[0m"
+  _logd_status || echo -e "\n\033[35mLogging is disabled!\033[0m"
+  echo -e "\n\033[1;36mLog:\033[0m"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI="${_UPT}000" ;; *) _TAIL=$1 _LSCI=0 ;; esac
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
@@ -841,15 +841,15 @@ done <$LOG_FILE; done
 shield_up() { $DEBUG && debug "shield_up"
   sc_conf set up=1; sc_conf commit
   shield_init
-  [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
+  [ $VERBOSE ] && echo -e "\n\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
     [ -r "$ALL_BL_FILE" ] || _warn "$BL_FILE not readable!" 1
-    [ $VERBOSE ] && echo "- Directives will be (re)loaded into $SC_NAME shield."
+    [ $VERBOSE ] && echo "- directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
-  sc_conf get log.enabled >/dev/null && [ $VERBOSE ] && echo "- Enabling logging."
+  sc_conf get log.enabled >/dev/null && [ $VERBOSE ] && echo "- enabling logging."
   if [ $2 ]; then
-    [ $VERBOSE ] && echo -e "- Restarting firewall with $SC_NAME shield.\033[0m"
+    [ $VERBOSE ] && echo -e "- restarting firewall with $SC_NAME shield.\033[0m"
     /usr/sbin/net-wall restart > /dev/null
   else shield_uprear "$INFO_FROM_SC" $_FORCE_NS_RELOAD
   fi
@@ -857,46 +857,46 @@ shield_up() { $DEBUG && debug "shield_up"
 }
 
 shield_down() { $DEBUG && debug "shield_down"
-  [ $VERBOSE ] && echo -e "\033[1;36mWithdrawing shield...\033[0m"
+  [ $VERBOSE ] && echo -e "\n\033[1;36mWithdrawing shield...\033[0m"
   sc_conf delete up; sc_conf commit
   /bin/rm -f "$INFO_FILE"
-  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
-  _logd_stop; [ $VERBOSE ] && echo "- Made sure the log daemon is off."
-  clean_ipset && [ $VERBOSE ] && echo "- Cleaned ipsets."
-  [ $VERBOSE ] && echo "- Shield down."
+  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- built-in firewall restarted."
+  _logd_stop; [ $VERBOSE ] && echo "- made sure the log daemon is off."
+  clean_ipset && [ $VERBOSE ] && echo "- cleaned ipsets."
+  [ $VERBOSE ] && echo "- shield is down."
 }
 
 clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
-  [ $VERBOSE ] && echo -e "\033[1;36mUnsetting...\033[0m"
+  [ $VERBOSE ] && echo -e "\n\033[1;36mUnsetting...\033[0m"
   clean_firewall_start
   clean_postmount
   if check_conf; then [ $RM_CONF ] && clean_conf || { sc_conf delete up; sc_conf commit; }; fi
   [ $RM_SYMLINK ] && check_path && clean_path
   [ $RM_WEB ] && check_web && clean_web
   /bin/rm -f "$INFO_FILE"
-  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- Built-in firewall restarted."
-  _logd_stop && [ $VERBOSE ] && echo "- Made sure the log daemon is off."
-  [ $RM_LOG ] && /bin/rm -f $LOG_FILE 2>/dev/null && [ $VERBOSE ] && echo "- Removed log file."
-  clean_ipset && [ $VERBOSE ] && echo "- Cleaned ipsets."
-  [ -e "$PETC_DIR" ] && /bin/rm -rf "$PETC_DIR" && [ $VERBOSE ] && echo "- Removed directives cache."
-  [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK" && [ $VERBOSE ] && echo "- Removed temporary files."
-  echo "- Done."
+  /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- built-in firewall restarted."
+  _logd_stop && [ $VERBOSE ] && echo "- made sure the log daemon is off."
+  [ $RM_LOG ] && /bin/rm -f $LOG_FILE 2>/dev/null && [ $VERBOSE ] && echo "- removed log file."
+  clean_ipset && [ $VERBOSE ] && echo "- cleaned ipsets."
+  [ -e "$PETC_DIR" ] && /bin/rm -rf "$PETC_DIR" && [ $VERBOSE ] && echo "- removed directives cache."
+  [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK" && [ $VERBOSE ] && echo "- removed temporary files."
+  echo "- done."
 }
 
 update_iplist() { $DEBUG && debug "update_iplist $*"
-  [ $VERBOSE ] && echo -e "\033[1;36mGenerating directives file from sources and custom lists...\033[0m"
+  [ $VERBOSE ] && echo -e "\n\033[1;36mGenerating directives file from sources and custom lists...\033[0m"
   [ -s "$SRC_LIST" ] || get_def_srclst # change to -e when ready to deal with empty sources file
   TMP_DIR="$(/bin/mktemp -d /tmp/${SC_ABR}-tmp-XXXXXX)"
   trap "/bin/rm -rf "$TMP_DIR" >/dev/null 2>&1; exit" INT TERM EXIT
   
   if [ "$1" ]; then # $1 set means using cache
-    [ $VERBOSE ] && echo "- Using cached sources global blocking directives (offline)."
+    [ $VERBOSE ] && echo "- using cached sources global blocking directives (offline)."
     if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" >"$TMP_DIR/src.bl"
-    else _warn "Blocklist sources cache is empty!" 1; fi
+    else _warn "blocklist sources cache is empty!" 1; fi
   elif [ -s "$SRC_LIST" ]; then
     :>"$TMP_DIR/src.bl"
     # Process each source url
-    [ $VERBOSE ] && echo "- Downloading global blocking lists defined in $SRC_LIST"
+    [ $VERBOSE ] && echo "- downloading global blocking lists defined in $SRC_LIST"
     [ $VERBOSE ] && WGET_OPTS='-qO- --show-progress --no-check-certificate' || WGET_OPTS='-qO- --no-check-certificate'
     _NBOK=0; _TOT=0;
     /bin/grep -v "^[[:space:]*\#]" "$SRC_LIST" | \
@@ -911,17 +911,18 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
       if [ $_NBOK -eq 0 ]; then _warn "Could not get any list! Exiting!" 1; fi
       [ $_NBOK -eq $_TOT ] || _warn "Downloaded only $_NBOK / $_TOT list(s)!"
     }
-    [ $VERBOSE ] && echo "- Creating offline cache for global blocking directives from sources..."
+    [ $VERBOSE ] && echo "- creating offline cache for global blocking directives from sources..."
     /bin/cp -f "$TMP_DIR/src.bl" "$SRC_BL_CACHE"
   else
-    [ $VERBOSE ] && echo "- Sources file $SRC_LIST is empty or does not exists."
+    [ $VERBOSE ] && echo "- sources file $SRC_LIST is empty or does not exists."
     :>"$TMP_DIR/src.bl"
   fi
   
-  # processing common custom blacklist if any    
+  # processing common custom blacklist if any
+  [ $VERBOSE ] && [ -r "$CUST_ALL_BL_FILE" ] && echo "- adding global blocking directives from custom blocklist(s)..."
   $IPR_BIN "$TMP_DIR/src.bl" $CUST_ALL_BL_FILE >"$TMP_DIR/all.bl" 2>/dev/null
   if [ -s "$TMP_DIR/all.bl" ]; then
-    [ $VERBOSE ] && echo "- Adding global blocking directives from custom blocklist(s)..."
+    [ $VERBOSE ] && echo "- generating global blocking directives..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.bl" >"$ALL_BL_FILE"
   else
     /bin/rm -f "$ALL_BL_FILE" 2>/dev/null
@@ -932,7 +933,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   $IPR_BIN $CUST_ALL_WL_FILE >"$TMP_DIR/all.raw.wl" 2>/dev/null
   $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/all.raw.wl" >>"$TMP_DIR/all.wl"
   if [ -s "$TMP_DIR/all.wl" ]; then
-    [ $VERBOSE ] && echo "- Defining global bypassing directives from custom whitelist(s)..."
+    [ $VERBOSE ] && echo "- generating global bypassing directives from custom whitelist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.wl" >"$ALL_WL_FILE"
   else
     /bin/rm -f "$ALL_WL_FILE" 2>/dev/null
@@ -942,7 +943,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom WAN blocklists if any
   $IPR_BIN $CUST_WAN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/wan.bl" 2>/dev/null
   if [ -s "$TMP_DIR/wan.bl" ]; then
-    [ $VERBOSE ] && echo "- Defining WAN specific blocking directives from custom blocklist(s)..."
+    [ $VERBOSE ] && echo "- generating WAN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/wan.bl" >"$WAN_BL_FILE"
   else
     /bin/rm -f "$WAN_BL_FILE" 2>/dev/null
@@ -954,7 +955,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/wan.raw.wl" >>"$TMP_DIR/wan.wl"
   $IPR_BIN --common "$TMP_DIR/wan.bl" "$TMP_DIR/all.wl" >>"$TMP_DIR/wan.wl"
   if [ -s "$TMP_DIR/wan.wl" ]; then
-    [ $VERBOSE ] && echo "- Defining WAN specific bypassing directives from custom whitelist(s)..."
+    [ $VERBOSE ] && echo "- generating WAN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/wan.wl" >"$WAN_WL_FILE"
   else
     /bin/rm -f "$WAN_WL_FILE" 2>/dev/null
@@ -964,7 +965,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   # processing custom VPN blocklists if any    
   $IPR_BIN $CUST_TUN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/tun.bl" 2>/dev/null
   if [ -s "$TMP_DIR/tun.bl" ]; then
-    [ $VERBOSE ] && echo "- Defining VPN specific blocking directives from custom blocklist(s)..."
+    [ $VERBOSE ] && echo "- generating VPN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/tun.bl" >"$TUN_BL_FILE"
   else
     /bin/rm -f "$TUN_BL_FILE" 2>/dev/null
@@ -976,7 +977,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/tun.raw.wl" >>"$TMP_DIR/tun.wl"
   $IPR_BIN --common "$TMP_DIR/tun.bl" "$TMP_DIR/all.wl" >>"$TMP_DIR/tun.wl"
   if [ -s "$TMP_DIR/tun.wl" ]; then
-    [ $VERBOSE ] && echo "- Defining VPN specific bypassing directives from custom whitelist(s)..."
+    [ $VERBOSE ] && echo "- generating VPN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/tun.wl" >"$TUN_WL_FILE"
   else
     /bin/rm -f "$TUN_WL_FILE" 2>/dev/null
@@ -987,28 +988,28 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 }
 
 info() { $DEBUG && debug "info"
-  echo -e "\033[1;36mInfo:\033[0m"
+  echo -e "\n\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$ALL_BL_FILE") ]
-    then echo -n "- '$SC_NAME' version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
-    else echo -e "\033[31m! Something is wrong with installation!\033[0m"
+    then echo -n "- $SC_NAME version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
+    else echo -e "\033[31m! something is wrong with installation!\033[0m"
   fi
-  echo -ne "- Checking latest available version...\r"
+  echo -ne "- checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)";
-  if [ "$SC_LAST_VERS" ]; then echo "- Latest available version: $SC_LAST_VERS       "
-  else echo -e "\033[31m! Could not check what is the latest version online!\033[0m"
+  if [ "$SC_LAST_VERS" ]; then echo "- latest available version: $SC_LAST_VERS       "
+  else echo -e "\033[31m! could not check what is the latest version online!\033[0m"
   fi
   if check_path
     then echo "- '$SC_NAME' is in PATH."
     else echo "- '$SC_NAME' is not in PATH (you need to use $NICE_PATH)."
   fi
   # check iprange binary
-  [ "$IPR_BIN" ] && echo "- 'iprange' is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo -e "\033[31m! iprange is not installed!\033[0m"
+  [ "$IPR_BIN" ] && echo "- iprange is installed: $($IPR_BIN --version | /usr/bin/head -n 1)" || echo -e "\033[31m! iprange is not installed!\033[0m"
   # check web compagnon
   check_web && echo "- $WEB_NAME is installed." || echo "- $WEB_NAME is not installed."
 }
 
 test_ip() { # $1: IP to test, ($2: IF)
-  echo -e "\033[1;36mTesting IP $1:\033[0m"
+  echo -e "\n\033[1;36mTesting IP $1:\033[0m"
   if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
     then echo "- IP address $1 is blocked by the router for WAN interface."
     else echo "- IP address $1 is not blocked by the router for WAN interface."
@@ -1357,7 +1358,7 @@ status_raw() { $DEBUG && debug "status_raw"
 #---------------------------- END _STATUS ----------------------------
 
 print_help() { $DEBUG && debug "print_help"
-echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
+echo -e "\n\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"'
 '"\033[7mCOMMANDS (only one) and their specific options:\033[0m"'
 '"\033[1;35mup\033[0m                  - (re)starts $SC_NAME shield protection"'
