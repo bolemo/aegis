@@ -1195,13 +1195,13 @@ status_term() { $DEBUG && debug "status_term"
   elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _RETVAL=$((_RETVAL+ST_UPPB))
   else # creating up status info string
     _STRBLC="global: $_ABLC" _STRWLC="global: $_AWLC"
-    if [ $((_CK&CK_IWAN)) -ne 0 ]; then echo -n " for WAN interface ($WAN_IF)"
+    if [ $((_CK&CK_IWAN)) -ne 0 ]; then _UPSTR="WAN interface ($WAN_IF)"
       _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"
     fi
-    if [ $((_CK&CK_ITUN)) -ne 0 ]; then echo -n " and VPN tunnel ($TUN_IF)"
+    if [ $((_CK&CK_ITUN)) -ne 0 ]; then [ "$_UPSTR" ] && _UPSTR=" and "; _UPSTR="${_UPSTR}VPN tunnel ($TUN_IF)"
       _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
     fi
-    _UPSTR="- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
+    _UPSTR="for: $_UPSTR.\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
   fi
   
   if [ $_CK -gt $CK_LOGD ]; then 
@@ -1252,7 +1252,7 @@ status_term() { $DEBUG && debug "status_term"
     echo -e '\n\033[1;36mStatus:\033[0m'
     if [ $((_RETVAL&ST_UNSET)) -ne 0 ]; then  echo "- shield is unset."
     elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
-    else                                      echo -e "- shield is \033[1;32mup\033[0m.\n$_UPSTR"
+    else                                      echo -e "- shield is \033[1;32mup\033[0m $_UPSTR"
     fi
     if [ $_CK -gt $CK_LOGD ]; then echo -e "- logging is \033[1;32menabled\033[0m."
                               else echo -e "- logging is \033[1;35mdisabled\033[0m."
@@ -1268,7 +1268,7 @@ status_term() { $DEBUG && debug "status_term"
   echo -e '\n\033[1;36mShield status:\033[0m'
   if [ $((_RETVAL&ST_UNSET)) -ne 0 ]; then  echo "- shield is unset."
   elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
-  else                                      echo -e "- shield is \033[1;32mup\033[0m.\n$_UPSTR"
+  else                                      echo -e "- shield is \033[1;32mup\033[0m $_UPSTR"
   fi
   if [ $_CK -gt $CK_LOGD ]; then echo -e "- logging is \033[1;32menabled\033[0m."
                             else echo -e "- logging is \033[1;35mdisabled\033[0m."
@@ -1330,9 +1330,9 @@ status_term() { $DEBUG && debug "status_term"
   
   [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
-  echo -e "\n033[1;36miptables $SC_NAME rules:\033[0m"
+  echo -e "\n\033[1;36miptables $SC_NAME rules:\033[0m"
   [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
-  echo -e "\033[1;36mipset $SC_NAME sets:\033[0m"
+  echo -e "\n\033[1;36mipset $SC_NAME sets:\033[0m"
   [ -z "$_IPS" ] && _IPS="$($IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR")"
   if [ "$_IPS" ]; then echo "$_IPS"|while read _SET; do
     case "$_SET" in
