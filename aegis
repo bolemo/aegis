@@ -1145,7 +1145,8 @@ _status() { $DEBUG && debug "|---> _status"
       [ "$_OTUN" != "$_TUN" ] &&                                    _CK=$((_CK+CK_DTIF))
       [ $((_DNA+DNA_TBW)) -ne 0 ] && [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+CK_DTINET))
 
-      if [ $((_ONFO&STA_IPT_MASK)) -ne INFO_IPT_PBM ]; then         _CK=$((_CK+CK_OIPT))
+      if [ $((_ONFO&STA_IPT_MASK)) -eq INFO_IPT_PBM ]; then         _CK=$((_CK+CK_OIPT))
+      else
         AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
         express_ipt_dna "$INFO_FILE" >$OIPTF
         echo "$_IPT" >$AIPTF
@@ -1234,7 +1235,7 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_DWINET)) -ne 0 ] && echo "- WAN: interface subnet range changed from $_OWINET to $_WINET since $SC_NAME was upreared!"
     [ $((_CK&CK_DTIF)) -ne 0 ] &&   echo "- VPN: tunnel changed from '$_OTUN' to '$TUN_IF' since $SC_NAME was upreared!"
     [ $((_CK&CK_DTINET)) -ne 0 ] && echo "- VPN: tunnel subnet range changed from $_OTINET to $_TINET since $SC_NAME was upreared!"
-    [ $((_CK&CK_DOIPT)) -ne 0 ] &&  echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
+    [ $((_CK&CK_OIPT)) -ne 0 ] &&  echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
     if [ $((_RETVAL&ST_LGDPB)) -ne 0 ]; then echo "- logd: shield is down, but the log daemon is running!"
