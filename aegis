@@ -1196,7 +1196,7 @@ status_term() { $DEBUG && debug "status_term"
     if [ $((_CK&CK_IWAN)) -ne 0 ]; then _UPSTR="WAN interface ($WAN_IF)"
       _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"
     fi
-    if [ $((_CK&CK_ITUN)) -ne 0 ]; then [ "$_UPSTR" ] && _UPSTR=" and "; _UPSTR="${_UPSTR}VPN tunnel ($TUN_IF)"
+    if [ $((_CK&CK_ITUN)) -ne 0 ]; then [ "$_UPSTR" ] && _UPSTR="$_UPSTR and "; _UPSTR="${_UPSTR}VPN tunnel ($TUN_IF)"
       _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
     fi
     _UPSTR="for: $_UPSTR.\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)."
@@ -1240,7 +1240,7 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
     if [ $((_RETVAL&ST_LGDPB)) -ne 0 ]; then echo "- logd: shield is down, but the log daemon is running!"
-    elif [ $_CK -gt $CK_LOGD -a $((_ODNA&DNA_LOG)) -ne 0 ]; then echo "- logd: log daemon was started but is not running!"
+    elif [ $_CK -lt $CK_LOGD -a $((_ODNA&DNA_LOG)) -ne 0 ]; then echo "- logd: log daemon was started but is not running!"
     fi
     echo -ne '\033[0m'
  #   _exit $_RETVAL
