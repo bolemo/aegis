@@ -1036,13 +1036,12 @@ test_ip() { # $1: IP to test, ($2: IF)
 # ---------------------------------------------
 # STATUS VARS
 CK_PMND=1 CK_PM=3 CK_FWS=4     CK_UNSET=1 CK_SETOK=5 CK_SET=7
-CK_IWAN=8 CK_ITUN=16
-CK_SND=32               # SHIELD NOT DOWN
-CK_NFO=64 CK_UPF=128    # INFO FILE & UP FLAG
-CK_UPOK=255             # SHIELD UP OK
-CK_DDNA=256 CK_DWIF=512 CK_DWINET=1024 CK_DTIF=2048 CK_DTINET=4096 CK_DIPT=8192 CK_OIPT=16384
-CK_DPB=32767
-CK_LOGD=32768
+CK_SND=8                # SHIELD NOT DOWN
+CK_NFO=16 CK_UPF=32     # INFO FILE & UP FLAG
+CK_UPOK=63              # SHIELD UP OK
+CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
+CK_DPB=8192
+CK_LOGD=16384
 
 ST_UNSET=1   # . . _ . . x
 ST_SETPB=8   # . . x . . _
@@ -1089,8 +1088,7 @@ _status() { $DEBUG && debug "|---> _status"
   [ -r "$INFO_FILE" ] &&        _CK=$((_CK+CK_NFO))  # info file exists
   sc_conf get up >/dev/null &&  _CK=$((_CK+CK_UPF))  # shield up flag is on
   
-  _WAN=$WAN_IF; [ "$_WAN" ] &&  _CK=$((_CK+CK_IWAN))
-  _TUN=$TUN_IF; [ "$_TUN" ] &&  _CK=$((_CK+CK_ITUN))
+  _WAN=$WAN_IF _TUN=$TUN_IF
   
   # CHECKING DIRECTIVES, IPTABLES... ONLY IF SHIELD IS NOT DOWN
   if [ $((_CK&CK_SND)) -ne 0 ]; then
@@ -1174,8 +1172,7 @@ status_term() { $DEBUG && debug "status_term"
 # variables are already set when calling _status from here. so no need to set variables from stdout here.
 #  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9
 #  read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
-#  [ "$WAN_IF" ] && _WINET=$(inet_for_if $_WAN_IF)
-#  [ "$TUN_IF" ] && _TINET=$(inet_for_if $_TUN_IF)
+#  _WAN _WIF _WINET _TINET
   _status >/dev/null
   [ "$_ONFO" ] || _ONFO=0; [ "$_ODNA" ] || _ODNA=0
   _OFROM=$((_ONFO&INFO_FROM_MASK))
@@ -1195,10 +1192,9 @@ status_term() { $DEBUG && debug "status_term"
   
   if [ $((_CK&CK_DPB)) -ge $CK_SND ]; then # creating up status info string
     _STRBLC="global: $_ABLC" _STRWLC="global: $_AWLC"
-    if [ $((_CK&CK_IWAN)) -ne 0 ]; then _UPSTR="WAN interface ($_OWAN)"
-      _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"
-    fi
-    if [ $((_CK&CK_ITUN)) -ne 0 ]; then [ "$_UPSTR" ] && _UPSTR="$_UPSTR and "; _UPSTR="${_UPSTR}VPN tunnel ($_OTUN)"
+    if [ "$_OWAN" ]; then _UPSTR="WAN interface ($_OWAN)" _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"; fi
+    if [ "$_OTUN" ]; then
+      [ "$_UPSTR" ] && _UPSTR="$_UPSTR and VPN tunnel ($_OTUN)" || _UPSTR="VPN tunnel ($_OTUN)"
       _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
     fi
     _UPSTR=" for: $_UPSTR.\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)"
