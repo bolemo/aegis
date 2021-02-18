@@ -426,6 +426,8 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   
   if /usr/bin/diff -q $WIPTF $AIPTF >/dev/null; then NFO_IPT=$((NFO_IPT+INFO_IPT_KEEP)); else
     /usr/bin/awk '$1=="-A"{sub(/-A/,"-D"); system("'$IPT_BIN' -w "$0)}' $AIPTF
+    /usr/bin/awk '$1=="-N"{sub(/-N/,"-X"); system("'$IPT_BIN' -w "$0)}' $AIPTF
+    /usr/bin/awk '$1=="-N"{system("'$IPT_BIN' -w "$0)}' $WIPTF
     /usr/bin/awk '$1=="-A"{a[i++]="-I"substr($0,3); next} {system("'$IPT_BIN' -w "$0)} END {while(i--){system("'$IPT_BIN' -w "a[i])}}' $WIPTF
     get_ipt; echo "$_IPT" >$AIPTF
     /usr/bin/diff -q $WIPTF $AIPTF >/dev/null && NFO_IPT=$((NFO_IPT+INFO_IPT_RUN))
@@ -1235,7 +1237,7 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_DWINET)) -ne 0 ] && echo "- WAN: interface subnet range changed from $_OWINET to $_WINET since $SC_NAME was upreared!"
     [ $((_CK&CK_DTIF)) -ne 0 ] &&   echo "- VPN: tunnel changed from '$_OTUN' to '$TUN_IF' since $SC_NAME was upreared!"
     [ $((_CK&CK_DTINET)) -ne 0 ] && echo "- VPN: tunnel subnet range changed from $_OTINET to $_TINET since $SC_NAME was upreared!"
-    [ $((_CK&CK_OIPT)) -ne 0 ] &&  echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
+    [ $((_CK&CK_OIPT)) -ne 0 ] &&   echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
     if [ $((_RETVAL&ST_LGDPB)) -ne 0 ]; then echo "- logd: shield is down, but the log daemon is running!"
@@ -1303,6 +1305,7 @@ status_term() { $DEBUG && debug "status_term"
     _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
     if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "- iptables: rules were already set with:"
     elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "- iptables: rules were (re)set with:"
+    else echo -n "- iptables: rules were UNSUCCESSFULLY (re)set with:"
     fi
     # _ODNA
     _AND=''
