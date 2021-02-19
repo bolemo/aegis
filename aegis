@@ -1038,9 +1038,9 @@ CK_PMND=1 CK_PM=3 CK_FWS=4     CK_UNSET=1 CK_SETOK=5 CK_SET=7
 CK_SND=8                # SHIELD NOT DOWN
 CK_NFO=16 CK_UPF=32     # INFO FILE & UP FLAG
 CK_UPOK=63              # SHIELD UP OK
-CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
+CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096 
 CK_DPB=8191
-CK_LOGD=8192
+CK_LOGD=8192 CK_DLOGD=16384
 
 ST_UNSET=1   # . . _ . . x
 ST_SETPB=8   # . . x . . _
@@ -1135,6 +1135,8 @@ _status() { $DEBUG && debug "|---> _status"
     sc_conf get log.enabled >/dev/null && _DNA=$((_DNA+DNA_LOG))
     _cipset_end
     
+    _logd_status && _CK=$((_CK+CK_LOGD))
+    
     if [ $((_CK&CK_NFO)) -ne 0 ]; then # we have info file
       read _ONFO _ODNA _OWAN _OWINET _OTUN _OTINET <"$INFO_FILE"
   
@@ -1152,10 +1154,11 @@ _status() { $DEBUG && debug "|---> _status"
         ! /usr/bin/diff -q $OIPTF $AIPTF >/dev/null &&              _CK=$((_CK+CK_DIPT))
         /bin/rm -rf $OIPTF; /bin/rm -rf $AIPTF
       fi
+      if [ $((_ODNA&DNA_LOG)) -ne 0 ]; then [ $((_CK&CK_LOGD)) -eq 0 ] && _CK=$((_CK+CK_DLOGD))
+                                       else [ $((_CK&CK_LOGD)) -ne 0 ] && _CK=$((_CK+CK_DLOGD))
+      fi
     fi
   fi
-  
-  _logd_status && _CK=$((_CK+CK_LOGD))
   
   echo -n "$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC"
   $DEBUG && debug "<---| _status [$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC]"
@@ -1200,10 +1203,8 @@ status_term() { $DEBUG && debug "status_term"
     _UPSTR=" for: $_UPSTR.\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)"
   fi
   
-  if [ $_CK -gt $CK_LOGD ]; then 
-    if [ $((_CK&CK_DPB)) -ge $CK_SND ]; then _RETVAL=$((_RETVAL+ST_LOGD))
-                                        else _RETVAL=$((_RETVAL+ST_LGDPB))
-    fi
+  if [ $_CK -ge $CK_DLOGD ]; then _RETVAL=$((_RETVAL+ST_LGDPB))
+  elif [ $_CK -ge $CK_LOGD ]; then _RETVAL=$((_RETVAL+ST_LOGD))
   fi
   
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors ----------------------
@@ -1237,8 +1238,8 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_OIPT)) -ne 0 ] &&   echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
-    if [ $((_RETVAL&ST_LGDPB)) -ne 0 ]; then echo "- logd: shield is down, but the log daemon is running!"
-    elif [ $_CK -lt $CK_LOGD -a $((_ODNA&DNA_LOG)) -ne 0 ]; then echo "- logd: log daemon was started but is not running!"
+    if [ $_CK -ge $((CK_DLOGD+CK_LOGD)) ]; then echo "- logd: the log daemon is running but was not started from the shield!"
+    elif [ $_CK -ge $CK_LOGD ]; then            echo "- logd: log daemon was started but is not running!"
     fi
     echo -ne '\033[0m'
  #   _exit $_RETVAL
