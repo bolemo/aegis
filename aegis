@@ -1434,8 +1434,8 @@ _shield_args() {
   sc_conf commit
 }
 _log_args() { case $ARGS in
-  *' -enable '*)           sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
-  *' -disable '*)          sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; [ $VERBOSE ] && status_term; } ;;
+  *' -enable '*)           sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
+  *' -disable '*)          sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
   *' -show '*)             [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
   *' -live '*)             print_log 0 ;;
   *' -get-history '*)      sc_conf get log.len ;;
