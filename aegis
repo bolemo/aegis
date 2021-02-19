@@ -201,7 +201,7 @@ while :; do
     [ "\$INODE" != "\$(inode)" ] && break
     if [ \$C -eq 10 ]; then
       # check every 20 seconds
-      if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] \""; then
+      if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
         elif \$FC; then $($DEBUG && echo "debug 'shield is unlocked, this is second check: killing daemon';") kill \$(cat $LOGD_PID);
