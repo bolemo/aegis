@@ -1038,7 +1038,7 @@ CK_PMND=1 CK_PM=3 CK_FWS=4     CK_UNSET=1 CK_SETOK=5 CK_SET=7
 CK_SND=8                # SHIELD NOT DOWN
 CK_NFO=16 CK_UPF=32     # INFO FILE & UP FLAG
 CK_UPOK=63              # SHIELD UP OK
-CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096 
+CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
 CK_DPB=8191
 CK_LOGD=8192 CK_DLOGD=16384
 
@@ -1239,7 +1239,7 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
     if [ $_CK -ge $((CK_DLOGD+CK_LOGD)) ]; then echo "- logd: the log daemon is running but was not started from the shield!"
-    elif [ $_CK -ge $CK_LOGD ]; then            echo "- logd: log daemon was started but is not running!"
+    elif [ $_CK -ge $CK_DLOGD ]; then           echo "- logd: log daemon was started but is not running!"
     fi
     echo -ne '\033[0m'
  #   _exit $_RETVAL
