@@ -296,7 +296,7 @@ express_ipt_dna() { $DEBUG && debug "express_ipt_dna $*"
   fi
   $_AWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_ALL_WL_NAME dst -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_DST -m set --match-set $IPSET_TUN_WL_NAME dst -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
-  $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] IF=TUN DIR=OUT \""
+  $_LOG && echo "-A $IPTBL_TUN_DST -j LOG --log-prefix \"[$SC_ABR] IF=VPN DIR=OUT \""
            echo "-A $IPTBL_TUN_DST -m comment --comment \"$SC_ABR reject outgoing\" -j REJECT --reject-with icmp-admin-prohibited"
 
   # TUN SRC
@@ -309,7 +309,7 @@ express_ipt_dna() { $DEBUG && debug "express_ipt_dna $*"
   fi
   $_AWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_ALL_WL_NAME src -m comment --comment \"in $SC_ABR whitelist\" -j RETURN"
   $_TWL && echo "-A $IPTBL_TUN_SRC -m set --match-set $IPSET_TUN_WL_NAME src -m comment --comment \"in $SC_ABR VPN whitelist\" -j RETURN"
-  $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] IF=TUN DIR=IN \""
+  $_LOG && echo "-A $IPTBL_TUN_SRC -j LOG --log-prefix \"[$SC_ABR] IF=VPN DIR=IN \""
            echo "-A $IPTBL_TUN_SRC -m comment --comment \"$SC_ABR drop incoming\" -j DROP"
   fi
   
@@ -814,20 +814,17 @@ function namefromip(ip){
 function protoname(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
 function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
 function floored(a){return (a<0)?0:a}
-function pline(iface){
-  if (IN==iface){REM=SRC;RPT=SPT;LPT=DPT;DIR="\033[1;35mincoming\033[0m";DIR1="from";DIR2="to";
-     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
-     else {LOC=namefromip(DST); LNM="LAN"}
-  } else if (OUT==iface){REM=DST;RPT=DPT;LPT=SPT;DIR="\033[1;33moutgoing\033[0m";DIR1="to";DIR2="from";
-     if (IN=="") {LOC=SRC; LNM="router"}
-     else {LOC=namefromip(SRC); LNM="LAN"}
-  } else return 0;
-  return 1;}
 $1$2>0'$(/bin/cat "$_LSC")'{ts[++b]=$1;l[b]=$0} END
 {c=floored(b-'$_TAIL');while (c++<b){
   PT=strftime("%F %T", ('$_BT'+ts[c]));
-  IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
-  if (pline("'$WAN_IF'")) {IFACE="WAN"} else if (pline("'$TUN_IF'")) {IFACE="VPN"}
+  IFACE=getval("IF"); WAY=getval("DIR"); IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
+  if (WAY=="IN"){REM=SRC;RPT=SPT;LPT=DPT;DIR="\033[1;35mincoming\033[0m";DIR1="from";DIR2="to";
+     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
+     else {LOC=namefromip(DST); LNM="LAN"}
+  } else if (WAY=="OUT"){REM=DST;RPT=DPT;LPT=SPT;DIR="\033[1;33moutgoing\033[0m";DIR1="to";DIR2="from";
+     if (IN=="") {LOC=SRC; LNM="router"}
+     else {LOC=namefromip(SRC); LNM="LAN"}
+  }
   if (RPT) {RPT=":"RPT}; if (LPT) {LPT=":"LPT}
   printf("%s: Blocked %s %s packet %s %s:\033[1;35m%s%s\033[0m %s %s:\033[1;33m%s%s\033[0m\n",PT,DIR,PROTO,DIR1,IFACE,REM,RPT,DIR2,LNM,LOC,LPT)
 } print $1$2 >"'$_LSC'"}'; do
