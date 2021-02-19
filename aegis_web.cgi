@@ -281,21 +281,19 @@ function protoname(proto){
   } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"}
   return nm}
 function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-function pline(iface){
-  if (IN==iface) {REM=SRC; RPT=SPT; LPT=DPT; ATTR="incoming";
-     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
-     else {LOC=namefromip(DST); LNM="LAN"}
-  } else if (OUT==iface) {REM=DST; RPT=DPT; LPT=SPT; ATTR="outgoing";
-     if (IN=="") {LOC='$_RNM'"<q>"SRC"</q>"; LNM="router"}
-     else {LOC=namefromip(SRC); LNM="LAN"}
-  } else return 0;
-  return 1;}
 {ts[++c]=$1;uts[c]=$1$2;l[c]=$0} END
 {if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
  min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
    PT=strftime("%F %T", ('$_BT'+ts[c]));
-   IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
-   if (pline("'$_WIF'")) {ATTR2=" wan"} else if (pline("'$_TIF'")) {ATTR2=" vpn"}
+   IFACE=getval("IF"); WAY=getval("DIR"); IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
+   if (IFACE=="WAN") {ATTR2=" wan"} else if (IFACE=="VPN") {ATTR2=" vpn"}
+   if (WAY=="IN"){REM=SRC;RPT=SPT;LPT=DPT;ATTR="incoming";
+     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
+     else {LOC=namefromip(DST); LNM="LAN"}
+   } else if (WAY=="OUT"){REM=DST;RPT=DPT;LPT=SPT;ATTR="outgoing";
+     if (IN=="") {LOC=SRC; LNM="router"}
+     else {LOC=namefromip(SRC); LNM="LAN"}
+   }
    if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"}
    print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>"
 }}' $_LF
