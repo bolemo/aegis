@@ -1160,7 +1160,8 @@ _status() { $DEBUG && debug "|---> _status"
     fi
   fi
   
-  $DEBUG && debug "<---| _status [$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC '$_WAN' '$_TUN' '$_WINET' '$_TINET' '$_ONFO' '$_ODNA' '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET']"
+  [ "$_ONFO" ] || _ONFO=0; [ "$_ODNA" ] || _ODNA=0
+  $DEBUG && debug "<---| _status [$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC '$_WAN' '$_TUN' '$_WINET' '$_TINET' $_ONFO $_ODNA '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET']"
 } 2>>"$STDERR"
 
 netset_exists() {
@@ -1172,7 +1173,6 @@ netset_exists() {
 
 status_term() { $DEBUG && debug "status_term"
   _status
-  [ "$_ONFO" ] || _ONFO=0; [ "$_ODNA" ] || _ODNA=0
   _OFROM=$((_ONFO&INFO_FROM_MASK))
   _ODIR=$(((_ONFO>>INFO_DIR_SHIFT)&INFO_DIR_MASK))
   _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
