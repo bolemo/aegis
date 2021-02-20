@@ -88,7 +88,7 @@ status() {
         [ "$_UPSTR" ] && _UPSTR="$_UPSTR and VPN tunnel ($_OTUN)" || _UPSTR="VPN tunnel ($_OTUN)"
         _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
       fi
-      _UPSTR=" for: $_UPSTR.</li><li>blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)"
+      _UPSTR=" for: $_UPSTR.</li><li>Blocking a total of $((_ABLC+_WBLC+_TBLC)) IP addresses ($_STRBLC).</li><li>Bypassing $((_AWLC+_WWLC+_TWLC)) IP addresses ($_STRWLC)"
     fi
     echo -n "<li>Aegis shield is up$_UPSTR.</li>" 
   fi
