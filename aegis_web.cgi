@@ -49,7 +49,8 @@ aegis_env() eval "$($wcAEGIS_BIN _env)" # source environment we need from aegis
 status() {
   aegis_env
   set -- $($wcAEGIS_BIN _status)
-  eval "_CK=$1; _PB=$2; _WN=$3; BL_NB=$4; WL_NB=$5; _LOGD=$6; WAN_IF=$7; TUN_IF=$8"
+  eval "_CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=$10 _TUN=$11 _WINET=$12 _TINET=$13 _ONFO=$14 _ODNA=$15 _OWAN=$16 _OWINET=$17 _OTUN=$18 _OTINET=$19"
+
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
