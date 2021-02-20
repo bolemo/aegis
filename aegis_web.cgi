@@ -64,7 +64,7 @@ status() {
   elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _PB=true
   fi
   
-  if [ $_CK -ge $CK_DLOGD ]; then _PB=true
+  [ $_CK -ge $CK_DLOGD ] && _PB=true
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if $_UNSET; then
