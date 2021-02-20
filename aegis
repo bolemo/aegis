@@ -1350,7 +1350,8 @@ status_term() { $DEBUG && debug "status_term"
 }
 
 status_raw() { $DEBUG && debug "status_raw"
-  echo "$(_status) '$WAN_IF' '$TUN_IF'"; _exit 0
+  echo "$(_status) '$_WAN' '$_WIF' '$_WINET' '$_TINET' '$_ONFO' '$_ODNA' '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET'"; _exit 0
+#  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=$10 _WIF=$11 _WINET=$12 _TINET=$13 _ONFO=$14 _ODNA=$15 _OWAN=$16 _OWINET=$17 _OTUN=$18 _OTINET=$19  
 }
 #---------------------------- END _STATUS ----------------------------
 
