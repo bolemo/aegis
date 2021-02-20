@@ -56,18 +56,46 @@ status() {
   _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
   _OLOGD=$(((_ONFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
   
-  _PB=false
+  _PB=false _UNSET=false _DOWN=false
   
-  if [ $((_CK&CK_SET)) -le $CK_UNSET ]; then   # UNSET
-  elif [ $((_CK&CK_SET)) -lt $CK_SETOK ]; then _PB=true
-  fi
-  
-  if [ $_CK -le $CK_UNSET ]; then : # if we are just unset, no need to show more.
-  elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  # DOWN
+  [ $((_CK&CK_SET)) -gt $CK_UNSET -a $((_CK&CK_SET)) -lt $CK_SETOK ] && _PB=true
+  if [ $_CK -le $CK_UNSET ]; then             _UNSET=true
+  elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  _DOWN=true
   elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _PB=true
   fi
   
   if [ $_CK -ge $CK_DLOGD ]; then _PB=true
+  
+  echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
+  if $_UNSET; then
+    if $_PB; then echo '<ul id="status" class="error"><li>Problems found!</li>'
+             else echo '<ul id="status" class="off">'
+    fi
+    echo "<li>Aegis shield is unset.</li>"
+  elif $_DOWN; then
+    if $_PB; then echo '<ul id="status" class="error"><li>Problems found!</li>'
+             else echo '<ul id="status" class="off">'
+    fi
+    echo "<li>Aegis shield is down.</li>"
+  else
+    if $_PB; then echo '<ul id="status" class="error"><li>Problems found!</li>'
+             else echo '<ul id="status" class="running">'
+    fi
+    if [ $((_CK&CK_DPB)) -ge $CK_SND ]; then # creating up status info string
+      _STRBLC="global: $_ABLC" _STRWLC="global: $_AWLC"
+      if [ "$_OWAN" ]; then _UPSTR="WAN interface ($_OWAN)" _STRBLC="$_STRBLC, WAN only: $_WBLC" _STRWLC="$_STRWLC, WAN only: $_WWLC"; fi
+      if [ "$_OTUN" ]; then
+        [ "$_UPSTR" ] && _UPSTR="$_UPSTR and VPN tunnel ($_OTUN)" || _UPSTR="VPN tunnel ($_OTUN)"
+        _STRBLC="$_STRBLC, VPN only: $_TBLC" _STRWLC="$_STRWLC, VPN only: $_TWLC"
+      fi
+      _UPSTR=" for: $_UPSTR.</li><li>blocking a total of $((_ABLC+_WBLC+_TBLC)) IP adresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP adresses ($_STRWLC)"
+    fi
+    echo -n "<li>Aegis shield is up$_UPSTR.</li>" 
+  fi
+  if [ $_CK -gt $CK_LOGD ]; then echo "<li>Logging is enabled.</li>"
+                            else echo "<li>Logging is disabled.</li>"
+  fi
+  echo '</ul>'
   
   if $_PB; then # we have problems
     echo '<h3 class="error">Problems</h3>'
@@ -109,26 +137,7 @@ status() {
   
   
   
-  echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
-  if [ $((_CK+_PB)) -eq 0 ]; then
-    echo '<ul id="status" class="off">'
-    echo "<li>Aegis shield is not set (environment is clean).</li>"
-  elif [ $_CK -le $CK_ENV_MASK ] && [ $_PB -eq 0 ]; then
-    echo '<ul id="status" class="off">'
-    echo "<li>Aegis shield is down (environment is set).</li>"
-  elif [ $_CK -ne 0 ] && [ $_PB -eq 0 ]; then
-    echo '<ul id="status" class="running">'
-    echo -n "<li>Aegis shield is up."
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] && echo -n " for WAN interface ($WAN_IF)"
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] && echo -n " and VPN tunnel ($TUN_IF)"
-    echo -ne ".</li>\n<li>Filtering $BL_NB IP adresses.</li>"
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] && echo "<li>Bypassing $WL_NB IP adresses.</li>"
-    [ $_LOGD -eq 0 ] && echo "<li>Logging is enabled.</li>" || echo "<li>Logging is disabled.</li>"
-  else
-    echo '<ul id="status" class="error">'
-    echo "<li><strong>Something is not right!</strong></li>"
-  fi
-  echo '</ul>'
+  
   
 #    echo '<h3 class="warning">Warnings</h3>'
   
