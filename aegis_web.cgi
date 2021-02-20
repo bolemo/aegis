@@ -51,6 +51,63 @@ status() {
   set -- $($wcAEGIS_BIN _status)
   eval "_CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=$10 _TUN=$11 _WINET=$12 _TINET=$13 _ONFO=$14 _ODNA=$15 _OWAN=$16 _OWINET=$17 _OTUN=$18 _OTINET=$19"
 
+  _OFROM=$((_ONFO&INFO_FROM_MASK))
+  _ODIR=$(((_ONFO>>INFO_DIR_SHIFT)&INFO_DIR_MASK))
+  _OIPT=$(((_ONFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
+  _OLOGD=$(((_ONFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
+  
+  _PB=false
+  
+  if [ $((_CK&CK_SET)) -le $CK_UNSET ]; then   # UNSET
+  elif [ $((_CK&CK_SET)) -lt $CK_SETOK ]; then _PB=true
+  fi
+  
+  if [ $_CK -le $CK_UNSET ]; then : # if we are just unset, no need to show more.
+  elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  # DOWN
+  elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _PB=true
+  fi
+  
+  if [ $_CK -ge $CK_DLOGD ]; then _PB=true
+  
+  if $_PB; then # we have problems
+    echo '<h3 class="error">Problems</h3>'
+    echo '<ul>'
+    [ $((_CK&CK_FWS)) -eq 0 ] &&       echo "<li>set: firewall-start.sh is not set for $SC_NAME!</li>"
+    [ $((_CK&CK_PM)) -eq $CK_PMND ] && echo "<li>set: post-mount.sh is not set for $SC_NAME!</li>"
+    if [ $((_CK&CK_SND)) -ne 0 ]; then
+      [ $((_CK&CK_NFO)) -eq 0 ] &&     echo "<li>status file is missing!</li>"
+      [ $((_CK&CK_UPF)) -eq 0 ] &&     echo "<li>shield should be down, but is not!</li>"
+    else
+      [ $((_CK&CK_NFO)) -ne 0 ] &&     echo "<li>shield is down, but status file exists!</li>"
+      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo "<li>shield should be up, but is not!</li>"
+    fi
+    if [ $((_CK&CK_DDNA)) -ne 0 ]; then
+       _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
+         "$INFO_DIR__DIFF") echo "<li>directives: $2 changed since $SC_NAME was upreared!</li>";; # loaded != file
+         "$INFO_DIR__KEEP") echo "<li>directives: $2 is missing (but loaded in ipset)!</li>";; # loaded but no file
+         "$INFO_DIR__LOAD") echo "<li>directives: $2 was created after $SC_NAME was upreared!</li>";; # file exists, but not loaded
+       esac; }
+      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
+      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
+      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
+      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
+      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
+      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+    fi
+    [ $((_CK&CK_DWIF)) -ne 0 ] &&   echo "<li>WAN: interface changed from '$_OWAN' to '$WAN_IF' since $SC_NAME was upreared!</li>"
+    [ $((_CK&CK_DWINET)) -ne 0 ] && echo "<li>WAN: interface subnet range changed from $_OWINET to $_WINET since $SC_NAME was upreared!</li>"
+    [ $((_CK&CK_DTIF)) -ne 0 ] &&   echo "<li>VPN: tunnel changed from '$_OTUN' to '$TUN_IF' since $SC_NAME was upreared!</li>"
+    [ $((_CK&CK_DTINET)) -ne 0 ] && echo "<li>VPN: tunnel subnet range changed from $_OTINET to $_TINET since $SC_NAME was upreared!</li>"
+    [ $((_CK&CK_OIPT)) -ne 0 ] &&   echo "<li>iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!</li>"
+    [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "<li>iptables: current $SC_NAME rules were modified since last uprear!</li>"
+    
+    if [ $_CK -ge $((CK_DLOGD+CK_LOGD)) ]; then echo "<li>logd: the log daemon is running but was not started from the shield!</li>"
+    elif [ $_CK -ge $CK_DLOGD ]; then           echo "<li>logd: log daemon was started but is not running!</li>"
+    fi
+    echo '</ul>'
+  fi
+  
+  
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if [ $((_CK+_PB)) -eq 0 ]; then
@@ -73,43 +130,7 @@ status() {
   fi
   echo '</ul>'
   
-  if [ $_PB -ne 0 ]; then
-    echo '<h3 class="error">Errors</h3>'
-    echo '<ul>'
-    [ $((_PB&CK_FWS)) -ne 0 ] &&          echo "<li>set: firewall-start.sh is not set properly for $SC_NAME!</li>"
-    [ $((_PB&CK_PM)) -ne 0 ] &&           echo "<li>set: post-mount.sh is not set properly for $SC_NAME!</li>"
-    [ $((_PB&CK_IPS_BL)) -ne 0 ] &&       echo "<li>ipset: no blocklist is set!</li>"
-    [ $((_PB&CK_IPS_WL)) -ne 0 ] &&       echo "<li>ipset: no whitelist is set!</li>"
-    [ $((_PB&CK_IPT_CH)) -ne 0 ] &&       echo "<li>iptables: shield chains are not right!</li>"
-    [ $((_PB&CK_IPT_WAN_BP)) -ne 0 ] &&   echo "<li>iptables: WAN network range bypass rules are not right!</li>"
-    [ $((_PB&CK_IPT_TUN_BP)) -ne 0 ] &&   echo "<li>iptables: VPN network range bypass rules are not right!</li>"
-    [ $((_PB&CK_IPT_WL)) -ne 0 ] &&       echo "<li>iptables: whitelist rules are not right!</li>"
-    [ $((_PB&CK_IPT_TUN)) -ne 0 ] &&      echo "<li>iptables: VPN tunnel IFO rules are corrupted!</li>"
-    [ $((_PB&CK_IPT_WAN)) -ne 0 ] &&      echo "<li>iptables: WAN interface IFO rules are corrupted!</li>"
-    [ $((_PB&PB_IPT_WAN_MISS)) -ne 0 ] && echo "<li>iptables: WAN interface ($WAN_IF) IFO rules are missing!</li>"
-    [ $((_PB&PB_IPT_IFO)) -ne 0 ] &&      echo "<li>iptables: Extra shield IFO rules were found (likely from an old interface)!</li>"
-    echo '</ul>'
-  fi
-  
-  if [ $((_CK+_PB)) -ne 0 ] && [ $_WN -ne 0 ]; then
-    echo '<h3 class="warning">Warnings</h3>'
-    echo '<ul>'
-    case "$((_WN&WN_BL_FILE_NTLD))" in
-      $WN_BL_FILE_DIFF) echo "<li>directives: ipset blocklist is different than file.</li>";;
-      $WN_BL_FILE_MISS) echo "<li>directives: ipset blocklist is set but file is missing.</li>";;
-      $WN_BL_FILE_NTLD) echo "<li>directives: no ipset blocklist is set but file exists.</li>";;
-    esac
-    case "$((_WN&WN_WL_FILE_NTLD))" in
-      $WN_WL_FILE_DIFF) echo "<li>directives: ipset whitelist is different than file.</li>";;
-      $WN_WL_FILE_MISS) echo "<li>directives: ipset whitelist is set but file is missing.</li>";;
-      $WN_WL_FILE_NTLD) echo "<li>directives: no ipset whitelist is set but file exists.</li>";;
-    esac
-    [ $((_WN&CK_IPT_WAN_BP)) -ne 0 ]                  && echo "<li>iptables: WAN network range bypass rules are missing!</li>"
-    [ "$TUN_IF" ] && [ $((_WN&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are missing!</li>"
-    [ $((_WN&WN_TUN_MISS)) -ne 0 ]                    && echo "<li>iptables: VPN tunnel ($TUN_IF) IFO rules are missing!</li>"
-    [ $((_WN&WN_LOG_DIFF)) -ne 0 ]                    && echo "<li>current logging settings differs from last time shield was upreared.</li>"
-    echo '</ul>'
-  fi
+#    echo '<h3 class="warning">Warnings</h3>'
   
   echo '<h3 class="more collapsibleList">Detailed status</h3>'
   echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
