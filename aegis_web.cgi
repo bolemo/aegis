@@ -215,20 +215,14 @@ status() {
 <input type=\"checkbox\" id=\"debug-status\" /><label for=\"debug-status\">Debug</label>
 <ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>
 <li>aegis info: $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')</li>
-<li>status codes: ck:$_CK|pb:$_PB|wn:$_WN|wif:$WAN_IF|wnt:$(inet_for_if $WAN_IF)|tif:$TUN_IF|tnt:$([ $TUN_IF ] && inet_for_if $TUN_IF)|blc:$BL_NB|wlc:$WL_NB|log:$_LOGD</li>
-<li>info file: $INFO|$INFO_WAN|$INFO_TUN</li>
-<li>timestamps: inf:$(/bin/date +%s -r $INFO_FILE)|cch:$(/bin/date +%s -r $SRC_BL_CACHE)|bld:$(/bin/date +%s -r $BL_FILE)|wld:$(/bin/date +%s -r $WL_FILE)</li>
+<li>status codes: ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET</li>
+<li>info file: tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET</li>
 <li>conf:</li><ul>"$(/sbin/uci -c "$CONF_DIR" show|/usr/bin/awk '{print "<li>"$0"</li>"}')"</ul>
 <li>iptables engine rules:</li><ul>"
   [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
   echo '</ul><li>ipset engine sets:</li><ul>'
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
-    case "$_SET" in
-      "$IPSET_BL_NAME") _NAME='blocklist' ;;
-      "$IPSET_WL_NAME") _NAME='whitelist' ;;
-      *) _NAME="$_SET" ;;
-    esac
-    echo "<li>$_NAME:</li><ul>"
+    echo "<li>$_SET:</li><ul>"
     ipset -L -t $_SET|/usr/bin/awk '{print "<li>" $0 "</li>"}'
     echo '</ul>'
   done
@@ -343,12 +337,23 @@ refreshLog() {
 checkIp() {
   aegis_env
   IP="$ARG"
-  /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted' \
-    && echo "IP address $IP is blocked by the router.<br />" \
-    || echo "IP address $IP is not blocked by the router.<br />"
-  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
-    "$IPSET_BL_NAME") ipset -q test $IPSET_BL_NAME $IP && echo "IP address $IP is in Aegis blocklist directives.<br />" ;;
-    "$IPSET_WL_NAME") ipset -q test $IPSET_WL_NAME $IP && echo "IP address $IP is in Aegis whitelist directives.<br />" ;;
+  if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
+    then echo "IP address $IP is blocked by the router for WAN interface.<br />"
+    else echo "IP address $IP is not blocked by the router for WAN interface.<br />"
+  fi
+  if [ "$TUN_IF" ]; then
+    if /usr/bin/traceroute -q1 -m1 -w1 -i $TUN_IF $IP 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
+      then echo "IP address $IP is blocked by the router for VPN tunnel.<br />"
+      else echo "IP address $IP is not blocked by the router for VPN tunnel.<br />"
+    fi
+  fi
+  $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
+    "$IPSET_ALL_BL_NAME") $IPS_BIN -q test $IPSET_ALL_BL_NAME $IP && echo "IP address $IP is in Aegis ALL blocking directives.<br />" ;;
+    "$IPSET_ALL_WL_NAME") $IPS_BIN -q test $IPSET_ALL_WL_NAME $IP && echo "IP address $IP is in Aegis ALL bypassing directives.<br />" ;;
+    "$IPSET_WAN_BL_NAME") $IPS_BIN -q test $IPSET_WAN_BL_NAME $IP && echo "IP address $IP is in Aegis WAN blocking directives.<br />" ;;
+    "$IPSET_WAN_WL_NAME") $IPS_BIN -q test $IPSET_WAN_WL_NAME $IP && echo "IP address $IP is in Aegis WAN bypassing directives.<br />" ;;
+    "$IPSET_TUN_BL_NAME") $IPS_BIN -q test $IPSET_TUN_BL_NAME $IP && echo "IP address $IP is in Aegis VPN blocking directives.<br />" ;;
+    "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $IP && echo "IP address $IP is in Aegis VPN bypassing directives.<br />" ;;
   esac; done
   ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF)).<br />"
   ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF)).<br />"
