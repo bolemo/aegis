@@ -391,7 +391,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
-  <input type="radio" name="menu" id="menu-lists" onclick=";"><label for="menu-lists">LISTS</label>
+  <input type="radio" name="menu" id="menu-lists" onclick="doList('');"><label for="menu-lists">LISTS</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -424,7 +424,7 @@ function ready() {
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
-      <option value="">PLEASE SELECT A LIST</option>
+      <option value="" selected>PLEASE SELECT A LIST</option>
       <option value="src">Blocklists Sources list</option>
       <option value="abl">Custom global block list</option>
       <option value="awl">Custom global bypass list</option>
