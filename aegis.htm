@@ -332,9 +332,9 @@ function doList(list) {
      aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById("lists-info").innerHTML=val.split('\n')[0];
        document.getElementById("main-lists").value=val.substring(val.indexOf("\n") + 1);
-       document.querySelector("#lists-info > button").disabled=false;
+       document.querySelector("#lists-info > input").style.display="block";
      });
-   } else document.querySelector("#lists-info > button").disabled=true;
+   } else document.querySelector("#lists-info > input").style.display="none";
 }
 function sendList(list) {
    if (list == '') {alert ("Select a list first!"); return;}
