@@ -348,12 +348,12 @@ checkIp() {
     fi
   fi
   $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
-    "$IPSET_ALL_BL_NAME") $IPS_BIN -q test $IPSET_ALL_BL_NAME $IP && echo "IP address $IP is in Aegis ALL blocking directives.<br />" ;;
-    "$IPSET_ALL_WL_NAME") $IPS_BIN -q test $IPSET_ALL_WL_NAME $IP && echo "IP address $IP is in Aegis ALL bypassing directives.<br />" ;;
-    "$IPSET_WAN_BL_NAME") $IPS_BIN -q test $IPSET_WAN_BL_NAME $IP && echo "IP address $IP is in Aegis WAN blocking directives.<br />" ;;
-    "$IPSET_WAN_WL_NAME") $IPS_BIN -q test $IPSET_WAN_WL_NAME $IP && echo "IP address $IP is in Aegis WAN bypassing directives.<br />" ;;
-    "$IPSET_TUN_BL_NAME") $IPS_BIN -q test $IPSET_TUN_BL_NAME $IP && echo "IP address $IP is in Aegis VPN blocking directives.<br />" ;;
-    "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $IP && echo "IP address $IP is in Aegis VPN bypassing directives.<br />" ;;
+    "$IPSET_ALL_BL_NAME") $IPS_BIN -q test $IPSET_ALL_BL_NAME $IP && echo "IP address $IP is in $SC_NAME global blocking directives.<br />" ;;
+    "$IPSET_ALL_WL_NAME") $IPS_BIN -q test $IPSET_ALL_WL_NAME $IP && echo "IP address $IP is in $SC_NAME global bypassing directives.<br />" ;;
+    "$IPSET_WAN_BL_NAME") $IPS_BIN -q test $IPSET_WAN_BL_NAME $IP && echo "IP address $IP is in $SC_NAME WAN blocking directives.<br />" ;;
+    "$IPSET_WAN_WL_NAME") $IPS_BIN -q test $IPSET_WAN_WL_NAME $IP && echo "IP address $IP is in $SC_NAME WAN bypassing directives.<br />" ;;
+    "$IPSET_TUN_BL_NAME") $IPS_BIN -q test $IPSET_TUN_BL_NAME $IP && echo "IP address $IP is in $SC_NAME VPN blocking directives.<br />" ;;
+    "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $IP && echo "IP address $IP is in $SC_NAME VPN bypassing directives.<br />" ;;
   esac; done
   ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF)).<br />"
   ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF)).<br />"
