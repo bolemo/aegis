@@ -1263,7 +1263,7 @@ status_term() { $DEBUG && debug "status_term"
   echo -e '\n\033[1;36mDirectives generation times:\033[0m'
   _gentimeforlist() { [ -e "$1" ] && echo "- $2: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
   echo "- actual router time: $(/bin/date +'%Y-%m-%d %X')"
-  [ -r "$SRC_BL_CACHE" ] && echo "- sources list latest cache update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")"
+  [ -r "$SRC_BL_CACHE" ] && echo "- sources cache list latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")"
   _gentimeforlist "$ALL_BL_FILE" "global block list"
   _gentimeforlist "$WAN_BL_FILE" "WAN specific block list"
   _gentimeforlist "$TUN_BL_FILE" "VPN specific block list"
