@@ -135,6 +135,73 @@ status() {
     echo '</ul>'
   fi
   
+  echo '<h3 class="more collapsibleList">Setting status</h3>'
+  echo '<input type="checkbox" id="setting-status" /><label for="setting-status">Setting status</label>'
+  echo '<ul>'
+  [ $((_CK&CK_FWS)) -ne 0 ] &&   echo "<li>Script firewall-start.sh is set for $SC_NAME.</li>"
+  case $((_CK&CK_PM)) in $CK_PM) echo "<li>Script post-mount.sh is set for $SC_NAME.</li>" ;;
+                       $CK_PMND) echo "<li>Ignoring post-mount.sh script ($SC_NAME is on internal memory).</li>" ;;
+  esac
+  echo '</ul>'
+  
+  echo '<h3 class="more collapsibleList">Directives generation times</h3>'
+  echo '<input type="checkbox" id="generation-status" /><label for="generation-status">Directives generation times</label>'
+  echo '<ul>'
+  _gentimeforlist() { [ -e "$1" ] && echo "<li>$2: $(/bin/date +'%Y-%m-%d %X' -r "$1")</li>"; }
+  [ -r "$SRC_BL_CACHE" ] && echo "<li>sources cache latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
+  _gentimeforlist "$ALL_BL_FILE" "global blocklist"
+  _gentimeforlist "$WAN_BL_FILE" "WAN specific blocklist"
+  _gentimeforlist "$TUN_BL_FILE" "VPN specific blocklist"
+  _gentimeforlist "$ALL_WL_FILE" "global whitelist"
+  _gentimeforlist "$WAN_WL_FILE" "WAN specific whitelist"
+  _gentimeforlist "$TUN_WL_FILE" "VPN specific whitelist"
+  echo '</ul>'
+
+#  if [ -r "$INFO_FILE" ]; then echo -e '\n\033[1;36mUprear information:\033[0m'
+#    case "$_OFROM" in
+#      $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
+#      $INFO_FROM_PM)  FROM="post-mount.sh" ;;
+#      $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
+#    esac
+#    echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
+#    _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
+#      "$INFO_DIR__SAME") echo "- ipset: latest $2 was already loaded and conform with directives.";;
+#      "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives file could be found for it!";;
+#      "$INFO_DIR__LOAD") echo "- ipset: $2 was loaded from file directives.";;
+#      "$INFO_DIR__SWAP") echo "- ipset: $2 was reloaded from directives.";;
+#      "$INFO_DIR__DEST") echo "- ipset: $2 was unloaded.";;
+#      "$INFO_DIR__MISS") :;;
+#    esac; }
+#    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
+#    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
+#    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
+#    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
+#    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
+#    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+#    if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "- iptables: rules were already set with:"
+#    elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "- iptables: rules were (re)set with:"
+#    else echo -n "- iptables: rules were UNSUCCESSFULLY (re)set with:"
+#    fi
+    # _ODNA
+#    _AND=''
+#    [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
+#    [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
+#    [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
+#    [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
+#    [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
+#    [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
+#    [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
+#    [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
+#    [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
+#    echo '.'
+    # _OLOGD
+#    case "$_OLOGD" in
+#      $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
+#      $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
+#      $INFO_LOGD_STOPPED)  echo '- log daemon: was turned off.';;
+#      $INFO_LOGD_STARTED)  echo '- log daemon: was turned on.';;
+#    esac
+#  fi
   
   
   
