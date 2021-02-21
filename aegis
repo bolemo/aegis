@@ -883,7 +883,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   
   if [ "$1" ]; then # $1 set means using cache
     [ $VERBOSE ] && echo "- using cached sources global blocking directives (offline)."
-    if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" >"$TMP_DIR/src.bl"
+    if [ -e "$SRC_BL_CACHE" ]; then /bin/cp -f "$SRC_BL_CACHE" "$TMP_DIR/src.bl"
     else _warn "blocklist sources cache is empty!" 1; fi
   elif [ -s "$SRC_LIST" ]; then
     :>"$TMP_DIR/src.bl"
