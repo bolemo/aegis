@@ -327,12 +327,14 @@ function doList(list) {
    displayFor('lists');
    document.getElementById("main-lists").value="";
    document.getElementById("lists-info").innerHTML="";
+   document.getElementById('lists-list').value="";
    if (list != '') {
      aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById("lists-info").innerHTML=val.split('\n')[0];
        document.getElementById("main-lists").value=val.substring(val.indexOf("\n") + 1);
+       document.querySelector("#lists-info > button").disabled=false;
      });
-   }
+   } else document.querySelector("#lists-info > button").disabled=true;
 }
 function sendList(list) {
    if (list == '') {alert ("Select a list first!"); return;}
