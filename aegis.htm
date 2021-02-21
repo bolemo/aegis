@@ -328,13 +328,13 @@ function doList(list) {
    document.getElementById("main-lists").value="";
    document.getElementById("lists-info").innerHTML="";
    if (list == '-') {
-     document.querySelector("#ctrl-lists input").style.display="none";
+     document.querySelector("#ctrl-lists > input").forEach(elem => elem.style.display="none");
      document.getElementById('lists-list').value="-";
    } else {
      aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById("lists-info").innerHTML=val.split('\n')[0];
        document.getElementById("main-lists").value=val.substring(val.indexOf("\n") + 1);
-       document.querySelector("#ctrl-lists input").style.display="inline";
+       document.querySelector("#ctrl-lists > input").forEach(elem => elem.style.display="inline");
        document.getElementById('lists-list').value=list;
      });
    }
