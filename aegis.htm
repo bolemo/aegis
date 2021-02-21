@@ -332,11 +332,11 @@ function doList(list) {
      aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById("lists-info").innerHTML=val.split('\n')[0];
        document.getElementById("main-lists").value=val.substring(val.indexOf("\n") + 1);
-       document.querySelector("#lists-info > input").disabled=false;
+       document.querySelector("#ctrl-lists > input").disabled=false;
      });
    } else {
-     document.querySelector("#lists-info > input").disabled=true;
-     document.getElementById('lists-list').value="";
+     document.querySelector("#ctrl-lists > input").disabled=true;
+  #   document.getElementById('lists-list').value="";
    }
 }
 function sendList(list) {
