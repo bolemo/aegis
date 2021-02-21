@@ -340,8 +340,18 @@ function doList(list) {
    }
 }
 function sendList(list) {
-   if (list == '-') {alert ("Select a list first!"); return;}
-   if (confirm("Are you sure you want to save "+list+"?")) {
+   var listName;
+   switch (list) {
+     case 'src': listName="blocklists sources list"; break;
+     case 'abl': listName="custom global block list"; break;
+     case 'awl': listName="custom global bypass list"; break;
+     case 'wbl': listName="custom WAN only block list"; break;
+     case 'wwl': listName="custom WAN only bypass list"; break;
+     case 'tbl': listName="custom VPN only block list"; break;
+     case 'twl': listName="custom VPN only bypass list"; break;
+     default: alert ("Select a list first!"); return; break;
+   }
+   if (confirm("Are you sure you want to save this "+listName+"?")) {
       var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
       var saveListReq = new XMLHttpRequest();
       saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
@@ -433,10 +443,10 @@ function ready() {
       <option value="src">Blocklists Sources list</option>
       <option value="abl">Custom global block list</option>
       <option value="awl">Custom global bypass list</option>
-      <option value="wbl">Custom WAN specific block list</option>
-      <option value="wwl">Custom WAN specific bypass list</option>
-      <option value="tbl">Custom VPN specific block list</option>
-      <option value="twl">Custom VPN specific bypass list</option>
+      <option value="wbl">Custom WAN only block list</option>
+      <option value="wwl">Custom WAN only bypass list</option>
+      <option value="tbl">Custom VPN only block list</option>
+      <option value="twl">Custom VPN only bypass list</option>
     </select>
     <input type="button" value="Reload list" onclick="doList(document.getElementById('lists-list').value);" />
     <input type="button" value="Save list" onclick="sendList(document.getElementById('lists-list').value);" />
