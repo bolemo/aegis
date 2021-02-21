@@ -150,7 +150,7 @@ status() {
   echo '<input type="checkbox" id="generation-status" /><label for="generation-status">Directives generation times</label>'
   echo '<ul>'
   _gentimeforlist() { [ -e "$1" ] && echo "<li>$2: $(/bin/date +'%Y-%m-%d %X' -r "$1")</li>"; }
-  [ -r "$SRC_BL_CACHE" ] && echo "<li>Sources list cache latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
+  [ -r "$SRC_BL_CACHE" ] && echo "<li>Sources cache list latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
   _gentimeforlist "$ALL_BL_FILE" "Global block list"
   _gentimeforlist "$WAN_BL_FILE" "WAN specific block list"
   _gentimeforlist "$TUN_BL_FILE" "VPN specific block list"
