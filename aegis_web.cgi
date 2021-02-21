@@ -97,6 +97,8 @@ status() {
   fi
   echo '</ul>'
   
+  #    echo '<h3 class="warning">Warnings</h3>'
+
   if $_PB; then # we have problems
     echo '<h3 class="error">Problems</h3>'
     echo '<ul>'
@@ -148,143 +150,64 @@ status() {
   echo '<input type="checkbox" id="generation-status" /><label for="generation-status">Directives generation times</label>'
   echo '<ul>'
   _gentimeforlist() { [ -e "$1" ] && echo "<li>$2: $(/bin/date +'%Y-%m-%d %X' -r "$1")</li>"; }
-  [ -r "$SRC_BL_CACHE" ] && echo "<li>sources cache latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
-  _gentimeforlist "$ALL_BL_FILE" "global blocklist"
+  [ -r "$SRC_BL_CACHE" ] && echo "<li>Sources cache latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
+  _gentimeforlist "$ALL_BL_FILE" "Global blocklist"
   _gentimeforlist "$WAN_BL_FILE" "WAN specific blocklist"
   _gentimeforlist "$TUN_BL_FILE" "VPN specific blocklist"
-  _gentimeforlist "$ALL_WL_FILE" "global whitelist"
+  _gentimeforlist "$ALL_WL_FILE" "Global whitelist"
   _gentimeforlist "$WAN_WL_FILE" "WAN specific whitelist"
   _gentimeforlist "$TUN_WL_FILE" "VPN specific whitelist"
   echo '</ul>'
 
-#  if [ -r "$INFO_FILE" ]; then echo -e '\n\033[1;36mUprear information:\033[0m'
-#    case "$_OFROM" in
-#      $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
-#      $INFO_FROM_PM)  FROM="post-mount.sh" ;;
-#      $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
-#    esac
-#    echo "- shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)"
-#    _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
-#      "$INFO_DIR__SAME") echo "- ipset: latest $2 was already loaded and conform with directives.";;
-#      "$INFO_DIR__KEEP") echo "! ipset: loaded $2 was kept since no directives file could be found for it!";;
-#      "$INFO_DIR__LOAD") echo "- ipset: $2 was loaded from file directives.";;
-#      "$INFO_DIR__SWAP") echo "- ipset: $2 was reloaded from directives.";;
-#      "$INFO_DIR__DEST") echo "- ipset: $2 was unloaded.";;
-#      "$INFO_DIR__MISS") :;;
-#    esac; }
-#    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
-#    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
-#    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
-#    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
-#    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
-#    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
-#    if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "- iptables: rules were already set with:"
-#    elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "- iptables: rules were (re)set with:"
-#    else echo -n "- iptables: rules were UNSUCCESSFULLY (re)set with:"
-#    fi
-    # _ODNA
-#    _AND=''
-#    [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
-#    [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
-#    [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
-#    [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
-#    [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
-#    [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
-#    [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
-#    [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
-#    [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
-#    echo '.'
-    # _OLOGD
-#    case "$_OLOGD" in
-#      $INFO_LOGD_KEEP_OFF) echo '- log daemon: was already off.';;
-#      $INFO_LOGD_KEEP_ON)  echo '- log daemon: was already on.';;
-#      $INFO_LOGD_STOPPED)  echo '- log daemon: was turned off.';;
-#      $INFO_LOGD_STARTED)  echo '- log daemon: was turned on.';;
-#    esac
-#  fi
-  
-  
-  
-  
-#    echo '<h3 class="warning">Warnings</h3>'
-  
-  echo '<h3 class="more collapsibleList">Detailed status</h3>'
-  echo '<input type="checkbox" id="detailed-status" /><label for="detailed-status">Detailed status</label>'
-  echo '<ul>'
-  echo "<li>Active WAN interface is '$WAN_IF'.</li>"
-  [ "$TUN_IF" ] && echo "<li>Active VPN tunnel is '$TUN_IF'.</li>" || echo "<li>no VPN tunnel found.</li>"
-  # dates
-  [ -e "$SRC_BL_CACHE" ] && echo "<li>Sources cache directives update time: $(/bin/date +'%Y-%m-%d %X' -r $SRC_BL_CACHE)</li>"
-  [ -e "$BL_FILE" ] && echo "<li>Blocklist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $BL_FILE)</li>"
-  [ -e "$WL_FILE" ] && echo "<li>Whitelist directives generation time: $(/bin/date +'%Y-%m-%d %X' -r $WL_FILE)</li>"
-  if [ $_CK -ne 0 ]; then
-    [ $((_CK&CK_FWS)) -ne 0 ] &&        echo "<li>set: firewall-start.sh is set for $SC_NAME.</li>"
-    [ $((_CK&CK_PM)) -ne 0 ] &&         echo "<li>set: post-mount.sh is set for $SC_NAME.</li>"
-    [ $((_CK&CK_IPS_BL)) -ne 0 ] &&     echo "<li>ipset: blocklist is set.</li>"
-    [ $((_CK&CK_IPS_WL)) -ne 0 ] &&     echo "<li>ipset: whitelist is set.</li>"
-    [ $((_CK&CK_IPT_CH)) -ne 0 ] &&     echo "<li>iptables: shield chains are set.</li>"
-    [ $((_CK&CK_IPT_WAN_BP)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules are set.</li>"
-    [ $((_CK&CK_IPT_TUN_BP)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules are set.</li>"
-    [ $((_CK&CK_IPT_WL)) -ne 0 ] &&     echo "<li>iptables: whitelist rules are set.</li>"
-    [ $((_CK&CK_IPT_LOG)) -ne 0 ] &&    echo "<li>iptables: logging is on.</li>"
-    [ $((_CK&CK_IPT_TUN)) -ne 0 ] &&    echo "<li>iptables: VPN tunnel IFO rules are set.</li>"
-    [ $((_CK&CK_IPT_WAN)) -ne 0 ] &&    echo "<li>iptables: WAN interface IFO rules are set.</li>"
-  fi
-  echo '</ul>'
-  
-  # Status file
-  echo '<h3 class="more collapsibleList">Last shield uprear report</h3>'
+  if [ -r "$INFO_FILE" ]; then echo '<h3 class="more collapsibleList">Last shield uprear report</h3>'
   echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last shield uprear report</label>'
   echo '<ul>'
-  if [ -r "$INFO_FILE" ]; then
-    read INFO INFO_WAN INFO_TUN<"$INFO_FILE"
-    INFO_FROM=$((INFO&INFO_FROM_MASK))
-    INFO_IPS=$(((INFO>>INFO_IPS_SHIFT)&INFO_IPS_MASK))
-    INFO_IPT=$(((INFO>>INFO_IPT_SHIFT)&INFO_IPT_MASK))
-    INFO_LOGD=$(((INFO>>INFO_LOGD_SHIFT)&INFO_LOGD_MASK))
-    case "$INFO_FROM" in
-      $INFO_FROM_SC) FROM="$SC_NAME script" ;;
-      $INFO_FROM_PM) FROM="post-mount.sh" ;;
+    case "$_OFROM" in
+      $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
+      $INFO_FROM_PM)  FROM="post-mount.sh" ;;
       $INFO_FROM_FWS) FROM="firewall-start.sh" ;;
     esac
-    echo "<li>shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)</li>"
-    echo "<li>WAN interface was '$INFO_WAN'.</li>"
-    [ "$INFO_TUN" ] && echo "<li>VPN tunnel was '$INFO_TUN'.</li>" || echo "<li>No VPN tunnel was found.</li>"
-    case $((INFO_IPS&INFO_IPS_BL_MASK)) in
-      0)                 echo "<li><strong>directives: blocklist file was not found!</strong></li>" ;;
-      $INFO_IPS_BL_SAME) echo "<li>directives: ipset blocklist was already set and identical to file.</li>" ;;
-      $INFO_IPS_BL_MISS) echo "<li>directives: ipset blocklist file was not found! The one already set was kept.</li>" ;;
-      $INFO_IPS_BL_LOAD) echo "<li>directives: ipset blocklist was set from file.</li>" ;;
-    esac
-    case $((INFO_IPS&INFO_IPS_WL_MASK)) in
-      0)                                      echo "<li>directives: no whitelist file was found.</li>" ;;
-      $((INFO_IPS_WL_SAME+INFO_IPS_WL_KEEP))) echo "<li>directives: ipset whitelist was already set and identical to file.</li>" ;;
-      $INFO_IPS_WL_KEEP)                      echo "<li>directives: ipset whitelist was kept.</li>" ;;
-      $INFO_IPS_WL_LOAD)                      echo "<li>directives: ipset whitelist was set from file.</li>" ;;
-      $INFO_IPS_WL_SWAP)                      echo "<li>directives: ipset whitelist was updated from file.</li>" ;;
-      $INFO_IPS_WL_DEL)                       echo "<li>directives: ipset whitelist was unset.</li>" ;;
-    esac
-    if  [ $((INFO_IPT&INFO_IPT_KEEP)) -ne 0 ]; then echo "<li>iptables: rules were already set."; _P_IPT=true
-    elif [ $((INFO_IPT&INFO_IPT_RUN)) -ne 0 ]; then echo "<li>iptables: rules were (re)set."; _P_IPT=true
-    else _P_IPT=false; fi
-    if $_P_IPT; then
-      [ $((INFO_IPT&INFO_IPT_WIF)) -ne 0 ] && echo "<li>iptables: rules for WAN interface in place.</li>"
-      [ $((INFO_IPT&INFO_IPT_TIF)) -ne 0 ] && echo "<li>iptables: rules for VPN interface in place.</li>"
-      [ $((INFO_IPT&INFO_IPT_WIB)) -ne 0 ] && echo "<li>iptables: WAN network range bypass rules in place.</li>"
-      [ $((INFO_IPT&INFO_IPT_TIB)) -ne 0 ] && echo "<li>iptables: VPN network range bypass rules in place.</li>"
-      [ $((INFO_IPT&INFO_IPT_WL)) -ne 0 ]  && echo "<li>iptables: whitelist bypass rules in place.</li>"
-      [ $((INFO_IPT&INFO_IPT_LOG)) -ne 0 ] && echo "<li>iptables: logging rules in place.</li>"
-    else echo "<li><strong>iptables: rules were UNSUCCESSFULLY (re)set!</strong></li>"; fi
-    case "$INFO_LOGD" in
+    echo "<li>Shield was upreared from: $FROM @ $(/bin/date +'%Y-%m-%d %X' -r $INFO_FILE)</li>"
+    _parse_odir() { case "$(($1&INFO_DIR__MASK))" in
+      "$INFO_DIR__SAME") echo "<li>ipset: latest $2 was already loaded and conform with directives.</li>";;
+      "$INFO_DIR__KEEP") echo "<li>ipset: loaded $2 was kept since no directives file could be found for it!</li>";;
+      "$INFO_DIR__LOAD") echo "<li>ipset: $2 was loaded from file directives.</li>";;
+      "$INFO_DIR__SWAP") echo "<li>ipset: $2 was reloaded from directives.</li>";;
+      "$INFO_DIR__DEST") echo "<li>ipset: $2 was unloaded.</li>";;
+      "$INFO_DIR__MISS") :;;
+    esac; }
+    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
+    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
+    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
+    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
+    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
+    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+    if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "<li>iptables: rules were already set with:"
+    elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "<li>iptables: rules were (re)set with:"
+    else echo -n "<li>iptables: rules were UNSUCCESSFULLY (re)set with:"
+    fi
+    # _ODNA
+    _AND=''
+    [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
+    [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
+    [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
+    [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
+    [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
+    [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
+    [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
+    [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
+    [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
+    echo '.</li>'
+    # _OLOGD
+    case "$_OLOGD" in
       $INFO_LOGD_KEEP_OFF) echo '<li>log daemon: was already off.</li>';;
-      $INFO_LOGD_KEEP_ON) echo '<li>log daemon: was already on.</li>';;
-      $INFO_LOGD_STOPPED) echo '<li>log daemon: was turned off.</li>';;
-      $INFO_LOGD_STARTED) echo '<li>log daemon: was turned on.</li>';;
+      $INFO_LOGD_KEEP_ON)  echo '<li>log daemon: was already on.</li>';;
+      $INFO_LOGD_STOPPED)  echo '<li>log daemon: was turned off.</li>';;
+      $INFO_LOGD_STARTED)  echo '<li>log daemon: was turned on.</li>';;
     esac
-  else
-    echo "<li>No status file found.</li>"
+    echo '</ul>'
   fi
-  echo '</ul>'
+  
   
   # Debug
   get_ipt
