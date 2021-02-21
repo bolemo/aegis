@@ -117,12 +117,12 @@ status() {
          "$INFO_DIR__KEEP") echo "<li>directives: $2 is missing (but loaded in ipset)!</li>";; # loaded but no file
          "$INFO_DIR__LOAD") echo "<li>directives: $2 was created after $SC_NAME was upreared!</li>";; # file exists, but not loaded
        esac; }
-      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
-      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
-      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
-      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
-      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
-      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global block list'
+      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific block list'
+      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific block list'
+      _parse_dir $((_DIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global bypass list'
+      _parse_dir $((_DIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific bypass list'
+      _parse_dir $((_DIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific bypass list'
     fi
     [ $((_CK&CK_DWIF)) -ne 0 ] &&   echo "<li>WAN: interface changed from '$_OWAN' to '$WAN_IF' since $SC_NAME was upreared!</li>"
     [ $((_CK&CK_DWINET)) -ne 0 ] && echo "<li>WAN: interface subnet range changed from $_OWINET to $_WINET since $SC_NAME was upreared!</li>"
@@ -150,13 +150,13 @@ status() {
   echo '<input type="checkbox" id="generation-status" /><label for="generation-status">Directives generation times</label>'
   echo '<ul>'
   _gentimeforlist() { [ -e "$1" ] && echo "<li>$2: $(/bin/date +'%Y-%m-%d %X' -r "$1")</li>"; }
-  [ -r "$SRC_BL_CACHE" ] && echo "<li>Sources cache latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
-  _gentimeforlist "$ALL_BL_FILE" "Global blocklist"
-  _gentimeforlist "$WAN_BL_FILE" "WAN specific blocklist"
-  _gentimeforlist "$TUN_BL_FILE" "VPN specific blocklist"
-  _gentimeforlist "$ALL_WL_FILE" "Global whitelist"
-  _gentimeforlist "$WAN_WL_FILE" "WAN specific whitelist"
-  _gentimeforlist "$TUN_WL_FILE" "VPN specific whitelist"
+  [ -r "$SRC_BL_CACHE" ] && echo "<li>Sources list cache latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")</li>"
+  _gentimeforlist "$ALL_BL_FILE" "Global block list"
+  _gentimeforlist "$WAN_BL_FILE" "WAN specific block list"
+  _gentimeforlist "$TUN_BL_FILE" "VPN specific block list"
+  _gentimeforlist "$ALL_WL_FILE" "Global bypass list"
+  _gentimeforlist "$WAN_WL_FILE" "WAN specific bypass list"
+  _gentimeforlist "$TUN_WL_FILE" "VPN specific bypass list"
   echo '</ul>'
 
   if [ -r "$INFO_FILE" ]; then echo '<h3 class="more collapsibleList">Last shield uprear report</h3>'
@@ -176,26 +176,26 @@ status() {
       "$INFO_DIR__DEST") echo "<li>ipset: $2 was unloaded.</li>";;
       "$INFO_DIR__MISS") :;;
     esac; }
-    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global blocklist'
-    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific blocklist'
-    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific blocklist'
-    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global whitelist'
-    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific whitelist'
-    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific whitelist'
+    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_BL))) 'global block list'
+    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_BL))) 'WAN specific block list'
+    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_BL))) 'VPN specific block list'
+    _parse_odir $((_ODIR>>(INFO_DIR_ALL+INFO_DIR_WL))) 'global bypass list'
+    _parse_odir $((_ODIR>>(INFO_DIR_WAN+INFO_DIR_WL))) 'WAN specific bypass list'
+    _parse_odir $((_ODIR>>(INFO_DIR_TUN+INFO_DIR_WL))) 'VPN specific bypass list'
     if  [ $((_OIPT&INFO_IPT_KEEP)) -ne 0 ]; then echo -n "<li>iptables: rules were already set with:"
     elif [ $((_OIPT&INFO_IPT_RUN)) -ne 0 ]; then echo -n "<li>iptables: rules were (re)set with:"
     else echo -n "<li>iptables: rules were UNSUCCESSFULLY (re)set with:"
     fi
     # _ODNA
     _AND=''
-    [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global blocking" && _AND=','
-    [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypassing" && _AND=','
-    [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypassing" && _AND=','
-    [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN blocking" && _AND=','
-    [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypassing" && _AND=','
-    [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypassing" && _AND=','
-    [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN blocking" && _AND=','
-    [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypassing"
+    [ $((_ODNA&DNA_ABL)) -ne 0 ] && echo -n " global block" && _AND=','
+    [ $((_ODNA&DNA_AWL)) -ne 0 ] && echo -n "$_AND global bypass" && _AND=','
+    [ $((_ODNA&DNA_WBW)) -ne 0 ] && echo -n "$_AND WAN network bypass" && _AND=','
+    [ $((_ODNA&DNA_WBL)) -ne 0 ] && echo -n "$_AND WAN block" && _AND=','
+    [ $((_ODNA&DNA_WWL)) -ne 0 ] && echo -n "$_AND WAN bypass" && _AND=','
+    [ $((_ODNA&DNA_TBW)) -ne 0 ] && echo -n "$_AND VPN network bypass" && _AND=','
+    [ $((_ODNA&DNA_TBL)) -ne 0 ] && echo -n "$_AND VPN block" && _AND=','
+    [ $((_ODNA&DNA_TWL)) -ne 0 ] && echo -n "$_AND VPN bypass"
     [ $((_ODNA&DNA_LOG)) -ne 0 ] && echo -n "$_AND logging"
     echo '.</li>'
     # _OLOGD
@@ -348,12 +348,12 @@ checkIp() {
     fi
   fi
   $IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do case "$_SET" in
-    "$IPSET_ALL_BL_NAME") $IPS_BIN -q test $IPSET_ALL_BL_NAME $IP && echo "IP address $IP is in $SC_NAME global blocking directives.<br />" ;;
-    "$IPSET_ALL_WL_NAME") $IPS_BIN -q test $IPSET_ALL_WL_NAME $IP && echo "IP address $IP is in $SC_NAME global bypassing directives.<br />" ;;
-    "$IPSET_WAN_BL_NAME") $IPS_BIN -q test $IPSET_WAN_BL_NAME $IP && echo "IP address $IP is in $SC_NAME WAN blocking directives.<br />" ;;
-    "$IPSET_WAN_WL_NAME") $IPS_BIN -q test $IPSET_WAN_WL_NAME $IP && echo "IP address $IP is in $SC_NAME WAN bypassing directives.<br />" ;;
-    "$IPSET_TUN_BL_NAME") $IPS_BIN -q test $IPSET_TUN_BL_NAME $IP && echo "IP address $IP is in $SC_NAME VPN blocking directives.<br />" ;;
-    "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $IP && echo "IP address $IP is in $SC_NAME VPN bypassing directives.<br />" ;;
+    "$IPSET_ALL_BL_NAME") $IPS_BIN -q test $IPSET_ALL_BL_NAME $IP && echo "IP address $IP is in $SC_NAME global block directives.<br />" ;;
+    "$IPSET_ALL_WL_NAME") $IPS_BIN -q test $IPSET_ALL_WL_NAME $IP && echo "IP address $IP is in $SC_NAME global bypass directives.<br />" ;;
+    "$IPSET_WAN_BL_NAME") $IPS_BIN -q test $IPSET_WAN_BL_NAME $IP && echo "IP address $IP is in $SC_NAME WAN specific block directives.<br />" ;;
+    "$IPSET_WAN_WL_NAME") $IPS_BIN -q test $IPSET_WAN_WL_NAME $IP && echo "IP address $IP is in $SC_NAME WAN specific bypass directives.<br />" ;;
+    "$IPSET_TUN_BL_NAME") $IPS_BIN -q test $IPSET_TUN_BL_NAME $IP && echo "IP address $IP is in $SC_NAME VPN specific block directives.<br />" ;;
+    "$IPSET_TUN_WL_NAME") $IPS_BIN -q test $IPSET_TUN_WL_NAME $IP && echo "IP address $IP is in $SC_NAME VPN specific bypass directives.<br />" ;;
   esac; done
   ip_in_if_inet $IP $WAN_IF && echo "IP address $IP is in the WAN network range ($(inet_for_if $WAN_IF)).<br />"
   ip_in_if_inet $IP $TUN_IF && echo "IP address $IP is in the VPN network range ($(inet_for_if $TUN_IF)).<br />"
