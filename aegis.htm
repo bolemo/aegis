@@ -366,9 +366,13 @@ function ready() {
        case '#command': command(); break;
        case '#log': log(); break;
        case '#tools': tools(); break;
-       case '#sources': doList('sources'); break;
-       case '#blacklist': doList('blacklist'); break;
-       case '#whitelist': doList('whitelist'); break;
+       case '#list-src': doList('src'); break;
+       case '#list-abl': doList('abl'); break;
+       case '#list-awl': doList('awl'); break;
+       case '#list-wbl': doList('wbl'); break;
+       case '#list-wwl': doList('wwl'); break;
+       case '#list-tbl': doList('tbl'); break;
+       case '#list-twl': doList('twl'); break;
        case '#status':
        default:
            status(); break;
@@ -390,9 +394,13 @@ function ready() {
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
-  <input type="radio" name="menu" id="menu-sources" onclick="doList('sources');"><label for="menu-sources">Blocklists Sources</label>
-  <input type="radio" name="menu" id="menu-blacklist" onclick="doList('blacklist');"><label for="menu-blacklist">Custom Blacklist</label>
-  <input type="radio" name="menu" id="menu-whitelist" onclick="doList('whitelist');"><label for="menu-whitelist">Custom Whitelist</label>
+  <input type="radio" name="menu" id="menu-src" onclick="doList('src');"><label for="menu-src">Blocklists Sources</label>
+  <input type="radio" name="menu" id="menu-abl" onclick="doList('abl');"><label for="menu-abl">Custom Global Blacklist</label>
+  <input type="radio" name="menu" id="menu-awl" onclick="doList('awl');"><label for="menu-awl">Custom Global Whitelist</label>
+  <input type="radio" name="menu" id="menu-wbl" onclick="doList('abl');"><label for="menu-abl">Custom WAN Blacklist</label>
+  <input type="radio" name="menu" id="menu-wwl" onclick="doList('awl');"><label for="menu-awl">Custom WAN Whitelist</label>
+  <input type="radio" name="menu" id="menu-tbl" onclick="doList('tbl');"><label for="menu-tbl">Custom VPN Blacklist</label>
+  <input type="radio" name="menu" id="menu-twl" onclick="doList('twl');"><label for="menu-twl">Custom VPN Whitelist</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -423,9 +431,13 @@ function ready() {
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
   </div>
-  <div id="ctrl-sources" class="show list"><input type="button" value="Reload Sources" onclick="doList('sources');" /><input type="button" value="Save Sources" onclick="sendList('sources');" /><div id="sources-info"></div></div>
-  <div id="ctrl-blacklist" class="show list"><input type="button" value="Reload Blacklist" onclick="doList('blacklist');" /><input type="button" value="Save Blacklist" onclick="sendList('blacklist');" /><div id="blacklist-info"></div></div>
-  <div id="ctrl-whitelist" class="show list"><input type="button" value="Reload Whitelist" onclick="doList('whitelist');" /><input type="button" value="Save Whitelist" onclick="sendList('whitelist');" /><div id="whitelist-info"></div></div>
+  <div id="ctrl-src" class="show list"><input type="button" value="Reload Sources" onclick="doList('src');" /><input type="button" value="Save Sources" onclick="sendList('src');" /><div id="src-info"></div></div>
+  <div id="ctrl-abl" class="show list"><input type="button" value="Reload Global Blacklist" onclick="doList('abl');" /><input type="button" value="Save Blacklist" onclick="sendList('abl');" /><div id="abl-info"></div></div>
+  <div id="ctrl-awl" class="show list"><input type="button" value="Reload Global Whitelist" onclick="doList('awl');" /><input type="button" value="Save Whitelist" onclick="sendList('awl');" /><div id="awl-info"></div></div>
+  <div id="ctrl-abl" class="show list"><input type="button" value="Reload WAN Blacklist" onclick="doList('wbl');" /><input type="button" value="Save Blacklist" onclick="sendList('wbl');" /><div id="wbl-info"></div></div>
+  <div id="ctrl-awl" class="show list"><input type="button" value="Reload WAN Whitelist" onclick="doList('wwl');" /><input type="button" value="Save Whitelist" onclick="sendList('wwl');" /><div id="wwl-info"></div></div>
+  <div id="ctrl-abl" class="show list"><input type="button" value="Reload VPN Blacklist" onclick="doList('tbl');" /><input type="button" value="Save Blacklist" onclick="sendList('tbl');" /><div id="tbl-info"></div></div>
+  <div id="ctrl-awl" class="show list"><input type="button" value="Reload VPN Whitelist" onclick="doList('twl');" /><input type="button" value="Save Whitelist" onclick="sendList('twl');" /><div id="twl-info"></div></div>
   <div id="ctrl-upgrade" class="show">
     <div id="vers-message"></div>
     <select id="vers-cmd" name="versCmd">
@@ -440,9 +452,13 @@ function ready() {
   <pre id="main-command" class="scroll"></pre>
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
   <div id="main-tools" class="scroll"></div>
-  <textarea id="main-sources" class="list"></textarea>
-  <textarea id="main-blacklist" class="list"></textarea>
-  <textarea id="main-whitelist" class="list"></textarea>
+  <textarea id="main-src" class="list"></textarea>
+  <textarea id="main-abl" class="list"></textarea>
+  <textarea id="main-awl" class="list"></textarea>
+  <textarea id="main-wbl" class="list"></textarea>
+  <textarea id="main-wwl" class="list"></textarea>
+  <textarea id="main-tbl" class="list"></textarea>
+  <textarea id="main-twl" class="list"></textarea>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
