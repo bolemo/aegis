@@ -324,23 +324,23 @@ function showCommandLog(value) {
    document.getElementById("command-log").disabled=displayVal;
 }
 function doList(list) {
-#   alert ("Selected list: '"+list+"'");
    displayFor('lists');
    document.getElementById("main-lists").value="";
    document.getElementById("lists-info").innerHTML="";
-   if (list != '') {
+   if (list == '-') {
+     document.querySelector("#ctrl-lists input").style.display="none";
+     document.getElementById('lists-list').value="-";
+   } else {
      aegis("print_list", undefined, list, undefined, function(val) {
        document.getElementById("lists-info").innerHTML=val.split('\n')[0];
        document.getElementById("main-lists").value=val.substring(val.indexOf("\n") + 1);
-       document.querySelector("#ctrl-lists > input").disabled=false;
+       document.querySelector("#ctrl-lists input").style.display="inline";
+       document.getElementById('lists-list').value=list;
      });
-   } else {
-     document.querySelector("#ctrl-lists > input").disabled=true;
-  #   document.getElementById('lists-list').value="";
    }
 }
 function sendList(list) {
-   if (list == '') {alert ("Select a list first!"); return;}
+   if (list == '-') {alert ("Select a list first!"); return;}
    if (confirm("Are you sure you want to save "+list+"?")) {
       var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
       var saveListReq = new XMLHttpRequest();
@@ -374,7 +374,7 @@ function ready() {
        case '#command': command(); break;
        case '#log': log(); break;
        case '#tools': tools(); break;
-       case '#lists': doList(''); break;
+       case '#lists': doList('-'); break;
        case '#status':
        default:
            status(); break;
@@ -396,7 +396,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
-  <input type="radio" name="menu" id="menu-lists" onclick="doList('');"><label for="menu-lists">LISTS</label>
+  <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -429,7 +429,7 @@ function ready() {
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
-      <option value="" selected>PLEASE SELECT A LIST</option>
+      <option value="-" selected>PLEASE SELECT A LIST</option>
       <option value="src">Blocklists Sources list</option>
       <option value="abl">Custom global block list</option>
       <option value="awl">Custom global bypass list</option>
