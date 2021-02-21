@@ -351,16 +351,16 @@ function sendList(list) {
      case 'twl': listName="custom VPN only bypass list"; break;
      default: alert ("Select a list first!"); return; break;
    }
-   if (confirm("Are you sure you want to save this "+listName+"?")) {
+   if (confirm("Are you sure you want to save "+listName+"?")) {
       var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=save_list&arg='+list;
       var saveListReq = new XMLHttpRequest();
       saveListReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-         if (this.responseText != 0) { alert ("Problem saving "+list+"!"); }
+         if (this.responseText != 0) { alert ("Problem saving "+listName+"!"); }
          doList(list);
       } }
       saveListReq.open("POST", url, true);
       saveListReq.send(document.getElementById("main-lists").value);
-   } else { alert ("Saved of "+list+" cancelled!"); }
+   } else { alert ("Saved of "+listName+" cancelled!"); }
 }
 function upgrade() {
    displayFor('upgrade');
