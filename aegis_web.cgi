@@ -58,7 +58,7 @@ status() {
   
   _PB=false _UNSET=false _DOWN=false
   
-  [ $((_CK&CK_SET)) -gt $CK_UNSET -a $((_CK&CK_SET)) -lt $CK_SETOK ] && _PB=true
+  [ $((_CK&CK_SET)) -gt $CK_UNSET ] && [ $((_CK&CK_SET)) -lt $CK_SETOK ] && _PB=true
   if [ $_CK -le $CK_UNSET ]; then             _UNSET=true
   elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  _DOWN=true
   elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _PB=true
