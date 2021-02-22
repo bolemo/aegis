@@ -208,7 +208,6 @@ status() {
     echo '</ul>'
   fi
   
-  
   # Debug
   get_ipt
   echo -e "<h3 class=\"debug collapsibleList\">Debug</h3>
