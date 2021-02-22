@@ -102,7 +102,7 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `-vvv` + verbose mode (level 3)
 * `-q` + quiet mode (no output)load_set or update):
 
-## Lists (online blocklists, custom blacklists,custom whitelists)
+## Lists (online blocklists, custom blacklists, custom whitelists)
 ### Blocklists sources (online blocklists)
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
 
