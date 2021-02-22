@@ -44,12 +44,12 @@ uninstall() {
   /bin/rm -rf "$wcLHTTPD_WC_CONF"
 } 2>/dev/null
 
-aegis_env() eval "$($wcAEGIS_BIN _env)" # source environment we need from aegis
+aegis_env() { eval "$($wcAEGIS_BIN _env)"; } # source environment we need from aegis
 
 status() {
   aegis_env
   set -- $($wcAEGIS_BIN _status)
-  eval "_CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=$10 _TUN=$11 _WINET=$12 _TINET=$13 _ONFO=$14 _ODNA=$15 _OWAN=$16 _OWINET=$17 _OTUN=$18 _OTINET=$19"
+  eval "_CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=${10} _TUN=${11} _WINET=${12} _TINET=${13} _ONFO=${14} _ODNA=${15} _OWAN=${16} _OWINET=${17} _OTUN=${18} _OTINET=${19}"
 
   _OFROM=$((_ONFO&INFO_FROM_MASK))
   _ODIR=$(((_ONFO>>INFO_DIR_SHIFT)&INFO_DIR_MASK))
