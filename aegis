@@ -904,19 +904,20 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
       [ $_NBOK -eq $_TOT ] || _warn "Downloaded only $_NBOK / $_TOT list(s)!"
     }
     [ $VERBOSE ] && echo "- creating offline cache for global blocking directives from sources..."
-    /bin/cp -f "$TMP_DIR/src.bl" "$SRC_BL_CACHE"
+    $IPR_BIN "$TMP_DIR/src.bl" >"$SRC_BL_CACHE"
   else
     [ $VERBOSE ] && echo "- sources file $SRC_LIST is empty or does not exists."
     :>"$TMP_DIR/src.bl"
   fi
   
   # processing common custom blacklist if any
-  [ $VERBOSE ] && [ -r "$CUST_ALL_BL_FILE" ] && echo "- adding global blocking directives from custom blocklist(s)..."
-  $IPR_BIN "$TMP_DIR/src.bl" $CUST_ALL_BL_FILE >"$TMP_DIR/all.bl" 2>/dev/null
-  if [ -s "$TMP_DIR/all.bl" ]; then
-    [ $VERBOSE ] && echo "- generating global blocking directives..."
+  if [ -r "$CUST_ALL_BL_FILE" ]; then [ $VERBOSE ] && echo "- adding global blocking directives from custom blocklist(s)..."
+    _IPR2="$CUST_ALL_BL_FILE"
+  else _IPR2=; fi
+  $IPR_BIN "$TMP_DIR/src.bl" $_IPR2 >"$TMP_DIR/all.bl" || :>"$TMP_DIR/all.bl"
+  if [ -s "$TMP_DIR/all.bl" ]; then [ $VERBOSE ] && echo "- generating global blocking directives..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.bl" >"$ALL_BL_FILE"
-  else
+  else [ $VERBOSE ] && echo "- no global blocking directives!"
     /bin/rm -f "$ALL_BL_FILE" 2>/dev/null
   fi
 
@@ -924,8 +925,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   :>"$TMP_DIR/all.wl"
   $IPR_BIN $CUST_ALL_WL_FILE >"$TMP_DIR/all.raw.wl" 2>/dev/null
   $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/all.raw.wl" >>"$TMP_DIR/all.wl"
-  if [ -s "$TMP_DIR/all.wl" ]; then
-    [ $VERBOSE ] && echo "- generating global bypassing directives from custom whitelist(s)..."
+  if [ -s "$TMP_DIR/all.wl" ]; then [ $VERBOSE ] && echo "- generating global bypassing directives from custom whitelist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/all.wl" >"$ALL_WL_FILE"
   else
     /bin/rm -f "$ALL_WL_FILE" 2>/dev/null
@@ -933,9 +933,8 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   
   # --------- WAN SPECIFIC LISTS ---------
   # processing custom WAN blocklists if any
-  $IPR_BIN $CUST_WAN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/wan.bl" 2>/dev/null
-  if [ -s "$TMP_DIR/wan.bl" ]; then
-    [ $VERBOSE ] && echo "- generating WAN specific blocking directives from custom blocklist(s)..."
+  $IPR_BIN $CUST_WAN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/wan.bl" 2>/dev/null || :>"$TMP_DIR/wan.bl"
+  if [ -s "$TMP_DIR/wan.bl" ]; then [ $VERBOSE ] && echo "- generating WAN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/wan.bl" >"$WAN_BL_FILE"
   else
     /bin/rm -f "$WAN_BL_FILE" 2>/dev/null
@@ -946,8 +945,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   $IPR_BIN --common "$TMP_DIR/wan.bl" "$TMP_DIR/wan.raw.wl" >>"$TMP_DIR/wan.wl"
   $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/wan.raw.wl" >>"$TMP_DIR/wan.wl"
   $IPR_BIN --common "$TMP_DIR/wan.bl" "$TMP_DIR/all.wl" >>"$TMP_DIR/wan.wl"
-  if [ -s "$TMP_DIR/wan.wl" ]; then
-    [ $VERBOSE ] && echo "- generating WAN specific bypassing directives from custom whitelist(s)..."
+  if [ -s "$TMP_DIR/wan.wl" ]; then [ $VERBOSE ] && echo "- generating WAN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/wan.wl" >"$WAN_WL_FILE"
   else
     /bin/rm -f "$WAN_WL_FILE" 2>/dev/null
@@ -955,9 +953,8 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   
   # --------- VPN SPECIFIC LISTS ---------
   # processing custom VPN blocklists if any    
-  $IPR_BIN $CUST_TUN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/tun.bl" 2>/dev/null
-  if [ -s "$TMP_DIR/tun.bl" ]; then
-    [ $VERBOSE ] && echo "- generating VPN specific blocking directives from custom blocklist(s)..."
+  $IPR_BIN $CUST_TUN_BL_FILE --except "$TMP_DIR/all.bl" >"$TMP_DIR/tun.bl" 2>/dev/null || :>"$TMP_DIR/tun.bl"
+  if [ -s "$TMP_DIR/tun.bl" ]; then [ $VERBOSE ] && echo "- generating VPN specific blocking directives from custom blocklist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/tun.bl" >"$TUN_BL_FILE"
   else
     /bin/rm -f "$TUN_BL_FILE" 2>/dev/null
@@ -968,8 +965,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   $IPR_BIN --common "$TMP_DIR/tun.bl" "$TMP_DIR/tun.raw.wl" >>"$TMP_DIR/tun.wl"
   $IPR_BIN --common "$TMP_DIR/all.bl" "$TMP_DIR/tun.raw.wl" >>"$TMP_DIR/tun.wl"
   $IPR_BIN --common "$TMP_DIR/tun.bl" "$TMP_DIR/all.wl" >>"$TMP_DIR/tun.wl"
-  if [ -s "$TMP_DIR/tun.wl" ]; then
-    [ $VERBOSE ] && echo "- generating VPN specific bypassing directives from custom whitelist(s)..."
+  if [ -s "$TMP_DIR/tun.wl" ]; then [ $VERBOSE ] && echo "- generating VPN specific bypassing directives from custom whitelist(s)..."
     $IPR_BIN --ipset-reduce 20 "$TMP_DIR/tun.wl" >"$TUN_WL_FILE"
   else
     /bin/rm -f "$TUN_WL_FILE" 2>/dev/null
