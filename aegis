@@ -835,13 +835,13 @@ shield_up() { $DEBUG && debug "shield_up"
   sc_conf set up=1; sc_conf commit
   shield_init
   [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
-  if [ $1 ]; then
-    [ -r "$ALL_BL_FILE" ] || _warn "$BL_FILE not readable!" 1
+  if [ "$1" ]; then
+    [ -r "$ALL_BL_FILE" ] || _warn "$ALL_BL_FILE not readable!" 1
     [ $VERBOSE ] && echo "- directives will be (re)loaded into $SC_NAME shield."
     _FORCE_NS_RELOAD=1
   fi
   sc_conf get log.enabled >/dev/null && [ $VERBOSE ] && echo "- enabling logging."
-  if [ $2 ]; then
+  if [ "$2" ]; then
     [ $VERBOSE ] && echo -e "- restarting firewall with $SC_NAME shield.\033[0m"
     /usr/sbin/net-wall restart > /dev/null
   else shield_uprear "$INFO_FROM_SC" $_FORCE_NS_RELOAD
