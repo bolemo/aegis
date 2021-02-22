@@ -609,7 +609,7 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 : ENV STOP
 # ---------------------------------------------
 
-_dlinfo() { /usr/bin/wget -qO- https://aegis.brigadoon.fr/download >/dev/null 2>&1 & } # to know how many people are downloading this script
+_dlinfo() { /usr/bin/wget -qO- --no-check-certificate https://aegis.brigadoon.fr/download >/dev/null 2>&1 & } # to know how many people are downloading this script
 
 _download() { # $1=URL, $2=DEST, $3=OPTS
   echo -ne "\033[35m"
