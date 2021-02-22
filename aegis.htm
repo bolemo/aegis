@@ -440,15 +440,17 @@ function ready() {
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
       <option value="-" selected disabled>PLEASE SELECT A LIST</option>
-      <option value="src">Blocklists Sources list</option>
-      <option value="abl">Custom global block list</option>
-      <option value="awl">Custom global bypass list</option>
-      <option data-divider="true" disabled>______________</option>
-      <option value="wbl">Custom WAN only block list</option>
-      <option value="wwl">Custom WAN only bypass list</option>
-      <option data-divider="true" disabled>______________</option>
-      <option value="tbl">Custom VPN only block list</option>
-      <option value="twl">Custom VPN only bypass list</option>
+      <optgroup label="Global lists">
+        <option value="src">Blocklists Sources list</option>
+        <option value="abl">Custom global block list</option>
+        <option value="awl">Custom global bypass list</option>
+      </optgroup><optgroup label="WAN only lists">
+        <option value="wbl">Custom WAN only block list</option>
+        <option value="wwl">Custom WAN only bypass list</option>
+      </optgroup><optgroup label="VPN only lists">
+        <option value="tbl">Custom VPN only block list</option>
+        <option value="twl">Custom VPN only bypass list</option>
+      </optgroup>
     </select>
     <input type="button" value="Reload list" onclick="doList(document.getElementById('lists-list').value);" />
     <input type="button" value="Save list" onclick="sendList(document.getElementById('lists-list').value);" />
