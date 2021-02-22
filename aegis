@@ -2,7 +2,7 @@
 # ----------- ENVIRONMENT VARIABLES -----------
 # CAN BE SOURCED INTO UTILS USING AEGIS -------
 # USING: eval "$(aegis _env)" -----------------
-if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print} $0==": ENV START"{e=1}' $0; exit; fi
+if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{e=0} e{print} $0==": ENV START"{e=1}' $0; exit; fi
 # ---------------------------------------------
 : ENV START
 # ---------------------------------------------
@@ -449,7 +449,7 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
 ###############################################
 
 #we are called from firewall_start.sh
-if [ "$1" == "_fws" ]; then sc_conf get up >/dev/null && shield_uprear "$INFO_FROM_FWS"; _exit 0; fi
+if [ "$1" = "_fws" ]; then sc_conf get up >/dev/null && shield_uprear "$INFO_FROM_FWS"; _exit 0; fi
 
 #when called from post-mount.sh
 _pm() { $DEBUG && debug "_pm $*"
@@ -645,10 +645,10 @@ upgrade() { $DEBUG && debug "upgrade"
   echo -ne "- checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)"
   if [ "$SC_LAST_VERS" ]; then
-    if [ "$SC_VERS" == "$SC_LAST_VERS" ]; then echo "- you have already the latest version: $SC_VERS     "
+    if [ "$SC_VERS" = "$SC_LAST_VERS" ]; then echo "- you have already the latest version: $SC_VERS     "
       _ASK="? do you want to reapply it (y/n)?"
     else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
-      if [ "$VERS_ARRAY" == "$SORT_ARRAY" ]; then echo "- new version available: $SC_LAST_VERS         "
+      if [ "$VERS_ARRAY" = "$SORT_ARRAY" ]; then echo "- new version available: $SC_LAST_VERS         "
         _ASK="? do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
       else echo -e "\033[35m- this version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
         _ASK="? do you want to downgrade from $SC_VERS to $SC_LAST_VERS anyway (y/n)?"
@@ -1341,7 +1341,7 @@ status_term() { $DEBUG && debug "status_term"
 
 status_raw() { $DEBUG && debug "status_raw"
   _status; echo "$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC '$_WAN' '$_TUN' '$_WINET' '$_TINET' '$_ONFO' '$_ODNA' '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET'"; _exit 0
-#  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=$10 _TUN=$11 _WINET=$12 _TINET=$13 _ONFO=$14 _ODNA=$15 _OWAN=$16 _OWINET=$17 _OTUN=$18 _OTINET=$19  
+#  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=${10} _TUN=${11} _WINET=${12} _TINET=${13} _ONFO=${14} _ODNA=${15} _OWAN=${16} _OWINET=${17} _OTUN=${18} _OTINET=${19}
 }
 #---------------------------- END _STATUS ----------------------------
 
@@ -1390,7 +1390,7 @@ echo -e "\n\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 #
 ###############################################
 if [ $# -eq 0 ]; then _warn "No parameter!"; print_help; _exit 1; fi
-[ "$1" == "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
+[ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
 
