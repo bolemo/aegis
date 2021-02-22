@@ -267,7 +267,7 @@ command() {
 
 # LOG
 _LF=/var/log/log-aegis
-_SF=/tmp/aegis_status
+#_SF=/tmp/aegis_status
 
 _getLog() {
 #  _RNM="$(/bin/nvram get Device_name)"
@@ -277,7 +277,7 @@ _getLog() {
 #  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
 #  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
   # attach_device depends on router model
-  if [ "$(cat /module_name)" == "RBR50" ] ; then
+  if [ "$(cat /module_name)" = "RBR50" ] ; then
     _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
   else
     _NSDEVCMD='$1==\""ip"\"{print $3;exit}'
@@ -315,7 +315,7 @@ function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length
 
 log() {
 #  aegis_env
-  [ "$(cat /module_name)" == "RBR50" ] && MAX=150 || MAX=300
+  [ "$(cat /module_name)" = "RBR50" ] && MAX=150 || MAX=300
   case $ARG in
     ''|*[!0-9]*) LEN=100 ;;
     *) if [ $ARG -lt 1 ]; then LEN=1
