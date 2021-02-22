@@ -160,7 +160,7 @@ status() {
   echo '</ul>'
 
   if [ -r "$INFO_FILE" ]; then echo '<h3 class="more collapsibleList">Uprear information</h3>'
-  echo '<input type="checkbox" id="uprear-information" /><label for="launch-report">Uprear information</label>'
+  echo '<input type="checkbox" id="uprear-info" /><label for="uprear-info">Uprear information</label>'
   echo '<ul>'
     case "$_OFROM" in
       $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
