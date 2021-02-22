@@ -625,6 +625,7 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 }
 
 do_upgrade() { $DEBUG && debug "do_upgrade"
+_dlinfo
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _download "$UPGRADE_URL" "$DL_PATH" "--no-cache"
