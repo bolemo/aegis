@@ -1141,7 +1141,7 @@ _status() { $DEBUG && debug "|---> _status"
       [ "$_OTUN" != "$_TUN" ] &&                                    _CK=$((_CK+CK_DTIF))
       [ $((_DNA+DNA_TBW)) -ne 0 ] && [ "$_OTINET" != "$_TINET" ] && _CK=$((_CK+CK_DTINET))
 
-      if [ $((_ONFO&STA_IPT_MASK)) -eq INFO_IPT_PBM ]; then        _CK=$((_CK+CK_OIPT))
+      if [ $((_ONFO&INFO_IPT_MASK)) -eq $INFO_IPT_PBM ]; then        _CK=$((_CK+CK_OIPT))
       else
         AIPTF=/tmp/aegis_aipt OIPTF=/tmp/aegis_oipt
         express_ipt_dna "$INFO_FILE" >$OIPTF
