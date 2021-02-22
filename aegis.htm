@@ -439,12 +439,14 @@ function ready() {
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
-      <option value="-" selected>PLEASE SELECT A LIST</option>
+      <option value="-" selected disabled>PLEASE SELECT A LIST</option>
       <option value="src">Blocklists Sources list</option>
       <option value="abl">Custom global block list</option>
       <option value="awl">Custom global bypass list</option>
+      <option data-divider="true" disabled>______________</option>
       <option value="wbl">Custom WAN only block list</option>
       <option value="wwl">Custom WAN only bypass list</option>
+      <option data-divider="true" disabled>______________</option>
       <option value="tbl">Custom VPN only block list</option>
       <option value="twl">Custom VPN only bypass list</option>
     </select>
