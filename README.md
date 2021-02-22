@@ -170,6 +170,6 @@ Aegis needs iprange installed, as it allows great optimizations.
 
 **Since February 2021, Voxel's firmwares already include iprange.**
 
-wWith older firmwares, the install script wikl offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).`
+With older firmwares, the install script wikl offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).`
 
 The source is here: https://github.com/firehol/iprange
