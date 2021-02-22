@@ -159,8 +159,8 @@ status() {
   _gentimeforlist "$TUN_WL_FILE" "VPN specific bypass list"
   echo '</ul>'
 
-  if [ -r "$INFO_FILE" ]; then echo '<h3 class="more collapsibleList">Last shield uprear report</h3>'
-  echo '<input type="checkbox" id="launch-report" /><label for="launch-report">Last shield uprear report</label>'
+  if [ -r "$INFO_FILE" ]; then echo '<h3 class="more collapsibleList">Uprear information</h3>'
+  echo '<input type="checkbox" id="uprear-information" /><label for="launch-report">Uprear information</label>'
   echo '<ul>'
     case "$_OFROM" in
       $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
