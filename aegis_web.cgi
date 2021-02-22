@@ -270,12 +270,12 @@ _LF=/var/log/log-aegis
 _SF=/tmp/aegis_status
 
 _getLog() {
-  _RNM="$(/bin/nvram get Device_name)"
+#  _RNM="$(/bin/nvram get Device_name)"
   _MAX=$($wcUCI get aegis_web.log.len)
   _BT=$($wcUCI get aegis_web.log.basetime)
   _ST=$($wcUCI get aegis_web.log.pos)
-  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
-  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
+#  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
+#  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
   # attach_device depends on router model
   if [ "$(cat /module_name)" == "RBR50" ] ; then
     _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
