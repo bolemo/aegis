@@ -99,7 +99,6 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 ### GENERAL OPTIONS (can be used with any command)
 * `-v` + verbose mode (level 1)
 * `-vv` + verbose mode (level 2)
-* `-vvv` + verbose mode (level 3)
 * `-q` + quiet mode (no output)load_set or update):
 
 ## Lists (online blocklists, custom blacklists, custom whitelists)
