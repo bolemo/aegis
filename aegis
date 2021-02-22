@@ -750,10 +750,10 @@ ip_in_if_inet() { $DEBUG && debug "ip_in_if_inet $*"
 
 sc_init() { $DEBUG && debug "sc_init"
   check_path || set_path
-  [ -d "$ROOT_DIR/etc" ] || /bin/mkdir "$ROOT_DIR/etc"
-  [ -d "$PETC_DIR" ] || /bin/mkdir "$PETC_DIR"
+  [ -d "$ROOT_DIR/etc" ] || /bin/mkdir -p "$ROOT_DIR/etc"
+  [ -d "$PETC_DIR" ] || /bin/mkdir -p "$PETC_DIR"
   check_conf || set_conf
-  [ -d "$WWW_PATH" ] || /bin/mkdir "$WWW_PATH"
+  [ -d "$WWW_PATH" ] || /bin/mkdir -p "$WWW_PATH"
   [ -d '/www/bolemo' ] || /bin/ln -sfn "$WWW_PATH" '/www/bolemo'
 } 2>/dev/null
 
