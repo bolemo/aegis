@@ -109,8 +109,8 @@ You can find a lot of lists on internet. One great source are the lists from Fir
 
 ### Custom blacklists
 You can have your own custom blacklists of IPs or netsets (IPs with cidr netmask) that aegis will block for you.
-There are optional and needed only id you want to add you own IP addresses to aegis blocking directives.
-You can create global lists (will apply for WAN and VPN), or lists that will only apply to WAN or to VPN traffic.
+There are optional and needed only if you want to add you own IP addresses to aegis blocking directives.
+You can create global lists (will apply for WAN and VPN), or lists that will apply specifically to only WAN or only VPN traffic.
 
 #### Custom global blacklists (will block on WAN & VPN)
 Just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master blocklist (shield blocking directives) for WAN and VPN traffic.
