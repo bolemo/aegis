@@ -5,7 +5,7 @@ Might work with several other Netgear routers supporting Voxel firmware as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.7.0
+1.7.0b [beta]
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -102,18 +102,45 @@ Usage: `/opt/bolemo/scripts/aegis COMMAND [OPTION(S)]` or `aegis COMMAND [OPTION
 * `-vvv` + verbose mode (level 3)
 * `-q` + quiet mode (no output)load_set or update):
 
-## Blocklists
+## Lists (online blocklists, custom blacklists,custom whitelists)
+### Blocklists sources (online blocklists)
 The file `/opt/bolemo/etc/aegis.sources` contains the list of server url to get lists from (hash:net or hash:ip). It has several by default. You change this list to suit your needs (like blocking a specific country ip range).
 
 You can find a lot of lists on internet. One great source are the lists from FireHOL: http://iplists.firehol.org/
 
-### Custom blocklists
-You can have your own custom black list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next tile you will perform a `aegis refresh`, it will integrate your custom list to the master blocklist.
-You can have several custom black lists, beside aegis.blacklist, any file named aegis-*[SOMETHING]*.blacklist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+### Custom blacklists
+You can have your own custom blacklists of IPs or netsets (IPs with cidr netmask) that aegis will block for you.
+There are optional and needed only id you want to add you own IP addresses to aegis blocking directives.
+You can create global lists (will apply for WAN and VPN), or lists that will only apply to WAN or to VPN traffic.
 
-### Custom whitelists
-You can have your own custom white list of IPs or netsets (IPs with cidr netmask): just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master whitelist.
-You can have several custom white lists, beside aegis.whitelist, any file named aegis-*[SOMETHING]*.whitelist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+#### Custom global blacklists (will block on WAN & VPN)
+Just create a file named `aegis.blacklist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master blocklist (shield blocking directives) for WAN and VPN traffic.
+You can have additionnal custom global blacklists, beside aegis.blacklist, any file named aegis-*[SOMETHING]*.blacklist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+
+#### Custom WAN blacklists (will block only on WAN)
+Just create a file named `aegis.wan-blacklist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master blocklist (shield blocking directives) **only for WAN traffic**.
+You can have additionnal custom WAN blacklists, beside aegis.wan-blacklist, any file named aegis-*[SOMETHING]*.wan-blacklist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+
+#### Custom VPN blacklists (will block only on VPN)
+Just create a file named `aegis.vpn-blacklist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master blocklist (shield blocking directives) **only for VPN traffic**.
+You can have additionnal custom VPN blacklists, beside aegis.vpn-blacklist, any file named aegis-*[SOMETHING]*.vpn-blacklist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+
+#### Custom whitelists
+You can have your own custom whitelist of IPs or netsets (IPs with cidr netmask) that aegis will bypass for you.
+Such lists are optional and only needed if you want/need to bypass a blocking directive, so any IP address in a whitelist will never be blocked by aegis, even if it is in a blocklist or a custom blacklist.
+You can create global lists (will apply for WAN and VPN), or lists that will only apply to WAN or to VPN traffic.
+
+#### Custom global whitelists (will bypass on WAN & VPN)
+Just create a file named `aegis.whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master whitelist (shield bypassing directives) for WAN and VPN traffic.
+You can have additionnal custom global whitelists, beside aegis.whitelist, any file named aegis-*[SOMETHING]*.whitelist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+
+#### Custom WAN whitelists (will bypass only on WAN)
+Just create a file named `aegis.wan-whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master whitelist (shield bypassing directives) **only for WAN traffic**.
+You can have additionnal custom WAN whitelists, beside aegis.wan-whitelist, any file named aegis-*[SOMETHING]*.wan-whitelist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
+
+#### Custom VPN whitelists (will bypass only on VPN)
+Just create a file named `aegis.vpn-whitelist` in `/opt/bolemo/etc/` with your own list. Next time you will perform a `aegis refresh`, it will integrate your custom list to the master whitelist (shield bypassing directives) **only for VPN traffic**.
+You can have additionnal custom VPN whitelists, beside aegis.vpn-whitelist, any file named aegis-*[SOMETHING]*.vpn-whitelist (*[SOMETHING]* being any alphanumerical name) in `/opt/bolemo/etc/` will also be taken in consideration.
 
 ## Web Companion
 Aegis can install an optional Web Companion, to do so, once aegis is installed, just run `aegis web -install`; this will install or reinstall the Web Companion.
