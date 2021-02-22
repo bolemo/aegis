@@ -640,7 +640,7 @@ _upgrade() { $DEBUG && debug "_upgrade"
 }
 
 upgrade() { $DEBUG && debug "upgrade"
-  echo -e "\n\033[1;36mUpgrading:\033[0m"
+  echo -e "\033[1;36mUpgrading:\033[0m"
   echo "- version installed: $SC_VERS"
   echo -ne "- checking latest available version...\r"
   SC_LAST_VERS="$(last_avail_version)"
@@ -758,7 +758,7 @@ sc_init() { $DEBUG && debug "sc_init"
 } 2>/dev/null
 
 shield_init() { $DEBUG && debug "shield_init"
-  [ $VERBOSE ] && echo -e "\n\033[1;36mInitializing...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mInitializing...\033[0m"
   [ -e "$SHIELD_LOCK" ] && /bin/rm -f "$SHIELD_LOCK"
   $IPS_BIN -q -X $IPSET_TMP
   if check_conf; then [ $VERBOSE ] && echo "- configuration file is set."
@@ -788,8 +788,8 @@ shield_init() { $DEBUG && debug "shield_init"
 
 print_log() { $DEBUG && debug "print_log $*"
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
-  _logd_status || echo -e "\n\033[35mLogging is disabled!\033[0m"
-  echo -e "\n\033[1;36mLog:\033[0m"
+  _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
+  echo -e "\033[1;36mLog:\033[0m"
   case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI="${_UPT}000" ;; *) _TAIL=$1 _LSCI=0 ;; esac
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
@@ -834,7 +834,7 @@ done <$LOG_FILE; done
 shield_up() { $DEBUG && debug "shield_up"
   sc_conf set up=1; sc_conf commit
   shield_init
-  [ $VERBOSE ] && echo -e "\n\033[1;36mUprearing $SC_NAME shield...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mUprearing $SC_NAME shield...\033[0m"
   if [ $1 ]; then
     [ -r "$ALL_BL_FILE" ] || _warn "$BL_FILE not readable!" 1
     [ $VERBOSE ] && echo "- directives will be (re)loaded into $SC_NAME shield."
@@ -850,7 +850,7 @@ shield_up() { $DEBUG && debug "shield_up"
 }
 
 shield_down() { $DEBUG && debug "shield_down"
-  [ $VERBOSE ] && echo -e "\n\033[1;36mWithdrawing shield...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mWithdrawing shield...\033[0m"
   sc_conf delete up; sc_conf commit
   /bin/rm -f "$INFO_FILE"
   /usr/sbin/net-wall restart > /dev/null; [ $VERBOSE ] && echo "- built-in firewall restarted."
@@ -860,7 +860,7 @@ shield_down() { $DEBUG && debug "shield_down"
 }
 
 clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
-  [ $VERBOSE ] && echo -e "\n\033[1;36mUnsetting...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mUnsetting...\033[0m"
   clean_firewall_start
   clean_postmount
   if check_conf; then [ $RM_CONF ] && clean_conf || { sc_conf delete up; sc_conf commit; }; fi
@@ -877,7 +877,7 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
 }
 
 update_iplist() { $DEBUG && debug "update_iplist $*"
-  [ $VERBOSE ] && echo -e "\n\033[1;36mGenerating directives file from sources and custom lists...\033[0m"
+  [ $VERBOSE ] && echo -e "\033[1;36mGenerating directives file from sources and custom lists...\033[0m"
   [ -s "$SRC_LIST" ] || get_def_srclst # change to -e when ready to deal with empty sources file
   TMP_DIR="$(/bin/mktemp -d /tmp/${SC_ABR}-tmp-XXXXXX)"
   trap "/bin/rm -rf "$TMP_DIR" >/dev/null 2>&1; exit" INT TERM EXIT
@@ -980,7 +980,7 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
 }
 
 info() { $DEBUG && debug "info"
-  echo -e "\n\033[1;36mInfo:\033[0m"
+  echo -e "\033[1;36mInfo:\033[0m"
   if [ -r "$SRC_LIST" ] && [ -d $(dirname "$ALL_BL_FILE") ]
     then echo -n "- $SC_NAME version $SC_VERS is installed "; $EXT_DRIVE && echo 'on external drive.' || echo 'on internal drive.'
     else echo -e "\033[31m! something is wrong with installation!\033[0m"
@@ -1001,7 +1001,7 @@ info() { $DEBUG && debug "info"
 }
 
 test_ip() { # $1: IP to test, ($2: IF)
-  echo -e "\n\033[1;36mTesting IP $1:\033[0m"
+  echo -e "\033[1;36mTesting IP $1:\033[0m"
   if /usr/bin/traceroute -q1 -m1 -w1 -i $WAN_IF $1 38 2>&1 >/dev/null | /bin/grep -qF 'sendto: Operation not permitted'
     then echo "- IP address $1 is blocked by the router for WAN interface."
     else echo "- IP address $1 is not blocked by the router for WAN interface."
@@ -1199,7 +1199,7 @@ status_term() { $DEBUG && debug "status_term"
   fi
   
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors ----------------------
-    echo -e '\n\033[1;31mProblems:'
+    echo -e '\033[1;31mProblems:'
     [ $((_CK&CK_FWS)) -eq 0 ] &&       echo "- set: firewall-start.sh is not set for $SC_NAME!"
     [ $((_CK&CK_PM)) -eq $CK_PMND ] && echo "- set: post-mount.sh is not set for $SC_NAME!"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
@@ -1237,7 +1237,7 @@ status_term() { $DEBUG && debug "status_term"
   fi
   
   if [ -z "$VERBOSE" ]; then # basic status ----------------------
-    echo -e '\n\033[1;36mStatus:\033[0m'
+    echo -e '\033[1;36mStatus:\033[0m'
     if [ $((_RETVAL&ST_UNSET)) -ne 0 ]; then  echo "- shield is unset."
     elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
     else                                      echo -e "- shield is \033[1;32mup\033[0m$_UPSTR."
@@ -1248,12 +1248,12 @@ status_term() { $DEBUG && debug "status_term"
     _exit $_RETVAL
   fi
   
-  echo -e '\n\033[1;36mSetting status:\033[0m'
+  echo -e '\033[1;36mSetting status:\033[0m'
   [ $((_CK&CK_FWS)) -ne 0 ] &&   echo "- firewall-start.sh is set for $SC_NAME."
   case $((_CK&CK_PM)) in $CK_PM) echo "- post-mount.sh is set for $SC_NAME." ;;
                        $CK_PMND) echo "- ignoring post-mount.sh ($SC_NAME is on internal memory)." ;;
   esac
-  echo -e '\n\033[1;36mShield status:\033[0m'
+  echo -e '\033[1;36mShield status:\033[0m'
   if [ $((_RETVAL&ST_UNSET)) -ne 0 ]; then  echo "- shield is unset."
   elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
   else                                      echo -e "- shield is \033[1;32mup\033[0m$_UPSTR."
@@ -1261,7 +1261,7 @@ status_term() { $DEBUG && debug "status_term"
   if [ $_CK -gt $CK_LOGD ]; then echo -e "- logging is \033[1;32menabled\033[0m."
                             else echo -e "- logging is \033[1;35mdisabled\033[0m."
   fi
-  echo -e '\n\033[1;36mDirectives generation times:\033[0m'
+  echo -e '\033[1;36mDirectives generation times:\033[0m'
   _gentimeforlist() { [ -e "$1" ] && echo "- $2: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
   echo "- actual router time: $(/bin/date +'%Y-%m-%d %X')"
   [ -r "$SRC_BL_CACHE" ] && echo "- sources cache list latest update: $(/bin/date +'%Y-%m-%d %X' -r "$SRC_BL_CACHE")"
@@ -1271,7 +1271,7 @@ status_term() { $DEBUG && debug "status_term"
   _gentimeforlist "$ALL_WL_FILE" "global bypass list"
   _gentimeforlist "$WAN_WL_FILE" "WAN specific bypass list"
   _gentimeforlist "$TUN_WL_FILE" "VPN specific bypass list"
-  if [ -r "$INFO_FILE" ]; then echo -e '\n\033[1;36mUprear information:\033[0m'
+  if [ -r "$INFO_FILE" ]; then echo -e '\033[1;36mUprear information:\033[0m'
     case "$_OFROM" in
       $INFO_FROM_SC)  FROM="$SC_NAME script" ;;
       $INFO_FROM_PM)  FROM="post-mount.sh" ;;
@@ -1319,9 +1319,9 @@ status_term() { $DEBUG && debug "status_term"
   
   [ 0$VERBOSE -lt 2 ] && _exit $_RETVAL
   
-  echo -e "\n\033[1;36miptables $SC_NAME rules:\033[0m"
+  echo -e "\033[1;36miptables $SC_NAME rules:\033[0m"
   [ -z "$_IPT" ] && echo "- no $SC_NAME rules are set." || echo "$_IPT"|/bin/sed 's/^/- iptables /'
-  echo -e "\n\033[1;36mipset $SC_NAME sets:\033[0m"
+  echo -e "\033[1;36mipset $SC_NAME sets:\033[0m"
   [ -z "$_IPS" ] && _IPS="$($IPS_BIN -L -n|/bin/grep -F -- "$SC_ABR")"
   if [ "$_IPS" ]; then echo "$_IPS"|while read _SET; do
     case "$_SET" in
@@ -1347,7 +1347,7 @@ status_raw() { $DEBUG && debug "status_raw"
 #---------------------------- END _STATUS ----------------------------
 
 print_help() { $DEBUG && debug "print_help"
-echo -e "\n\033[1;36m$SC_NAME $SC_VERS\033[0m"'
+echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"'
 '"\033[7mCOMMANDS (only one) and their specific options:\033[0m"'
 '"\033[1;35mup\033[0m                  - (re)starts $SC_NAME shield protection"'
