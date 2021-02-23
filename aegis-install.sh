@@ -5,6 +5,8 @@ AEGIS_VER_URL="$AEGIS_REPO/version"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
 SELF_PATH="$(pwd -P)"
 WGET_PATH="/usr/bin/wget"
+ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
+WAN_IP=
 
 _dlinfo() { # to know how many people are downloading this script
    /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
