@@ -6,6 +6,11 @@ AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
 SELF_PATH="$(pwd -P)"
 WGET_PATH="/usr/bin/wget"
 
+_dlinfo() { # to know how many people are downloading this script
+   /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
+                 --data '{"no_sessions": true, "hits": [{"path": "install", "title": "install", "ip": "'$(ip_for_if $WAN_IF)'", "ref": "'$(cat /module_name)'"}]}' &
+} >/dev/null 2>&1
+
 ask_yn() {
   echo -ne "$1 [y/n] "
   case "$(i=0;while [ $i -lt 2 ];do i=$((i+1));read -p "" yn </dev/tty;[ -n "$yn" ] && echo "$yn" && break;done)" in
