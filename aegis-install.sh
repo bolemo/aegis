@@ -1,5 +1,4 @@
 #!/bin/sh
-SC_VERS='1.7.0b3'
 AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/master'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_VER_URL="$AEGIS_REPO/version"
@@ -12,7 +11,7 @@ WAN_IP="$(/usr/sbin/ip -4 addr show $WAN_IF|/usr/bin/awk 'NR==2 {print substr($2
 
 _dlinfo() { # to know how many people are downloading this script
    /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
-                 --data '{"no_sessions": true, "hits": [{"path": "'$SC_VERS'", "title": "install", "ip": "'$WAN_IP'", "ref": "'$RT_MOD'"}]}' &
+                 --data '{"no_sessions": true, "hits": [{"path": "install/'$VERS'", "title": "'$VERS'", "ip": "'$WAN_IP'", "ref": "'$RT_MOD$([ "$CHOICE" ] && echo "/ext" || echo "/int")'"}]}' &
 } >/dev/null 2>&1
 
 ask_yn() {
@@ -63,8 +62,8 @@ if ! test -d "$BASE_DIR/bolemo/etc"; then mkdir "$BASE_DIR/bolemo/etc"; fi
 if ! test -d "$BASE_DIR/bolemo/www"; then mkdir "$BASE_DIR/bolemo/www"; fi
 
 echo "Downloading and installing aegis..."
-_dlinfo
 VERS="$($WGET_PATH -qO- --no-check-certificate "$AEGIS_VER_URL")"
+_dlinfo
 if [ "$VERS" ] && $WGET_PATH -qO '/tmp/aegis_dl.tmp' --no-check-certificate "$AEGIS_SCP_URL"; then
   /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' '/tmp/aegis_dl.tmp'
   /bin/mv '/tmp/aegis_dl.tmp' '/opt/bolemo/scripts/aegis'
