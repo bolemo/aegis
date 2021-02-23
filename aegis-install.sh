@@ -5,12 +5,13 @@ AEGIS_VER_URL="$AEGIS_REPO/version"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
 SELF_PATH="$(pwd -P)"
 WGET_PATH="/usr/bin/wget"
+RT_MOD="$(cat /module_name)"
 ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 WAN_IP="$(/usr/sbin/ip -4 addr show $WAN_IF|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}')"
 
 _dlinfo() { # to know how many people are downloading this script
    /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
-                 --data '{"no_sessions": true, "hits": [{"path": "install", "title": "install", "ip": "'$WAN_IP'", "ref": "'$(cat /module_name)'"}]}' &
+                 --data '{"no_sessions": true, "hits": [{"path": "install", "title": "install", "ip": "'$WAN_IP'", "ref": "'$RT_MOD'"}]}' &
 } >/dev/null 2>&1
 
 ask_yn() {
@@ -61,6 +62,7 @@ if ! test -d "$BASE_DIR/bolemo/etc"; then mkdir "$BASE_DIR/bolemo/etc"; fi
 if ! test -d "$BASE_DIR/bolemo/www"; then mkdir "$BASE_DIR/bolemo/www"; fi
 
 echo "Downloading and installing aegis..."
+_dlinfo
 VERS="$($WGET_PATH -qO- --no-check-certificate "$AEGIS_VER_URL")"
 if [ "$VERS" ] && $WGET_PATH -qO '/tmp/aegis_dl.tmp' --no-check-certificate "$AEGIS_SCP_URL"; then
   /bin/sed -i 's/^[[:space:]]*// ; 1!{/^#/d;s/#[^"\}'\'']*$//;} ; s/[[:space:]]*$// ; /^$/d ; s/   *\([^"'\'']*\)$/ \1/ ; s/^\(\([^"'\'' ]\+ \)*\) \+/\1/' '/tmp/aegis_dl.tmp'
@@ -109,7 +111,7 @@ else
 fi
   
   if $_ASK_ROOTFS; then
-    case "$(cat /module_name)" in
+    case "$RT_MOD" in
       'R7800') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_ipq806x.ipk" ;;
       'R9000') IPRANGE_IPK_URL="$AEGIS_REPO/iprange_1.0.4-1_r9000.ipk" ;;
       *) IPRANGE_IPK_URL=;; 
