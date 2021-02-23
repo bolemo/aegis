@@ -911,8 +911,8 @@ update_iplist() { $DEBUG && debug "update_iplist $*"
   fi
   
   # processing common custom blacklist if any
-  if [ -r "$CUST_ALL_BL_FILE" ]; then [ $VERBOSE ] && echo "- adding global blocking directives from custom blocklist(s)..."
-    _IPR2="$CUST_ALL_BL_FILE"
+  if [ -r $CUST_ALL_BL_FILE ]; then [ $VERBOSE ] && echo "- adding global blocking directives from custom blocklist(s)..."
+    _IPR2=$CUST_ALL_BL_FILE
   else _IPR2=; fi
   $IPR_BIN "$TMP_DIR/src.bl" $_IPR2 >"$TMP_DIR/all.bl" || :>"$TMP_DIR/all.bl"
   if [ -s "$TMP_DIR/all.bl" ]; then [ $VERBOSE ] && echo "- generating global blocking directives..."
