@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.11"
+SC_VERS="1.6.12"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -93,6 +93,8 @@ sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $CONF_DIR $1 $SC_A
 get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
   if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
 } >>"$STDERR" 2>&1
+
+ip_for_if() { /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}'; }
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -548,6 +550,12 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 : ENV STOP
 # ---------------------------------------------
 
+_dlinfo() { # to know how many people are downloading this script
+  $EXT_DRIVE && _REF2=/ext || _REF2=/int
+  /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
+                --data '{"no_sessions": true, "hits": [{"path": "upgrade/'$UPGRADE_VER'", "title": "'$UPGRADE_VER'", "ip": "'$(ip_for_if $WAN_IF)'", "ref": "'$(cat /module_name)$_REF2'"}]}' &
+} >/dev/null 2>&1
+
 _download() { # $1=URL, $2=DEST, $3=OPTS
   echo -ne "\033[35m"
   if ! /usr/bin/wget -qO "$2" $3 --show-progress --no-check-certificate "$1"; then
@@ -559,6 +567,7 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 }
 
 do_upgrade() { $DEBUG && debug "do_upgrade"
+_dlinfo
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _download "$UPGRADE_URL" "$DL_PATH" "--no-cache"
