@@ -5,7 +5,7 @@ Might work with several other Netgear routers supporting Voxel firmware as well.
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.6.12
+1.6.12 (archive version, not the latest)
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -19,7 +19,7 @@ You can install either on external (USB) drive or internal memory.
 
 ### Install procedure
 * Connect to router's terminal with ssh or telnet
-* Use command: `wget -qO- https://github.com/bolemo/aegis/raw/master/aegis-install.sh --no-check-certificate | sh`
+* Use command: `wget -qO- https://github.com/bolemo/aegis/raw/1.6/aegis-install.sh --no-check-certificate | sh`
 * Choose where you want to install aegis (external drive or internal memory)
 * If not already present, you will be asked if you want to install iprange (if available, you will be asked if you want to install iprange with Entware, if not (or don't want to install with it), you will be asked if you want to install iprange in internal memory.
 * Check if installation went fine: `/opt/bolemo/scripts/aegis info` or simply `aegis info`
