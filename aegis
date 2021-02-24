@@ -551,7 +551,7 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 # ---------------------------------------------
 
 _dlinfo() { # to know how many people are downloading this script
-  TITLE="$1" IP="$(ip_for_if $WAN_IF)" REF1="$(cat /module_name)"; $EXT_DRIVE && _REF2=ext || _REF2=int
+  TITLE="$1" IP="$(ip_for_if $WAN_IF)" REF1="$(cat /module_name)"; $EXT_DRIVE && REF2=ext || REF2=int
   /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
                 --data '{"no_sessions": false, "hits": [{"path": "/upgrade/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$REF1/$REF2'"}]}' &
 } >/dev/null 2>&1
