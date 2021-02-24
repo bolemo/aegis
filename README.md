@@ -179,13 +179,13 @@ There are very basic privacy friendly metrics sent when an install or an upgrade
 
 What is sent then is:
 * the ip (that is **not stored**, it is just to find the country),
-* the router model (just the short string model name is sent: `R7800`, `R9000`, `RB50`, ...),
+* the router model (just the short string model name is sent: `R7800`, `R9000`, `RBR50`, ...),
 * the aegis version number being downloaded,
 * and if it is installed internally or externally (just `ext` or `int` string; no drive name sent).
 
 It is using https://www.goatcounter.com/ that is open source and respects privacy.
 
-All I see at the end is country (no ip), router model, aegis version being downloaded as well as installation being internal or external. Nothing more.
+All that is visible at the end is the country (no ip), router model, aegis version being downloaded as well as installation being internal or external. Nothing more.
 
 This is to have basic statistics about aegis (how many people are downloading it, where in the world, router models).
 
