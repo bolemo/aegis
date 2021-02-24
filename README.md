@@ -170,6 +170,22 @@ Aegis needs iprange installed, as it allows great optimizations.
 
 **Since February 2021, Voxel's firmwares already include iprange.**
 
-With older firmwares, the install script wikl offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).`
+With older firmwares, the install script wikl offers to install a version of it on the router 1) through Entware if you have it, or 2) directly on rootfs (in /usr/bin) if you don't have Entware (or don't want to install with Entware).
 
 The source is here: https://github.com/firehol/iprange
+
+## Metrics
+There are very basic privacy friendly metrics sent when an install or an upgrade is made (and only then).
+What is sent then is
+* the ip (that is **not stored**, it is just to find the country),
+* the router model (just the short string model name: `R7800`, `R9000`, `RB50`, ...),
+* the aegis version number being downloaded,
+* and if it is installed internal or external (just `ext` or `int` string; no drive name sent).
+
+It is using https://www.goatcounter.com/ that is open source and respects privacy.
+
+All I see at the end is country (no ip), router model, aegis version being downloaded as well as installation being internal or external. Nothing more.
+
+This is to have basic statistics about aegis (how many people are downloading it, where in the world, router models).
+
+Only installations or upgrades are sending these basic metrics: once an upgrade or install is done, it does not send anything until next upgrade. No data collection, metrics, stats... are ever sent when aegis is used. How and when you are using it is private.
