@@ -176,7 +176,8 @@ The source is here: https://github.com/firehol/iprange
 
 ## Metrics
 There are very basic privacy friendly metrics sent when an install or an upgrade is made (and only then).
-What is sent then is
+
+What is sent then is:
 * the ip (that is **not stored**, it is just to find the country),
 * the router model (just the short string model name: `R7800`, `R9000`, `RB50`, ...),
 * the aegis version number being downloaded,
