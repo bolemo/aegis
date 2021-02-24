@@ -9,7 +9,7 @@ if [ "$1" == '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.6.11"
+SC_VERS="1.6.12"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -550,6 +550,12 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 : ENV STOP
 # ---------------------------------------------
 
+_dlinfo() { # to know how many people are downloading this script
+  $EXT_DRIVE && _REF2=/ext || _REF2=/int
+  /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
+                --data '{"no_sessions": true, "hits": [{"path": "upgrade/'$UPGRADE_VER'", "title": "'$UPGRADE_VER'", "ip": "'$(ip_for_if $WAN_IF)'", "ref": "'$(cat /module_name)$_REF2'"}]}' &
+} >/dev/null 2>&1
+
 _download() { # $1=URL, $2=DEST, $3=OPTS
   echo -ne "\033[35m"
   if ! /usr/bin/wget -qO "$2" $3 --show-progress --no-check-certificate "$1"; then
@@ -561,6 +567,7 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 }
 
 do_upgrade() { $DEBUG && debug "do_upgrade"
+_dlinfo
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _download "$UPGRADE_URL" "$DL_PATH" "--no-cache"
