@@ -94,6 +94,8 @@ get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
   if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
 } >>"$STDERR" 2>&1
 
+ip_for_if() { /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}'; }
+
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
   if [ "$IPR_BIN" ]; then echo $_IP|iprange -
