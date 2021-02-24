@@ -12,7 +12,7 @@ WAN_IP="$(/usr/sbin/ip -4 addr show $WAN_IF|/usr/bin/awk 'NR==2 {print substr($2
 _dlinfo() { # to know how many people are downloading this script
   TITLE="$1"; [ "$CHOICE" ] && REF2=ext || REF2=int
   /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
-                --data '{"no_sessions": false, "hits": [{"path": "/install/'$TITLE'", "title": "'$TITLE'", "ip": "'$WAN_IP'", "ref": "'$RT_MOD/$REF2'"}]}' &
+                --data '{"no_sessions": true, "hits": [{"path": "/install/'$TITLE'", "title": "'$TITLE'", "ip": "'$WAN_IP'", "ref": "'$RT_MOD/$REF2'"}]}' &
 } >/dev/null 2>&1
 
 ask_yn() {
