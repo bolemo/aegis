@@ -538,7 +538,6 @@ clean_conf() { $DEBUG && debug "clean_conf"
 BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
 SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
 SC_MAIN_REPO="$SC_BASE_REPO/1.6"
-SC_DEV_REPO="$SC_BASE_REPO/dev"
 REPO="$SC_MAIN_REPO" # can be overriden to change repo
 
 last_avail_version() { $DEBUG && debug "last_avail_version"
