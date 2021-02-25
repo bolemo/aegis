@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.0b5"
+SC_VERS="1.7.0b6"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -42,13 +42,13 @@ INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
 CONF_DIR="$ROOT_DIR/etc/config"
-ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
+/sbin/ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
-if ifconfig wg0; then
+if /sbin/ifconfig wg0; then
   # WireGuard
   TUN_IF='wg0'
 else
-  TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
+  TUN_IF="$(/bin/ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 } >/dev/null 2>&1
@@ -1054,6 +1054,13 @@ ST_PB=56
 : ENV EOF
 # ---------------------------------------------
 
+netset_exists() {
+  test -s "$ALL_BL_FILE" && return 0
+  sc_conf get wan >/dev/null && [ "$WAN_IF" ] && test -s "$WAN_BL_FILE" && return 0
+  sc_conf get tun >/dev/null && [ "$TUN_IF" ] && test -s "$TUN_BL_FILE" && return 0
+  return 1
+}
+
 directive_status() {
 # $1: IPSET / $2: FILE
   _NFO=0 _CNT=0
@@ -1090,7 +1097,7 @@ _status() { $DEBUG && debug "|---> _status"
   _WAN=$WAN_IF _TUN=$TUN_IF
   
   # CHECKING IF WE HAVE BLOCKING DIRECTIVES FILE ONLY IF SHIELD IS AT LEAST NOT DOWN
-  [ $_CK -ge $_CK_SND ] && netset_exists && _CK=$((_CK+CK_BLNS))
+  [ $_CK -ge $CK_SND ] && netset_exists && _CK=$((_CK+CK_BLNS))
   
   # CHECKING DIRECTIVES, IPTABLES... ONLY IF SHIELD IS NOT DOWN
   if [ $((_CK&CK_SND)) -ne 0 ]; then
@@ -1166,13 +1173,6 @@ _status() { $DEBUG && debug "|---> _status"
   [ "$_ONFO" ] || _ONFO=0; [ "$_ODNA" ] || _ODNA=0
   $DEBUG && debug "<---| _status [$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC '$_WAN' '$_TUN' '$_WINET' '$_TINET' $_ONFO $_ODNA '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET']"
 } 2>>"$STDERR"
-
-netset_exists() {
-  test -e "$ALL_BL_FILE" && return 0
-  sc_conf get wan >/dev/null && [ "$WAN_IF" ] && test -e "$WAN_BL_FILE" && return 0
-  sc_conf get tun >/dev/null && [ "$TUN_IF" ] && test -e "$TUN_BL_FILE" && return 0
-  return 1
-}
 
 status_term() { $DEBUG && debug "status_term"
   _status
