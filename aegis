@@ -1475,6 +1475,7 @@ case "$PARAM" in
   '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
   '_refresh') _refresh_args; _shield_args; VERBOSE=1; update_iplist $RF_OFFLN; shield_up 1 ;;
   '_down') VERBOSE=1; shield_down ;;
+  '_unset') VERBOSE=1; clean ;;
   '_upgrade') _repo_args; _upgrade ;;
   
   *) _warn "Unknown Parameter $2!"; print_help; _exit 1 ;;
