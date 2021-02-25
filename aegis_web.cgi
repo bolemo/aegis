@@ -59,11 +59,11 @@ status() {
   _PB=false _UNSET=false _DOWN=false
   
   [ $((_CK&CK_SET)) -gt $CK_UNSET ] && [ $((_CK&CK_SET)) -lt $CK_SETOK ] && _PB=true
+  [ $((_CK&CK_SND)) -eq 0 ] &&                _DOWN=true
   if [ $_CK -le $CK_UNSET ]; then             _UNSET=true
-  elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  _DOWN=true
-  elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _PB=true
+  elif [ $((_CK&CK_DPB)) -lt $CK_UPOK ]; then _PB=true
+  elif [ $((_CK&CK_DPB)) -gt $CK_DOK ]; then  _PB=true
   fi
-  
   [ $_CK -ge $CK_DLOGD ] && _PB=true
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
@@ -109,8 +109,9 @@ status() {
       [ $((_CK&CK_UPF)) -eq 0 ] &&     echo "<li>shield should be down, but is not!</li>"
     else
       [ $((_CK&CK_NFO)) -ne 0 ] &&     echo "<li>shield is down, but status file exists!</li>"
-      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo "<li>shield should be up, but is not!</li>"
+      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo "<li>shield was upreared, but is not up!</li>"
     fi
+    [ $((_CK&CK_BLNS)) -eq 0 ] &&      echo "<li>directives: there are no blocking directives!</li>"
     if [ $((_CK&CK_DDNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
          "$INFO_DIR__DIFF") echo "<li>directives: $2 changed since $SC_NAME was upreared!</li>";; # loaded != file
