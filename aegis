@@ -1188,8 +1188,9 @@ status_term() { $DEBUG && debug "status_term"
   elif [ $((_CK&CK_SET)) -lt $CK_SETOK ]; then _RETVAL=$ST_SETPB
   fi
   
+  [ $((_CK&CK_SND)) -eq 0 ] && _RETVAL=$((_RETVAL+ST_DOWN))
+
   if [ $_CK -le $CK_UNSET ]; then : # if we are just unset, no need to show more.
-  elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  _RETVAL=$((_RETVAL+ST_DOWN))
   elif [ $((_CK&CK_DPB)) -lt $CK_UPOK ]; then _RETVAL=$((_RETVAL+ST_UPPB))
   elif [ $((_CK&CK_DPB)) -gt $CK_DOK ]; then  _RETVAL=$((_RETVAL+ST_UPPB))
   fi
