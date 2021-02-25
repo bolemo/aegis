@@ -1039,7 +1039,7 @@ CK_UPOK=56              # SHIELD UP OK
 CK_DOK=63               # PROBLEMS (WE MUST USE CK_DPB MASK)
 CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
 CK_DPB=8191
-CK_LOGD=8192 CK_DLOGD=16384
+CK_LOGD=8192 CK_DLOGD=16384 CK_LOG=24576
 CK_BLNS=32768
 
 ST_UNSET=1   # . . _ . . x
@@ -1203,8 +1203,8 @@ status_term() { $DEBUG && debug "status_term"
     _UPSTR=" for: $_UPSTR.\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP addresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP addresses ($_STRWLC)"
   fi
   
-  if [ $_CK -ge $CK_DLOGD ]; then _RETVAL=$((_RETVAL+ST_LGDPB))
-  elif [ $_CK -ge $CK_LOGD ]; then _RETVAL=$((_RETVAL+ST_LOGD))
+  if [ $((_CK&CK_LOG)) -ge $CK_DLOGD ]; then _RETVAL=$((_RETVAL+ST_LGDPB))
+  elif [ $((_CK&CK_LOG)) -ge $CK_LOGD ]; then _RETVAL=$((_RETVAL+ST_LOGD))
   fi
   
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors ----------------------
@@ -1239,11 +1239,10 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_OIPT)) -ne 0 ] &&   echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
-    if [ $_CK -ge $((CK_DLOGD+CK_LOGD)) ]; then echo "- logd: the log daemon is running but was not started from the shield!"
-    elif [ $_CK -ge $CK_DLOGD ]; then           echo "- logd: log daemon was started but is not running!"
+    if [ $((_CK&CK_LOG)) -eq $CK_LOG ]; then echo "- logd: the log daemon is running but was not started from the shield!"
+    elif [ $((_CK&CK_DLOGD)) -ne 0 ]; then   echo "- logd: log daemon was started but is not running!"
     fi
     echo -ne '\033[0m'
- #   _exit $_RETVAL
   fi
   
   if [ -z "$VERBOSE" ]; then # basic status ----------------------
