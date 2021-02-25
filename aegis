@@ -1037,7 +1037,8 @@ test_ip() { # $1: IP to test, ($2: IF)
 CK_PMND=1 CK_PM=3 CK_FWS=4     CK_UNSET=1 CK_SETOK=5 CK_SET=7
 CK_SND=8                # SHIELD NOT DOWN
 CK_NFO=16 CK_UPF=32     # INFO FILE & UP FLAG
-CK_UPOK=63              # SHIELD UP OK
+CK_UPOK=56              # SHIELD UP OK
+CK_DOK=63               # PROBLEMS (WE MUST USE CK_DPB MASK)
 CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
 CK_DPB=8191
 CK_LOGD=8192 CK_DLOGD=16384
@@ -1185,7 +1186,8 @@ status_term() { $DEBUG && debug "status_term"
   
   if [ $_CK -le $CK_UNSET ]; then : # if we are just unset, no need to show more.
   elif [ $((_CK&CK_DPB)) -lt $CK_SND ]; then  _RETVAL=$((_RETVAL+ST_DOWN))
-  elif [ $((_CK&CK_DPB)) -gt $CK_UPOK ]; then _RETVAL=$((_RETVAL+ST_UPPB))
+  elif [ $((_CK&CK_DPB)) -lt $CK_UPOK ]; then _RETVAL=$((_RETVAL+ST_UPPB))
+  elif [ $((_CK&CK_DPB)) -gt $CK_DOK ]; then  _RETVAL=$((_RETVAL+ST_UPPB))
   fi
   
   if [ $((_CK&CK_DPB)) -ge $CK_SND ]; then # creating up status info string
