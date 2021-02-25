@@ -246,7 +246,7 @@ _cipset_count_set() { $DEBUG && debug "_cipset_count_set $*"
 } 2>>"$STDERR"
 
 # ------- NON ENV SCRIPT WIDE FUNCTIONS -------
-clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_BIN -q -X "$SET"; done }
+clean_ipset() { for SET in $($IPS_BIN -q -L -n|/bin/grep -F "$SC_ABR"); do $IPS_BIN -q -X "$SET"; done; }
 
 express_ipt_dna() { $DEBUG && debug "express_ipt_dna $*"
 # $1: status file, if not: we already have vars
@@ -411,6 +411,9 @@ shield_uprear() { $DEBUG && debug "|---> shield_uprear $*"
   sc_conf get log.enabled >/dev/null && _DNA=$((_DNA+DNA_LOG))
   
   _cipset_end
+  
+  # do we have any blocking ipset?
+  [ -z "$($IPS_BIN -L -n|/bin/grep "${SC_ABR}.*_bl")" ] && clean_ipset && _warn 'No blocking ipset, aborting!' 1
   
   WIPTF=/tmp/aegis_wipt
   express_ipt_dna >$WIPTF
