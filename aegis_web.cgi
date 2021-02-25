@@ -253,11 +253,12 @@ command() {
     *) _LOG=;;
   esac
   case $ARG in
-    upgrade*) _CMD="aegis _upgrade" ;;
-    up*) _CMD="aegis _up$_LOG" ;;
-    refresh_custom*) _CMD="aegis _refresh -custom-only$_LOG" ;;
-    refresh*) _CMD="aegis _refresh$_LOG" ;;
-    down*) _CMD="aegis _down" ;;
+    'upgrade'*) _CMD="aegis _upgrade" ;;
+    'up'*) _CMD="aegis _up$_LOG" ;;
+    'refresh_custom'*) _CMD="aegis _refresh -custom-only$_LOG" ;;
+    'refresh'*) _CMD="aegis _refresh$_LOG" ;;
+    'down'*) _CMD="aegis _down" ;;
+    'unset'*) _CMD="aegis _unset" ;;
   esac
   [ -z "${ARG##*-*}" ] && _ARG2="${ARG#*-}"
   /opt/bolemo/scripts/$_CMD|/usr/bin/awk '!/^[[:cntrl:]]\[[0-9;]+m$/{gsub("[[:cntrl:]]\[[0-9;]+m","\0",$0);print;system("")}'
