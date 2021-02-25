@@ -235,11 +235,10 @@ info() {
   $EXT_DRIVE && _JSON="$_JSON, \"location\":\"external\"" || _JSON="$_JSON, \"location\":\"internal\""
   SC_LAST_VERS="$(last_avail_version)";
   if [ "$SC_LAST_VERS" ]; then
-    _LOC_VERS=$(echo "$SC_VERS"|/bin/sed 's/[^[:digit:]]//g')
-    _REM_VERS=$(echo "$SC_LAST_VERS"|/bin/sed 's/[^[:digit:]]//g')
-    if [ $_LOC_VERS -eq $_REM_VERS ]; then _VSTAT=0
-    elif [ $_LOC_VERS -lt $_REM_VERS ]; then _VSTAT=1
-    else _VSTAT=2
+    if [ "$SC_VERS" = "$SC_LAST_VERS" ]; then _VSTAT=0
+    else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
+      if [ "$VERS_ARRAY" = "$SORT_ARRAY" ]; then _VSTAT=1
+      else _VSTAT=2; fi
     fi
   else _VSTAT=3
   fi
