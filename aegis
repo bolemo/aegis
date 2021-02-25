@@ -111,7 +111,7 @@ get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
   if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
 } >>"$STDERR" 2>&1
 
-ip_for_if() { /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}'; }
+# ip_for_if() { /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}'; }
 
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
@@ -614,8 +614,8 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 # ---------------------------------------------
 
 _dlinfo() { # to know how many people are downloading this script
-  TITLE="$1" IP="$(ip_for_if $WAN_IF)" REF1="$(cat /module_name)"; $EXT_DRIVE && REF2=ext || REF2=int
-  /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
+  TITLE="$1" IP="$(/usr/bin/curl --interface $WAN_IF 'ifconfig.me/ip')" REF1="$(cat /module_name)"; $EXT_DRIVE && REF2=ext || REF2=int
+  /usr/bin/curl -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
                 --data '{"no_sessions": true, "hits": [{"path": "/upgrade/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$REF1/$REF2'"}]}' &
 } >/dev/null 2>&1
 
@@ -1464,7 +1464,7 @@ sc_init
 
 case "$PARAM" in
   'up') _shield_args;
-        netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- No directives were found! Refresh will be made."; }
+        netset_exists || { ST_US=1; [ $VERBOSE ] && echo "- no directives were found! Refresh will be made."; }
         [ $ST_US ] && update_iplist;
         shield_up "$ST_US" "$ST_FW";
         status_term ;;
@@ -1483,7 +1483,10 @@ case "$PARAM" in
   
   # calls for outside helpers (html)
   '_status') status_raw ;;
-  '_up') _shield_args; VERBOSE=1; shield_up '' 1 ;;
+  '_up') _shield_args; VERBOSE=1; 
+         netset_exists || { ST_US=1; echo "- no directives were found! Refresh will be made."; }
+         [ $ST_US ] && update_iplist;
+         shield_up "$ST_US" 1 ;;
   '_refresh') _refresh_args; _shield_args; VERBOSE=1; update_iplist $RF_OFFLN; shield_up 1 ;;
   '_down') VERBOSE=1; shield_down ;;
   '_unset') VERBOSE=1; clean ;;
