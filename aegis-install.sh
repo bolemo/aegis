@@ -7,12 +7,11 @@ SELF_PATH="$(pwd -P)"
 WGET_PATH="/usr/bin/wget"
 RT_MOD="$(cat /module_name)"
 ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
-WAN_IP="$(/usr/sbin/ip -4 addr show $WAN_IF|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}')"
 
 _dlinfo() { # to know how many people are downloading this script
-  TITLE="$1"; [ "$CHOICE" ] && REF2=ext || REF2=int
-  /usr/bin/curl --interface $WAN_IF -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
-                --data '{"no_sessions": true, "hits": [{"path": "/install/'$TITLE'", "title": "'$TITLE'", "ip": "'$WAN_IP'", "ref": "'$RT_MOD/$REF2'"}]}' &
+  TITLE="$1" IP="$(/usr/bin/curl --interface $WAN_IF 'ifconfig.me/ip')" REF1="$(cat /module_name)"; [ "$CHOICE" ] && REF2=ext || REF2=int
+  /usr/bin/curl -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
+                --data '{"no_sessions": true, "hits": [{"path": "/install/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$RT_MOD/$REF2'"}]}' &
 } >/dev/null 2>&1
 
 ask_yn() {
