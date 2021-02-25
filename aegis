@@ -1042,6 +1042,7 @@ CK_DOK=63               # PROBLEMS (WE MUST USE CK_DPB MASK)
 CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
 CK_DPB=8191
 CK_LOGD=8192 CK_DLOGD=16384
+CK_BLNS=32768
 
 ST_UNSET=1   # . . _ . . x
 ST_SETPB=8   # . . x . . _
@@ -1089,6 +1090,9 @@ _status() { $DEBUG && debug "|---> _status"
   sc_conf get up >/dev/null &&  _CK=$((_CK+CK_UPF))  # shield up flag is on
   
   _WAN=$WAN_IF _TUN=$TUN_IF
+  
+  # CHECKING IF WE HAVE BLOCKING DIRECTIVES FILE ONLY IF SHIELD IS AT LEAST NOT DOWN
+  [ $_CK -ge $_CK_SND ] && netset_exists && _CK=$((_CK+CK_BLNS))
   
   # CHECKING DIRECTIVES, IPTABLES... ONLY IF SHIELD IS NOT DOWN
   if [ $((_CK&CK_SND)) -ne 0 ]; then
@@ -1213,8 +1217,9 @@ status_term() { $DEBUG && debug "status_term"
       [ $((_CK&CK_UPF)) -eq 0 ] &&     echo "- shield should be down, but is not!"
     else
       [ $((_CK&CK_NFO)) -ne 0 ] &&     echo "- shield is down, but status file exists!"
-      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo "- shield should be up, but is not!"
+      [ $((_CK&CK_UPF)) -ne 0 ] &&     echo "- shield was upreared, but is not up!"
     fi
+    [ $((_CK&CK_BLNS)) -eq 0 ] &&      echo "- directives: there are no blocking directives!"
     if [ $((_CK&CK_DDNA)) -ne 0 ]; then
        _parse_dir() { case "$(($1&INFO_DIR__MASK))" in
          "$INFO_DIR__DIFF") echo "- directives: $2 changed since $SC_NAME was upreared!";; # loaded != file
