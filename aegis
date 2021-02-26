@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.0b7"
+SC_VERS="1.7.0b8"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -1251,8 +1251,8 @@ status_term() { $DEBUG && debug "status_term"
     elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
     else                                      echo -e "- shield is \033[1;32mup\033[0m$_UPSTR."
     fi
-    if [ $_CK -gt $CK_LOGD ]; then echo -e "- logging is \033[1;32menabled\033[0m."
-                              else echo -e "- logging is \033[1;35mdisabled\033[0m."
+    if [ $((_CK&CK_LOGD)) -ne 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."
+                                   else echo -e "- logging is \033[1;35mdisabled\033[0m."
     fi
     _exit $_RETVAL
   fi
@@ -1267,8 +1267,8 @@ status_term() { $DEBUG && debug "status_term"
   elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
   else                                      echo -e "- shield is \033[1;32mup\033[0m$_UPSTR."
   fi
-  if [ $_CK -gt $CK_LOGD ]; then echo -e "- logging is \033[1;32menabled\033[0m."
-                            else echo -e "- logging is \033[1;35mdisabled\033[0m."
+  if [ $((_CK&CK_LOGD)) -ne 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."
+                                 else echo -e "- logging is \033[1;35mdisabled\033[0m."
   fi
   echo -e '\033[1;36mDirectives generation times:\033[0m'
   _gentimeforlist() { [ -e "$1" ] && echo "- $2: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
