@@ -61,6 +61,7 @@ status() {
   [ $((_CK&CK_SET)) -gt $CK_UNSET ] && [ $((_CK&CK_SET)) -lt $CK_SETOK ] && _PB=true
   [ $((_CK&CK_SND)) -eq 0 ] &&                _DOWN=true
   if [ $_CK -le $CK_UNSET ]; then             _UNSET=true
+  elif [ $_CK -le $CK_SET ]; then : # Down, already known
   elif [ $((_CK&CK_DPB)) -lt $CK_UPOK ]; then _PB=true
   elif [ $((_CK&CK_DPB)) -gt $CK_DOK ]; then  _PB=true
   fi
