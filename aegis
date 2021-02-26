@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.0b6"
+SC_VERS="1.7.0b7"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -146,7 +146,7 @@ _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   fi
 }
 _logd_start() { $DEBUG && debug "_logd_start"
-if [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); then # logd is already running
+if [ -e $LOGD_PID ] && /bin/kill -0 $(cat $LOGD_PID); then # logd is already running
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
@@ -196,7 +196,7 @@ while :; do
       if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
-        elif \$FC; then $($DEBUG && echo "debug 'shield is unlocked, this is second check: killing daemon';") kill \$(cat $LOGD_PID);
+        elif \$FC; then $($DEBUG && echo "debug 'shield is unlocked, this is second check: killing daemon';") /bin/kill \$(cat $LOGD_PID);
         $($DEBUG && echo "else debug 'shield is unlocked but waiting for second check';") fi
         FC=true; C=5
       else FC=false; C=1; fi
@@ -209,8 +209,8 @@ EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
 return $INFO_LOGD_STARTED
 }
-_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && kill $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF; } 2>/dev/null
-_logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && kill -0 $(cat $LOGD_PID); return $?; }
+_logd_stop() { $DEBUG && debug "_logd_stop"; [ -e $LOGD_PID ] && /bin/kill $(cat $LOGD_PID) && return $INFO_LOGD_STOPPED || return $INFO_LOGD_KEEP_OFF; } 2>/dev/null
+_logd_status() { $DEBUG && debug "_logd_status"; [ -e $LOGD_PID ] && /bin/kill -0 $(cat $LOGD_PID); return $?; }
 
 # ------------- CIPSET FUNCTIONS --------------
 # Copy ipset in /tmp to work on it
@@ -1188,7 +1188,7 @@ status_term() { $DEBUG && debug "status_term"
   
   [ $((_CK&CK_SND)) -eq 0 ] && _RETVAL=$((_RETVAL+ST_DOWN))
 
-  if [ $_CK -le $CK_UNSET ]; then : # if we are just unset, no need to show more.
+  if [ $_CK -le $CK_SET ]; then : # Ok
   elif [ $((_CK&CK_DPB)) -lt $CK_UPOK ]; then _RETVAL=$((_RETVAL+ST_UPPB))
   elif [ $((_CK&CK_DPB)) -gt $CK_DOK ]; then  _RETVAL=$((_RETVAL+ST_UPPB))
   fi
