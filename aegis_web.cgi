@@ -64,7 +64,7 @@ status() {
   elif [ $((_CK&CK_DPB)) -lt $CK_UPOK ]; then _PB=true
   elif [ $((_CK&CK_DPB)) -gt $CK_DOK ]; then  _PB=true
   fi
-  [ $_CK -ge $CK_DLOGD ] && _PB=true
+  [ $((_CK&CK_DLOGD)) -ne 0 ] && _PB=true
   
   echo "<h2>Status <span>@ $(/bin/date +'%Y-%m-%d %X') (router time)</span></h2>"
   if $_UNSET; then
@@ -132,8 +132,8 @@ status() {
     [ $((_CK&CK_OIPT)) -ne 0 ] &&   echo "<li>iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!</li>"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "<li>iptables: current $SC_NAME rules were modified since last uprear!</li>"
     
-    if [ $_CK -ge $((CK_DLOGD+CK_LOGD)) ]; then echo "<li>logd: the log daemon is running but was not started from the shield!</li>"
-    elif [ $_CK -ge $CK_DLOGD ]; then           echo "<li>logd: log daemon was started but is not running!</li>"
+    if [ $((_CK&CK_LOG)) -eq $CK_LOG ]; then echo "<li>logd: the log daemon is running but was not started from the shield!</li>"
+    elif [ $((_CK&CK_DLOGD)) -ne 0 ]; then   echo "<li>logd: log daemon was started but is not running!</li>"
     fi
     echo '</ul>'
   fi

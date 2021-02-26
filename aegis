@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.0b5"
+SC_VERS="1.7.0b6"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -42,13 +42,13 @@ INFO_FILE="/tmp/${SC_ABR}_status"
 LOG_FILE="/var/log/log-$SC_ABR"
 SHIELD_LOCK="/tmp/${SC_ABR}_lock"
 CONF_DIR="$ROOT_DIR/etc/config"
-ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
+/sbin/ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 # VPN tunnel detection
-if ifconfig wg0; then
+if /sbin/ifconfig wg0; then
   # WireGuard
   TUN_IF='wg0'
 else
-  TUN_IF="$(ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
+  TUN_IF="$(/bin/ps -w|/bin/grep -F -- '/usr/sbin/openvpn --dev'|/bin/grep -vE 'grep|server_tap|server_tun')"
   [ "$TUN_IF" ] && TUN_IF=${TUN_IF##* --dev } && TUN_IF=${TUN_IF%% *} # Open VPN client or no tunneling
 fi
 } >/dev/null 2>&1
@@ -111,11 +111,9 @@ get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
   if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
 } >>"$STDERR" 2>&1
 
-# ip_for_if() { /usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print substr($2,0,index($2, "/")-1);exit}'; }
-
 inet_for_if() {
   _IP="$(/usr/sbin/ip -4 addr show $1|/usr/bin/awk 'NR==2 {print $2;exit}')"
-  echo $_IP|$IPR_BIN -
+  case $_IP in */32) echo $_IP ;; */*) echo $_IP|$IPR_BIN - ;; *) echo "$_IP/32" ;; esac
 }
 
 # ---------------------------------------------
@@ -1041,7 +1039,7 @@ CK_UPOK=56              # SHIELD UP OK
 CK_DOK=63               # PROBLEMS (WE MUST USE CK_DPB MASK)
 CK_DDNA=64 CK_DWIF=128 CK_DWINET=256 CK_DTIF=512 CK_DTINET=1024 CK_DIPT=2048 CK_OIPT=4096
 CK_DPB=8191
-CK_LOGD=8192 CK_DLOGD=16384
+CK_LOGD=8192 CK_DLOGD=16384 CK_LOG=24576
 CK_BLNS=32768
 
 ST_UNSET=1   # . . _ . . x
@@ -1055,6 +1053,13 @@ ST_PB=56
 # ---------------------------------------------
 : ENV EOF
 # ---------------------------------------------
+
+netset_exists() {
+  test -s "$ALL_BL_FILE" && return 0
+  sc_conf get wan >/dev/null && [ "$WAN_IF" ] && test -s "$WAN_BL_FILE" && return 0
+  sc_conf get tun >/dev/null && [ "$TUN_IF" ] && test -s "$TUN_BL_FILE" && return 0
+  return 1
+}
 
 directive_status() {
 # $1: IPSET / $2: FILE
@@ -1092,7 +1097,7 @@ _status() { $DEBUG && debug "|---> _status"
   _WAN=$WAN_IF _TUN=$TUN_IF
   
   # CHECKING IF WE HAVE BLOCKING DIRECTIVES FILE ONLY IF SHIELD IS AT LEAST NOT DOWN
-  [ $_CK -ge $_CK_SND ] && netset_exists && _CK=$((_CK+CK_BLNS))
+  [ $_CK -ge $CK_SND ] && netset_exists && _CK=$((_CK+CK_BLNS))
   
   # CHECKING DIRECTIVES, IPTABLES... ONLY IF SHIELD IS NOT DOWN
   if [ $((_CK&CK_SND)) -ne 0 ]; then
@@ -1169,13 +1174,6 @@ _status() { $DEBUG && debug "|---> _status"
   $DEBUG && debug "<---| _status [$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC '$_WAN' '$_TUN' '$_WINET' '$_TINET' $_ONFO $_ODNA '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET']"
 } 2>>"$STDERR"
 
-netset_exists() {
-  test -e "$ALL_BL_FILE" && return 0
-  sc_conf get wan >/dev/null && [ "$WAN_IF" ] && test -e "$WAN_BL_FILE" && return 0
-  sc_conf get tun >/dev/null && [ "$TUN_IF" ] && test -e "$TUN_BL_FILE" && return 0
-  return 1
-}
-
 status_term() { $DEBUG && debug "status_term"
   _status
   _OFROM=$((_ONFO&INFO_FROM_MASK))
@@ -1205,8 +1203,8 @@ status_term() { $DEBUG && debug "status_term"
     _UPSTR=" for: $_UPSTR.\n- blocking a total of $((_ABLC+_WBLC+_TBLC)) IP addresses ($_STRBLC).\n- bypassing $((_AWLC+_WWLC+_TWLC)) IP addresses ($_STRWLC)"
   fi
   
-  if [ $_CK -ge $CK_DLOGD ]; then _RETVAL=$((_RETVAL+ST_LGDPB))
-  elif [ $_CK -ge $CK_LOGD ]; then _RETVAL=$((_RETVAL+ST_LOGD))
+  if [ $((_CK&CK_LOG)) -ge $CK_DLOGD ]; then _RETVAL=$((_RETVAL+ST_LGDPB))
+  elif [ $((_CK&CK_LOG)) -ge $CK_LOGD ]; then _RETVAL=$((_RETVAL+ST_LOGD))
   fi
   
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors ----------------------
@@ -1241,11 +1239,10 @@ status_term() { $DEBUG && debug "status_term"
     [ $((_CK&CK_OIPT)) -ne 0 ] &&   echo "- iptables: $SC_NAME rules were UNSUCCESSFULLY (re)set during last uprear!"
     [ $((_CK&CK_DIPT)) -ne 0 ] &&   echo "- iptables: current $SC_NAME rules were modified since last uprear!"
     
-    if [ $_CK -ge $((CK_DLOGD+CK_LOGD)) ]; then echo "- logd: the log daemon is running but was not started from the shield!"
-    elif [ $_CK -ge $CK_DLOGD ]; then           echo "- logd: log daemon was started but is not running!"
+    if [ $((_CK&CK_LOG)) -eq $CK_LOG ]; then echo "- logd: the log daemon is running but was not started from the shield!"
+    elif [ $((_CK&CK_DLOGD)) -ne 0 ]; then   echo "- logd: log daemon was started but is not running!"
     fi
     echo -ne '\033[0m'
- #   _exit $_RETVAL
   fi
   
   if [ -z "$VERBOSE" ]; then # basic status ----------------------
