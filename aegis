@@ -107,7 +107,7 @@ DNA_TBW=64 DNA_TBL=128 DNA_TWL=256
 
 sc_conf() { [ -z "$2" ] && _OPT= || _OPT=".$2" ;/sbin/uci -qc $CONF_DIR $1 $SC_ABR$_OPT; return $?; }
 
-get_ipt() { _IPT="$($IPT_BIN -S|/bin/grep -F "$SC_ABR")"
+get_ipt() { _IPT="$($IPT_BIN -w -S|/bin/grep -F "$SC_ABR")"
   if $DEBUG; then debug 'get_ipt'; echo "$_IPT"|/usr/bin/awk '{print "   "$0}'; fi
 } >>"$STDERR" 2>&1
 
