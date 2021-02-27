@@ -93,9 +93,10 @@ status() {
     fi
     echo -n "<li>Aegis shield is up$_UPSTR.</li>" 
   fi
-  if [ $_CK -gt $CK_LOGD ]; then echo "<li>Logging is enabled.</li>"
-                            else echo "<li>Logging is disabled.</li>"
-  fi
+  case $((_CK&CK_LOG)) in        0) echo -e "<li>Logging is disabled.</li>";;
+                          $CK_LOGD) echo -e "<li>Logging is enabled.</li>";;
+                                 *) echo -e "<li><i>Logging is defective!</i></li>";;
+  esac
   echo '</ul>'
   
   #    echo '<h3 class="warning">Warnings</h3>'
