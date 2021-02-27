@@ -1254,9 +1254,10 @@ status_term() { $DEBUG && debug "status_term"
     elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
     else                                      echo -e "- shield is \033[1;32mup\033[0m$_UPSTR."
     fi
-    if [ $((_CK&CK_LOGD)) -ne 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."
-                                   else echo -e "- logging is \033[1;35mdisabled\033[0m."
-    fi
+    case $((_CK&CK_LOG)) in        0) echo -e "- logging is \033[1;35mdisabled\033[0m.";;
+                            $CK_LOGD) echo -e "- logging is \033[1;32menabled\033[0m.";;
+                                   *) echo -e "! logging is \033[1;31mdefective\033[0m!";;
+    esac
     _exit $_RETVAL
   fi
   
@@ -1270,9 +1271,10 @@ status_term() { $DEBUG && debug "status_term"
   elif [ $((_RETVAL&ST_DOWN)) -ne 0 ]; then echo -e "- shield is \033[1;35mdown\033[0m."
   else                                      echo -e "- shield is \033[1;32mup\033[0m$_UPSTR."
   fi
-  if [ $((_CK&CK_LOGD)) -ne 0 ]; then echo -e "- logging is \033[1;32menabled\033[0m."
-                                 else echo -e "- logging is \033[1;35mdisabled\033[0m."
-  fi
+  case $((_CK&CK_LOG)) in        0) echo -e "- logging is \033[1;35mdisabled\033[0m.";;
+                          $CK_LOGD) echo -e "- logging is \033[1;32menabled\033[0m.";;
+                                 *) echo -e "! logging is \033[1;31mdefective\033[0m!";;
+  esac
   echo -e '\033[1;36mDirectives generation times:\033[0m'
   _gentimeforlist() { [ -e "$1" ] && echo "- $2: $(/bin/date +'%Y-%m-%d %X' -r "$1")"; }
   echo "- actual router time: $(/bin/date +'%Y-%m-%d %X')"
