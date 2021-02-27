@@ -153,6 +153,8 @@ fi
 if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
 local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 cat >"$LOGD_TMP" <<EOF
+PID=\$\$
+echo \$PID >/tmp/__testpid
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
 /bin/rm -f $LOGD_TMP 2>/dev/null
 trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] || exit; PID=\$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
