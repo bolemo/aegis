@@ -153,11 +153,10 @@ fi
 if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
 local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 cat >"$LOGD_TMP" <<EOF
-PID=\$\$
-echo \$PID >/tmp/__testpid
-$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug 'log daemon starting'")
+export PID=\$\$
+$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
 /bin/rm -f $LOGD_TMP 2>/dev/null
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] || exit; PID=\$(cat $LOGD_PID); /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 inode() { set -- \$(/bin/ls -i $LOG_MSG); echo \$1; }
@@ -195,10 +194,12 @@ while :; do
     [ "\$INODE" != "\$(inode)" ] && break
     if [ \$C -eq 10 ]; then
       # check every 20 seconds
+      if [ -e $LOGD_PID ]; then [ "\$(/bin/cat $LOGD_PID)" != "\$PID" ] && { $($DEBUG && echo "debug \"$LOGD_PID (\$(/bin/cat $LOGD_PID)) is different than PID (\$PID): killing daemon\";") /bin/kill \$PID; }
+      else $($DEBUG && echo "debug \"$LOGD_PID is missing: killing daemon\";") /bin/kill \$PID; fi
       if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
-        elif \$FC; then $($DEBUG && echo "debug 'shield is unlocked, this is second check: killing daemon';") /bin/kill \$(cat $LOGD_PID);
+        elif \$FC; then $($DEBUG && echo "debug 'shield is unlocked, this is second check: killing daemon';") /bin/kill \$PID;
         $($DEBUG && echo "else debug 'shield is unlocked but waiting for second check';") fi
         FC=true; C=5
       else FC=false; C=1; fi
