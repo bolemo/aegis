@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.0"
+SC_VERS="1.7.1"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -656,7 +656,7 @@ upgrade() { $DEBUG && debug "upgrade"
   if [ "$SC_LAST_VERS" ]; then
     if [ "$SC_VERS" = "$SC_LAST_VERS" ]; then echo "- you have already the latest version: $SC_VERS     "
       _ASK="? do you want to reapply it (y/n)?"
-    else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
+    else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/awk -F. '{o=$0;if(!gsub(/b/,".0")){$0=$0".999"};a[sprintf("%d%03d%03d%03d\n",$1,$2,$3,$4)]=o;} END {for(i in a){printf("%d:%s\n",i,a[i])|"/usr/bin/sort -n|/usr/bin/cut -d: -f2"}}')"
       if [ "$VERS_ARRAY" = "$SORT_ARRAY" ]; then echo "- new version available: $SC_LAST_VERS         "
         _ASK="? do you want to upgrade from $SC_VERS to $SC_LAST_VERS (y/n)?"
       else echo -e "\033[35m- this version is higher than than the one available: $SC_LAST_VERS!\033[0m       "
