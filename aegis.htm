@@ -368,7 +368,7 @@ function upgrade() {
 }
 function upgradeCallback() {
    var mainUpgradeElem = document.getElementById("main-upgrade");
-   if (mainUpgradeElem.innerHTML.slice(-9).slice(0,8) == "Success!") {
+   if (mainUpgradeElem.innerHTML.slice(-11).slice(0,8) == "Success!") {
      mainUpgradeElem.insertAdjacentHTML('beforeend', 'Reloading page in 5 seconds...');
      setTimeout(function() { window.location.reload(); }, 5000);
    }
