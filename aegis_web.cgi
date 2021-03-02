@@ -238,7 +238,7 @@ info() {
   SC_LAST_VERS="$(last_avail_version)";
   if [ "$SC_LAST_VERS" ]; then
     if [ "$SC_VERS" = "$SC_LAST_VERS" ]; then _VSTAT=0
-    else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/sort -V)"
+    else VERS_ARRAY="$(echo -e "$SC_VERS\n$SC_LAST_VERS")"; SORT_ARRAY="$(echo "$VERS_ARRAY"|/usr/bin/awk -F. '{o=$0;if(!gsub(/b/,".0")){$0=$0".999"};a[sprintf("%d%03d%03d%03d\n",$1,$2,$3,$4)]=o;} END {for(i in a){printf("%d:%s\n",i,a[i])|"/usr/bin/sort -n|/usr/bin/cut -d: -f2"}}')"
       if [ "$VERS_ARRAY" = "$SORT_ARRAY" ]; then _VSTAT=1
       else _VSTAT=2; fi
     fi
