@@ -263,7 +263,7 @@ command() {
     'unset'*) _CMD="aegis _unset" ;;
   esac
   [ -z "${ARG##*-*}" ] && _ARG2="${ARG#*-}"
-  /opt/bolemo/scripts/$_CMD|/usr/bin/awk '!/^[[:cntrl:]]\[[0-9;]+m$/{gsub("[[:cntrl:]]\[[0-9;]+m","\0",$0);print;system("")}'
+  /opt/bolemo/scripts/$_CMD|/usr/bin/awk '{gsub("[[:cntrl:]]\[[0-9;]+m","\0",$0)} !/^[[:space:]]*$/{print;system("")}'
   if [ $? = 0 ]; then echo "Success!"; else echo "A problem was encountered."; exit 1; fi;
   if [ $_ARG2 ]; then ARG="$_ARG2"; _ARG2=''; command; fi;
 }
