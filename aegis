@@ -707,10 +707,10 @@ install_web() { $DEBUG && debug "install_web"
   echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   _download "${UPGRADE_URL}_web.cgi" "$DL_PATH" "$_PROG"
   strip_sh_file "$DL_PATH"
-  /bin/chmod +x "$DL_PATH"
-  (/bin/sh -c "$DL_PATH postinstall"; exit) & echo "- running post installation for ${SC_NAME}_web.cgi"; wait
   /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  (/bin/sh -c "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi postinstall"; exit) & echo "- running post installation for ${SC_NAME}_web.cgi"
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
