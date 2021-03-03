@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.1"
+SC_VERS="1.7.2"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -602,7 +602,7 @@ clean_conf() { $DEBUG && debug "clean_conf"
 # ---------------------------------------------
 BOLEMO_GIT_REPO='https://raw.githubusercontent.com/bolemo'
 SC_BASE_REPO="$BOLEMO_GIT_REPO/$SC_NAME"
-SC_MAIN_REPO="$SC_BASE_REPO/dev"
+SC_MAIN_REPO="$SC_BASE_REPO/master"
 REPO="$SC_MAIN_REPO" # can be overriden to change repo
 
 last_avail_version() { $DEBUG && debug "last_avail_version"
@@ -631,7 +631,7 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 }
 
 do_upgrade() { $DEBUG && debug "do_upgrade"
-#_dlinfo "$UPGRADE_VER" &
+_dlinfo "$UPGRADE_VER" &
 echo "- Downloading:"
   DL_PATH="/tmp/$SC_NAME.dl"
   _download "$UPGRADE_URL" "$DL_PATH" "--no-cache"
@@ -707,9 +707,9 @@ install_web() { $DEBUG && debug "install_web"
   echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
   _download "${UPGRADE_URL}_web.cgi" "$DL_PATH" "$_PROG"
   strip_sh_file "$DL_PATH"
+  /bin/sh -c "$DL_PATH postinstall" # Let the script run its own install needs
   /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-  eval "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi postinstall" # Let the script run its own install needs
   echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
