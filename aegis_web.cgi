@@ -26,8 +26,6 @@ $wcUCI aegis_web commit
 } 2>/dev/null
 
 postinstall() {
-echo postinstall
-exit
   if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
     cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
 $HTTP["url"] =~ "/bolemo/" {
