@@ -1,5 +1,5 @@
 #!/bin/sh
-AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/master'
+AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/stable'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_VER_URL="$AEGIS_REPO/version"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
