@@ -3,6 +3,7 @@ AEGIS_REPO='https://raw.githubusercontent.com/bolemo/aegis/stable'
 AEGIS_SCP_URL="$AEGIS_REPO/aegis"
 AEGIS_VER_URL="$AEGIS_REPO/version"
 AEGIS_SRC_URL="$AEGIS_REPO/aegis.sources"
+AEGIS_TWL_URL="$AEGIS_REPO/aegis.vpn-whitelist"
 SELF_PATH="$(pwd -P)"
 WGET_PATH="/usr/bin/wget"
 RT_MOD="$(cat /module_name)"
@@ -76,6 +77,13 @@ if [ -s "/opt/bolemo/etc/aegis.sources" ]
   else
     echo "Downloading aegis default sources file..."
     $WGET_PATH -qO- --no-check-certificate "$AEGIS_SRC_URL" >/opt/bolemo/etc/aegis.sources
+fi
+
+if [ -e "/opt/bolemo/etc/aegis.vpn-whitelist" ]
+  then echo "An aegis VPN whitelist file already exists, keeping it."
+  else
+    echo "Downloading aegis default VPN whitelist file..."
+    $WGET_PATH -qO- --no-check-certificate "$AEGIS_TWL_URL" >/opt/bolemo/etc/aegis.vpn-whitelist
 fi
 
 # symlink
