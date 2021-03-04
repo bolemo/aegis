@@ -723,6 +723,8 @@ install_web() { $DEBUG && debug "install_web"
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
     echo "- $WEB_NAME paths were repaired."
   fi
+  echo "- running post installation..."
+  /usr/bin/curl -s "$REPO/postinstall-web.sh"|/bin/sh
   _exit 0
 }
 
