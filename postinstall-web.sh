@@ -10,3 +10,4 @@ EOF
   /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$LHTTPD_WC_CONF"
   /etc/init.d/lighttpd restart
 fi
+echo '- Web Companion post install: done!'
