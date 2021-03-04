@@ -675,7 +675,7 @@ upgrade() { $DEBUG && debug "upgrade"
 }
 
 # get default sources list (from bolemo github)
-get_def_srclst() { $DEBUG && debug "get_def_srclst"
+default_lists() { $DEBUG && debug "default_lists"
   if [ ! -s "$SRC_LIST" ]; then
     [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty! Trying to download default list..."
     SRC_LIST_URL="$REPO/$SC_NAME.sources"
@@ -894,7 +894,7 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
 
 update_iplist() { $DEBUG && debug "update_iplist $*"
   [ $VERBOSE ] && echo -e "\033[1;36mGenerating directives file from sources and custom lists...\033[0m"
-  [ -s "$SRC_LIST" ] || get_def_srclst # change to -e when ready to deal with empty sources file
+  default_lists
   TMP_DIR="$(/bin/mktemp -d /tmp/${SC_ABR}-tmp-XXXXXX)"
   trap "/bin/rm -rf "$TMP_DIR" >/dev/null 2>&1; exit" INT TERM EXIT
   
