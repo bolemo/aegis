@@ -418,8 +418,8 @@ case $CMD in
   log) log;;
   refresh_log) refreshLog;;
   check) checkIp;;
-  print_list) printList;;
-  save_list) saveList;;
+  print_list) printList; exit;;
+  save_list) saveList; exit;;
   proto_info) protoInfo;;
 # called from aegis only
   postinstall) postinstall; exit;;

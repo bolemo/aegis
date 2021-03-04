@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.2"
+SC_VERS="1.7.3"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -474,6 +474,7 @@ _pm() { $DEBUG && debug "_pm $*"
 SC_NICEPATH="$ROOT_DIR/scripts/$SC_NAME"
 SC_PATH="$(cd "$ROOT_DIR/scripts/">/dev/null 2>&1; pwd -P)"
 SRC_LIST="$ROOT_DIR/etc/$SC_NAME.sources"
+TWL_LIST="$ROOT_DIR/etc/$SC_NAME.vpn-whitelist"
 SRC_BL_CACHE="$PETC_DIR/all.src.bl.cache"
 CUST_ALL_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.blacklist"
 CUST_WAN_BL_FILE="$ROOT_DIR/etc/${SC_NAME}*.wan-blacklist"
@@ -674,11 +675,17 @@ upgrade() { $DEBUG && debug "upgrade"
 }
 
 # get default sources list (from bolemo github)
-get_def_srclst() { $DEBUG && debug "get_def_srclst"
+default_lists() { $DEBUG && debug "default_lists"
   if [ ! -s "$SRC_LIST" ]; then
     [ $VERBOSE ] && echo -e "! $SRC_LIST is missing or empty! Trying to download default list..."
     SRC_LIST_URL="$REPO/$SC_NAME.sources"
     [ $VERBOSE ] && _download "$SRC_LIST_URL" "$SRC_LIST" || _download "$SRC_LIST_URL" "$SRC_LIST" >/dev/null
+    [ $VERBOSE ] && echo -e "- default list was downloaded."
+  fi
+  if [ ! -e "$TWL_LIST" ]; then
+    [ $VERBOSE ] && echo -e "! $TWL_LIST is missing! Trying to download default list..."
+    TWL_LIST_URL="$REPO/$SC_NAME.vpn-whitelist"
+    [ $VERBOSE ] && _download "$TWL_LIST_URL" "$TWL_LIST" || _download "$TWL_LIST_URL" "$TWL_LIST" >/dev/null
     [ $VERBOSE ] && echo -e "- default list was downloaded."
   fi
 }
@@ -710,7 +717,7 @@ install_web() { $DEBUG && debug "install_web"
   /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-  (/bin/ash "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi postinstall"; exit) & echo "- running post installation for ${SC_NAME}_web.cgi"
+  (/bin/ash $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi postinstall; exit) & echo "- running post installation for ${SC_NAME}_web.cgi"
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
@@ -887,7 +894,7 @@ clean() { $DEBUG && debug "clean $RM_CONF|$RM_SYMLINK|$RM_WEB"
 
 update_iplist() { $DEBUG && debug "update_iplist $*"
   [ $VERBOSE ] && echo -e "\033[1;36mGenerating directives file from sources and custom lists...\033[0m"
-  [ -s "$SRC_LIST" ] || get_def_srclst # change to -e when ready to deal with empty sources file
+  default_lists
   TMP_DIR="$(/bin/mktemp -d /tmp/${SC_ABR}-tmp-XXXXXX)"
   trap "/bin/rm -rf "$TMP_DIR" >/dev/null 2>&1; exit" INT TERM EXIT
   
