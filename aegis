@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.3"
+SC_VERS="1.7.4"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -17,10 +17,8 @@ IPR_BIN="$(/usr/bin/which iprange)"
 IPT_COM='iptables'
 IPT_BIN="/usr/sbin/$IPT_COM"
 IPS_BIN="/usr/sbin/ipset"
-#IPTBL_SRC="${SC_ABR}_src"
 IPTBL_WAN_SRC="${SC_ABR}_wan_src"
 IPTBL_TUN_SRC="${SC_ABR}_vpn_src"
-#IPTBL_DST="${SC_ABR}_dst"
 IPTBL_WAN_DST="${SC_ABR}_wan_dst"
 IPTBL_TUN_DST="${SC_ABR}_vpn_dst"
 IPSET_ALL_BL_NAME="${SC_ABR}_all_bl"
@@ -1367,6 +1365,23 @@ status_raw() { $DEBUG && debug "status_raw"
   _status; echo "$_CK $_DNA $_DIR $_ABLC $_AWLC $_WBLC $_WWLC $_TBLC $_TWLC '$_WAN' '$_TUN' '$_WINET' '$_TINET' '$_ONFO' '$_ODNA' '$_OWAN' '$_OWINET' '$_OTUN' '$_OTINET'"; _exit 0
 #  set -- $(_status); _CK=$1 _DNA=$2 _DIR=$3 _ABLC=$4 _AWLC=$5 _WBLC=$6 _WWLC=$7 _TBLC=$8 _TWLC=$9 _WAN=${10} _TUN=${11} _WINET=${12} _TINET=${13} _ONFO=${14} _ODNA=${15} _OWAN=${16} _OWINET=${17} _OTUN=${18} _OTINET=${19}
 }
+
+status_debug() {
+  _status
+  echo "- device info: $(/bin/cat /module_name /hardware_version /firmware_version)"
+  echo "- aegis info: $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
+  echo "- status codes: ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
+  echo "- info file: tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
+  echo "- conf:"
+  echo "$(/sbin/uci -c "$CONF_DIR" show|/usr/bin/awk '{print "  > "$0}')"
+  echo "- iptables engine rules:"
+  [ -z "$_IPT" ] && echo "  > no $SC_NAME rules are set." || echo "$_IPT"|/usr/bin/awk '{print "  > iptables "$0}'
+  echo "- ipset engine sets:"
+  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
+    echo "  > $_SET:"
+    ipset -L -t $_SET|/usr/bin/awk '{print "    >"$0}'
+  done
+}
 #---------------------------- END _STATUS ----------------------------
 
 print_help() { $DEBUG && debug "print_help"
@@ -1491,6 +1506,8 @@ case "$PARAM" in
   'log') _log_args ;;
   'upgrade') _repo_args; upgrade ;;
   'web') [ -z "${ARGS##* -install *}" ] && install_web; [ -z "${ARGS##* -remove *}" ] && clean_web ;;
+  
+  'debug') status_debug ;;
   
   # calls for outside helpers (html)
   '_status') status_raw ;;
