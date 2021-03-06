@@ -1368,7 +1368,7 @@ status_raw() { $DEBUG && debug "status_raw"
 
 status_debug() {
   _status
-  echo "- device info: $(/bin/cat /module_name /hardware_version /firmware_version)"
+  echo "- device info: "$(/bin/cat /module_name /hardware_version /firmware_version)
   echo "- aegis info: $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
   echo "- status codes: ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
   echo "- info file: tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
@@ -1379,7 +1379,7 @@ status_debug() {
   echo "- ipset engine sets:"
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
     echo "  > $_SET:"
-    ipset -L -t $_SET|/usr/bin/awk '{print "    >"$0}'
+    ipset -L -t $_SET|/usr/bin/awk '{print "    > "$0}'
   done
 }
 #---------------------------- END _STATUS ----------------------------
