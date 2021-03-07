@@ -195,6 +195,11 @@ function status() {
    document.getElementById("main-status").innerHTML="Getting Aegis status...";
    aegis('status', 'main-status');
 }
+function debug() {
+   displayFor('debug');
+   document.getElementById("main-debug").innerHTML="Getting Aegis debug...";
+   aegis('debug', 'main-debug');
+}
 function command() {
    displayFor('command');
    document.getElementById("main-command").innerHTML = '';
@@ -407,6 +412,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
+  <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -464,6 +470,7 @@ function ready() {
     </select>
     <input type="submit" value="Submit" onclick="doUpgrade();" />
   </div>
+  <div id="ctrl-debug"></div>
 </div>
 <div id="main">
   <div id="main-status" class="scroll"></div>
@@ -471,6 +478,7 @@ function ready() {
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
+  <textarea id="main-debug" class="list" readonly></textarea>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
