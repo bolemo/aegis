@@ -1367,7 +1367,7 @@ status_raw() { $DEBUG && debug "status_raw"
 }
 
 status_debug() {
-  echo -e '\033[1;36mDebug:\033[0m'
+  echo '[CODE]'
   _status
   echo "- info:"
   echo '  '$(/bin/cat /module_name /hardware_version /firmware_version)
@@ -1388,6 +1388,7 @@ status_debug() {
   [ "$_TUN" ] && /sbin/ifconfig $_TUN|/usr/bin/awk '{print "  "$0}'
   echo "- bolemo directory:"
   /bin/ls -laR --color=never "$ROOT_DIR/"|/usr/bin/awk '($9==".")||($9==".."){next} {print "  "$0}'
+  echo '[/CODE]'
 }
 #---------------------------- END _STATUS ----------------------------
 
