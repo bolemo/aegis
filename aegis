@@ -1371,7 +1371,7 @@ status_debug() {
   _status
   echo "- info:"
   echo '  '$(/bin/cat /module_name /hardware_version /firmware_version)
-  echo "$SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
+  echo "  $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
   echo "  ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
   echo "  tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
   echo "- conf:"
@@ -1386,8 +1386,8 @@ status_debug() {
   echo "- ifconfig:"
   [ "$_WAN" ] && /sbin/ifconfig $_WAN|/usr/bin/awk '{print "  "$0}'
   [ "$_TUN" ] && /sbin/ifconfig $_TUN|/usr/bin/awk '{print "  "$0}'
-  echo "- directory:"
-  /bin/ls -l --color=never /opt/bolemo/*|/usr/bin/awk '{print "  "$0}'
+  echo "- bolemo directory:"
+  /bin/ls -la --color=never /opt/bolemo/*|/usr/bin/awk '{print "  "$0}'
 }
 #---------------------------- END _STATUS ----------------------------
 
