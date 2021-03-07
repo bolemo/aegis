@@ -210,25 +210,6 @@ status() {
     esac
     echo '</ul>'
   fi
-  
-  # Debug
-  get_ipt
-  echo -e "<h3 class=\"debug collapsibleList\">Debug</h3>
-<input type=\"checkbox\" id=\"debug-status\" /><label for=\"debug-status\">Debug</label>
-<ul><li>device info: $(/bin/cat /module_name /hardware_version /firmware_version)</li>
-<li>aegis info: $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')</li>
-<li>status codes: ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET</li>
-<li>info file: tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET</li>
-<li>conf:</li><ul>"$(/sbin/uci -c "$CONF_DIR" show|/usr/bin/awk '{print "<li>"$0"</li>"}')"</ul>
-<li>iptables engine rules:</li><ul>"
-  [ -z "$_IPT" ] && echo "<li>no $SC_NAME rules are set.</li>" || echo "$_IPT"|/usr/bin/awk '{print "<li>" $0 "</li>"}'
-  echo '</ul><li>ipset engine sets:</li><ul>'
-  ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
-    echo "<li>$_SET:</li><ul>"
-    ipset -L -t $_SET|/usr/bin/awk '{print "<li>" $0 "</li>"}'
-    echo '</ul>'
-  done
-  echo '</ul></ul>'
 } 2>/dev/null
 
 debug() {
