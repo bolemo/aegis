@@ -1387,7 +1387,7 @@ status_debug() {
   [ "$_WAN" ] && /sbin/ifconfig $_WAN|/usr/bin/awk '{print "  "$0}'
   [ "$_TUN" ] && /sbin/ifconfig $_TUN|/usr/bin/awk '{print "  "$0}'
   echo "- bolemo directory:"
-  /bin/ls -la --color=never /opt/bolemo/*|/usr/bin/awk '{print "  "$0}'
+  /bin/ls -laR --color=never $ROOT_DIR|/usr/bin/awk '($9==".")||($9==".."){next} {print "  "$0}'
 }
 #---------------------------- END _STATUS ----------------------------
 
