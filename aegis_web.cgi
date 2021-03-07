@@ -231,6 +231,10 @@ status() {
   echo '</ul></ul>'
 } 2>/dev/null
 
+debug() {
+  /opt/bolemo/scripts/aegis debug|/usr/bin/awk '{gsub("[[:cntrl:]]\[[0-9;]+m","\0",$0)} !/^[[:space:]]*$/{print;system("")}'
+}
+
 info() {
   aegis_env
   _JSON="{\"version\":\"$SC_VERS\""
@@ -414,6 +418,7 @@ case $CMD in
   init) init;;
   info) info;;
   status) status;;
+  debug) debug;;
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
