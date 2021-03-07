@@ -1367,11 +1367,13 @@ status_raw() { $DEBUG && debug "status_raw"
 }
 
 status_debug() {
+  echo -e '\033[1;Debug:\033[0m'
   _status
-  echo $(/bin/cat /module_name /hardware_version /firmware_version)
-  echo $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
-  echo "ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
-  echo "tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
+  echo "- info:"
+  echo '  '$(/bin/cat /module_name /hardware_version /firmware_version)
+  echo "$SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
+  echo "  ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
+  echo "  tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
   echo "- conf:"
   echo "$(/sbin/uci -c "$CONF_DIR" show|/usr/bin/awk '{print "  "$0}')"
   echo "- iptables engine rules:"
