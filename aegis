@@ -1367,7 +1367,7 @@ status_raw() { $DEBUG && debug "status_raw"
 }
 
 status_debug() {
-  echo -e '\033[1;Debug:\033[0m'
+  echo -e '\033[1;36mDebug:\033[0m'
   _status
   echo "- info:"
   echo '  '$(/bin/cat /module_name /hardware_version /firmware_version)
