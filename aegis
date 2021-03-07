@@ -1368,22 +1368,24 @@ status_raw() { $DEBUG && debug "status_raw"
 
 status_debug() {
   _status
-  echo "- device info: "$(/bin/cat /module_name /hardware_version /firmware_version)
-  echo "- aegis info: $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
-  echo "- status codes: ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
-  echo "- info file: tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
+  echo $(/bin/cat /module_name /hardware_version /firmware_version)
+  echo $SC_NAME $SC_VERS-$($EXT_DRIVE && echo 'ext' || echo 'int')"
+  echo "ck:$_CK|dna:$_DNA|dir:$_DIR|ablc:$_ABLC|awlc:$_AWLC|wblc:$_WBLC|wwlc:$_WWLC|tblc:$_TBLC|twlc:$_TWLC|wif:$_WAN|wnt:$_WINET|tif:$_TUN|tnt:$_TINET"
+  echo "tst:$(/bin/date +%s -r $INFO_FILE)|nfo:$_ONFO|dna:$_ODNA|wif:$_OWAN|wnt:$_OWINET|tif:$_OTUN|tnt:$_OTINET"
   echo "- conf:"
-  echo "$(/sbin/uci -c "$CONF_DIR" show|/usr/bin/awk '{print "  > "$0}')"
+  echo "$(/sbin/uci -c "$CONF_DIR" show|/usr/bin/awk '{print "  "$0}')"
   echo "- iptables engine rules:"
-  [ -z "$_IPT" ] && echo "  > no $SC_NAME rules are set." || echo "$_IPT"|/usr/bin/awk '{print "  > iptables "$0}'
+  [ -z "$_IPT" ] && echo "  > no $SC_NAME rules are set." || echo "$_IPT"|/usr/bin/awk '{print "  iptables "$0}'
   echo "- ipset engine sets:"
   ipset -L -n|/bin/grep -F -- "$SC_ABR"|while read _SET; do
-    echo "  > $_SET:"
-    ipset -L -t $_SET|/usr/bin/awk '{print "    > "$0}'
+    echo "  $_SET:"
+    ipset -L -t $_SET|/usr/bin/awk '{print "    "$0}'
   done
   echo "- ifconfig:"
-  [ "$_WAN" ] && /sbin/ifconfig $_WAN|/usr/bin/awk '{print "  > "$0}'
-  [ "$_TUN" ] && /sbin/ifconfig $_TUN|/usr/bin/awk '{print "  > "$0}'
+  [ "$_WAN" ] && /sbin/ifconfig $_WAN|/usr/bin/awk '{print "  "$0}'
+  [ "$_TUN" ] && /sbin/ifconfig $_TUN|/usr/bin/awk '{print "  "$0}'
+  echo "- directory:"
+  /bin/ls -l --color=never /opt/bolemo/*|/usr/bin/awk '{print "  "$0}'
 }
 #---------------------------- END _STATUS ----------------------------
 
