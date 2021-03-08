@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.4"
+SC_VERS="1.7.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -614,6 +614,7 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 # ---------------------------------------------
 
 _dlinfo() { # to know how many people are downloading this script
+  sc_conf get nometrics >/dev/null && return
   TITLE="$1" IP="$(/usr/bin/curl --interface $WAN_IF 'ifconfig.me/ip')" REF1="$(cat /module_name)"; $EXT_DRIVE && REF2=ext || REF2=int
   /usr/bin/curl -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
                 --data '{"no_sessions": true, "hits": [{"path": "/upgrade/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$REF1/$REF2'"}]}'
