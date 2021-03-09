@@ -10,9 +10,10 @@ RT_MOD="$(cat /module_name)"
 ifconfig ppp0 && WAN_IF='ppp0' || WAN_IF="$(/bin/nvram get wan_ifname)"
 
 _dlinfo() { # to know how many people are downloading this script
+  AUID="$(/usr/bin/md5sum /tmp/sn-setted|/usr/bin/cut -d' ' -f1)"
   TITLE="$1" IP="$(/usr/bin/curl --interface $WAN_IF 'ifconfig.me/ip')" REF1="$(cat /module_name)"; [ "$CHOICE" ] && REF2=ext || REF2=int
   /usr/bin/curl -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
-                --data '{"no_sessions": true, "hits": [{"path": "/install/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$RT_MOD/$REF2'"}]}'
+                --data '{"hits": [{"path": "/install/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$RT_MOD/$REF2'", "session": "'$AUID'"}, {"path": "/user/'$AUID'", "title": "'$AUID'", "ip": "'$IP'", "ref": "'$RT_MOD/$REF2'", "session": "'$AUID'"}]}'
 } >/dev/null 2>&1
 
 ask_yn() {
