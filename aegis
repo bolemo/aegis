@@ -530,15 +530,16 @@ clean_firewall_start() { $DEBUG && debug "clean_firewall_start"
 # SCRIPT: post-mount.sh ########################
 check_postmount() { $DEBUG && debug "check_postmount"
   [ -x "$PM_FILE" ] || return 1
-  [ "$(/bin/sed 's/[[:space:]]\+/ /g' "$PM_FILE"|/bin/grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
+  [ "$(/bin/sed 's/[[:space:]]\+/ /g' "$PM_FILE"|/bin/grep -cF -- "[ -x $SC_PATH ] && $SC_PATH _pm \$1")" = 1 ] || return 1
   return 0
 }
 
 set_postmount() { $DEBUG && debug "set_postmount"
   $EXT_DRIVE || return 1
   [ -d "$PM_DIR" ] || /bin/mkdir -p "$PM_DIR"
+  touch "$PM_FILE"
   [ -e "$PM_FILE" ] && /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
-  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
+  echo -e "# Bolemo $SC_NAME\n[ -x $SC_PATH ] && $SC_PATH _pm \$1" >> "$PM_FILE"
   [ -x "$PM_FILE" ] || /bin/chmod +x "$PM_FILE"
 }
 
