@@ -105,7 +105,7 @@ status() {
     echo '<h3 class="error">Problems</h3>'
     echo '<ul>'
     [ $((_CK&CK_FWS)) -eq 0 ] &&       echo "<li>set: firewall-start.sh is not set for $SC_NAME!</li>"
-    [ $((_CK&CK_PM)) -eq $CK_PMND ] && echo "<li>set: post-mount.sh is not set for $SC_NAME!</li>"
+    [ $((_CK&CK_PM)) -eq 0 ] &&        echo "<li>set: post-mount.sh is not set for $SC_NAME!</li>"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
       [ $((_CK&CK_NFO)) -eq 0 ] &&     echo "<li>status file is missing!</li>"
       [ $((_CK&CK_UPF)) -eq 0 ] &&     echo "<li>shield should be down, but is not!</li>"
