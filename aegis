@@ -454,7 +454,7 @@ if [ "$1" = "_fws" ]; then sc_conf get up >/dev/null && shield_uprear "$INFO_FRO
 
 #when called from post-mount.sh
 _pm() { $DEBUG && debug "_pm $*"
-  if ! [ -L "$ROOT_DIR" && -d "$ROOT_DIR" ]; then
+  if ! [ -L "$ROOT_DIR" -a -d "$ROOT_DIR" ]; then
     [ -e "$ROOT_DIR" ] && /bin/rm -rf "$ROOT_DIR" 2>/dev/null
     /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
   fi
