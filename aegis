@@ -456,8 +456,7 @@ if [ "$1" = "_fws" ]; then sc_conf get up >/dev/null && shield_uprear "$INFO_FRO
 _pm() { $DEBUG && debug "_pm $*"
   if ! [ -L "$ROOT_DIR" -a -d "$ROOT_DIR" ]; then
     [ -e "$ROOT_DIR" ] && /bin/rm -rf "$ROOT_DIR" 2>/dev/null
-    REAL_DIR="$(cd "$ROOT_DIR/">/dev/null 2>&1; pwd -P)"
-    /bin/ln -sfn $REAL_DIR $ROOT_DIR
+    /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
   fi
   if sc_conf get up >/dev/null; then
     sc_init; shield_init; shield_uprear "$INFO_FROM_PM"
