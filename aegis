@@ -1227,7 +1227,7 @@ status_term() { $DEBUG && debug "status_term"
   if [ $((_RETVAL&ST_PB)) -ne 0 ]; then # we have errors ----------------------
     echo -e '\033[1;31mProblems:'
     [ $((_CK&CK_FWS)) -eq 0 ] &&       echo "- set: firewall-start.sh is not set for $SC_NAME!"
-    [ $((_CK&CK_PM)) -eq $CK_PMND ] && echo "- set: post-mount.sh is not set for $SC_NAME!"
+    [ $((_CK&CK_PM)) -eq 0 ] &&        echo "- set: post-mount.sh is not set for $SC_NAME!"
     if [ $((_CK&CK_SND)) -ne 0 ]; then
       [ $((_CK&CK_NFO)) -eq 0 ] &&     echo "- status file is missing!"
       [ $((_CK&CK_UPF)) -eq 0 ] &&     echo "- shield should be down, but is not!"
