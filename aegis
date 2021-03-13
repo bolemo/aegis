@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.4"
+SC_VERS="1.7.5"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -530,15 +530,16 @@ clean_firewall_start() { $DEBUG && debug "clean_firewall_start"
 # SCRIPT: post-mount.sh ########################
 check_postmount() { $DEBUG && debug "check_postmount"
   [ -x "$PM_FILE" ] || return 1
-  [ "$(/bin/sed 's/[[:space:]]\+/ /g' "$PM_FILE"|/bin/grep -cF -- "[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1")" = 1 ] || return 1
+  [ "$(/bin/sed 's/[[:space:]]\+/ /g' "$PM_FILE"|/bin/grep -cF -- "[ -x $SC_PATH/$SC_NAME ] && $SC_PATH/$SC_NAME _pm \$1")" = 1 ] || return 1
   return 0
 }
 
 set_postmount() { $DEBUG && debug "set_postmount"
   $EXT_DRIVE || return 1
   [ -d "$PM_DIR" ] || /bin/mkdir -p "$PM_DIR"
+  touch "$PM_FILE"
   [ -e "$PM_FILE" ] && /bin/sed -i "/$SC_NAME/d" "$PM_FILE"
-  echo -e "# Bolemo $SC_NAME\n[ -x $SC_NICEPATH ] && $SC_NICEPATH _pm \$1" >> "$PM_FILE"
+  echo -e "# Bolemo $SC_NAME\n[ -x $SC_PATH/$SC_NAME ] && $SC_PATH/$SC_NAME _pm \$1" >> "$PM_FILE"
   [ -x "$PM_FILE" ] || /bin/chmod +x "$PM_FILE"
 }
 
@@ -614,9 +615,11 @@ last_avail_version() { $DEBUG && debug "last_avail_version"
 # ---------------------------------------------
 
 _dlinfo() { # to know how many people are downloading this script
+  sc_conf get nometrics >/dev/null && return
+  AUID="$(/usr/bin/md5sum /tmp/sn-setted|/usr/bin/cut -d' ' -f1)"
   TITLE="$1" IP="$(/usr/bin/curl --interface $WAN_IF 'ifconfig.me/ip')" REF1="$(cat /module_name)"; $EXT_DRIVE && REF2=ext || REF2=int
   /usr/bin/curl -H 'Content-Type: application/json' -H "Authorization: Bearer 1a3mmidk3rg2j1xv6t82ak65up1yht5dambypyh1ze7xhbw7941r" -X POST "https://aegis.goatcounter.com/api/v0/count" \
-                --data '{"no_sessions": true, "hits": [{"path": "/upgrade/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$REF1/$REF2'"}]}'
+                --data '{"hits": [{"path": "/upgrade/'$TITLE'", "title": "'$TITLE'", "ip": "'$IP'", "ref": "'$REF1/$REF2'", "session": "'$AUID'"}, {"path": "/user/'$AUID'", "title": "'$REF1/$REF2'", "ip": "'$IP'", "ref": "'$REF1/$REF2'", "session": "'$AUID'"}]}'
 } >/dev/null 2>&1
 
 _download() { # $1=URL, $2=DEST, $3=OPTS
