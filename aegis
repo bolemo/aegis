@@ -456,7 +456,7 @@ if [ "$1" = "_fws" ]; then sc_conf get up >/dev/null && shield_uprear "$INFO_FRO
 _pm() { $DEBUG && debug "_pm $*"
   if ! [ -L "$ROOT_DIR" -a -d "$ROOT_DIR" ]; then
     [ -e "$ROOT_DIR" ] && /bin/rm -rf "$ROOT_DIR" 2>/dev/null
-    /bin/ln -sfn /tmp/mnt/$2/bolemo $ROOT_DIR
+    /bin/ln -sfn /tmp/mnt/$1/bolemo $ROOT_DIR
   fi
   if sc_conf get up >/dev/null; then
     sc_init; shield_init; shield_uprear "$INFO_FROM_PM"
@@ -1444,7 +1444,7 @@ echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 #
 ###############################################
 if [ $# -eq 0 ]; then _warn "No parameter!"; print_help; _exit 1; fi
-[ "$1" = "_pm" ] && [ "$2" ] && _pm # Called from post-mount.sh, go to right processing...
+[ "$1" = "_pm" ] && [ "$2" ] && _pm $2 # Called from post-mount.sh, go to right processing...
 
 ARGS=" $* "
 
