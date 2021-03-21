@@ -1,1 +1,4 @@
-Change log starts from version 1.7.7
+# Change Log
+
+### 1.7.7
+Change log starting point
