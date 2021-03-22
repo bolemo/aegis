@@ -369,7 +369,9 @@ function sendList(list) {
 }
 function doDoc(doc) {
    if (doc == 'DONATE') {
-     document.getElementById("main-doc").innerHTML = '<iframe width="100%" height="100%" src="https://paypal.me/bolemoDonation"></iframe>';
+     document.getElementById("main-doc").innerHTML = '<iframe id="dociframe" width="100%" height="100%" src=""></iframe>';
+     var iframe = document.getElementById('dociframe');
+     dociframe.src = "https://paypal.me/bolemoDonation";
      return;
    }
    document.getElementById("main-doc").innerHTML = '';
