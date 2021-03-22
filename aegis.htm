@@ -367,15 +367,18 @@ function sendList(list) {
       saveListReq.send(document.getElementById("main-lists").value);
    } else { alert ("Saved of "+listName+" cancelled!"); }
 }
-function readme() {
-   displayFor('readme');
+function doDoc(doc) {
    document.getElementById("main-readme").innerHTML = '';
-    var rmReq = new XMLHttpRequest();
+   var rmReq = new XMLHttpRequest();
    rmReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
      document.getElementById("main-readme").innerHTML = this.responseText;
    } }
-   rmReq.open("GET", 'aegis_data/README.htm', true);
+   rmReq.open("GET", 'aegis_data/'+doc+'.htm', true);
    rmReq.send();
+}
+function readme() {
+   document.getElementById("main-readme").innerHTML = '';
+   displayFor('readme');
 }
 function upgrade() {
    displayFor('upgrade');
@@ -425,7 +428,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
   <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
-  <input type="radio" name="menu" id="menu-readme" onclick="readme();"><label for="menu-readme">README</label>
+  <input type="radio" name="menu" id="menu-readme" onclick="readme();"><label for="menu-readme">DOC</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -484,7 +487,10 @@ function ready() {
     <input type="submit" value="Submit" onclick="doUpgrade();" />
   </div>
   <div id="ctrl-debug"></div>
-  <div id="ctrl-readme"></div>
+  <div id="ctrl-readme">
+      <input type="button" value="Read Me" onclick="doDoc('README');" />
+      <input type="button" value="Change Log" onclick="doDoc('CHANGELOG');" />
+  </div>
 </div>
 <div id="main">
   <div id="main-status" class="scroll"></div>
