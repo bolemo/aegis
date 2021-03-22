@@ -376,9 +376,9 @@ function doDoc(doc) {
    rmReq.open("GET", 'aegis_data/'+doc+'.htm', true);
    rmReq.send();
 }
-function readme() {
-   document.getElementById("main-readme").innerHTML = '';
-   displayFor('readme');
+function doc() {
+   doDoc('README');
+   displayFor('doc');
 }
 function upgrade() {
    displayFor('upgrade');
@@ -404,7 +404,7 @@ function ready() {
        case '#tools': tools(); break;
        case '#lists': doList('-'); break;
        case '#debug': debug(); break;
-       case '#readme': readme(); break;
+       case '#doc': doc(); break;
        case '#status':
        default:
            status(); break;
@@ -428,7 +428,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
   <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
-  <input type="radio" name="menu" id="menu-readme" onclick="readme();"><label for="menu-readme">DOC</label>
+  <input type="radio" name="menu" id="menu-doc" onclick="doc();"><label for="menu-doc">DOC</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -487,7 +487,7 @@ function ready() {
     <input type="submit" value="Submit" onclick="doUpgrade();" />
   </div>
   <div id="ctrl-debug"></div>
-  <div id="ctrl-readme" class="show">
+  <div id="ctrl-doc" class="show">
       <input type="button" value="Read Me" onclick="doDoc('README');" />
       <input type="button" value="Change Log" onclick="doDoc('CHANGELOG');" />
   </div>
@@ -499,7 +499,7 @@ function ready() {
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
   <textarea id="main-debug" class="list" readonly></textarea>
-  <div id="main-readme" class="scroll"></div>
+  <div id="main-doc" class="scroll"></div>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
