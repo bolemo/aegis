@@ -1,6 +1,6 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
-wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
+wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/dev'
 wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
