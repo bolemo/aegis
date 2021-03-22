@@ -367,6 +367,16 @@ function sendList(list) {
       saveListReq.send(document.getElementById("main-lists").value);
    } else { alert ("Saved of "+listName+" cancelled!"); }
 }
+function readme() {
+   displayFor('readme');
+   document.getElementById("main-readme").innerHTML = '';
+    var rmReq = new XMLHttpRequest();
+   rmReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
+     document.getElementById("main-readme").innerHTML = this.responseText;
+   } }
+   rmReq.open("GET", 'aegis_data/README.htm', true);
+   rmReq.send();
+}
 function upgrade() {
    displayFor('upgrade');
    document.getElementById("main-upgrade").innerHTML = '';
@@ -391,6 +401,7 @@ function ready() {
        case '#tools': tools(); break;
        case '#lists': doList('-'); break;
        case '#debug': debug(); break;
+       case '#readme': readme(); break;
        case '#status':
        default:
            status(); break;
@@ -414,6 +425,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
   <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
+  <input type="radio" name="menu" id="menu-readme" onclick="readme();"><label for="menu-readme">README</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -472,6 +484,7 @@ function ready() {
     <input type="submit" value="Submit" onclick="doUpgrade();" />
   </div>
   <div id="ctrl-debug"></div>
+  <div id="ctrl-readme"></div>
 </div>
 <div id="main">
   <div id="main-status" class="scroll"></div>
@@ -480,6 +493,7 @@ function ready() {
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
   <textarea id="main-debug" class="list" readonly></textarea>
+  <div id="main-readme" class="scroll"></div>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
