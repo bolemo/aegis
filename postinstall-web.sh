@@ -3,7 +3,7 @@ GIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/dev'
 DAT_DIR='/opt/bolemo/www/aegis_data'
 _getMDFile() {
   /bin/rm -f "$DAT_DIR/$1.htm"
-  /usr/bin/wget -qO- --no-check-certificate "$GIT_DIR/$1.md" | curl -X POST --data-binary @- https://api.github.com/markdown/raw --header "Content-Type:text/x-markdown" >"$DAT_DIR/$1.htm"
+  /usr/bin/wget -qO- --no-check-certificate "$GIT_DIR/$1.md" | curl -sS -X POST --data-binary @- https://api.github.com/markdown/raw --header "Content-Type:text/x-markdown" >"$DAT_DIR/$1.htm"
 }
   _getMDFile 'README'
   _getMDFile 'CHANGELOG'
