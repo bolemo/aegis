@@ -368,10 +368,10 @@ function sendList(list) {
    } else { alert ("Saved of "+listName+" cancelled!"); }
 }
 function doDoc(doc) {
-   document.getElementById("main-readme").innerHTML = '';
+   document.getElementById("main-doc").innerHTML = '';
    var rmReq = new XMLHttpRequest();
    rmReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
-     document.getElementById("main-readme").innerHTML = this.responseText;
+     document.getElementById("main-doc").innerHTML = this.responseText;
    } }
    rmReq.open("GET", 'aegis_data/'+doc+'.htm', true);
    rmReq.send();
