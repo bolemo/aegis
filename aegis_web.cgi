@@ -15,7 +15,8 @@ else
   ARG=$2
 fi
 
-_getMDFile() {
+_checkMDFile() {
+  [ -s "$wcDAT_DIR/$1.htm" ] && return
   /usr/bin/wget -qO- --no-check-certificate "$wcGIT_DIR/$1.md" | curl -X POST --data-binary @- https://api.github.com/markdown/raw --header "Content-Type:text/x-markdown" >"$wcDAT_DIR/$1.htm"
 }
 
@@ -25,8 +26,8 @@ package aegis_web
 config subsection 'log'
 EOF
 $wcUCI aegis_web commit
-  [ -r "$wcDAT_DIR/README.htm" ] || _getMDFile 'README'
-  [ -r "$wcDAT_DIR/CHANGELOG.htm" ] || _getMDFile 'CHANGELOG'
+  _checkMDFile 'README'
+  _checkMDFile 'CHANGELOG'
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
   [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
