@@ -180,6 +180,7 @@ There are very basic privacy friendly metrics sent when an install or an upgrade
 What is sent then is:
 * the ip (that is **not stored**, it is just to find the country),
 * the router model (just the short string model name is sent: `R7800`, `R9000`, `RBR50`, ...),
+* an anonymous unique identifier string (a locally generated md5 hash),
 * the aegis version number being downloaded,
 * and if it is installed internally or externally (just `ext` or `int` string; no drive name sent).
 
