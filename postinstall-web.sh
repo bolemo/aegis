@@ -1,4 +1,6 @@
 #!/bin/sh
+  /bin/rm -f '/opt/bolemo/www/aegis_data/README.htm'
+  /bin/rm -f '/opt/bolemo/www/aegis_data/CHANGELOG.htm'
 LHTTPD_CONF='/etc/lighttpd/conf.d'
 LHTTPD_WC_CONF="$LHTTPD_CONF/31-aegis.conf"
 if test -d "$LHTTPD_CONF" && ! test -e "$LHTTPD_WC_CONF"; then
