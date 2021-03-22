@@ -1,6 +1,7 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
-wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/stable/data/net-protocols.csv'
+wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
+wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
 wcLHTTPD_CONF='/etc/lighttpd/conf.d'
@@ -14,6 +15,10 @@ else
   ARG=$2
 fi
 
+_getMDFile() {
+  /usr/bin/wget -qO- --no-check-certificate "$wcGIT_DIR/$1.md" | curl -X POST --data-binary @- https://api.github.com/markdown/raw --header "Content-Type:text/x-markdown" >"$wcDAT_DIR/$1.htm"
+}
+
 init() {
   $wcUCI import aegis_web << EOF
 package aegis_web
@@ -26,6 +31,7 @@ $wcUCI aegis_web commit
 } 2>/dev/null
 
 postinstall() {
+  _getMDFile 'README'; _getMDFile 'CHANGELOG'
   if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
     cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
 $HTTP["url"] =~ "/bolemo/" {
