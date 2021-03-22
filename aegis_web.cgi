@@ -25,13 +25,16 @@ package aegis_web
 config subsection 'log'
 EOF
 $wcUCI aegis_web commit
+  [ -r "$wcDAT_DIR/README.htm" ] || _getMDFile 'README'
+  [ -r "$wcDAT_DIR/CHANGELOG.htm" ] || _getMDFile 'CHANGELOG'
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
   [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
 postinstall() {
-  _getMDFile 'README'; _getMDFile 'CHANGELOG'
+  /bin/rm -f "$wcDAT_DIR/README.htm"
+  /bin/rm -f "$wcDAT_DIR/CHANGELOG.htm"
   if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
     cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
 $HTTP["url"] =~ "/bolemo/" {
