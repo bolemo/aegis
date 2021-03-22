@@ -1,6 +1,6 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
-wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/dev'
+wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
 wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
@@ -15,19 +15,12 @@ else
   ARG=$2
 fi
 
-_checkMDFile() {
-  [ -s "$wcDAT_DIR/$1.htm" ] && return
-  /usr/bin/wget -qO- --no-check-certificate "$wcGIT_DIR/$1.md" | curl -X POST --data-binary @- https://api.github.com/markdown/raw --header "Content-Type:text/x-markdown" >"$wcDAT_DIR/$1.htm"
-}
-
 init() {
   $wcUCI import aegis_web << EOF
 package aegis_web
 config subsection 'log'
 EOF
 $wcUCI aegis_web commit
-  _checkMDFile 'README'
-  _checkMDFile 'CHANGELOG'
   [ -r "$wcPRT_PTH" ] && [ $(/bin/date -d $(($(date +%s)-$(date -r $wcPRT_PTH +%s))) -D %s +%s) -lt 1296000 ] && return
   [ -d "$wcDAT_DIR" ] || mkdir $wcDAT_DIR
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
