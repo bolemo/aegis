@@ -368,6 +368,10 @@ function sendList(list) {
    } else { alert ("Saved of "+listName+" cancelled!"); }
 }
 function doDoc(doc) {
+   if (doc == 'DONATE') {
+     document.getElementById("main-doc").innerHTML = '<iframe id="docDonate" src="https://paypal.me/bolemoDonation"></iframe>';
+     return;
+   }
    document.getElementById("main-doc").innerHTML = '';
    var rmReq = new XMLHttpRequest();
    rmReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
@@ -490,6 +494,7 @@ function ready() {
   <div id="ctrl-doc" class="show">
       <input type="button" value="Read Me" onclick="doDoc('README');" />
       <input type="button" value="Change Log" onclick="doDoc('CHANGELOG');" />
+      <input type="button" value="Donate" onclick="doDoc('DONATE');" />
   </div>
 </div>
 <div id="main">
