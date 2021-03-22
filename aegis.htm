@@ -368,11 +368,17 @@ function sendList(list) {
    } else { alert ("Saved of "+listName+" cancelled!"); }
 }
 function doDoc(doc) {
-   if (doc == 'DONATE') {
-     document.getElementById("main-doc").innerHTML = '<iframe id="dociframe" width="100%" height="100%" src=""></iframe>';
-     var iframe = document.getElementById('dociframe');
-     dociframe.src = "https://paypal.me/bolemoDonation";
-     return;
+   switch (doc) {
+     case 'DONATE':
+       document.getElementById("main-doc").innerHTML = '<iframe id="dociframe" width="100%" height="100%" src=""></iframe>';
+       var iframe = document.getElementById('dociframe');
+       dociframe.src = "https://paypal.me/bolemoDonation";
+       return; break;
+     case 'GITHUB':
+       document.getElementById("main-doc").innerHTML = '<iframe id="dociframe" width="100%" height="100%" src=""></iframe>';
+       var iframe = document.getElementById('dociframe');
+       dociframe.src = "https://github.com/bolemo/aegis/";
+       return; break;
    }
    document.getElementById("main-doc").innerHTML = '';
    var rmReq = new XMLHttpRequest();
@@ -497,6 +503,7 @@ function ready() {
       <input type="button" value="Read Me" onclick="doDoc('README');" />
       <input type="button" value="Change Log" onclick="doDoc('CHANGELOG');" />
       <input type="button" value="Donate" onclick="doDoc('DONATE');" />
+      <input type="button" value="GitHub" onclick="doDoc('GITHUB');" />
   </div>
 </div>
 <div id="main">
