@@ -5,8 +5,8 @@ Here is a quick tour of the web interface for Aegis.
 The page header shows on the right the installed aegis version, and if it is installed on the internal memory or an external drive.
 
 ## Tabs
-- [STATUS](#STATUS)
-- [COMMAND](#COMMAND)
+- [STATUS](#status)
+- [COMMAND](#command)
 - [LOG]
 - [TOOLS]
 - [LISTS]
