@@ -6,8 +6,9 @@ The page header shows on the right the installed aegis version, and if it is ins
 
 ## Tabs
 ### STATUS
-This tab displays the status of Aegis, if it is set or unset, running or stopped, or if there is a problem.
-It gives some extra information about the **Setting status** (is aegis setup or not), the **Directives generation times** (what was the last time the master blocking and bypassing rules were set) and the **Uprear information** (information on the last time aegis was (re)started).
+
+...This tab displays the status of Aegis, if it is set or unset, running or stopped, or if there is a problem.
+...It gives some extra information about the **Setting status** (is aegis setup or not), the **Directives generation times** (what was the last time the master blocking and bypassing rules were set) and the **Uprear information** (information on the last time aegis was (re)started).
 
 ### COMMAND
 From this tab, you can pilot aegis.
