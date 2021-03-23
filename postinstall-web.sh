@@ -7,6 +7,7 @@ _getMDFile() {
 }
   _getMDFile 'README'
   _getMDFile 'CHANGELOG'
+  _getMDFile 'LINKS'
 LHTTPD_CONF='/etc/lighttpd/conf.d'
 LHTTPD_WC_CONF="$LHTTPD_CONF/31-aegis.conf"
 if test -d "$LHTTPD_CONF" && ! test -e "$LHTTPD_WC_CONF"; then
