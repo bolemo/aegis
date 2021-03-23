@@ -1,4 +1,4 @@
-# Aegis
+# Aegis ReadMe
 A firewall blocklist script for Netgear R7800, R8900, R9000 and Orbi Routers [with Voxel firmware].
 Might work with several other Netgear routers supporting Voxel firmware as well.
 
