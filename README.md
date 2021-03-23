@@ -1,11 +1,11 @@
-# Aegis
+# Aegis ReadMe
 A firewall blocklist script for Netgear R7800, R8900, R9000 and Orbi Routers [with Voxel firmware].
 Might work with several other Netgear routers supporting Voxel firmware as well.
 
 It will filter all traffic to and from WAN and WireGuard or OpenVPN clients tunnels.
 
 ## Version
-1.7.7
+1.7.8
 
 ## Prerequisite
 * You need to have Voxel's Firmware: https://www.voxel-firmware.com
@@ -180,6 +180,7 @@ There are very basic privacy friendly metrics sent when an install or an upgrade
 What is sent then is:
 * the ip (that is **not stored**, it is just to find the country),
 * the router model (just the short string model name is sent: `R7800`, `R9000`, `RBR50`, ...),
+* an anonymous unique identifier string (a locally generated md5 hash),
 * the aegis version number being downloaded,
 * and if it is installed internally or externally (just `ext` or `int` string; no drive name sent).
 

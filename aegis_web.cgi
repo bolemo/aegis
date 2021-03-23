@@ -1,6 +1,7 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
-wcPRT_URL='https://raw.githubusercontent.com/bolemo/aegis/stable/data/net-protocols.csv'
+wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
+wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
 wcLHTTPD_CONF='/etc/lighttpd/conf.d'
@@ -25,17 +26,19 @@ $wcUCI aegis_web commit
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
-postinstall() {
-  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
-    cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
-$HTTP["url"] =~ "/bolemo/" {
-    cgi.assign = ( "aegis_web.cgi" => "/opt/bolemo/www/cgi-bin/aegis_web.cgi" )
-}
-EOF
-    /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
-    /etc/init.d/lighttpd restart
-  fi
-}
+#postinstall() {
+#  /bin/rm -f "$wcDAT_DIR/README.htm"
+#  /bin/rm -f "$wcDAT_DIR/CHANGELOG.htm"
+#  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
+#    cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
+#$HTTP["url"] =~ "/bolemo/" {
+#    cgi.assign = ( "aegis_web.cgi" => "/opt/bolemo/www/cgi-bin/aegis_web.cgi" )
+#}
+#EOF
+#    /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
+#    /etc/init.d/lighttpd restart
+#  fi
+#}
 
 uninstall() {
   /bin/rm -f /opt/bolemo/etc/config/aegis_web
@@ -408,7 +411,7 @@ case $CMD in
   save_list) saveList; exit;;
   proto_info) protoInfo;;
 # called from aegis only
-  postinstall) postinstall; exit;;
+#  postinstall) postinstall; exit;;
   uninstall) uninstall; exit;;
 esac
 

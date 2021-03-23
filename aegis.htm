@@ -121,6 +121,7 @@ log-pt:before { color: darkgrey; content: ':'; }
 #main-log > .overlay > .message p { width: max-content; margin: 0 1em 0 0; }
 #main-log > .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: #718787; border: 0.2em solid #bfc9c9; border-radius: 0.4em; text-shadow: none; cursor: pointer; }
 textarea.list { font-family: monospace; font-size: 1em; border: none; overflow: auto; outline: none; box-shadow: none; resize: none; }
+#main-doc code { display: inline-block; background: lightgrey; color: darkgreen; }
 </style>
 <script>
 var activeMenu;
@@ -367,6 +368,19 @@ function sendList(list) {
       saveListReq.send(document.getElementById("main-lists").value);
    } else { alert ("Saved of "+listName+" cancelled!"); }
 }
+function doDoc(doc) {
+   document.getElementById("main-doc").innerHTML = '';
+   var rmReq = new XMLHttpRequest();
+   rmReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
+     document.getElementById("main-doc").innerHTML = this.responseText;
+   } }
+   rmReq.open("GET", 'aegis_data/'+doc+'.htm', true);
+   rmReq.send();
+}
+function doc() {
+   doDoc('README');
+   displayFor('doc');
+}
 function upgrade() {
    displayFor('upgrade');
    document.getElementById("main-upgrade").innerHTML = '';
@@ -391,6 +405,7 @@ function ready() {
        case '#tools': tools(); break;
        case '#lists': doList('-'); break;
        case '#debug': debug(); break;
+       case '#doc': doc(); break;
        case '#status':
        default:
            status(); break;
@@ -414,6 +429,7 @@ function ready() {
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
   <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
+  <input type="radio" name="menu" id="menu-doc" onclick="doc();"><label for="menu-doc">DOC</label>
 </div>
 <div id="ctrl">
   <div id="ctrl-status"></div>
@@ -472,6 +488,12 @@ function ready() {
     <input type="submit" value="Submit" onclick="doUpgrade();" />
   </div>
   <div id="ctrl-debug"></div>
+  <div id="ctrl-doc" class="show">
+      <input type="button" value="Aegis Read Me" onclick="doDoc('README');" />
+      <input type="button" value="Web Companion" onclick="doDoc('WEB.README');" />
+      <input type="button" value="Change Log" onclick="doDoc('CHANGELOG');" />
+      <input type="button" value="Links" onclick="doDoc('LINKS');" />
+  </div>
 </div>
 <div id="main">
   <div id="main-status" class="scroll"></div>
@@ -480,6 +502,7 @@ function ready() {
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
   <textarea id="main-debug" class="list" readonly></textarea>
+  <div id="main-doc" class="scroll"></div>
   <pre id="main-upgrade" class="scroll"></pre>
 </div>
 </section>
