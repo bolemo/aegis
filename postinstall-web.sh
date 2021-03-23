@@ -1,5 +1,5 @@
 #!/bin/sh
-GIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/dev'
+GIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
 DAT_DIR='/opt/bolemo/www/aegis_data'
 _getMDFile() {
   /bin/rm -f "$DAT_DIR/$1.htm"
