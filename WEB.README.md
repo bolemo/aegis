@@ -6,7 +6,7 @@ The page header shows on the right the installed aegis version, and if it is ins
 
 ## Tabs
 - [STATUS](#STATUS)
-- [COMMAND]
+- [COMMAND](#COMMAND)
 - [LOG]
 - [TOOLS]
 - [LISTS]
@@ -15,6 +15,22 @@ The page header shows on the right the installed aegis version, and if it is ins
 
 ### STATUS
 hhhh
+sss
+ss
+ss
+ssss
+sss
+sssss
+ssss
+sssss
+ssss
+ssss
+ss
+sssss
+ssss
+ssss
+ss
+ssssss
 
 ### COMMAND
 You can install either on external (USB) drive or internal memory.
