@@ -36,3 +36,9 @@ For now, it only allows to check an IP address. It will tells if the address is 
 The drop down list allows to select which list to view/edit.
 Once a list is selected, it displays the last changed date, and the list can be edited directly in the page. The [Reload list] button reloads the list (to discard changes made); the [Save list] button allows to save the changes made in the list.
 It allows to select the sources list, and all default custom (global, WAN and VPN) lists (block and white lists). However, if aegis allows to have several custom lists (beside default ones), any extra one is not viewable/editable from the web interface.
+
+### DEBUG
+This tab is useful for troubleshooting, in cas of problems. Its output can be shared on the forum.
+
+### DOC
+This tab allows to read documentation (read me, change log, links, etc...)
