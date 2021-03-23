@@ -24,3 +24,15 @@ From this tab, you can pilot aegis.
 - **SHIELD UP (start aegis)**: to start aegis.
 - **SHIELD DOWN (stop aegis)**: to stop aegis.
 And for any of these commands, you decide if you want to activate or not the logging, or keep it as it is.
+
+### LOG
+Tab to watch the live log, when enabled.
+It can be filtered by interface (WAN, VPN), and direction (incoming, outgoing).
+
+### TOOLS
+For now, it only allows to check an IP address. It will tells if the address is in any loaded directive, and if it is blocked by the router or not.
+
+### LISTS
+The drop down list allows to select which list to view/edit.
+Once a list is selected, it displays the last changed date, and the list can be edited directly in the page. The [Reload list] button reloads the list (to discard changes made); the [Save list] button allows to save the changes made in the list.
+It allows to select the sources list, and all default custom (global, WAN and VPN) lists (block and white lists). However, if aegis allows to have several custom lists (beside default ones), any extra one is not viewable/editable from the web interface.
