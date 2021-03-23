@@ -5,14 +5,6 @@ Here is a quick tour of the web interface for Aegis.
 The page header shows on the right the installed aegis version, and if it is installed on the internal memory or an external drive.
 
 ## Tabs
-- [STATUS](#status) - shows Aegis status.
-- [COMMAND](#command) - command Aegis (start, stop, etc...).
-- [LOG](#log) - watch the live log if enabled.
-- [TOOLS](#tools) - diagnostic tools.
-- [LISTS](#lists) - read and edit lists (sources, blocklists, whitelists...)
-- [DEBUG](#debug) - debug output.
-- [DOC](#doc) - documentation.
-
 ### STATUS
 This tab displays the status of Aegis, if it is set or unset, running or stopped, or if there is a problem.
 It gives some extra information about the **Setting status** (is aegis setup or not), the **Directives generation times** (what was the last time the master blocking and bypassing rules were set) and the **Uprear information** (information on the last time aegis was (re)started).
@@ -42,3 +34,6 @@ This tab is useful for troubleshooting, in cas of problems. Its output can be sh
 
 ### DOC
 This tab allows to read documentation (read me, change log, links, etc...)
+
+### UPGRADE
+When a new version of aegis is available, this tab appears and allows to proceed with ghe upgrade. It does not show when there is no upgrades available.
