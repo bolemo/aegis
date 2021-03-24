@@ -26,20 +26,6 @@ $wcUCI aegis_web commit
   /usr/bin/wget -qO- --no-check-certificate $wcPRT_URL >$wcPRT_PTH
 } 2>/dev/null
 
-#postinstall() {
-#  /bin/rm -f "$wcDAT_DIR/README.htm"
-#  /bin/rm -f "$wcDAT_DIR/CHANGELOG.htm"
-#  if test -d "$wcLHTTPD_CONF" && ! test -e "$wcLHTTPD_WC_CONF"; then
-#    cat >/opt/bolemo/etc/lighttpd_aegis_web.conf <<'EOF'
-#$HTTP["url"] =~ "/bolemo/" {
-#    cgi.assign = ( "aegis_web.cgi" => "/opt/bolemo/www/cgi-bin/aegis_web.cgi" )
-#}
-#EOF
-#    /bin/ln -sfn /opt/bolemo/etc/lighttpd_aegis_web.conf "$wcLHTTPD_WC_CONF"
-#    /etc/init.d/lighttpd restart
-#  fi
-#}
-
 uninstall() {
   /bin/rm -f /opt/bolemo/etc/config/aegis_web
   /bin/rm -f /tmp/aegis_web
@@ -324,6 +310,10 @@ refreshLog() {
   _getLog
 }
 
+refreshDev() {
+  /usr/bin/killall -10 net-scan # Refreshing device list
+}
+
 checkIp() {
   aegis_env
   IP="$ARG"
@@ -406,12 +396,12 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  refresh_dev) refreshDev;;
   check) checkIp;;
   print_list) printList; exit;;
   save_list) saveList; exit;;
   proto_info) protoInfo;;
 # called from aegis only
-#  postinstall) postinstall; exit;;
   uninstall) uninstall; exit;;
 esac
 
