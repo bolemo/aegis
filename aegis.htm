@@ -209,7 +209,7 @@ var logTimer;
 var devTimer;
 function refreshNgDevList() {
    if (activeMenu != 'log') return;
-   var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send();
+   aegis('refresh_dev', undefined, undefined, undefined, undefined);
    devTimer = setTimeout(refreshNgDevList, 60000);
 }
 function logPost() {
