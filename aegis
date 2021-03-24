@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.8"
+SC_VERS="1.7.9"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -810,6 +810,7 @@ shield_init() { $DEBUG && debug "shield_init"
 ###############################################
 
 print_log() { $DEBUG && debug "print_log $*"
+  /usr/bin/killall -10 net-scan # Refreshing device list
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
@@ -817,8 +818,7 @@ print_log() { $DEBUG && debug "print_log $*"
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
-  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"
-  [ -d /tmp/netscan ] || mkdir /tmp/netscan; touch /tmp/netscan/attach_device # TEMP FIX UNTIL WE CAN CALL devscan directly
+  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"  
   if [ "$(cat /module_name)" = "RBR50" ] ; then
     _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
   else
