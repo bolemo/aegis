@@ -43,25 +43,23 @@ section > * { box-sizing: border-box; }
 #status.off { background-color:LightGrey; border: solid 1em DarkGrey; }
 #status.error { background-color:#ffa899; border: solid 1em Tomato; }
 #status li { margin-left: -1em; }
-h2 { font-variant: all-small-caps slashed-zero; margin: 0; }
-h2 span { color:Grey; font-weight: normal; }
-h3 { padding-left: 1em; margin: 0; }
-h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
-h3.error { background-color:Tomato; }
-h3.error + ul { background-color:#ffe9e6; }
-h3.warning { background-color:Orange; }
-h3.warning + ul { background-color:#fff6e6; }
-h3.more + input + label { background-color:Violet; }
-h3.more + input + label + ul { background-color:#fce9fc; }
-h3.debug + input + label { background-color:LightGrey; color:#555; }
-h3.debug + input + label + ul { background-color:#e9e9e9; }
-h3.collapsibleList { display: none; }
-h3.collapsibleList + input { display: none; }
-h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
-h3.collapsibleList + input:checked + label { margin-bottom: 0; }
-h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
-h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
-h3.collapsibleList + input + label::before {
+#main-status h2 { font-variant: all-small-caps slashed-zero; margin: 0; }
+#main-status h2 span { color:Grey; font-weight: normal; }
+#main-status h3 { padding-left: 1em; margin: 0; }
+#main-status h3 + ul { margin: 0 0 0.5em 0; padding: 0.5em 2.5em; 0 0; }
+#main-status h3.error { background-color:Tomato; }
+#main-status h3.error + ul { background-color:#ffe9e6; }
+#main-status h3.warning { background-color:Orange; }
+#main-status h3.warning + ul { background-color:#fff6e6; }
+#main-status h3.more + input + label { background-color:Violet; }
+#main-status h3.more + input + label + ul { background-color:#fce9fc; }
+#main-status h3.collapsibleList { display: none; }
+#main-status h3.collapsibleList + input { display: none; }
+#main-status h3.collapsibleList + input + label { display: block; margin-bottom: 0.5em; font-weight: bold; font-size: 1.2em; padding-left: 1em; cursor: pointer; }
+#main-status h3.collapsibleList + input:checked + label { margin-bottom: 0; }
+#main-status h3.collapsibleList + input + label + * { display: none; padding-top: 0.5em; }
+#main-status h3.collapsibleList + input:checked + label + * { display: block; margin: 0 0 0.5em 0; }
+#main-status h3.collapsibleList + input + label::before {
     content: ' ';
     display: inline-block;
     border-top: 5px solid transparent;
@@ -72,7 +70,7 @@ h3.collapsibleList + input + label::before {
     transform: translateY(-2px);
     transition: transform .2s ease-out;
 }
-h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
+#main-status h3.collapsibleList + input:checked + label::before { transform: rotate(90deg) translateX(-3px); }
 #main-command, #main-upgrade { font-family: monospace; min-width: max-content; }
 #logbox { display:table; font-family: "Andale Mono", AndaleMono, monospace; font-size: 0.85em; line-height: 1.1em; min-width: max-content; }
 #logbox p { margin: 0 0.5em 0 0; display: table-row; }
@@ -209,7 +207,7 @@ var logTimer;
 var devTimer;
 function refreshNgDevList() {
    if (activeMenu != 'log') return;
-   var ngDev = new XMLHttpRequest(); ngDev.open("GET", "/DEV_device.htm", true); ngDev.send();
+   aegis('refresh_dev', undefined, undefined, undefined, undefined);
    devTimer = setTimeout(refreshNgDevList, 60000);
 }
 function logPost() {

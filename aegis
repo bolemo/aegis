@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.8"
+SC_VERS="1.7.9"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -637,13 +637,17 @@ _download() { # $1=URL, $2=DEST, $3=OPTS
 }
 
 do_upgrade() { $DEBUG && debug "do_upgrade"
-_dlinfo "$UPGRADE_VER" &
-echo "- Downloading:"
-  DL_PATH="/tmp/$SC_NAME.dl"
+  _dlinfo "$UPGRADE_VER" &
+  echo "- running pre-upgrade script..."
+  /usr/bin/curl -s "$REPO/pre-upgrade.sh"|/bin/sh
+  echo "- Downloading:"
+  /bin/mkdir "/tmp/$SC_NAME.dl"; cd "/tmp/$SC_NAME.dl"
+  DL_PATH="${SC_NAME}-$UPGRADE_VER"
   _download "$UPGRADE_URL" "$DL_PATH" "--no-cache"
   strip_sh_file "$DL_PATH"
   /bin/mv "$DL_PATH" "$SC_NICEPATH"
   /bin/chmod +x "$SC_NICEPATH"
+  /bin/rm -rf "/tmp/$SC_NAME.dl"
   echo -e "\033[0m- Script installed to $SC_NICEPATH"
   check_web && install_web
   _exit 0
@@ -713,22 +717,22 @@ install_web() { $DEBUG && debug "install_web"
   [ -d "$WWW_PATH/cgi-bin" ] || mkdir "$WWW_PATH/cgi-bin"
   [ -z "$UPGRADE_URL" ] && UPGRADE_URL="$REPO/$SC_NAME"
   echo "- downloading $WEB_NAME:"
-  DL_PATH="/tmp/$SC_NAME.dl"
-  _download "${UPGRADE_URL}.htm" "$DL_PATH" "--no-cache"
-  /bin/mv "$DL_PATH" "$WWW_PATH/$SC_NAME.htm"
+  /bin/mkdir "/tmp/$SC_NAME.dl"; cd "/tmp/$SC_NAME.dl"
+  _download "${UPGRADE_URL}.htm" "$SC_NAME.htm" "--no-cache"
+  /bin/mv "$SC_NAME.htm" "$WWW_PATH/$SC_NAME.htm"
   echo -e "\033[0m- $WEB_NAME htm file installed to $WWW_PATH/$SC_NAME.htm"
-  _download "${UPGRADE_URL}_web.cgi" "$DL_PATH" "$_PROG"
-  strip_sh_file "$DL_PATH"
-  /bin/mv "$DL_PATH" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
+  _download "${UPGRADE_URL}_web.cgi" "${SC_NAME}_web.cgi" "$_PROG"
+  strip_sh_file "${SC_NAME}_web.cgi"
+  /bin/mv "${SC_NAME}_web.cgi" "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   /bin/chmod +x "$WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
   echo -e "\033[0m- $WEB_NAME cgi file installed to $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi"
-  #(/bin/ash $WWW_PATH/cgi-bin/${SC_NAME}_web.cgi postinstall; exit) & echo "- running post installation for ${SC_NAME}_web.cgi"
+  /bin/rm -rf "/tmp/$SC_NAME.dl"
   if ! check_web; then
     /bin/rm -f "/www/bolemo" 2>/dev/null
     /bin/ln -sfn "$WWW_PATH" '/www/bolemo' 2>/dev/null
     echo "- $WEB_NAME paths were repaired."
   fi
-  echo "- running post installation..."
+  echo "- running $WEB_NAME post installation..."
   /usr/bin/curl -s "$REPO/postinstall-web.sh"|/bin/sh
   _exit 0
 }
@@ -810,6 +814,7 @@ shield_init() { $DEBUG && debug "shield_init"
 ###############################################
 
 print_log() { $DEBUG && debug "print_log $*"
+  /usr/bin/killall -10 net-scan # Refreshing device list
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
@@ -817,8 +822,7 @@ print_log() { $DEBUG && debug "print_log $*"
   _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
   _BT=$(( $(/bin/date +%s) - _UPT ))
   _RSIZE=$(wc -l <$LOG_FILE)
-  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"
-  [ -d /tmp/netscan ] || mkdir /tmp/netscan; touch /tmp/netscan/attach_device # TEMP FIX UNTIL WE CAN CALL devscan directly
+  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"  
   if [ "$(cat /module_name)" = "RBR50" ] ; then
     _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
   else
