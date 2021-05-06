@@ -170,7 +170,7 @@ while :; do
       FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
       if [ 0\$FIRST_MSG_TS -gt 0\$FIRST_EXT_TS ]; then :>$LOGD_TMP
         FIRST_MSG_LINE="\$(/usr/bin/awk -F':' '/\[$SC_ABR\]/{print substr(\$0, length(\$1)+10); exit}' $LOG_MSG)"
-        /usr/bin/awk -F':' '\$1<$FIRST_MSG_TS{print; next} ; /"'"\$FIRST_MSG_LINE"'"/{exit} ; \$1>$FIRST_MSG_TS{exit} ; {print}' $LOG_FILE >>$LOGD_TMP
+        /usr/bin/awk -F':' '\$1<'\$FIRST_MSG_TS'{print; next} /"'"\$FIRST_MSG_LINE"'"/{exit} \$1>'\$FIRST_MSG_TS'{exit} {print}' $LOG_FILE >>$LOGD_TMP
         if [ 0\$NUMLINES -lt 0\$(lc $LOGD_TMP) ]
           then /usr/bin/tail -n \$NUMLINES $LOGD_TMP >$LOG_FILE
           else /bin/cat $LOGD_TMP >$LOG_FILE
