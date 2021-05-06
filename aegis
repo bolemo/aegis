@@ -177,8 +177,8 @@ while :; do
           then /usr/bin/tail -n \$NUMLINES $LOGD_TMP >$LOG_FILE
           else /bin/cat $LOGD_TMP >$LOG_FILE
         fi
-        $($DEBUG && echo "debug \"log-message 1st aegis record is more recent than log-aegis 1st record: kept older records from log-aegis up to \$NUMLINES\"")
-      else :>$LOG_FILE $($DEBUG && echo "; debug 'log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis'")
+        $($DEBUG && echo "debug \"log-message 1st aegis record (\$FIRST_MSG_TS) is more recent than log-aegis 1st record (\$FIRST_EXT_TS): kept older records from log-aegis up to \$NUMLINES\"")
+      else :>$LOG_FILE $($DEBUG && echo "; debug 'log-message 1st aegis record (\$FIRST_MSG_TS) is older than log-aegis 1st record (\$FIRST_EXT_TS): emptying log-aegis'")
       fi
     elif [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
        then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
