@@ -165,6 +165,19 @@ while :; do
   NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
+
+  # -- REVERSE
+  #  if [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
+  #     then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  #        $($DEBUG && echo "debug \"no aegis log record in log-message; kept only \$NUMLINES records\"")
+  #  fi
+  #  LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
+  #  START_TSE="\${LAST_EXT_LINE%%: IF*}"
+  #  START_TS1="\${START_TSE%:*}"
+  #  START_TS2="\${START_TSE#*:}"
+  #  [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
+  #  [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
+
     FIRST_MSG_TS="\$(/usr/bin/awk -F: '/\[$SC_ABR\]/{print \$1; exit}' $LOG_MSG)" # first timestamp in rotated message log
     if [ "\$FIRST_MSG_TS" ]; then
       FIRST_EXT_TS="\$(/usr/bin/awk -F: 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
@@ -192,12 +205,19 @@ while :; do
           $($DEBUG && echo "debug \"no aegis log record in log-message; kept only \$NUMLINES records\"")
     fi
   else :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
+  
+# -- REVERSE
+# START_TS1=0; START_TS2=0
+  
   fi
   /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # now LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
   local C=1 D=1 FC=false
   while /usr/bin/awk -F: '/\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
+  
+ # -- REVERSE
+ #   while /usr/bin/awk -F: '\$1<'\$START_TS1'{next} /\[$SC_ABR\]/{st=index(\$0," "); if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1=='\$START_TS1')&&(c<='\$START_TS2') {next}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
   
 #  while /usr/bin/awk -F: '
 #    function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
