@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.10"
+SC_VERS="1.7.9"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -165,59 +165,26 @@ while :; do
   NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-
-  # -- REVERSE
-  #  if [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
-  #     then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-  #        $($DEBUG && echo "debug \"no aegis log record in log-message; kept only \$NUMLINES records\"")
-  #  fi
-  #  LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
-  #  START_TSE="\${LAST_EXT_LINE%%: IF*}"
-  #  START_TS1="\${START_TSE%:*}"
-  #  START_TS2="\${START_TSE#*:}"
-  #  [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
-  #  [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
-
-    FIRST_MSG_TS="\$(/usr/bin/awk -F: '/\[$SC_ABR\]/{print \$1; exit}' $LOG_MSG)" # first timestamp in rotated message log
-    if [ "\$FIRST_MSG_TS" ]; then
-      FIRST_EXT_TS="\$(/usr/bin/awk -F: 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
-      if [ 0\$FIRST_MSG_TS -gt 0\$FIRST_EXT_TS ]; then :>$LOGD_TMP
-        FIRST_MSG_LINE="\$(/usr/bin/awk -F: '/\[$SC_ABR\]/{print substr(\$0, length(\$1)+10); exit}' $LOG_MSG)"
-        
- #       FIRST_MSG_LINE="\$(/usr/bin/awk -F: 'function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
- #         /\[$SC_ABR\]/{
- #         if (getval("DIR")=="IN") { LOC=(getval("OUT"))?("LAN"):("SELF"); RIP=getval("SRC"); RPT=getval("SPT"); LIP=getval("DST"); LPT=getval("DPT"); DIR=">"}
- #         else { LOC=(getval("IN"))?("LAN"):("SELF"); RIP=getval("DST"); RPT=getval("DPT"); LIP=getval("SRC"); LPT=getval("SPT"); DIR="<"}
- #         RPT=(RPT)?(RPT):("-"); LPT=(LPT)?(LPT):("-")
- #         printf("%s %s %s %s %s %s %s %s\n",getval("PROTO"),getval("IF"),RIP,RPT,DIR,LOC,LIP,LPT)
- #         exit}' $LOG_MSG)"
-        
-        /usr/bin/awk -F: '\$1<'\$FIRST_MSG_TS'{print; next} /"'"\$FIRST_MSG_LINE"'"/{exit} \$1>'\$FIRST_MSG_TS'{exit} {print}' $LOG_FILE >>$LOGD_TMP
-        if [ 0\$NUMLINES -lt 0\$(lc $LOGD_TMP) ]
-          then /usr/bin/tail -n \$NUMLINES $LOGD_TMP >$LOG_FILE
-          else /bin/cat $LOGD_TMP >$LOG_FILE
-        fi
-        $($DEBUG && echo "debug \"log-message 1st aegis record (\$FIRST_MSG_TS) is more recent than log-aegis 1st record (\$FIRST_EXT_TS): kept older records from log-aegis up to \$NUMLINES\"")
-      else :>$LOG_FILE $($DEBUG && echo "; debug \"log-message 1st aegis record (\$FIRST_MSG_TS) is older than log-aegis 1st record (\$FIRST_EXT_TS): emptying log-aegis\"")
-      fi
-    elif [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
+    if [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
        then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-          $($DEBUG && echo "debug \"no aegis log record in log-message; kept only \$NUMLINES records\"")
+          $($DEBUG && echo "debug \"aegis-log was trimmed: last \$NUMLINES records were kept\"")
     fi
-  else :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
-  
-# -- REVERSE
-# START_TS1=0; START_TS2=0
-  
+    LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
+    START_TSE="\${LAST_EXT_LINE%%: IF*}"
+    START_TS1="\${START_TSE%:*}"
+    START_TS2="\${START_TSE#*:}"
+    [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
+    [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
+    $($DEBUG && echo "debug \"aegis-log last record has timestamp \$START_TSE\"")
+  else
+    :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
+    START_TS1=0; START_TS2=0
   fi
   /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
-  # now LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
+  # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
   local C=1 D=1 FC=false
-  while /usr/bin/awk -F: '/\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
-  
- # -- REVERSE
- #   while /usr/bin/awk -F: '\$1<'\$START_TS1'{next} /\[$SC_ABR\]/{st=index(\$0," "); if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1=='\$START_TS1')&&(c<='\$START_TS2') {next}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
+  while /usr/bin/awk -F: '\$1<'\$START_TS1'{next} /\[$SC_ABR\]/{st=index(\$0," "); if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1=='\$START_TS1')&&(c<='\$START_TS2') {next}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
   
 #  while /usr/bin/awk -F: '
 #    function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
