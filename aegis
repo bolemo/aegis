@@ -184,7 +184,7 @@ while :; do
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
   local C=1 D=1 FC=false
-  while /usr/bin/awk -F: '\$1<'\$START_TS1'{next} /\[$SC_ABR\]/{st=index(\$0," "); if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1=='\$START_TS1')&&(c<='\$START_TS2') {next}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
+  while /usr/bin/awk -F: '(\$1<'\$START_TS1'){next} /\[$SC_ABR\]/{st=index(\$0," "); if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
   
 #  while /usr/bin/awk -F: '
 #    function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
