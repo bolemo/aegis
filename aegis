@@ -150,6 +150,7 @@ if [ -e $LOGD_PID ] && /bin/kill -0 $(cat $LOGD_PID); then # logd is already run
 fi
 if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
+KEY_LEN=$((${#SC_ABR}+2))
 cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
@@ -169,37 +170,42 @@ while :; do
        then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
           $($DEBUG && echo "debug \"aegis-log was trimmed: last \$NUMLINES records were kept\"")
     fi
- #   LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
- #   START_TSE="\${LAST_EXT_LINE%%: IF*}"
- #   START_TS1="\${START_TSE%:*}"
- #   START_TS2="\${START_TSE#*:}"
-    set -- \$(/usr/bin/tail -n1 $LOG_FILE)
+    LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
+    START_TSE="\${LAST_EXT_LINE%%: IF*}" START_TS1="\${START_TSE%:*}" START_TS2="\${START_TSE#*:}"
+#    set -- \$(/usr/bin/tail -n1 $LOG_FILE)
     {
-      [ "\$1" ] && [ "\$1" -eq "\$1" ] && START_TS1=\$1 || START_TS1=0
-      [ "\$2" ] && [ "\$2" -eq "\$2" ] && START_TS2=\$2 || START_TS2=0
+      [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
+      [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
     } 2>/dev/null
     $($DEBUG && echo "debug \"aegis-log last record has timestamp \$START_TS1:\$START_TS2\"")
   else
     :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
-    START_TS1=0; START_TS2=0
+    START_TS1=0 START_TS2=0
   fi
   /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
-  local C=1 D=1 FC=false
-#  while /usr/bin/awk -F: '(\$1<'\$START_TS1'){next} /\[$SC_ABR\]/{st=index(\$0," "); if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
-  
+  C=1 D=1 FC=false
   while /usr/bin/awk -F: '
-    function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
     (\$1<'\$START_TS1'){next}
-    /\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}
+    (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
+      if (\$1==pts) {c++} else {c=0;pts=\$1}
       if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
-      if (getval("DIR")=="IN") { LOC=(getval("OUT"))?("LAN"):("SELF"); RIP=getval("SRC"); RPT=getval("SPT"); LIP=getval("DST"); LPT=getval("DPT"); DIR=">"}
-      else { LOC=(getval("IN"))?("LAN"):("SELF"); RIP=getval("DST"); RPT=getval("DPT"); LIP=getval("SRC"); LPT=getval("SPT"); DIR="<"}
-      RPT=(RPT)?(RPT):("-"); LPT=(LPT)?(LPT):("-")
-      printf("%s %.3d %s %s %s %s %s %s %s %s\n",\$1,c,getval("PROTO"),getval("IF"),RIP,RPT,DIR,LOC,LIP,LPT)
+      printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+3))
       fflush()}'
   do
+  
+#  while /usr/bin/awk -F: '
+#    function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
+#    (\$1<'\$START_TS1'){next}
+#    /\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}
+#      if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
+#      if (getval("DIR")=="IN") { LOC=(getval("OUT"))?("LAN"):("SELF"); RIP=getval("SRC"); RPT=getval("SPT"); LIP=getval("DST"); LPT=getval("DPT"); DIR=">"}
+#      else { LOC=(getval("IN"))?("LAN"):("SELF"); RIP=getval("DST"); RPT=getval("DPT"); LIP=getval("SRC"); LPT=getval("SPT"); DIR="<"}
+#      RPT=(RPT)?(RPT):("-"); LPT=(LPT)?(LPT):("-")
+#      printf("%s %.3d %s %s %s %s %s %s %s %s\n",\$1,c,getval("PROTO"),getval("IF"),RIP,RPT,DIR,LOC,LIP,LPT)
+#      fflush()}'
+#  do
   
     sleep 2 & wait \$!
     [ "\$INODE" != "\$(inode)" ] && break
