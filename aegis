@@ -169,13 +169,14 @@ while :; do
        then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
           $($DEBUG && echo "debug \"aegis-log was trimmed: last \$NUMLINES records were kept\"")
     fi
-    LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
-    START_TSE="\${LAST_EXT_LINE%%: IF*}"
-    START_TS1="\${START_TSE%:*}"
-    START_TS2="\${START_TSE#*:}"
-    { [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
-      [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0 } 2>/dev/null
-    $($DEBUG && echo "debug \"aegis-log last record has timestamp \$START_TSE\"")
+ #   LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
+ #   START_TSE="\${LAST_EXT_LINE%%: IF*}"
+ #   START_TS1="\${START_TSE%:*}"
+ #   START_TS2="\${START_TSE#*:}"
+    set -- \$(/usr/bin/tail -n1 $LOG_FILE)
+    { [ "\$1" ] && [ "\$1" -eq "\$1" ] && START_TS1=\$1 || START_TS1=0
+      [ "\$2" ] && [ "\$2" -eq "\$2" ] && START_TS2=\$2 || START_TS2=0 } 2>/dev/null
+    $($DEBUG && echo "debug \"aegis-log last record has timestamp \$START_TS1:\$START_TS2\"")
   else
     :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
     START_TS1=0; START_TS2=0
