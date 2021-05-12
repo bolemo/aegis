@@ -149,6 +149,7 @@ if [ -e $LOGD_PID ] && /bin/kill -0 $(cat $LOGD_PID); then # logd is already run
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
 if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
+if ! sc_conf get log.mem >/dev/null; then sc_conf set log.mem=86400; sc_conf commit; fi;
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
 cat >"$LOGD_TMP" <<EOF
@@ -158,18 +159,24 @@ $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1
 trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
+KEEP_AGE=\$(uci -qc $CONF_DIR get $SC_ABR.log.mem)
 inode() { set -- \$(/bin/ls -i $LOG_MSG); echo \$1; }
 lc() { set -- \$(/usr/bin/wc -l \$1); echo \$1; }
 while :; do
   INODE=\$(inode)
   $($DEBUG && echo "debug \"working with log-message inode: \$INODE\"")
   NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
+  START_EXT_TS=\$(( \$(/usr/bin/cut -d. -f1 /proc/uptime) - \$KEEP_AGE ))
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-    if [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
-       then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-          $($DEBUG && echo "debug \"aegis-log was trimmed: last \$NUMLINES records were kept\"")
-    fi
+    if [ 0\$(/usr/bin/awk -F: '{print \$1;exit}') -lt 0\$START_EXT_TS ]; then
+      /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+      $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$KEEP_AGE seconds were kept\"")
+    fi 
+#    if [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
+#       then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+#          $($DEBUG && echo "debug \"aegis-log was trimmed: last \$NUMLINES records were kept\"")
+#    fi
     LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
     START_TSE="\${LAST_EXT_LINE%%: IF*}"
     START_TS1="\${START_TSE%:*}"
