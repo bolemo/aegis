@@ -860,14 +860,14 @@ print_log() { $DEBUG && debug "print_log $*"
     then _ADFUNC='RS="-----device:[[:digit:]]+-----";while((getline l<fn)>0){if(l){split(l,f,"\n");dn[f[2]]=f[8]}};close(fn)'
     else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
   fi
-while :; do while /usr/bin/awk '
+while :; do while /usr/bin/awk -F: '
 function getAD(fn){'"$_ADFUNC"'}
 function getHL(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
 function dev(ip){return (dn[ip])?dn[ip]"("ip")":ip}
 function proto(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
 function val(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
 function floored(a){return (a<0)?0:a}
-BEGIN {getAD("/tmp/netscan/attach_device");getHL("/tmp/dhcpd_hostlist");getHL("/tmp/hosts");RS=":"}
+BEGIN {getHL("/tmp/hosts");getHL("/tmp/dhcpd_hostlist");getAD("/tmp/netscan/attach_device");RS="\n"}
 $1$2>0'$(/bin/cat "$_LSC")'{ts[++b]=$1;l[b]=$0}
 END {
   c=floored(b-'$_TAIL');while (c++<b){
