@@ -843,11 +843,10 @@ shield_init() { $DEBUG && debug "shield_init"
 
 print_log() { $DEBUG && debug "print_log $*"
   # Refreshing device list
-  /usr/bin/killall -10 net-scan; sleep 2
+  /usr/bin/killall -10 net-scan
   if [ ! -e "/tmp/netscan/attach_device" ]; then
-    [ -d "/tmp/netscan" ] || mkdir "/tmp/netscan"; touch "/tmp/netscan/attach_device"
+    sleep 2; mkdir "/tmp/netscan"; touch "/tmp/netscan/attach_device"
   fi
-  
   _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
