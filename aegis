@@ -862,11 +862,12 @@ print_log() { $DEBUG && debug "print_log $*"
 while :; do while /usr/bin/awk -F: '
 function getAD(fn){'"$_ADFUNC"'}
 function getHL(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
+function genDev(){getHL("/tmp/hosts");getHL("/tmp/dhcpd_hostlist");getAD("/tmp/netscan/attach_device");RS="\n"}
 function dev(ip){return (dn[ip])?dn[ip]"("ip")":ip}
 function proto(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
 function val(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
 function floored(a){return (a<0)?0:a}
-BEGIN {getHL("/tmp/hosts");getHL("/tmp/dhcpd_hostlist");getAD("/tmp/netscan/attach_device");RS="\n"}
+BEGIN {genDev()}
 $1$2>0'$(/bin/cat "$_LSC")'{ts[++b]=$1;l[b]=$0}
 END {
   c=floored(b-'$_TAIL');while (c++<b){
