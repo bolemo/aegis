@@ -1,2 +1,2 @@
 # TO GET ALL BROADCAST ADDRESSES
-ip -4 addr show dev brwan | awk '/ brd /{for(i=1;i<=NF;i++){if($i=="brd"){a[$(i+1)]="";next}}}END{for(e in a){print e}}'
+/usr/sbin/ip -4 addr | /usr/bin/awk 'BEGIN{RS="\n[[:digit:]]+";FS=" "}/brwan|br0/{for(i=1;i<=NF;i++){if($i=="brd"){print $(i+1)}}}'
