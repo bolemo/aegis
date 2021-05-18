@@ -1,2 +1,56 @@
-# TO GET ALL BROADCAST ADDRESSES
-/usr/sbin/ip -4 addr | /usr/bin/awk 'BEGIN{RS="\n[[:digit:]]+";FS=" "}/brwan|br0/{for(i=1;i<=NF;i++){if($i=="brd"){print $(i+1)}}}'
+export PID=$$
+trapf() { [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; exit; } 2>>$STDERR
+trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
+touch $LOG_FILE
+EXT_TTL=$(uci -qc $CONF_DIR get $SC_ABR.log.ttl); [ "$EXT_TTL" -eq "$EXT_TTL" ] || EXT_TTL=86400
+inode() { set -- $(/bin/ls -i $LOG_MSG); echo $1; }
+lc() { set -- $(/usr/bin/wc -l $1); echo $1; }
+while :; do
+  INODE=$(inode)
+  NUMLINES=$(uci -qc $CONF_DIR get $SC_ABR.log.len)
+  START_EXT_TS="$(( $(/usr/bin/cut -d. -f1 /proc/uptime) - $EXT_TTL ))"
+  if [ -s $LOG_FILE ]; then
+    if [ "$(/usr/bin/awk -F: '{print $1;exit}')" -lt "$START_EXT_TS" ]; then
+      /usr/bin/awk -F: '$1>'$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+    fi 
+    LAST_EXT_LINE="$(/usr/bin/tail -n1 $LOG_FILE)"
+    START_TSE="${LAST_EXT_LINE%%: IF*}"
+    START_TS1="${START_TSE%:*}"
+    START_TS2="${START_TSE#*:}"
+    {
+      [ "$START_TS1" ] && [ "$START_TS1" -eq "$START_TS1" ] || START_TS1=0
+      [ "$START_TS2" ] && [ "$START_TS2" -eq "$START_TS2" ] || START_TS2=0
+    } 2>/dev/null
+  else
+    :>$LOG_FILE
+    START_TS1=0 START_TS2=0
+  fi
+  /bin/rm -f $LOGD_TMP
+  # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
+  # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
+  C=1 D=1 FC=false
+  while /usr/bin/awk -F: '
+    ($1<'$START_TS1'){next}
+    (substr($2,0,$KEY_LEN)=="\[$SC_ABR\]"){
+      if ($1==pts) {c++} else {c=0;pts=$1}
+      if ($1=='$START_TS1' && c<='$START_TS2') {next}
+      printf("%s:%.3d:%s\n",$1,c,substr($0,length($1)+$KEY_LEN+2))
+      fflush()}'
+  do 
+    sleep 2 & wait $!
+    [ "$INODE" != "$(inode)" ] && break
+    if [ $C -eq 10 ]; then
+      # check every 20 seconds
+      if [ -e $LOGD_PID ]; then [ "$(/bin/cat $LOGD_PID)" != "$PID" ] && { /bin/kill $PID; }
+      else /bin/kill $PID; fi
+      if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
+        if [ -e "$SHIELD_LOCK" ]; then :
+        elif $FC; then /bin/kill $PID;
+         fi
+        FC=true; C=5
+      else FC=false; C=1; fi
+    else C=$((C+1)); fi
+    if [ $D -eq 300 ]; then break
+    else D=$((D+1)); fi
+  done <$LOG_MSG >>$LOG_FILE
+done 2>>"$STDERR"
