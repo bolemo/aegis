@@ -217,7 +217,7 @@ while :; do
       # check every 20 seconds
       if [ -e $LOGD_PID ]; then [ "\$(/bin/cat $LOGD_PID)" != "\$PID" ] && { $($DEBUG && echo "debug \"$LOGD_PID (\$(/bin/cat $LOGD_PID)) is different than PID (\$PID): killing daemon\";") /bin/kill \$PID; }
       else $($DEBUG && echo "debug \"$LOGD_PID is missing: killing daemon\";") /bin/kill \$PID; fi
-      if /bin/kill -0 \$TAIL_PID && /bin/kill -0 \$AWK_PID; then :; else $($DEBUG && echo "debug one subprocess is missing: killing daemon\";") /bin/kill \$PID; fi
+      [ "\$TAIL_PID" ] && [ "\$AWK_PID" ] && /bin/kill -0 "\$TAIL_PID" && /bin/kill -0 "\$AWK_PID" || { $($DEBUG && echo "debug 'awk or tail subprocess is missing: killing daemon';") /bin/kill \$PID; }
       if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
