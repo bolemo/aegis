@@ -136,6 +136,7 @@ _warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$
 # ---------------------------------------------
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
+LOGD_FIFO="/tmp/$LOGD_NAME.fifo"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
@@ -156,7 +157,14 @@ cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
 /bin/rm -f $LOGD_TMP 2>/dev/null
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
+/usr/bin/mkfifo $LOGD_FIFO; exec 3<>$LOGD_FIFO
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";")
+  [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID
+  [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP
+  [ "\$TAIL_PID" ] && { /bin/kill \$TAIL_PID; unset TAIL_PID; }
+  [ "\$AWK_PID" ] && { /bin/kill \$AWK_PID; unset AWK_PID; }
+  [ -e $LOGD_FIFO ] && { exec 3>&-; /bin/rm -f $LOGD_FIFO; }
+  $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 EXT_TTL=\$(uci -qc $CONF_DIR get $SC_ABR.log.ttl); [ "\$EXT_TTL" -eq "\$EXT_TTL" ] || EXT_TTL=86400
@@ -173,15 +181,10 @@ while :; do
       /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
       $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$EXT_TTL seconds were kept\"")
     fi 
-#    if [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
-#       then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-#          $($DEBUG && echo "debug \"aegis-log was trimmed: last \$NUMLINES records were kept\"")
-#    fi
     LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
     START_TSE="\${LAST_EXT_LINE%%: IF*}"
     START_TS1="\${START_TSE%:*}"
     START_TS2="\${START_TSE#*:}"
-#    set -- \$(/usr/bin/tail -n1 $LOG_FILE)
     {
       [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
       [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
@@ -194,30 +197,24 @@ while :; do
   /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
-  C=1 D=1 FC=false
-  while /usr/bin/awk -F: '
+
+  # 1: make awk listen to fifo
+  /usr/bin/awk -F: '
     (\$1<'\$START_TS1'){next}
     (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
       if (\$1==pts) {c++} else {c=0;pts=\$1}
       if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
       printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-      fflush()}'
+      fflush()}' <$LOGD_FIFO >>$LOG_FILE & AWK_PID=\$!
+  
+  # 2: tail live log to fifo
+  /usr/bin/tail -f -s2 -n+0 $LOG_MSG >$LOGD_FIFO & TAIL_PID=\$!
+  
+  # 3: control loop
+  C=1 D=1 FC=false
+  while [ "\$INODE" = "\$(inode)" ]
   do
-  
-#  while /usr/bin/awk -F: '
-#    function getval(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-#    (\$1<'\$START_TS1'){next}
-#    /\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}
-#      if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
-#      if (getval("DIR")=="IN") { LOC=(getval("OUT"))?("LAN"):("SELF"); RIP=getval("SRC"); RPT=getval("SPT"); LIP=getval("DST"); LPT=getval("DPT"); DIR=">"}
-#      else { LOC=(getval("IN"))?("LAN"):("SELF"); RIP=getval("DST"); RPT=getval("DPT"); LIP=getval("SRC"); LPT=getval("SPT"); DIR="<"}
-#      RPT=(RPT)?(RPT):("-"); LPT=(LPT)?(LPT):("-")
-#      printf("%s %.3d %s %s %s %s %s %s %s %s\n",\$1,c,getval("PROTO"),getval("IF"),RIP,RPT,DIR,LOC,LIP,LPT)
-#      fflush()}'
-#  do
-  
     sleep 2 & wait \$!
-    [ "\$INODE" != "\$(inode)" ] && break
     if [ \$C -eq 10 ]; then
       # check every 20 seconds
       if [ -e $LOGD_PID ]; then [ "\$(/bin/cat $LOGD_PID)" != "\$PID" ] && { $($DEBUG && echo "debug \"$LOGD_PID (\$(/bin/cat $LOGD_PID)) is different than PID (\$PID): killing daemon\";") /bin/kill \$PID; }
@@ -232,7 +229,9 @@ while :; do
     else C=\$((C+1)); fi
     if [ \$D -eq 300 ]; then $($DEBUG && echo "debug '10 minutes in the loop; breaking it.';") break
     else D=\$((D+1)); fi
-  done <$LOG_MSG >>$LOG_FILE
+  done
+  /bin/kill \$TAIL_PID; unset TAIL_PID;
+  /bin/kill \$AWK_PID; unset AWK_PID;
 done 2>>"$STDERR"
 EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
