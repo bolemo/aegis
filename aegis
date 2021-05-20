@@ -190,13 +190,13 @@ while :; do
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
   # Logging loop:
-  /usr/bin/tail -f -n+0 $LOG_MSG|/usr/bin/awk -F: '
+  AWK_PID=$( { /usr/bin/tail -f -n+0 $LOG_MSG & echo \$! >&3; } |/usr/bin/awk -F: '
     (\$1<'\$START_TS1'){next}
     (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
       if (\$1==pts) {c++} else {c=0;pts=\$1}
       if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
       printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-      fflush()}' >>$LOG_FILE & AWK_PID=\$(/usr/bin/cut -d' ' -f4 /proc/\$!/stat)
+      fflush()}' >>$LOG_FILE & 3>&1)
   $($DEBUG && echo "debug \"Logging loop has PID: \$AWK_PID\"")
   # Control loop:
   C=1 D=1 FC=false
