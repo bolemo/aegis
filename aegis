@@ -137,6 +137,7 @@ _warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
+LOGD_AWK="$LOGD_TMP.awk"
 _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
   elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
@@ -156,8 +157,16 @@ cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
 /bin/rm -f $LOGD_TMP 2>/dev/null
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") /bin/rm -f $LOGD_PID $LOGD_TMP; [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") /bin/rm -f $LOGD_PID $LOGD_TMP $LOGD_AWK; [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
+cat >"$LOGD_AWK" <<AWK_END
+(\$1<sts1){next}
+(substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
+  if (\$1==pts) {c++} else {c=0;pts=\$1}
+  if (\$1==sts1 && c<=sts2) {next}
+  printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
+  fflush()}
+AWK_END
 touch $LOG_FILE
 EXT_TTL=\$(uci -qc $CONF_DIR get $SC_ABR.log.ttl); [ "\$EXT_TTL" -eq "\$EXT_TTL" ] || EXT_TTL=86400
 inode() { set -- \$(/bin/ls -i $LOG_MSG); echo \$1; }
@@ -190,13 +199,7 @@ while :; do
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
   # Logging loop:
-  { /usr/bin/tail -f -n+0 $LOG_MSG & echo \$! >$LOGD_TMP; } |/usr/bin/awk -F: -v sts1="\$START_TS1" -v sts2="\$START_TS2" '
-    (\$1<sts1){next}
-    (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
-      if (\$1==pts) {c++} else {c=0;pts=\$1}
-      if (\$1==sts1 && c<=sts2) {next}
-      printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-      fflush()}' >>$LOG_FILE & AWK_PID="\$(cat $LOGD_TMP; /bin/rm -f $LOGD_TMP)"
+  { /usr/bin/tail -f -n+0 $LOG_MSG & echo \$! >$LOGD_TMP; } |/usr/bin/awk -F: -v sts1="\$START_TS1" -v sts2="\$START_TS2" -f $LOGD_AWK >>$LOG_FILE & AWK_PID="\$(cat $LOGD_TMP; /bin/rm -f $LOGD_TMP)"
   $($DEBUG && echo "debug \"Logging loop has PID: \$AWK_PID\"")
   # Control loop:
   C=1 D=1 FC=false
