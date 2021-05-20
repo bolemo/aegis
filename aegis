@@ -196,7 +196,7 @@ while :; do
       if (\$1==pts) {c++} else {c=0;pts=\$1}
       if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
       printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-      fflush()}' >>$LOG_FILE & AWK_PID=\$!
+      fflush()}' >>$LOG_FILE & AWK_PID=\$(/usr/bin/cut -d' ' -f4 /proc/\$!/stat)
   $($DEBUG && echo "debug \"Logging loop has PID: \$AWK_PID\"")
   # Control loop:
   C=1 D=1 FC=false
