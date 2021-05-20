@@ -153,6 +153,7 @@ fi
 if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf commit; fi;
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
+# awk file
 cat >"$LOGD_AWK" <<EOF
 (\$1<sts1){next}
 (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
