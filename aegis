@@ -840,7 +840,7 @@ print_log() { $DEBUG && debug "print_log $*"
   fi
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
-  { if [ "$1" -eq "$1" ]; then _TAIL=$1 _LIVE= ; else_TAIL=0 _LIVE='-f -s1'; fi; } 2>/dev/null
+  { if [ "$1" -eq "$1" ]; then _TAIL=$1 _LIVE= ; else _TAIL=0 _LIVE='-f -s1'; fi; } 2>/dev/null
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $DEBUG && debug "BT:$_BT TAIL:$_TAIL _LIVE:$_LIVE"  
   if [ "$(cat /module_name)" = "RBR50" ]
