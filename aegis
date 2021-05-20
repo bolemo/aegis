@@ -136,7 +136,6 @@ _warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$
 # ---------------------------------------------
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
-LOGD_FIFO="/tmp/$LOGD_NAME.fifo"
 LOGD_TMP="/tmp/$LOGD_NAME"
 _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
@@ -157,14 +156,7 @@ cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
 /bin/rm -f $LOGD_TMP 2>/dev/null
-/usr/bin/mkfifo $LOGD_FIFO; exec 3<>$LOGD_FIFO
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";")
-  [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID
-  [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP
-  [ "\$TAIL_PID" ] && { /bin/kill -9 \$TAIL_PID; unset TAIL_PID; }
-  [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }
-  [ -e $LOGD_FIFO ] && { exec 3>&-; /bin/rm -f $LOGD_FIFO; }
-  $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") /bin/rm -f $LOGD_PID $LOGD_TMP; [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 EXT_TTL=\$(uci -qc $CONF_DIR get $SC_ABR.log.ttl); [ "\$EXT_TTL" -eq "\$EXT_TTL" ] || EXT_TTL=86400
@@ -197,18 +189,16 @@ while :; do
   /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
-  # 1: make awk listen to fifo
-  /usr/bin/awk -F: '
+  # Logging loop:
+  /usr/bin/tail -f -n+0 $LOG_MSG|/usr/bin/awk -F: '
     (\$1<'\$START_TS1'){next}
     (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
       if (\$1==pts) {c++} else {c=0;pts=\$1}
       if (\$1=='\$START_TS1' && c<='\$START_TS2') {next}
       printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-      fflush()}' <$LOGD_FIFO >>$LOG_FILE & AWK_PID=\$!
-  # 2: tail live log to fifo
-  /usr/bin/tail -f -n+0 $LOG_MSG >$LOGD_FIFO & TAIL_PID=\$!
-  $($DEBUG && echo "debug \"awk listener has PID: \$AWK_PID, tail feeder has PID: \$TAIL_PID\"")
-  # 3: control loop
+      fflush()}' >>$LOG_FILE & AWK_PID=\$!
+  $($DEBUG && echo "debug \"Logging loop has PID: \$AWK_PID\"")
+  # Control loop:
   C=1 D=1 FC=false
   while [ "\$INODE" = "\$(inode)" ]
   do
@@ -217,7 +207,7 @@ while :; do
       # check every 20 seconds
       if [ -e $LOGD_PID ]; then [ "\$(/bin/cat $LOGD_PID)" != "\$PID" ] && { $($DEBUG && echo "debug \"$LOGD_PID (\$(/bin/cat $LOGD_PID)) is different than PID (\$PID): killing daemon\";") /bin/kill \$PID; }
       else $($DEBUG && echo "debug \"$LOGD_PID is missing: killing daemon\";") /bin/kill \$PID; fi
-      [ "\$TAIL_PID" ] && [ "\$AWK_PID" ] && /bin/kill -0 "\$TAIL_PID" && /bin/kill -0 "\$AWK_PID" || { $($DEBUG && echo "debug 'awk or tail subprocess is missing: killing daemon';") /bin/kill \$PID; }
+      [ "\$AWK_PID" ] && /bin/kill -0 "\$AWK_PID" || { $($DEBUG && echo "debug 'logging loop is not running: killing daemon';") /bin/kill \$PID; }
       if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
@@ -229,7 +219,6 @@ while :; do
     if [ \$D -eq 300 ]; then $($DEBUG && echo "debug '10 minutes in the loop; breaking it.';") break
     else D=\$((D+1)); fi
   done
-  /bin/kill -9 \$TAIL_PID; unset TAIL_PID;
   /bin/kill -9 \$AWK_PID; unset AWK_PID;
 done 2>>"$STDERR"
 EOF
