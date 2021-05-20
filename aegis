@@ -840,7 +840,10 @@ print_log() { $DEBUG && debug "print_log $*"
   fi
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
-  { if [ "$1" -eq "$1" ]; then _TAIL=$1 _LIVE= ; else _TAIL=0 _LIVE='-f -s1'; fi; } 2>/dev/null
+  { if [ "$1" -eq "$1" ]
+    then _TAIL=$1 _LIVE=
+    else _TAIL=0 _LIVE='-f -s1'
+  fi; } 2>/dev/null
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $DEBUG && debug "BT:$_BT TAIL:$_TAIL _LIVE:$_LIVE"  
   if [ "$(cat /module_name)" = "RBR50" ]
@@ -1505,7 +1508,7 @@ _shield_args() {
 _log_args() { case $ARGS in
   *' -enable '*)       sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
   *' -disable '*)      sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
-  *' -show '*)         [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=0; print_log $_PL ;;
+  *' -show '*)         [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=100; print_log $_PL ;;
   *' -live '*)         print_log '' ;;
   *' -get-ttl '*)      sc_conf get log.ttl ;;
   *' -set-ttl='[0-9]*) sc_conf set log.ttl=$(echo "$ARGS"|/bin/sed 's/.* -set-ttl=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
