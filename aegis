@@ -840,17 +840,14 @@ print_log() { $DEBUG && debug "print_log $*"
   fi
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
-  { if [ "$1" -eq "$1" ]
-    then _TAIL=$1 _LIVE=
-    else _TAIL=0 _LIVE='-f -s1'
-  fi; } 2>/dev/null
+  [ "$1" -gt 0 ] && _LIVE='' || _LIVE='-f -s1'
   _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
-  $DEBUG && debug "BT:$_BT TAIL:$_TAIL _LIVE:$_LIVE"  
+  $DEBUG && debug "BT:$_BT TAIL:$1 _LIVE:$_LIVE"  
   if [ "$(cat /module_name)" = "RBR50" ]
     then _ADFUNC='RS="-----device:[[:digit:]]+-----";while((getline l<fn)>0){if(l){split(l,f,"\n");dn[f[2]]=f[8]}};close(fn)'
     else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
   fi
-  /usr/bin/tail $_LIVE -n $_TAIL $LOG_FILE | /usr/bin/awk -F: '
+  /usr/bin/tail $_LIVE -n $1 $LOG_FILE | /usr/bin/awk -F: '
 function getBC(){RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr";bc["255.255.255.255"]="";while((cmd | getline l)>0){if(match(l,/brwan|br0/)){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc[al[(i+1)]]=""}}}};close(cmd)}
 function getAD(fn){'"$_ADFUNC"'}
 function getHL(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
@@ -1509,7 +1506,7 @@ _log_args() { case $ARGS in
   *' -enable '*)       sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
   *' -disable '*)      sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
   *' -show '*)         [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=100; print_log $_PL ;;
-  *' -live '*)         print_log '' ;;
+  *' -live '*)         print_log 0 ;;
   *' -get-ttl '*)      sc_conf get log.ttl ;;
   *' -set-ttl='[0-9]*) sc_conf set log.ttl=$(echo "$ARGS"|/bin/sed 's/.* -set-ttl=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
 esac; }
