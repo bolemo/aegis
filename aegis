@@ -153,20 +153,20 @@ fi
 if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf commit; fi;
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
-cat >"$LOGD_TMP" <<EOF
-export PID=\$\$
-$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
-/bin/rm -f $LOGD_TMP 2>/dev/null
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") /bin/rm -f $LOGD_PID $LOGD_TMP $LOGD_AWK; [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
-trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
-cat >"$LOGD_AWK" <<AWK_END
+cat >"$LOGD_AWK" <<EOF
 (\$1<sts1){next}
 (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
   if (\$1==pts) {c++} else {c=0;pts=\$1}
   if (\$1==sts1 && c<=sts2) {next}
   printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
   fflush()}
-AWK_END
+EOF
+cat >"$LOGD_TMP" <<EOF
+export PID=\$\$
+$($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
+/bin/rm -f $LOGD_TMP 2>/dev/null
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") /bin/rm -f $LOGD_PID $LOGD_TMP $LOGD_AWK; [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
+trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
 EXT_TTL=\$(uci -qc $CONF_DIR get $SC_ABR.log.ttl); [ "\$EXT_TTL" -eq "\$EXT_TTL" ] || EXT_TTL=86400
 inode() { set -- \$(/bin/ls -i $LOG_MSG); echo \$1; }
