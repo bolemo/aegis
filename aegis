@@ -181,7 +181,7 @@ BEGIN {getBroadcasts();genDev();RS="\n"}
     dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN,"dev(lip)):(self(iface,lip))
   }
   rem=(rpt)?(rip":"rpt):rip; loc=(lpt)?(loc":"lpt):loc
-  printf("%d:%.3d: %d IPv4 %s %s %s %s %s\n",\$1,\$2,epoch,proto,iface,rem,dir,loc)
+  printf("%d:%.3d: %d IPv4 %s %s %s %s %s\n",\$1,c,epoch,proto,iface,rem,dir,loc)
   fflush()
 }
 EOF
