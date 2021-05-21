@@ -1,9 +1,9 @@
 #!/bin/sh
-echo "Decimal,Keyword,Name,Protocol,IPv6 Extension Header"
 wget -qO- https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv |
 /usr/bin/awk -v RS='"[^"]*"' -v ORS= '{gsub(/,/, "\\&#44;", RT); gsub(/[\n[:space:]]+/, " ", RT); print $0 RT}' |
 /usr/bin/awk -F, '
 function p(w,x,y,z){printf("%s,%s,%s,%s\n",w,x,y,z)}
+BEGIN { print "Decimal,Keyword,Name,Protocol,IPv6 Extension Header" }
 NR>1 {
   gsub(/"{2}/, "\\&#34;");
   gsub(/"/, "");
