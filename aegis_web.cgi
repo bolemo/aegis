@@ -254,22 +254,23 @@ _getLog() {
 #  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
 #  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
 
-/usr/bin/awk '
+/usr/bin/awk -F: '
 function protoname(proto){
   if (proto~/^[0-9]+$/){
      cmd="sed \""proto+2"q;d\" '"$wcPRT_PTH"'|cut -d, -f3";cmd|getline nm;close(cmd);
      nm="<log-ptl value=\""proto"\">"nm"</log-ptl>"
   } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"}
   return nm}
-{split($1,t,":");ts[++c]=t[1];uts[c]=(t[1]t[2]);l[c]=$0}
+{ts[++c]=$1;uts[c]=($1$2);l[c]=$0}
 END {
   if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
   dir[">"]="incoming";dir["<"]="outgoing"
   itf["WAN"]=" wan";itf["VPN"]=" vpn"
   min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
-    n=split($6,rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
-    n=split($9,loc,":");lpt=(n==2)?("<log-pt>"loc[2]"</log-pt>"):""
-    print "<p class=\"new "dir[$7] itf[$5]"\">"strftime("%F %T",$2)"<log-lbl></log-lbl><log-dir></log-dir>"protoname($4)"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-lll><log-lnm>"$8"</log-lnm></log-lll><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
+    split(l[c],f," ")
+    n=split(f[6],rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
+    n=split(f[9],loc,":");lpt=(n==2)?("<log-pt>"loc[2]"</log-pt>"):""
+    print "<p class=\"new "dir[f[7]] itf[f[5]]"\">"strftime("%F %T",f[2])"<log-lbl></log-lbl><log-dir></log-dir>"protoname(f[4])"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-lll><log-lnm>"f[8]"</log-lnm></log-lll><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
   }
 }' $_LF
 }
