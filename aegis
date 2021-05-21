@@ -154,14 +154,45 @@ if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf com
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
 # awk file
+
+_BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
+if [ "$(cat /module_name)" = "RBR50" ]
+  then _ADFUNC='RS="-----device:[[:digit:]]+-----";while((getline l<fn)>0){if(l){split(l,f,"\n");dn[f[2]]=f[8]}};close(fn)'
+  else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
+fi
+
 cat >"$LOGD_AWK" <<EOF
+
+function getBroadcasts(){RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr";bc["255.255.255.255"]="";while((cmd | getline l)>0){if(match(l,/brwan|br0/)){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc[al[(i+1)]]=""}}}};close(cmd)}
+function getAttDev(fn){$_ADFUNC}
+function getHostsNames(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
+function genDev(){getHostsNames("/tmp/hosts");getHostsNames("/tmp/dhcpd_hostlist");getAttDev("/tmp/netscan/attach_device")}
+function dev(ip){return (dn[ip])?(dn[ip]" "ip):(" "ip)}
+function self(ip){return (bc[ip])?("BROADCAST "ip):("SELF "ip)}
+function val(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
+BEGIN {getBroadcasts();genDev();RS="\n"}
 (\$1<sts1){next}
 (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
-  if (\$1==pts) {c++} else {c=0;pts=\$1}
-  if (\$1==sts1 && c<=sts2) {next}
-  printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-  fflush()}
+  if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1==sts1 && c<=sts2) next
+  epoch=($_BT+\$1)
+  iface=val("IF"); proto=val("PROTO")
+  if (val("DIR")=="IN") {
+    dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?("LAN,"dev(lip)):(self(lip))
+  } else {
+    dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN,"dev(lip)):(self(lip))
+  }
+  rpt=(rpt)?":"(rpt):""; lpt=(lpt)?(":"lpt):""
+  printf("%d:%.3d %d %s %s %s%s %s %s%s\n",\$1,\$2,epoch,proto,iface,rip,rpt,dir,loc,lpt)
+  fflush()
+}
 EOF
+# (\$1<sts1){next}
+# (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
+#   if (\$1==pts) {c++} else {c=0;pts=\$1}
+#   if (\$1==sts1 && c<=sts2) {next}
+#   printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
+#   fflush()}
+# EOF
 cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
