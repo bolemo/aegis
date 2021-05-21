@@ -3,7 +3,6 @@ wget -qO- https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.c
 /usr/bin/awk -v RS='"[^"]*"' -v ORS= '{gsub(/,/, "\\&#44;", RT); gsub(/[\n[:space:]]+/, " ", RT); print $0 RT}' |
 /usr/bin/awk -F, '
 function p(w,x,y,z){printf("%s,%s,%s,%s\n",w,x,y,z)}
-BEGIN { print "Decimal,Keyword,Name,Protocol,IPv6 Extension Header" }
 NR>1 {
   gsub(/"{2}/, "\\&#34;");
   gsub(/"/, "");
@@ -16,6 +15,7 @@ NR>1 {
 /usr/bin/sort -n |
 /usr/bin/awk -F, '
 function p(){printf("%s,%s,%s,%s,%s\n",f[1],f[2],f[2]?f[2]"("f[1]")":"#"f[1],f[3],f[4])}
+BEGIN { print "Decimal,Keyword,Name,Protocol,IPv6 Extension Header" }
 NR>1 {if ($1==f[1]) {$2=f[2]"/"$2;$3=f[3]"/"$3} else {p()}}
 {f[1]=$1;f[2]=$2;f[3]=$3;f[4]=$4}
 END {p()}' \
