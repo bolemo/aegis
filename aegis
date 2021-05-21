@@ -870,46 +870,19 @@ shield_init() { $DEBUG && debug "shield_init"
 ###############################################
 
 print_log() { $DEBUG && debug "print_log $*"
-  # Refreshing device list
-  /usr/bin/killall -10 net-scan
-  if [ ! -e "/tmp/netscan/attach_device" ]; then
-    sleep 2; mkdir "/tmp/netscan"; touch "/tmp/netscan/attach_device"
-  fi
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog:\033[0m"
   [ "$1" -gt 0 ] && _LIVE='' || _LIVE='-f -s1'
-  _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $DEBUG && debug "BT:$_BT TAIL:$1 _LIVE:$_LIVE"  
-  if [ "$(cat /module_name)" = "RBR50" ]
-    then _ADFUNC='RS="-----device:[[:digit:]]+-----";while((getline l<fn)>0){if(l){split(l,f,"\n");dn[f[2]]=f[8]}};close(fn)'
-    else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
-  fi
-  /usr/bin/tail $_LIVE -n $1 $LOG_FILE | /usr/bin/awk -F: '
-function getBC(){RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr";bc["255.255.255.255"]="";while((cmd | getline l)>0){if(match(l,/brwan|br0/)){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc[al[(i+1)]]=""}}}};close(cmd)}
-function getAD(fn){'"$_ADFUNC"'}
-function getHL(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
-function genDev(){getHL("/tmp/hosts");getHL("/tmp/dhcpd_hostlist");getAD("/tmp/netscan/attach_device")}
-function dev(ip){return (dn[ip])?dn[ip]"("ip")":ip}
+  /usr/bin/tail $_LIVE -n $1 $LOG_FILE | /usr/bin/awk '
 function proto(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
-function self(ip){return (bc[ip])?"BROADCAST":"ROUTER"}
-function val(n){i=index($0," "n"=");if(i==0)return;str=substr($0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
 BEGIN {
-  getBC()
-  genDev()
-  RS="\n"
-  adir["IN"]="\033[1;35mincoming\033[0m"; adir["OUT"]="\033[1;33moutgoing\033[0m"
-  adir["IN",1]="from"; adir["OUT",1]="to"
-  adir["IN",2]="to"; adir["OUT",2]="from"
+  adir[">"]="\033[1;35mincoming\033[0m"; adir["<"]="\033[1;33moutgoing\033[0m"
+  adir[">",1]="from"; adir["<",1]="to"
+  adir[">",2]="to"; adir["<",2]="from"
 }
 {
-  pt=strftime("%F %T", ('$_BT'+$1))
-  dir=val("DIR")
-  iface=val("IF")
-  proto=proto(val("PROTO"))
-  if (dir=="IN") {rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?("LAN"):(self(lip))}
-  else           {rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN"):(self(lip))}
-  rpt=(rpt)?(":"rpt):(""); lpt=(lpt)?(":"lpt):("")
-  printf("%s: Blocked %s %s packet %s %s:\033[1;35m%s%s\033[0m %s %s:\033[1;33m%s%s\033[0m\n",pt,adir[dir],proto,adir[dir,1],iface,rip,rpt,adir[dir,2],loc,dev(lip),lpt)
+  printf("%s: Blocked %s %s packet %s %s:\033[1;35m%s\033[0m %s %s:\033[1;33m%s\033[0m\n",strftime("%F %T", $2),adir[$7],proto($4),adir[$7,1],$5,$6,adir[$7,2],$8,$9)
   fflush()
 }'
 }
