@@ -255,12 +255,12 @@ _getLog() {
 #  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
 
 /usr/bin/awk -F: '
+function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3]};close(fn)}
 function protoname(proto){
-  if (proto~/^[0-9]+$/){
-     cmd="sed \""proto+2"q;d\" '"$wcPRT_PTH"'|cut -d, -f3";cmd|getline nm;close(cmd);
-     nm="<log-ptl value=\""proto"\">"nm"</log-ptl>"
-  } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"}
+  if (proto~/^[0-9]+$/) nm="<log-ptl value=\""proto"\">"prots(proto)"</log-ptl>"
+  else nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"
   return nm}
+BEGIN {getProts()}
 {ts[++c]=$1;uts[c]=($1$2);l[c]=$0}
 END {
   if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
