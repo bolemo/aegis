@@ -264,7 +264,7 @@ function protoname(proto){
 {split($1,t,":");ts[++c]=t[1];uts[c]=(t[1]t[2]);l[c]=$0}
 END {
   if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
-  dir[">"]="";dir["<"]=""
+  dir[">"]="incoming";dir["<"]="outgoing"
   itf["WAN"]=" wan";itf["VPN"]=" vpn"
   min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
     n=split($6,rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
