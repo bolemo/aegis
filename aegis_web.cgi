@@ -255,11 +255,8 @@ _getLog() {
 #  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
 
 /usr/bin/awk -F: '
-function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3]};close(fn)}
-function protoname(proto){
-  if (proto~/^[0-9]+$/) nm="<log-ptl value=\""proto"\">"prots(proto)"</log-ptl>"
-  else nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"
-  return nm}
+function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
+function protoname(ptl){return "<log-ptl value=\""ptl"\">"prots[ptl]"</log-ptl>"}
 BEGIN {getProts()}
 {ts[++c]=$1;uts[c]=($1$2);l[c]=$0}
 END {
