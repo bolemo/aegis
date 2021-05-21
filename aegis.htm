@@ -205,11 +205,6 @@ function command() {
 }
 var logTimer;
 var devTimer;
-function refreshNgDevList() {
-   if (activeMenu != 'log') return;
-   aegis('refresh_dev', undefined, undefined, undefined, undefined);
-   devTimer = setTimeout(refreshNgDevList, 60000);
-}
 function logPost() {
    if (activeMenu != 'log') return;
    var logboxElem = document.getElementById("logbox");
@@ -229,7 +224,6 @@ var firstLog = true;
 function log() {
    hideIpInfo();
    displayFor('log');
-   refreshNgDevList();
    if (firstLog) {
      firstLog = false;
      document.getElementById("logbox").innerHTML="Retrieving Aegis log...";
