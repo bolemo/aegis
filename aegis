@@ -182,7 +182,7 @@ BEGIN {getBroadcasts();genDev();RS="\n"}
     dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN,"dev(lip)):(self(lip))
   }
   rpt=(rpt)?":"(rpt):""; lpt=(lpt)?(":"lpt):""
-  printf("%d:%.3d %d %s %s %s%s %s %s%s\n",\$1,\$2,epoch,proto,iface,rip,rpt,dir,loc,lpt)
+  printf("%d:%.3d: %d %s %s %s%s %s %s%s\n",\$1,\$2,epoch,proto,iface,rip,rpt,dir,loc,lpt)
   fflush()
 }
 EOF
