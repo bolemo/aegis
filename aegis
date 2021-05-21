@@ -196,11 +196,13 @@ while :; do
     :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
     START_TS1=0 START_TS2=0
   fi
-#  /bin/rm -f $LOGD_TMP
+  /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
   # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
   # Logging loop:
-  { /usr/bin/tail -f -n+0 $LOG_MSG & echo \$! >$LOGD_TMP; } |/usr/bin/awk -F: -v sts1="\$START_TS1" -v sts2="\$START_TS2" -f $LOGD_AWK >>$LOG_FILE & AWK_PID="\$(cat $LOGD_TMP; /bin/rm -f $LOGD_TMP)"
+  /usr/bin/mkfifo $LOGD_TMP
+  /usr/bin/tail -f -n+1 $LOG_MSG >$LOGD_TMP & AWK_PID=\$!
+  /usr/bin/awk -F: -v sts1="\$START_TS1" -v sts2="\$START_TS2" -f $LOGD_AWK $LOGD_TMP >>$LOG_FILE &
   $($DEBUG && echo "debug \"Logging loop has PID: \$AWK_PID\"")
   # Control loop:
   C=1 D=1 FC=false
