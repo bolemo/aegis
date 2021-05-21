@@ -154,21 +154,20 @@ if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf com
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
 # awk file
-
 _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
+_BCFUNC='RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr show dev '$WAN_IF'";bc["WAN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["WAN",al[(i+1)]]=""}}};close(cmd)'
+[ "$TUN_IF" ] && _BCFUNC=$_BCFUNC';cmd="/usr/sbin/ip -4 addr show dev '$TUN_IF'";bc["VPN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["VPN",al[(i+1)]]=""}}};close(cmd)'
 if [ "$(cat /module_name)" = "RBR50" ]
   then _ADFUNC='RS="-----device:[[:digit:]]+-----";while((getline l<fn)>0){if(l){split(l,f,"\n");dn[f[2]]=f[8]}};close(fn)'
   else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
 fi
-
 cat >"$LOGD_AWK" <<EOF
-
-function getBroadcasts(){RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr";bc["255.255.255.255"]="";while((cmd | getline l)>0){if(match(l,/brwan|br0/)){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc[al[(i+1)]]=""}}}};close(cmd)}
+function getBroadcasts(){$_BCFUNC}
 function getAttDev(fn){$_ADFUNC}
 function getHostsNames(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
 function genDev(){getHostsNames("/tmp/hosts");getHostsNames("/tmp/dhcpd_hostlist");getAttDev("/tmp/netscan/attach_device")}
 function dev(ip){return (dn[ip])?(dn[ip]" "ip):(" "ip)}
-function self(ip){return (bc[ip])?("BROADCAST "ip):("SELF "ip)}
+function self(it,ip){return (bc[it,ip])?("BROADCAST "ip):("SELF "ip)}
 function val(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
 BEGIN {getBroadcasts();genDev();RS="\n"}
 (\$1<sts1){next}
@@ -177,9 +176,9 @@ BEGIN {getBroadcasts();genDev();RS="\n"}
   epoch=($_BT+\$1)
   iface=val("IF"); proto=val("PROTO")
   if (val("DIR")=="IN") {
-    dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?("LAN,"dev(lip)):(self(lip))
+    dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?("LAN,"dev(lip)):(self(iface,lip))
   } else {
-    dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN,"dev(lip)):(self(lip))
+    dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN,"dev(lip)):(self(iface,lip))
   }
   rpt=(rpt)?":"(rpt):""; lpt=(lpt)?(":"lpt):""
   printf("%d:%.3d: %d %s %s %s%s %s %s%s\n",\$1,\$2,epoch,proto,iface,rip,rpt,dir,loc,lpt)
