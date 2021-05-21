@@ -219,7 +219,9 @@ while :; do
       $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$EXT_TTL seconds were kept\"")
     fi 
     LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
-    START_TSE="\${LAST_EXT_LINE%%: *}" START_TS1="\${START_TSE%:*}" START_TS2="\${START_TSE#*:}"
+    START_TSE="\${LAST_EXT_LINE%%: *}"
+    START_TS1="\${START_TSE%:*}"
+    START_TS2="\${START_TSE#*:}"
     {
       [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
       [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
