@@ -90,15 +90,15 @@ p.vpn log-if::after { content: 'VPN'; }
 p.incoming log-dir::after { content: 'INCOMING'; }
 #logbox p.outgoing log-dir { font-weight: bold; color: blue; }
 p.outgoing log-dir::after { content: 'OUTGOING'; }
-#logbox p log-ptl { text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-p log-ptl::after { display: inline-block; margin-left: 0.5em; content: 'packet'; text-decoration: none; }
+#logbox p log-ptl { text-decoration: underline; color: teal; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
+#logbox p log-lll { color: darkblue; }
 log-rll, log-lll { text-align: right; }
-p.incoming log-rll::before { content: 'from '; }
-p.incoming log-lll::before { content: 'to '; }
-p.outgoing log-rll::before { content: 'to '; }
-p.outgoing log-lll::before { content: 'from '; }
-p log-rll::after, p log-lll::after { content: ':'; }
+p.incoming log-rll::before { content: 'from '; color: red; }
+p.incoming log-lll::before { content: 'to '; color: blue; }
+p.outgoing log-rll::before { content: 'to '; color: red; }
+p.outgoing log-lll::before { content: 'from '; color: blue; }
+p log-rll::after, p log-lll::after { content: ':'; color: darkgrey; }
 #logbox p log-lip { font-weight: bold; color: blue; padding-right: 0px; }
 log-pt:before { color: darkgrey; content: ':'; }
 #logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
