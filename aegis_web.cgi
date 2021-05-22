@@ -249,7 +249,6 @@ _LF=/var/log/log-aegis
 _getLog() {
 #  _RNM="$(/bin/nvram get Device_name)"
   _MAX=$($wcUCI get aegis_web.log.len)
-  _BT=$($wcUCI get aegis_web.log.basetime)
   _ST=$($wcUCI get aegis_web.log.pos)
 #  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
 #  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
@@ -267,41 +266,11 @@ END {
     split(l[c],f," ")
     n=split(f[6],rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
     n=split(f[9],loc,":");lpt=(n==2)?("<log-pt>"loc[2]"</log-pt>"):""
-    print "<p class=\"new "dir[f[7]] itf[f[5]]"\">"strftime("%F %T",f[2])"<log-lbl></log-lbl><log-dir></log-dir>"protoname(f[4])"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-lll><log-lnm>"f[8]"</log-lnm></log-lll><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
+    split(f[8],dst,",")
+    print "<p class=\"new "dir[f[7]] itf[f[5]] dst[1]"\">"strftime("%F %T",f[2])"<log-lbl></log-lbl><log-dir></log-dir>"protoname(f[4])"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-lll><log-lnm>"dst[2]"</log-lnm></log-lll><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
   }
 }' $_LF
 }
-
-#  /usr/bin/awk -F: '
-# function namefromip(ip){
-#  nm="";cmd="/usr/bin/awk '"'$_NSDEVCMD'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
-#  if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
-#  if (nm) {nm=nm"<q>"ip"</q>"} else {nm=ip}
-#  return nm}
-# function protoname(proto){
-#  if (proto~/^[0-9]+$/){
-#     cmd="sed \""proto+2"q;d\" '"$wcPRT_PTH"'|cut -d, -f3";cmd|getline nm;close(cmd);
-#     nm="<log-ptl value=\""proto"\">"nm"</log-ptl>"
-#  } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"}
-#  return nm}
-# function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-# {ts[++c]=$1;uts[c]=$1$2;l[c]=$0} END
-# {if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
-#  min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
-#    PT=strftime("%F %T", ('$_BT'+ts[c]));
-#    IFACE=getval("IF"); WAY=getval("DIR"); IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
-#    if (IFACE=="WAN") {ATTR2=" wan"} else if (IFACE=="VPN") {ATTR2=" vpn"}
-#    if (WAY=="IN"){REM=SRC;RPT=SPT;LPT=DPT;ATTR="incoming";
-#      if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
-#      else {LOC=namefromip(DST); LNM="LAN"}
-#    } else if (WAY=="OUT"){REM=DST;RPT=DPT;LPT=SPT;ATTR="outgoing";
-#      if (IN=="") {LOC=SRC; LNM="router"}
-#      else {LOC=namefromip(SRC); LNM="LAN"}
-#    }
-#    if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"}
-#    print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>"
-# }}' $_LF
-# }
 
 log() {
 #  aegis_env
@@ -314,7 +283,6 @@ log() {
        fi ;;
   esac
   $wcUCI set aegis_web.log.len=$LEN
-  $wcUCI set aegis_web.log.basetime=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $wcUCI set aegis_web.log.pos=0
   _getLog
 }
