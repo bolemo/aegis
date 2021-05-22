@@ -28,6 +28,9 @@ section > * { box-sizing: border-box; }
 #log-filter-outgoing + label { color: blue; }
 #log-filter-wan + label { color: green; }
 #log-filter-vpn + label { color: purple; }
+#log-filter-bdc + label { color: cyan; }
+#log-filter-rtr + label { color: orange; }
+#log-filter-lan + label { color: indigo; }
 #main { display: flex; align-items: stretch; width: 100%; flex-grow: 1; overflow: hidden; max-height: inherit; }
 #main > * { box-sizing: border-box; max-height: inherit; width: 100%; padding: 0 0.5em; display: none; }
 #main .scroll { overflow: auto; padding-top: 0.35em; }
@@ -78,6 +81,9 @@ section > * { box-sizing: border-box; }
 #logbox.outgoing p.outgoing { display: none; }
 #logbox.wan p.wan { display: none; }
 #logbox.vpn p.vpn { display: none; }
+#logbox.bdc p.bdc { display: none; }
+#logbox.rtr p.rtr { display: none; }
+#logbox.lan p.lan { display: none; }
 #logbox p > * { display: table-cell; padding-right: 0.5em; }
 #logbox q { quotes: "(" ")"; letter-spacing: -1.5px; font-weight: normal; }
 #logbox log-ts { color: #666; }
@@ -92,14 +98,14 @@ p.incoming log-dir::after { content: 'INCOMING'; }
 p.outgoing log-dir::after { content: 'OUTGOING'; }
 #logbox p log-ptl { text-decoration: underline; color: teal; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-rip { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
-p.lan log-lnm { font-weight: bold; color: darkblue; }
+p.lan log-lnm { font-weight: bold; color: indigo; }
 p.rtr log-lnm { font-weight: bold; color: orange; }
-p.bdc log-lnm { font-weight: bold; color: darkgreen; }
+p.bdc log-lnm { font-weight: bold; color: cyan; }
 log-rll, log-lll { text-align: right; }
-p.incoming log-rll::before { content: 'from '; color: red; }
-p.incoming log-lll::before { content: 'to '; color: blue; }
-p.outgoing log-rll::before { content: 'to '; color: red; }
-p.outgoing log-lll::before { content: 'from '; color: blue; }
+p.incoming log-rll::before { content: 'FROM '; font-size:0.8em; color: red; }
+p.incoming log-lll::before { content: 'TO '; font-size:0.8em; color: blue; }
+p.outgoing log-rll::before { content: 'TO '; font-size:0.8em; color: red; }
+p.outgoing log-lll::before { content: 'FROM '; font-size:0.8em; color: blue; }
 p log-rll::after, p log-lll::after { content: ':'; color: darkgrey; }
 #logbox p log-lip { font-weight: bold; color: blue; padding-right: 0px; }
 log-pt:before { color: darkgrey; content: ':'; }
@@ -238,10 +244,16 @@ function logFilter() {
    var logFilterOutgoing = document.getElementById("log-filter-outgoing");
    var logFilterWan = document.getElementById("log-filter-wan");
    var logFilterVpn = document.getElementById("log-filter-vpn");
+   var logFilterBdc = document.getElementById("log-filter-bdc");
+   var logFilterRtr = document.getElementById("log-filter-rtr");
+   var logFilterLan = document.getElementById("log-filter-lan");
    if (logFilterIncoming.checked == false) { logboxElem.classList.add('incoming'); } else { logboxElem.classList.remove('incoming'); }
    if (logFilterOutgoing.checked == false) { logboxElem.classList.add('outgoing'); } else { logboxElem.classList.remove('outgoing'); }
    if (logFilterWan.checked == false) { logboxElem.classList.add('wan'); } else { logboxElem.classList.remove('wan'); }
    if (logFilterVpn.checked == false) { logboxElem.classList.add('vpn'); } else { logboxElem.classList.remove('vpn'); }
+   if (logFilterBdc.checked == false) { logboxElem.classList.add('bdc'); } else { logboxElem.classList.remove('bdc'); }
+   if (logFilterRtr.checked == false) { logboxElem.classList.add('rtr'); } else { logboxElem.classList.remove('rtr'); }
+   if (logFilterLan.checked == false) { logboxElem.classList.add('lan'); } else { logboxElem.classList.remove('lan'); }
 }
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
@@ -453,6 +465,9 @@ function ready() {
     <input type="checkbox" name="logFilter" checked id="log-filter-outgoing" onclick="logFilter();" /><label for="log-filter-outgoing">OUTGOING</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-wan" onclick="logFilter();" /><label for="log-filter-wan">WAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-vpn" onclick="logFilter();" /><label for="log-filter-vpn">VPN</label>
+    <input type="checkbox" name="logFilter" checked id="log-filter-lan" onclick="logFilter();" /><label for="log-filter-lan">LAN</label>
+    <input type="checkbox" name="logFilter" checked id="log-filter-rtr" onclick="logFilter();" /><label for="log-filter-rtr">ROUTER</label>
+    <input type="checkbox" name="logFilter" checked id="log-filter-bdc" onclick="logFilter();" /><label for="log-filter-bdc">BROADCAST</label>
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
