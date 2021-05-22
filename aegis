@@ -214,7 +214,7 @@ while :; do
   START_EXT_TS="\$(( \$(/usr/bin/cut -d. -f1 /proc/uptime) - \$EXT_TTL ))"
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-    if [ "\$(/usr/bin/awk -F: '{print \$1;exit}')" -lt "\$START_EXT_TS" ]; then
+    if [ "\$(/usr/bin/awk -F: '{print \$1;exit}' $LOG_FILE)" -lt "\$START_EXT_TS" ]; then
       /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
       $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$EXT_TTL seconds were kept\"")
     fi 
@@ -261,6 +261,7 @@ while :; do
     else D=\$((D+1)); fi
   done
   /bin/kill -9 \$AWK_PID; unset AWK_PID;
+  /bin/rm -f $LOGD_TMP
 done 2>>"$STDERR"
 EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
