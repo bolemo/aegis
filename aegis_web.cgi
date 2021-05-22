@@ -262,13 +262,13 @@ END {
   if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
   dir[">"]="incoming";dir["<"]="outgoing"
   itf["WAN"]=" wan";itf["VPN"]=" vpn"
-  dst["ROUTER"]=" rtr";dst["BROADCAST"]=" bdc";dst["LAN"]=" lan"
+  adt["ROUTER"]=" rtr";adt["BROADCAST"]=" bdc";adt["LAN"]=" lan"
   min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
     split(l[c],f," ")
     n=split(f[6],rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
     n=split(f[9],loc,":");lpt=(n==2)?("<log-pt>"loc[2]"</log-pt>"):""
-    split(f[8],lnm,",")
-    print "<p class=\"new "dir[f[7]] itf[f[5]] dst[lnm[1]]"\">"strftime("%F %T",f[2])"<log-lbl></log-lbl><log-dir></log-dir>"protoname(f[4])"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-lll><log-lnm>"lnm[2]"</log-lnm></log-lll><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
+    n=split(f[8],dst,",");lnm=(n==2)?dst[2]:dst[1]
+    print "<p class=\"new "dir[f[7]] itf[f[5]] adt[dst[1]]"\">"strftime("%F %T",f[2])"<log-lbl></log-lbl><log-dir></log-dir>"protoname(f[4])"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-lll><log-lnm>"lnm"</log-lnm></log-lll><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
   }
 }' $_LF
 }
