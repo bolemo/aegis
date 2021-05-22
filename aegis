@@ -166,7 +166,7 @@ function getBroadcasts(){$_BCFUNC}
 function getAttDev(fn){$_ADFUNC}
 function getHostsNames(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
 function genDev(){getHostsNames("/tmp/hosts");getHostsNames("/tmp/dhcpd_hostlist");getAttDev("/tmp/netscan/attach_device")}
-function dev(ip){return (dn[ip])?(dn[ip]" "ip):(" "ip)}
+function dev(ip){return (dn[ip])?("LAN,"dn[ip]" "ip):("LAN "ip)}
 function self(it,ip){return (bc[it,ip])?("BROADCAST "ip):("ROUTER,$(/bin/config get Device_name) "ip)}
 function val(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
 BEGIN {getBroadcasts();genDev();RS="\n"}
@@ -176,9 +176,9 @@ BEGIN {getBroadcasts();genDev();RS="\n"}
   epoch=($_BT+\$1)
   iface=val("IF"); proto=val("PROTO")
   if (val("DIR")=="IN") {
-    dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?("LAN,"dev(lip)):(self(iface,lip))
+    dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?(dev(lip)):(self(iface,lip))
   } else {
-    dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?("LAN,"dev(lip)):(self(iface,lip))
+    dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?(dev(lip)):(self(iface,lip))
   }
   rem=(rpt)?(rip":"rpt):rip; loc=(lpt)?(loc":"lpt):loc
   printf("%d:%.3d: %d IPv4 %s %s %s %s %s\n",\$1,c,epoch,proto,iface,rem,dir,loc)
