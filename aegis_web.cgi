@@ -268,7 +268,7 @@ END {
     n=split(f[6],rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
     n=split(f[9],loc,":");lpt=(n==2)?("<log-pt>"loc[2]"</log-pt>"):""
     n=split(f[8],dst,",");lnm=(n==2)?dst[2]:dst[1]
-    print "<p class=\"new "dir[f[7]] itf[f[5]] adt[dst[1]]"\"><log-ts>"strftime("%F %T",f[2])"</log-ts>"protoname(f[4])"<log-rem><log-if></log-if><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-dir></log-dir><log-loc><log-lnm>"lnm"</log-lnm><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
+    print "<p class=\"new "dir[f[7]] itf[f[5]] adt[dst[1]]"\"><log-ts>"strftime("%F %T",f[2])"</log-ts>"protoname(f[4])"<log-if></log-if><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-dir></log-dir><log-lnm>"lnm"</log-lnm><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
   }
 }' $_LF
 }
