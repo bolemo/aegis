@@ -87,11 +87,11 @@ section > * { box-sizing: border-box; }
 #logbox p > * { display: table-cell; padding-right: 0.5em; }
 #logbox log-ts { color: #666; }
 #logbox p.wan log-if { font-weight: bold; color: #F87217; }
-p.wan log-if::after { content: 'WAN'; }
+p.wan log-if::before { content: 'WAN'; }
 #logbox p.vpn log-if { font-weight: bold; color: #F535AA; }
-p.vpn log-if::after { content: 'VPN'; }
-#logbox p.incoming log-dir::after { content: '\xA0\21E5\xA0'; color: red; font-size: 2em; line-height: 0; }
-#logbox p.outgoing log-dir::after { content: '\xA0\21E4\xA0'; color: blue; font-size: 2em; line-height: 0; }
+p.vpn log-if::before { content: 'VPN'; }
+#logbox p.incoming log-dir::after { content: '\A0\21E5\A0'; color: red; font-size: 2.2em; line-height: 0; vertical-align: sub; }
+#logbox p.outgoing log-dir::after { content: '\A0\21E4\A0'; color: blue; font-size: 2.2em; line-height: 0; vertical-align: sub; }
 p.incoming log-ts::after { content: ' INCOMING'; font-weight: bold; color: red; }
 p.outgoing log-ts::after { content: ' OUTGOING'; font-weight: bold; color: blue; }
 #logbox p log-ptl { text-decoration: underline; color: green; text-decoration-style: dotted; cursor: pointer; }
@@ -99,9 +99,10 @@ p.outgoing log-ts::after { content: ' OUTGOING'; font-weight: bold; color: blue;
 p.lan log-lnm { font-weight: bold; color: #2B65EC; }
 p.rtr log-lnm { font-weight: bold; color: #43BFC7; }
 p.bdc log-lnm { font-weight: bold; color: #E238EC; }
+log-if::after, log-lnm::after { content: ':'; color: darkgrey; }
 log-if, log-lnm { text-align: right; }
 #logbox p log-lip { font-weight: bold; color: blue; padding-right: 0px; }
-log-pt:before { color: darkgrey; content: ':'; }
+log-pt::before { color: darkgrey; content: ':'; }
 #logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-lip + log-pt { color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 @keyframes highlight-red {
