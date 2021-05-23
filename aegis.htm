@@ -85,9 +85,7 @@ section > * { box-sizing: border-box; }
 #logbox.rtr p.rtr { display: none; }
 #logbox.lan p.lan { display: none; }
 #logbox p > * { display: table-cell; padding-right: 0.5em; }
-#logbox q { quotes: "(" ")"; letter-spacing: -1.5px; font-weight: normal; }
 #logbox log-ts { color: #666; }
-log-ts + log-lbl::after { content: 'BLOCKED'; font-size:0.8em; }
 #logbox p.wan log-if { font-weight: bold; color: #F87217; }
 p.wan log-if::after { content: 'WAN'; }
 #logbox p.vpn log-if { font-weight: bold; color: #F535AA; }
@@ -101,12 +99,12 @@ p.outgoing log-dir::after { content: 'OUTGOING'; }
 p.lan log-lnm { font-weight: bold; color: #2B65EC; }
 p.rtr log-lnm { font-weight: bold; color: #43BFC7; }
 p.bdc log-lnm { font-weight: bold; color: #E238EC; }
-log-rll, log-lll { text-align: right; }
-p.incoming log-rll::before { content: 'FROM '; font-size:0.8em; color: red; }
-p.incoming log-lll::before { content: 'TO '; font-size:0.8em; color: blue; }
-p.outgoing log-rll::before { content: 'TO '; font-size:0.8em; color: red; }
-p.outgoing log-lll::before { content: 'FROM '; font-size:0.8em; color: blue; }
-p log-rll::after, p log-lll::after { content: ':'; color: darkgrey; }
+log-if, log-lnm { text-align: right; }
+p.incoming log-if::before { content: 'FROM '; font-size:0.8em; color: red; }
+p.incoming log-lnm::before { content: 'TO '; font-size:0.8em; color: blue; }
+p.outgoing log-if::before { content: 'TO '; font-size:0.8em; color: red; }
+p.outgoing log-lnm::before { content: 'FROM '; font-size:0.8em; color: blue; }
+p log-if::after, p log-lnm::after { content: ':'; color: darkgrey; }
 #logbox p log-lip { font-weight: bold; color: blue; padding-right: 0px; }
 log-pt:before { color: darkgrey; content: ':'; }
 #logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
