@@ -224,7 +224,7 @@ function logPost() {
 }
 var firstLog = true;
 function log() {
-   hideIpInfo();
+   hideIpInfo('log');
    displayFor('log');
    if (firstLog) {
      firstLog = false;
@@ -250,7 +250,7 @@ function logFilter() {
    if (logFilterLan.checked == false) { logboxElem.classList.add('lan'); } else { logboxElem.classList.remove('lan'); }
 }
 function stats() {
-//   hideIpInfo();
+//   hideIpInfo('stats');
    displayFor('stats');
 }
 function getProtoInfo(ptl) {
@@ -298,8 +298,8 @@ function getIpInfo(ip) {
    ipApiReq.open("GET", url, true);
    ipApiReq.send();
 }
-function hideIpInfo() {
-   document.querySelector("#main-log > .overlay").style.display="none";
+function hideIpInfo(e) {
+   document.querySelector("#main-".e." > .overlay").style.display="none";
 }
 function setIpInfoClick() {
    document.onclick=function(elem){
@@ -509,8 +509,8 @@ function ready() {
 <div id="main">
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
-  <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
-  <div id="main-stats" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="statsbox"></div></div>
+  <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo('log');" /></div><div id="logbox"></div></div>
+  <div id="main-stats" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo('stats');" /></div><div id="statsbox"></div></div>
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
   <textarea id="main-debug" class="list" readonly></textarea>
