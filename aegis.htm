@@ -254,7 +254,7 @@ function stats() {
    displayFor('stats');
 }
 function doStats() {
-  var sq='';
+  var sq=document.getElementsByName('statsDir');
   for (var cb of document.getElementsByName('statsKeys')) {
     if (cb.checked) sq+=cb.value+' ';
   }
