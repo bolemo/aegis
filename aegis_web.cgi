@@ -293,8 +293,8 @@ refreshLog() {
 }
 
 stats() {
-  SR=false SL=false KNB=1
-  IFS=- for _A in $ARG
+  SR=false SL=false KNB=1 IFS='-'
+  for _A in $ARG
     do case $_A in
       in)         DF='($7=="<"){next}';;
       out)        DF='($7==">"){next}';;
