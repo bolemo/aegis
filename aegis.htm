@@ -256,7 +256,7 @@ function stats() {
 function doStats() {
   var sq=document.getElementById('stats-dir').value;
   for (var cb of document.getElementsByName('statsKeys')) {
-    if (cb.checked) sq+=' '+cb.value;
+    if (cb.checked) sq+='-'+cb.value;
   }
   aegis('stats', 'statsbox', sq);
 }
