@@ -252,6 +252,7 @@ function logFilter() {
 function stats() {
 //   hideIpInfo();
    displayFor('stats');
+}
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
    var ptlInfoReq = new XMLHttpRequest();
@@ -430,7 +431,7 @@ function ready() {
   <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
-  <input type="radio" name="menu" id="menu-stats" onclick="stats();"><label for="menu-stats">LOG</label>
+  <input type="radio" name="menu" id="menu-stats" onclick="stats();"><label for="menu-stats">STATS</label>
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
   <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
