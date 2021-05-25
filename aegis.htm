@@ -249,6 +249,9 @@ function logFilter() {
    if (logFilterRtr.checked == false) { logboxElem.classList.add('rtr'); } else { logboxElem.classList.remove('rtr'); }
    if (logFilterLan.checked == false) { logboxElem.classList.add('lan'); } else { logboxElem.classList.remove('lan'); }
 }
+function stats() {
+//   hideIpInfo();
+   displayFor('stats');
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
    var ptlInfoReq = new XMLHttpRequest();
@@ -402,6 +405,7 @@ function ready() {
    switch (window.location.hash) {
        case '#command': command(); break;
        case '#log': log(); break;
+       case '#stats': stats(); break;
        case '#tools': tools(); break;
        case '#lists': doList('-'); break;
        case '#debug': debug(); break;
@@ -426,6 +430,7 @@ function ready() {
   <input type="radio" name="menu" checked id="menu-status" onclick="status();"><label for="menu-status">STATUS</label>
   <input type="radio" name="menu" id="menu-command" onclick="command();"><label for="menu-command">COMMAND</label>
   <input type="radio" name="menu" id="menu-log" onclick="log();"><label for="menu-log">LOG</label>
+  <input type="radio" name="menu" id="menu-stats" onclick="stats();"><label for="menu-stats">LOG</label>
   <input type="radio" name="menu" id="menu-tools" onclick="tools();"><label for="menu-tools">TOOLS</label>
   <input type="radio" name="menu" id="menu-lists" onclick="doList('-');"><label for="menu-lists">LISTS</label>
   <input type="radio" name="menu" id="menu-debug" onclick="debug();"><label for="menu-debug">DEBUG</label>
@@ -462,6 +467,8 @@ function ready() {
     <input type="checkbox" name="logFilter" checked id="log-filter-lan" onclick="logFilter();" /><label for="log-filter-lan">LAN</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-rtr" onclick="logFilter();" /><label for="log-filter-rtr">ROUTER</label>
     <input type="checkbox" name="logFilter" checked id="log-filter-bdc" onclick="logFilter();" /><label for="log-filter-bdc">BROADCAST</label>
+  </div>
+  <div id="ctrl-stats" class="show">
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
@@ -502,6 +509,7 @@ function ready() {
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
   <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
+  <div id="main-stats" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="statsbox"></div></div>
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
   <textarea id="main-debug" class="list" readonly></textarea>
