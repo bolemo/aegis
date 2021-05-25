@@ -224,7 +224,7 @@ function logPost() {
 }
 var firstLog = true;
 function log() {
-   hideIpInfo('log');
+   hideIpInfo();
    displayFor('log');
    if (firstLog) {
      firstLog = false;
@@ -250,7 +250,7 @@ function logFilter() {
    if (logFilterLan.checked == false) { logboxElem.classList.add('lan'); } else { logboxElem.classList.remove('lan'); }
 }
 function stats() {
-   hideIpInfo('stats');
+//   hideIpInfo();
    displayFor('stats');
 }
 function getProtoInfo(ptl) {
@@ -298,8 +298,8 @@ function getIpInfo(ip) {
    ipApiReq.open("GET", url, true);
    ipApiReq.send();
 }
-function hideIpInfo(loc) {
-   document.querySelector("#main-".loc." > .overlay").style.display="none";
+function hideIpInfo() {
+   document.querySelector("#main-log > .overlay").style.display="none";
 }
 function setIpInfoClick() {
    document.onclick=function(elem){
@@ -470,16 +470,7 @@ function ready() {
     <input type="checkbox" name="logFilter" checked id="log-filter-bdc" onclick="logFilter();" /><label for="log-filter-bdc">BROADCAST</label>
   </div>
   <div id="ctrl-stats" class="show">
-    DISPLAY STATS FOR THE ASSOCIATION OF:
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-proto" /><label for="stats-keys-proto">PROTOCOL</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-iface" /><label for="stats-keys-iface">INTERFACE</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-rip" /><label for="stats-keys-rip">REMOTE IP</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-rpt" /><label for="stats-keys-rpt">REMOTE PORT</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-dir" /><label for="stats-keys-dir">DIRECTION</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-loc" /><label for="stats-keys-loc">LOCAL DEVICE</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-lip" /><label for="stats-keys-lip">LOCAL IP</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-lpt" /><label for="stats-keys-lpt">LOCAL PORT</label>
- </div>
+  </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
       <option value="-" selected disabled>PLEASE SELECT A LIST</option>
@@ -518,8 +509,8 @@ function ready() {
 <div id="main">
   <div id="main-status" class="scroll"></div>
   <pre id="main-command" class="scroll"></pre>
-  <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo('log');" /></div><div id="logbox"></div></div>
-  <div id="main-stats" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo('stats');" /></div><div id="statsbox"></div></div>
+  <div id="main-log" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="logbox"></div></div>
+  <div id="main-stats" class="scroll"><div class="overlay"><div class="title"></div><div class="message"></div><input type="button" value="OK" onclick="hideIpInfo();" /></div><div id="statsbox"></div></div>
   <div id="main-tools" class="scroll"></div>
   <textarea id="main-lists" class="list"></textarea>
   <textarea id="main-debug" class="list" readonly></textarea>
