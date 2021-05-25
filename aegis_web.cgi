@@ -292,6 +292,46 @@ refreshLog() {
   _getLog
 }
 
+stats() {
+  SR=false SL=false
+  IFS=, for _A in $ARG; do
+    case $_A in
+      in)         DF='($7=="<"){next}';;
+      out)        DF='($7==">"){next}';;
+      all)        DF='';;
+      proto)      KEY='$4';;
+      iface)      KEY='$5';;
+      rip)        KEY='r[1]' SR=true;;
+      rpt)        KEY='(rn==2)?(r[2]):("-")' SR=true;;
+      dir)        KEY='$7';;
+      loc)        KEY='substr($8",",0,index($8",",",")-1)';;
+      lip)        KEY='l[1]' SL=true;;
+      lpt)        KEY='(ln==2)?(l[2]):("-")' SL=true;;
+    esac
+   [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
+  done; IFS=' '
+  $SR && PK1='rn=split($6,r,":")'
+  $SL && PK2='ln=split($9,l,":")'
+  KNB=$(($#+2))
+  awk '
+BEGIN {s=" "; st=(systime()-86400)
+  print strftime("Now: %F %T",systime())|"cat >&2"}
+($2<st){next}
+(!td){print strftime("Start time: %F %T",$2)|"cat >&2";td=1}
+{tnr++}
+'$DF'
+{
+  '$PK1'
+  '$PK2'
+  act['$KEYS']++
+  nfr++
+}
+END {
+  printf ("Number of records (total/filtered): %d/%d\n",tnr,nfr)|"cat >&2"
+  for(i in act){print "key: " i " hits: " act[i]}
+}' $_LF | /usr/bin/sort -rnk$KNB | /usr/bin/head -n20
+}
+
 refreshDev() {
   /usr/bin/killall -10 net-scan # Refreshing device list
 }
@@ -378,7 +418,7 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
-  stats) echo "stats $ARG";;
+  stats) stats;;
   refresh_dev) refreshDev;;
   check) checkIp;;
   print_list) printList; exit;;
