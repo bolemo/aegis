@@ -294,7 +294,7 @@ refreshLog() {
 
 stats() {
   SR=false SL=false
-  IFS=','; for _A in $ARG; do
+  IFS='-'; for _A in $ARG; do
     case $_A in
       in)         DF='($7=="<"){next}';;
       out)        DF='($7==">"){next}';;
@@ -312,12 +312,11 @@ stats() {
   done; IFS=' '
   $SR && PK1='rn=split($6,r,":")'
   $SL && PK2='ln=split($9,l,":")'
-  KNB=$(($#+2))
+  KNB="$(($#+2))"
   /usr/bin/awk '
-BEGIN {s=" "; st=(systime()-86400)
-  print strftime("Now: %F %T",systime())|"cat >&2"}
+BEGIN {s=" "; st=(systime()-86400)}
 ($2<st){next}
-(!td){print strftime("Start time: %F %T",$2)|"cat >&2";td=1}
+(!st){st=$2}
 {tnr++}
 '$DF'
 {
@@ -327,7 +326,6 @@ BEGIN {s=" "; st=(systime()-86400)
   nfr++
 }
 END {
-  printf ("Number of records (total/filtered): %d/%d\n",tnr,nfr)|"cat >&2"
   for(i in act){print "key: " i " hits: " act[i]}
 }' "$_LF" | /usr/bin/sort -rnk$KNB | /usr/bin/head -n20
 }
