@@ -253,6 +253,13 @@ function stats() {
    hideIpInfo('stats');
    displayFor('stats');
 }
+function doStats() {
+  var statsQuery='';
+  for (var cb of document.getElementsByName('statsKeys')) {
+    if (cb.checked) statsQuery.append(cb.value + ' ');
+  }
+  alert (statsQuery);
+}
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
    var ptlInfoReq = new XMLHttpRequest();
@@ -471,19 +478,19 @@ function ready() {
   </div>
   <div id="ctrl-stats" class="show">
     ASSOCIATION KEY:
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-proto" /><label for="stats-keys-proto">PROTOCOL</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-iface" /><label for="stats-keys-iface">INTERFACE</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-rip" /><label for="stats-keys-rip">REMOTE IP</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-rpt" /><label for="stats-keys-rpt">REMOTE PORT</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-dir" /><label for="stats-keys-dir">DIRECTION</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-loc" /><label for="stats-keys-loc">LOCAL DEVICE</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-lip" /><label for="stats-keys-lip">LOCAL IP</label>
-    <input type="checkbox" name="statsKeys" checked id="stats-keys-lpt" /><label for="stats-keys-lpt">LOCAL PORT</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
+    <input type="checkbox" name="statsKeys" checked id="stats-keys-iface" onclick="doStats();" /><label for="stats-keys-iface">INTERFACE</label>
+    <input type="checkbox" name="statsKeys" checked id="stats-keys-rip" onclick="doStats();" /><label for="stats-keys-rip">REMOTE IP</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-rpt" onclick="doStats();" /><label for="stats-keys-rpt">REMOTE PORT</label>
+    <input type="checkbox" name="statsKeys" checked id="stats-keys-dir" onclick="doStats();" /><label for="stats-keys-dir">DIRECTION</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-loc" onclick="doStats();" /><label for="stats-keys-loc">LOCAL DEVICE</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-lip" onclick="doStats();" /><label for="stats-keys-lip">LOCAL IP</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-lpt" onclick="doStats();" /><label for="stats-keys-lpt">LOCAL PORT</label>
     <br />FILTER:
-    <select id="stats-dir" name="statsDir">
+    <select id="stats-dir" name="statsDir" onchange="doStats();">
       <option value="all" selected>INCOMING AND OUTGOING</option>
-      <option value="in" selected>INCOMING ONLY</option>
-      <option value="out" selected>OUTGOING ONLY</option>
+      <option value="in">INCOMING ONLY</option>
+      <option value="out">OUTGOING ONLY</option>
     </select>
   </div>
   <div id="ctrl-lists" class="show list">
