@@ -294,7 +294,7 @@ refreshLog() {
 
 stats() {
   SR=false SL=false
-  IFS=, for _A in $ARG; do
+  IFS=','; for _A in $ARG; do
     case $_A in
       in)         DF='($7=="<"){next}';;
       out)        DF='($7==">"){next}';;
@@ -308,12 +308,12 @@ stats() {
       lip)        KEY='l[1]' SL=true;;
       lpt)        KEY='(ln==2)?(l[2]):("-")' SL=true;;
     esac
-   [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
+    [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
   done; IFS=' '
   $SR && PK1='rn=split($6,r,":")'
   $SL && PK2='ln=split($9,l,":")'
   KNB=$(($#+2))
-  awk '
+  /usr/bin/awk '
 BEGIN {s=" "; st=(systime()-86400)
   print strftime("Now: %F %T",systime())|"cat >&2"}
 ($2<st){next}
@@ -329,7 +329,7 @@ BEGIN {s=" "; st=(systime()-86400)
 END {
   printf ("Number of records (total/filtered): %d/%d\n",tnr,nfr)|"cat >&2"
   for(i in act){print "key: " i " hits: " act[i]}
-}' $_LF | /usr/bin/sort -rnk$KNB | /usr/bin/head -n20
+}' "$_LF" | /usr/bin/sort -rnk$KNB | /usr/bin/head -n20
 }
 
 refreshDev() {
