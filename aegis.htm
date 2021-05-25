@@ -470,7 +470,7 @@ function ready() {
     <input type="checkbox" name="logFilter" checked id="log-filter-bdc" onclick="logFilter();" /><label for="log-filter-bdc">BROADCAST</label>
   </div>
   <div id="ctrl-stats" class="show">
-    DISPLAY STATS FOR THE ASSOCIATION OF:
+    ASSOCIATION KEY:
     <input type="checkbox" name="statsKeys" checked id="stats-keys-proto" /><label for="stats-keys-proto">PROTOCOL</label>
     <input type="checkbox" name="statsKeys" checked id="stats-keys-iface" /><label for="stats-keys-iface">INTERFACE</label>
     <input type="checkbox" name="statsKeys" checked id="stats-keys-rip" /><label for="stats-keys-rip">REMOTE IP</label>
@@ -479,6 +479,12 @@ function ready() {
     <input type="checkbox" name="statsKeys" checked id="stats-keys-loc" /><label for="stats-keys-loc">LOCAL DEVICE</label>
     <input type="checkbox" name="statsKeys" checked id="stats-keys-lip" /><label for="stats-keys-lip">LOCAL IP</label>
     <input type="checkbox" name="statsKeys" checked id="stats-keys-lpt" /><label for="stats-keys-lpt">LOCAL PORT</label>
+    <br />FILTER:
+    <select id="stats-dir" name="statsDir">
+      <option value="all" selected>INCOMING AND OUTGOING</option>
+      <option value="in" selected>INCOMING ONLY</option>
+      <option value="out" selected>OUTGOING ONLY</option>
+    </select>
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
