@@ -378,6 +378,7 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  stats) echo "stats $ARG";;
   refresh_dev) refreshDev;;
   check) checkIp;;
   print_list) printList; exit;;
