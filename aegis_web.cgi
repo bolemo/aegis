@@ -310,7 +310,7 @@ stats() {
     esac
     KNB=$((KNB+1))
     [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
-  done
+  done; IFS=
   $SR && PK1='rn=split($6,r,":")'
   $SL && PK2='ln=split($9,l,":")'
   /usr/bin/awk '
