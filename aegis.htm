@@ -258,7 +258,7 @@ function doStats() {
   for (var cb of document.getElementsByName('statsKeys')) {
     if (cb.checked) sq+=' '+cb.value;
   }
-  alert (sq);
+  aegis('stats', 'statsbox', sq);
 }
 function getProtoInfo(ptl) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
