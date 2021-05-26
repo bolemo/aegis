@@ -293,38 +293,64 @@ refreshLog() {
 }
 
 stats() {
-
-  IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1)
+  SR=false SL=false KNB=1 KEYS='"."'
+  IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
   case $1 in
     in)  DF='($7=="<"){next}';;
     out) DF='($7==">"){next}';;
     all) DF='';;
-  esac
-  shift
-  [ "$1" = 'proto' ] && { echo 'PROTO'; shift; }
-  [ "$1" = 'iface' ] && { echo 'IFACE'; shift; }
-  [ "$1" = 'rip' ] && { echo 'RIP'; shift; }
-  [ "$1" = 'rpt' ] && { echo 'RPT'; shift; }
-  [ "$1" = 'dir' ] && { echo 'DIR'; shift; }
-
-  SR=false SL=false KNB=1 IFS='-'
-  for _A in $ARG
-    do case $_A in
-      in)         DF='($7=="<"){next}';;
-      out)        DF='($7==">"){next}';;
-      all)        DF='';;
-      proto)      KEY='$4';;
-      iface)      KEY='$5';;
-      rip)        KEY='r[1]' SR=true;;
-      rpt)        KEY='(rn==2)?(r[2]):("-")' SR=true;;
-      dir)        KEY='$7';;
-      loc)        KEY='substr($8",",0,index($8",",",")-1)';;
-      lip)        KEY='l[1]' SL=true;;
-      lpt)        KEY='(ln==2)?(l[2]):("-")' SL=true;;
-    esac
+  esac; shift
+  if [ "$1" = 'proto' ]; then shift
+    KEYS="$KEYS,s,\$4"
     KNB=$((KNB+1))
-    [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
-  done; IFS=
+  fi
+  if [ "$1" = 'iface' ]; then shift
+    KEYS="$KEYS,s,\$5"
+    KNB=$((KNB+1))
+  fi
+  if [ "$1" = 'rip' ]; then shift
+    KEYS="$KEYS,s,r[1]" SR=true
+    KNB=$((KNB+1))
+  fi
+  if [ "$1" = 'rpt' ]; then shift
+    KEYS="$KEYS,s,(rn==2)?(r[2]):(\"-\")" SR=true
+    KNB=$((KNB+1))
+  fi
+  if[ "$1" = 'dir' ]; then shift
+    KEYS="$KEYS,s,\$7"
+    KNB=$((KNB+1))
+  fi
+  if[ "$1" = 'loc' ]; then shift
+    KEYS="$KEYS,s,substr(\$8",",0,index(\$8\",\",\",\")-1)"
+    KNB=$((KNB+1))
+  fi
+  if[ "$1" = 'lip' ]; then shift
+    KEYS="$KEYS,s,l[1]" SL=true
+    KNB=$((KNB+1))
+  fi
+  if[ "$1" = 'lpt' ]; then shift
+    KEYS="$KEYS,s,(ln==2)?(l[2]):(\"-\")" SL=true
+    KNB=$((KNB+1))
+  fi
+
+#  SR=false SL=false KNB=1 IFS='-'
+#  for _A in $ARG
+#    do case $_A in
+#      in)         DF='($7=="<"){next}';;
+#      out)        DF='($7==">"){next}';;
+#      all)        DF='';;
+#      proto)      KEY='$4';;
+#      iface)      KEY='$5';;
+#      rip)        KEY='r[1]' SR=true;;
+#      rpt)        KEY='(rn==2)?(r[2]):("-")' SR=true;;
+#      dir)        KEY='$7';;
+#      loc)        KEY='substr($8",",0,index($8",",",")-1)';;
+#      lip)        KEY='l[1]' SL=true;;
+#      lpt)        KEY='(ln==2)?(l[2]):("-")' SL=true;;
+#    esac
+#    KNB=$((KNB+1))
+#    [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
+#  done; IFS=
   $SR && PK1='rn=split($6,r,":")'
   $SL && PK2='ln=split($9,l,":")'
   /usr/bin/awk '
