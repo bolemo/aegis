@@ -293,6 +293,20 @@ refreshLog() {
 }
 
 stats() {
+
+  IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1)
+  case $1 in
+    in)  DF='($7=="<"){next}';;
+    out) DF='($7==">"){next}';;
+    all) DF='';;
+  esac
+  shift
+  [ "$1" = 'proto' ] && { echo 'PROTO'; shift; }
+  [ "$1" = 'iface' ] && { echo 'IFACE'; shift; }
+  [ "$1" = 'rip' ] && { echo 'RIP'; shift; }
+  [ "$1" = 'rpt' ] && { echo 'RPT'; shift; }
+  [ "$1" = 'dir' ] && { echo 'DIR'; shift; }
+
   SR=false SL=false KNB=1 IFS='-'
   for _A in $ARG
     do case $_A in
