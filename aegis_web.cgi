@@ -316,19 +316,19 @@ stats() {
     KEYS="$KEYS,s,(rn==2)?(r[2]):(\"-\")" SR=true
     KNB=$((KNB+1))
   fi
-  if[ "$1" = 'dir' ]; then shift
+  if [ "$1" = 'dir' ]; then shift
     KEYS="$KEYS,s,\$7"
     KNB=$((KNB+1))
   fi
-  if[ "$1" = 'loc' ]; then shift
+  if [ "$1" = 'loc' ]; then shift
     KEYS="$KEYS,s,substr(\$8",",0,index(\$8\",\",\",\")-1)"
     KNB=$((KNB+1))
   fi
-  if[ "$1" = 'lip' ]; then shift
+  if [ "$1" = 'lip' ]; then shift
     KEYS="$KEYS,s,l[1]" SL=true
     KNB=$((KNB+1))
   fi
-  if[ "$1" = 'lpt' ]; then shift
+  if [ "$1" = 'lpt' ]; then shift
     KEYS="$KEYS,s,(ln==2)?(l[2]):(\"-\")" SL=true
     KNB=$((KNB+1))
   fi
