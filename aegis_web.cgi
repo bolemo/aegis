@@ -302,46 +302,46 @@ stats() {
     all) DF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
- #   KEYS="$KEYS,s,\$4"
+    KEYS="$KEYS,s,\$4"
     KNB=$((KNB+1))
     STRL="$STRL \" \" PROTOCOL: \$4"
   fi
   if [ "$1" = 'iface' ]; then shift
- #   KEYS="$KEYS,s,\$5"
+    KEYS="$KEYS,s,\$5"
     KNB=$((KNB+1))
     STRL="$STRL \" \" \$5"
   else STRL="$STRL \" WAN OR VPN\""
   fi
   if [ "$1" = 'rip' ]; then shift
- #   KEYS="$KEYS,s,r[1]" SR=true
+    KEYS="$KEYS,s,r[1]" SR=true
     KNB=$((KNB+1))
     STRL="$STRL \" \" r[1]"
   else STRL="$STRL \" [ANY IP]\""
   fi
   if [ "$1" = 'rpt' ]; then shift
- #   KEYS="$KEYS,s,(rn==2)?(r[2]):(\"-\")" SR=true
+    KEYS="$KEYS,s,(rn==2)?(r[2]):(\"-\")" SR=true
     KNB=$((KNB+1))
     STRL="$STRL ((rn==2)?(\":\" r[2]):(\"\"))"
   fi
   if [ "$1" = 'dir' ]; then shift
- #   KEYS="$KEYS,s,\$7"
+    KEYS="$KEYS,s,\$7"
     KNB=$((KNB+1))
     STRL="$STRL ((\$7==\">\")?(\" TO\"):(\" FROM\"))"
   else STRL="$STRL \" <->\""
   fi
   if [ "$1" = 'loc' ]; then shift
- #   KEYS="$KEYS,s,substr(\$8",",0,index(\$8\",\",\",\")-1)"
+    KEYS="$KEYS,s,substr(\$8",",0,index(\$8\",\",\",\")-1)"
     KNB=$((KNB+1))
     STRL="$STRL \" \" substr(\$8",",0,index(\$8\",\",\",\")-1)"
   fi
   if [ "$1" = 'lip' ]; then shift
- #   KEYS="$KEYS,s,l[1]" SL=true
+    KEYS="$KEYS,s,l[1]" SL=true
     KNB=$((KNB+1))
     STRL="$STRL \" \" l[1]"
   else STRL="$STRL \" [ANY IP]\""
   fi
   if [ "$1" = 'lpt' ]; then shift
- #   KEYS="$KEYS,s,(ln==2)?(l[2]):(\"-\")" SL=true
+    KEYS="$KEYS,s,(ln==2)?(l[2]):(\"-\")" SL=true
     KNB=$((KNB+1))
     STRL="$STRL ((ln==2)?(\":\"l[2]):(\"\"))"
   fi
@@ -375,11 +375,12 @@ BEGIN {s=" "; st=(systime()-86400)}
 {
   '$PK1'
   '$PK2'
-  act['$STRL']++
+  act['$KEYS']++
+  ast['$KEYS']='"$STRL"'
   nfr++
 }
 END {
-  for(i in act){print i " hits: " act[i] "<br />"}
+  for(i in act){print ast[i] " hits: " act[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk$KNB | /usr/bin/head -n100
 }
 
