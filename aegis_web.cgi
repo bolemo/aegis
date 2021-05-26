@@ -293,6 +293,7 @@ refreshLog() {
 }
 
 stats() {
+# USE ONLY KEYS (KEYS BEING EX-STRL)
   SR=false SL=false KNB=1 KEYS='"."' STRL=''
   IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
   case $1 in
@@ -326,7 +327,7 @@ stats() {
   if [ "$1" = 'dir' ]; then shift
     KEYS="$KEYS,s,\$7"
     KNB=$((KNB+1))
-    STRL="$STRL ((r[1]==\">\")?(\" TO\"):(\" FROM\"))"
+    STRL="$STRL ((\$7==\">\")?(\" TO\"):(\" FROM\"))"
   else STRL="$STRL \" ANY\""
   fi
   if [ "$1" = 'loc' ]; then shift
