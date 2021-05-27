@@ -317,7 +317,7 @@ stats() {
     A_DIR='kdir=$7'
   fi
   if [ "$1" = 'loc' ]; then shift
-    A_LOC='kli=index($8,",")-1;kloc=((kli>0)?(substr($8,0,kli)):($8));sloc=kloc' LG=true
+    A_LOC='kli=index($8,",")-1;kloc=(((! nr)&&(kli>0))?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
     A_LIP='klip=l[1];slip=klip' SL=true LG=true
@@ -345,15 +345,15 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="INCOMING " sproto " ATTEMPTS " ((rg)?("FROM " siface " " srip " " srpt):"") ((lg)?(" TO " sloc " " slip " " slpt):"")
+    str="INCOMING " sproto " HIT(S) " ((rg)?("FROM " siface " " srip srpt):"") ((lg)?(" TO " sloc " " slip slpt):"")
   } else if(kdir=="<") {
-    str="OUTGOING " sproto " ATTEMPTS " ((lg)?("FROM " sloc " " slip " " slpt):"") ((rg)?(" TO " siface " " srip " " srpt):"")
+    str="OUTGOING " sproto " HIT(S) " ((lg)?("FROM " sloc " " slip slpt):"") ((rg)?(" TO " siface " " srip srpt):"")
   } else if(rg && lg) {
-    str=sproto" ATTEMPTS BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
+    str=sproto" HIT(S) BETWEEN "siface" "srip srpt" AND "sloc" "slip slpt
   } else if(rg || lg) {
-    str=sproto" ATTEMPTS INVOLVING "siface" "srip" "srpt" "sloc" "slip" "slpt
+    str=sproto" HIT(S) INVOLVING "siface" "srip srpt" "sloc" "slip slpt
   } else {
-    str=sproto" ATTEMPTS"
+    str=sproto" HIT(S)"
   }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
   ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str
