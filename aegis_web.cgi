@@ -348,11 +348,11 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    st="INCOMING "sproto" FROM "siface" "srip" "srpt" TO "sloc" "slip" "slpt
-  } else if (kdir=="<") {
-    st="OUTGOING "sproto" FROM "sloc" "slip" "slpt" TO "siface" "srip" "srpt"
+    str="INCOMING " sproto " ATTEMPTS FROM " siface " " srip " " srpt " TO " sloc " " slip " " slpt
+  } else if(kdir=="<") {
+    str="OUTGOING " sproto " ATTEMPTS FROM " sloc " " slip " " slpt " TO " siface " " srip " " srpt
   } else {
-    st="TRAFFIC "sproto" BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
+    str=sproto" ATTEMPTS BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
   }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
   ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=st
