@@ -309,21 +309,21 @@ stats() {
   fi
   if [ "$1" = 'rip' ]; then shift
     A_RIP='krip=r[1];srip=krip' SR=true
-  else A_rip='srip="[ANY IP]"'
+  else A_RIP='srip="[ANY IP]"'
   fi
   if [ "$1" = 'rpt' ]; then shift
     A_RPT='if(rn==2){krpt=r[2];srpt=(":"r[2])}else{krpt="";srpt=""}' SR=true
   fi
   if [ "$1" = 'dir' ]; then shift
     A_DIR='kdir=$7;sdir=(kdir==">")?(" TO"):(" FROM")'
-  else A_dir='sdir="<=>"'
+  else A_DIR='sdir="<=>"'
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kloc=substr($8,0,index($8,",")-1);sloc=kloc'
   fi
   if [ "$1" = 'lip' ]; then shift
     A_LIP='klip=l[1];slip=klip' SL=true
-  else A_lip='slip="[ANY IP]"'
+  else A_LIP='slip="[ANY IP]"'
   fi
   if [ "$1" = 'lpt' ]; then shift
     A_LPT='if(ln==2){klpt=l[2];slpt=(":"l[2])}else{klpt="";slpt=""}' SL=true
