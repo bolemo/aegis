@@ -347,13 +347,15 @@ BEGIN {st=(systime()-86400)}
   '"$A_LOC"'
   '"$A_LIP"'
   '"$A_LPT"'
-  switch kdir {
-    case ">": sdir="TO"; break
-    case "<": sdir="FROM"; break
-    default: sdir="BETWEEN"; break
+  if (kdir==">") {
+    st="INCOMING "sproto" FROM "siface" "srip" "srpt" TO "sloc" "slip" "slpt
+  } else if (kdir=="<") {
+    st="OUTGOING "sproto" FROM "sloc" "slip" "slpt" TO "siface" "srip" "srpt"
+  } else {
+    st="TRAFFIC "sproto" BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
   }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
-  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=sproto" "siface" "srip" "srpt" "sdir" "sloc" "slip" "slpt
+  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=st
   nfr++
 }
 END {
