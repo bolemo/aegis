@@ -337,16 +337,16 @@ BEGIN {st=(systime()-86400)}
 {tnr++}
 '$DF'
 {
-  '$PK1'
-  '$PK2'
-  '$A_PROTO'
-  '$A_IFACE'
-  '$A_RIP'
-  '$A_RPT'
-  '$A_DIR'
-  '$A_LOC'
-  '$A_LIP'
-  '$A_LPT'
+  '"$PK1"'
+  '"$PK2"'
+  '"$A_PROTO"'
+  '"$A_IFACE"'
+  '"$A_RIP"'
+  '"$A_RPT"'
+  '"$A_DIR"'
+  '"$A_LOC"'
+  '"$A_LIP"'
+  '"$A_LPT"'
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
   ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=sproto,siface,srip,srpt,sdir,sloc,slip,slpt
   nfr++
