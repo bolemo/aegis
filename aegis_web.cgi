@@ -309,24 +309,21 @@ stats() {
   fi
   if [ "$1" = 'rip' ]; then shift
     A_RIP='krip=r[1];srip=krip' SR=true RG=true
-  else A_RIP='srip="[ANY IP]"'
   fi
   if [ "$1" = 'rpt' ]; then shift
-    A_RPT='if(rn==2){krpt=r[2];srpt=(":"r[2])}else{krpt="";srpt=""}' SR=true RG=true
+    A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre r[2])}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'dir' ]; then shift
-    A_DIR='kdir=$7' #;sdir=(kdir==">")?(" TO"):(" FROM")'
-#  else A_DIR='sdir=" BETWEEN"'
+    A_DIR='kdir=$7'
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kli=index($8,",")-1;kloc=((kli>0)?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
     A_LIP='klip=l[1];slip=klip' SL=true LG=true
-  else A_LIP='slip="[ANY IP]"'
   fi
   if [ "$1" = 'lpt' ]; then shift
-    A_LPT='if(ln==2){klpt=l[2];slpt=(":"l[2])}else{klpt="";slpt=""}' SL=true LG=true
+    A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre l[2])}else{klpt="";slpt=""}' SL=true LG=true
   fi
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
