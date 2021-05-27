@@ -315,8 +315,8 @@ stats() {
     A_RPT='if(rn==2){krpt=r[2];srpt=(":"r[2])}else{krpt="";srpt=""}' SR=true
   fi
   if [ "$1" = 'dir' ]; then shift
-    A_DIR='kdir=$7;sdir=(kdir==">")?(" TO"):(" FROM")'
-  else A_DIR='sdir="<=>"'
+    A_DIR='kdir=$7' #;sdir=(kdir==">")?(" TO"):(" FROM")'
+#  else A_DIR='sdir=" BETWEEN"'
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kloc=substr($8,0,index($8,",")-1);sloc=kloc'
@@ -347,8 +347,13 @@ BEGIN {st=(systime()-86400)}
   '"$A_LOC"'
   '"$A_LIP"'
   '"$A_LPT"'
+  switch kdir {
+    case ">": sdir="TO"
+    case "<": sdir="FROM"
+    default: sdir"BETWEEN"
+  }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
-  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=sproto,siface,srip,srpt,sdir,sloc,slip,slpt
+  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=sproto" "siface" "srip" "srpt" "sdir" "sloc" "slip" "slpt
   nfr++
 }
 END {
