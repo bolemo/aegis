@@ -317,7 +317,7 @@ stats() {
     A_DIR='kdir=$7'
   fi
   if [ "$1" = 'loc' ]; then shift
-    A_LOC='kli=index($8,",")-1;kloc=(((! nr)&&(kli>0))?(substr($8,0,kli)):($8));sloc=kloc' LG=true
+    A_LOC='kli=index($8,",")-1;kloc=(((!klip)&&(kli>0))?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
     A_LIP='klip=l[1];slip=klip' SL=true LG=true
