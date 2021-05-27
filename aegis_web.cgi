@@ -348,9 +348,9 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   switch kdir {
-    case ">": sdir="TO"
-    case "<": sdir="FROM"
-    default: sdir"BETWEEN"
+    case ">": sdir="TO"; break
+    case "<": sdir="FROM"; break
+    default: sdir="BETWEEN"; break
   }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
   ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=sproto" "siface" "srip" "srpt" "sdir" "sloc" "slip" "slpt
