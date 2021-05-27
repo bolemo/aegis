@@ -319,7 +319,7 @@ stats() {
 #  else A_DIR='sdir=" BETWEEN"'
   fi
   if [ "$1" = 'loc' ]; then shift
-    A_LOC='kloc=substr($8,0,index($8,",")-1);sloc=kloc' LG=true
+    A_LOC='kli=index($8,",")-1;kloc=((kli>0)?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
     A_LIP='klip=l[1];slip=klip' SL=true LG=true
@@ -348,9 +348,9 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="INCOMING " sproto " ATTEMPTS " ((rg)?("FROM " siface " " srip " " srpt)) ((lg)?(" TO " sloc " " slip " " slpt))
+    str="INCOMING " sproto " ATTEMPTS " ((rg)?("FROM " siface " " srip " " srpt):"") ((lg)?(" TO " sloc " " slip " " slpt):"")
   } else if(kdir=="<") {
-    str="OUTGOING " sproto " ATTEMPTS " ((lg)?("FROM " sloc " " slip " " slpt)) ((rg)?(" TO " siface " " srip " " srpt))
+    str="OUTGOING " sproto " ATTEMPTS " ((lg)?("FROM " sloc " " slip " " slpt):"") ((rg)?(" TO " siface " " srip " " srpt):"")
   } else if(rg && lg) {
     str=sproto" ATTEMPTS BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
   } else if(rg || lg) {
