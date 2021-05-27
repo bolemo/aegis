@@ -294,7 +294,7 @@ refreshLog() {
 
 stats() {
 # USE ONLY KEYS (KEYS BEING EX-STRL)
-  SR=false SL=false
+  SR=false SL=false RG=false LG=false
   IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
   case $1 in
     in)  DF='($7=="<"){next}';;
@@ -305,31 +305,31 @@ stats() {
     A_PROTO='kproto=$4;sproto=kproto'
   fi
   if [ "$1" = 'iface' ]; then shift
-    A_IFACE='kiface=$5;siface=kiface'
+    A_IFACE='kiface=$5;siface=kiface' RG=true
   fi
   if [ "$1" = 'rip' ]; then shift
-    A_RIP='krip=r[1];srip=krip' SR=true
+    A_RIP='krip=r[1];srip=krip' SR=true RG=true
   else A_RIP='srip="[ANY IP]"'
   fi
   if [ "$1" = 'rpt' ]; then shift
-    A_RPT='if(rn==2){krpt=r[2];srpt=(":"r[2])}else{krpt="";srpt=""}' SR=true
+    A_RPT='if(rn==2){krpt=r[2];srpt=(":"r[2])}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'dir' ]; then shift
     A_DIR='kdir=$7' #;sdir=(kdir==">")?(" TO"):(" FROM")'
 #  else A_DIR='sdir=" BETWEEN"'
   fi
   if [ "$1" = 'loc' ]; then shift
-    A_LOC='kloc=substr($8,0,index($8,",")-1);sloc=kloc'
+    A_LOC='kloc=substr($8,0,index($8,",")-1);sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
-    A_LIP='klip=l[1];slip=klip' SL=true
+    A_LIP='klip=l[1];slip=klip' SL=true LG=true
   else A_LIP='slip="[ANY IP]"'
   fi
   if [ "$1" = 'lpt' ]; then shift
-    A_LPT='if(ln==2){klpt=l[2];slpt=(":"l[2])}else{klpt="";slpt=""}' SL=true
+    A_LPT='if(ln==2){klpt=l[2];slpt=(":"l[2])}else{klpt="";slpt=""}' SL=true LG=true
   fi
-  $SR && PK1='rn=split($6,r,":")'
-  $SL && PK2='ln=split($9,l,":")'
+  $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
+  $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
   /usr/bin/awk '
 BEGIN {st=(systime()-86400)}
 ($2<st){next}
@@ -348,11 +348,15 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="INCOMING " sproto " ATTEMPTS FROM " siface " " srip " " srpt " TO " sloc " " slip " " slpt
+    str="INCOMING " sproto " ATTEMPTS " ((rg)?("FROM " siface " " srip " " srpt)) ((lg)?(" TO " sloc " " slip " " slpt))
   } else if(kdir=="<") {
-    str="OUTGOING " sproto " ATTEMPTS FROM " sloc " " slip " " slpt " TO " siface " " srip " " srpt
-  } else {
+    str="OUTGOING " sproto " ATTEMPTS " ((lg)?("FROM " sloc " " slip " " slpt)) ((rg)?(" TO " siface " " srip " " srpt))
+  } else if(rg && lg) {
     str=sproto" ATTEMPTS BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
+  } else if(rg || lg) {
+    str=sproto" ATTEMPTS INVOLVING "siface" "srip" "srpt" "sloc" "slip" "slpt
+  } else {
+    str=sproto" ATTEMPTS"
   }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
   ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str
