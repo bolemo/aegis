@@ -355,7 +355,7 @@ BEGIN {st=(systime()-86400)}
     str=sproto" ATTEMPTS BETWEEN "siface" "srip" "srpt" AND "sloc" "slip" "slpt
   }
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
-  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=st
+  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str
   nfr++
 }
 END {
