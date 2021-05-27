@@ -294,7 +294,7 @@ refreshLog() {
 
 stats() {
 # USE ONLY KEYS (KEYS BEING EX-STRL)
-  SR=false SL=false KNB=1 KEYS='"."' STRL='" "'
+  SR=false SL=false
   IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
   case $1 in
     in)  DF='($7=="<"){next}';;
@@ -302,72 +302,36 @@ stats() {
     all) DF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
-    KEYS="$KEYS,s,\$4"
-    KNB=$((KNB+1))
-    STRL="$STRL \" \" PROTOCOL: \$4"
+    A_PROTO='kproto=$4;sproto=kproto'
   fi
   if [ "$1" = 'iface' ]; then shift
-    KEYS="$KEYS,s,\$5"
-    KNB=$((KNB+1))
-    STRL="$STRL \" \" \$5"
-  else STRL="$STRL \" WAN OR VPN\""
+    A_IFACE='kiface=$5;siface=kiface'
   fi
   if [ "$1" = 'rip' ]; then shift
-    KEYS="$KEYS,s,r[1]" SR=true
-    KNB=$((KNB+1))
-    STRL="$STRL \" \" r[1]"
-  else STRL="$STRL \" [ANY IP]\""
+    A_RIP='krip=r[1];srip=krip' SR=true
+  else A_rip='srip="[ANY IP]"'
   fi
   if [ "$1" = 'rpt' ]; then shift
-    KEYS="$KEYS,s,(rn==2)?(r[2]):(\"-\")" SR=true
-    KNB=$((KNB+1))
-    STRL="$STRL ((rn==2)?(\":\" r[2]):(\"\"))"
+    A_RPT='if(rn==2){krpt=r[2];srpt=(":"r[2])}else{krpt="";srpt=""}' SR=true
   fi
   if [ "$1" = 'dir' ]; then shift
-    KEYS="$KEYS,s,\$7"
-    KNB=$((KNB+1))
-    STRL="$STRL ((\$7==\">\")?(\" TO\"):(\" FROM\"))"
-  else STRL="$STRL \" <->\""
+    A_DIR='kdir=$7;sdir=(kdir==">")?(" TO"):(" FROM")'
+  else A_dir='sdir="<=>"'
   fi
   if [ "$1" = 'loc' ]; then shift
-    KEYS="$KEYS,s,substr(\$8",",0,index(\$8\",\",\",\")-1)"
-    KNB=$((KNB+1))
-    STRL="$STRL \" \" substr(\$8",",0,index(\$8\",\",\",\")-1)"
+    A_LOC='kloc=substr($8,0,index($8,",")-1);sloc=kloc'
   fi
   if [ "$1" = 'lip' ]; then shift
-    KEYS="$KEYS,s,l[1]" SL=true
-    KNB=$((KNB+1))
-    STRL="$STRL \" \" l[1]"
-  else STRL="$STRL \" [ANY IP]\""
+    A_LIP='klip=l[1];slip=klip' SL=true
+  else A_lip='slip="[ANY IP]"'
   fi
   if [ "$1" = 'lpt' ]; then shift
-    KEYS="$KEYS,s,(ln==2)?(l[2]):(\"-\")" SL=true
-    KNB=$((KNB+1))
-    STRL="$STRL ((ln==2)?(\":\"l[2]):(\"\"))"
+    A_LPT='if(ln==2){klpt=l[2];slpt=(":"l[2])}else{klpt="";slpt=""}' SL=true
   fi
-
-#  SR=false SL=false KNB=1 IFS='-'
-#  for _A in $ARG
-#    do case $_A in
-#      in)         DF='($7=="<"){next}';;
-#      out)        DF='($7==">"){next}';;
-#      all)        DF='';;
-#      proto)      KEY='$4';;
-#      iface)      KEY='$5';;
-#      rip)        KEY='r[1]' SR=true;;
-#      rpt)        KEY='(rn==2)?(r[2]):("-")' SR=true;;
-#      dir)        KEY='$7';;
-#      loc)        KEY='substr($8",",0,index($8",",",")-1)';;
-#      lip)        KEY='l[1]' SL=true;;
-#      lpt)        KEY='(ln==2)?(l[2]):("-")' SL=true;;
-#    esac
-#    KNB=$((KNB+1))
-#    [ -z "$KEYS" ] && KEYS="$KEY"|| KEYS="$KEYS,s,$KEY"
-#  done; IFS=
   $SR && PK1='rn=split($6,r,":")'
   $SL && PK2='ln=split($9,l,":")'
   /usr/bin/awk '
-BEGIN {s=" "; st=(systime()-86400)}
+BEGIN {st=(systime()-86400)}
 ($2<st){next}
 (!st){st=$2}
 {tnr++}
@@ -375,13 +339,21 @@ BEGIN {s=" "; st=(systime()-86400)}
 {
   '$PK1'
   '$PK2'
-  act['$KEYS']++
-  ast['$KEYS']='"$STRL"'
+  '$A_PROTO'
+  '$A_IFACE'
+  '$A_RIP'
+  '$A_RPT'
+  '$A_DIR'
+  '$A_LOC'
+  '$A_LIP'
+  '$A_LPT'
+  act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
+  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=sproto,siface,srip,srpt,sdir,sloc,slip,slpt
   nfr++
 }
 END {
-  for(i in act){print ast[i] " hits: " act[i] "<br />"}
-}' "$_LF" | /usr/bin/sort -rnk$KNB | /usr/bin/head -n100
+  for(i in act){print act[i] " " ast[i] "<br />"}
+}' "$_LF" | /usr/bin/sort -rnk1 | /usr/bin/head -n100
 }
 
 refreshDev() {
