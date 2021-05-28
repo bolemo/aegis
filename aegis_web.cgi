@@ -350,9 +350,9 @@ BEGIN {st=(systime()-86400)
   } else if(kdir=="<") {
     str="<stats-dir class=\"outgoing\">OUTGOING</stats-dir> " sproto " HIT(S) " ((lg)?("<stats-int>FROM</stats-int> " sloc " " slip slpt):"") ((rg)?(" <stats-ext>TO</stats-ext> " siface " " srip srpt):"")
   } else if(rg && lg) {
-    str=sproto" HIT(S) BETWEEN "siface" "srip srpt" AND "sloc" "slip slpt
+    str=sproto" HIT(S) <stats-ntl>BETWEEN</stats-ntl> "siface" "srip srpt" <stats-ntl>AND</stats-ntl> "sloc" "slip slpt
   } else if(rg || lg) {
-    str=sproto" HIT(S) INVOLVING "siface" "srip srpt" "sloc" "slip slpt
+    str=sproto" HIT(S) <stats-ntl>INVOLVING</stats-ntl> "siface" "srip srpt" "sloc" "slip slpt
   } else {
     str=sproto" HIT(S)"
   }
