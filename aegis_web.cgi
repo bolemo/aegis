@@ -244,14 +244,10 @@ command() {
 
 # LOG
 _LF=/var/log/log-aegis
-#_SF=/tmp/aegis_status
 
 _getLog() {
-#  _RNM="$(/bin/nvram get Device_name)"
   _MAX=$($wcUCI get aegis_web.log.len)
   _ST=$($wcUCI get aegis_web.log.pos)
-#  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
-#  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
 
 /usr/bin/awk -F: '
 function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
@@ -293,7 +289,6 @@ refreshLog() {
 }
 
 stats() {
-# USE ONLY KEYS (KEYS BEING EX-STRL)
   SR=false SL=false RG=false LG=false
   IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
   case $1 in
@@ -303,9 +298,9 @@ stats() {
     no) DF='';;
   esac; shift
   case $1 in
-    wan) IF='($5!="WAN"){next}' A_IFACE='kiface=$5;siface=kiface' RG=true;;
-    vpn) IF='($5!="VPN"){next}' A_IFACE='kiface=$5;siface=kiface' RG=true;;
-    all) IF='' A_IFACE='kiface=$5;siface=kiface' RG=true;;
+    wan) IF='($5!="WAN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"wan\">WAN</stats-iface>"' RG=true;;
+    vpn) IF='($5!="VPN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"vpn\">VPN</stats-iface>"' RG=true;;
+    all) IF='' A_IFACE='kiface=$5;siface="<stats-iface class=\"tolower($5)\">"$5"</stats-iface>"' RG=true;;
     no) IF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
