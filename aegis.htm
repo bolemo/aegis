@@ -255,7 +255,7 @@ function stats() {
    displayFor('stats');
 }
 function doStats() {
-  var sq=document.getElementById('stats-dir').value;
+  var sq=document.getElementById('stats-dir').value+document.getElementById('stats-iface').value;
   for (var cb of document.getElementsByName('statsKeys')) {
     if (cb.checked) sq+='-'+cb.value;
   }
@@ -478,21 +478,24 @@ function ready() {
     <input type="checkbox" name="logFilter" checked id="log-filter-bdc" onclick="logFilter();" /><label for="log-filter-bdc">BROADCAST</label>
   </div>
   <div id="ctrl-stats" class="show">
-    ASSOCIATION KEY:
+    <select id="stats-dir" name="statsDir" onchange="doStats();">
+      <option value="all" selected>BOTH WAYS</option>
+      <option value="in">INCOMING</option>
+      <option value="out">OUTGOING</option>
+      <option value="no">IGNORE WAY</option>
+    </select>
+    <select id="stats-iface" name="statsIface" onchange="doStats();">
+      <option value="all" selected>ALL INTERFACES</option>
+      <option value="wan">WAN</option>
+      <option value="vpn">VPN</option>
+      <option value="no">IGNORE INTERFACE</option>
+    </select>
     <input type="checkbox" name="statsKeys" id="stats-keys-proto" value="proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-iface" value="iface" onclick="doStats();" checked /><label for="stats-keys-iface">INTERFACE</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-rip" value="rip" onclick="doStats();" checked /><label for="stats-keys-rip">REMOTE IP</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-rpt" value="rpt" onclick="doStats();" /><label for="stats-keys-rpt">REMOTE PORT</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-dir" value="dir" onclick="doStats();" checked /><label for="stats-keys-dir">DIRECTION</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-loc" value="loc" onclick="doStats();" /><label for="stats-keys-loc">LOCAL DEVICE</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-lip" value="lip" onclick="doStats();" /><label for="stats-keys-lip">LOCAL IP</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-lpt" value="lpt" onclick="doStats();" /><label for="stats-keys-lpt">LOCAL PORT</label>
-    <br />FILTER:
-    <select id="stats-dir" name="statsDir" onchange="doStats();">
-      <option value="all" selected>INCOMING AND OUTGOING</option>
-      <option value="in">INCOMING ONLY</option>
-      <option value="out">OUTGOING ONLY</option>
-    </select>
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
