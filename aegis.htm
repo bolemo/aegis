@@ -272,19 +272,19 @@ function doStats() {
   }
   aegis('stats', 'statsbox', sq);
 }
-function getProtoInfo(ptl) {
+function getProtoInfo(ptl,e) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
    var ptlInfoReq = new XMLHttpRequest();
    ptlInfoReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
      try { var ptlInfo = JSON.parse(this.responseText); } catch (e) { return; }
-     document.querySelector("#main-log > .overlay > .title").innerHTML=ptlInfo.title;
-     document.querySelector("#main-log > .overlay > .message").innerHTML=ptlInfo.message;
-     document.querySelector("#main-log > .overlay").style.display="block";
+     document.querySelector("#main-"+e+" > .overlay > .title").innerHTML=ptlInfo.title;
+     document.querySelector("#main-"+e+" > .overlay > .message").innerHTML=ptlInfo.message;
+     document.querySelector("#main-"+e+" > .overlay").style.display="block";
    } }
    ptlInfoReq.open("GET", url, true);
    ptlInfoReq.send();
 }
-function getIpInfo(ip) {
+function getIpInfo(ip,e) {
    var url='http://ip-api.com/json/'+ip+'?fields=status,message,continent,country,regionName,city,district,isp,org,as,reverse,mobile,proxy,hosting,query';
    var ipApiReq = new XMLHttpRequest();
    ipApiReq.onreadystatechange = function() { if ((this.readyState == 4) && (this.status == 200)) {
@@ -310,9 +310,9 @@ function getIpInfo(ip) {
          ipApiMsg = "<p>"+ipApi.status+"</p><p>"+ipApi.message+"</p>"
        }
      }
-     document.querySelector("#main-log > .overlay > .title").innerHTML=ipApiTtl;
-     document.querySelector("#main-log > .overlay > .message").innerHTML=ipApiMsg;
-     document.querySelector("#main-log > .overlay").style.display="block";
+     document.querySelector("#main-"+e+" > .overlay > .title").innerHTML=ipApiTtl;
+     document.querySelector("#main-"+e+" > .overlay > .message").innerHTML=ipApiMsg;
+     document.querySelector("#main-"+e+" > .overlay").style.display="block";
    } }
    ipApiReq.open("GET", url, true);
    ipApiReq.send();
@@ -323,9 +323,12 @@ function hideIpInfo(e) {
 function setIpInfoClick() {
    document.onclick=function(elem){
       elem=window.event? event.srcElement: elem.target;
-      if (elem.tagName == "LOG-RIP") getIpInfo(elem.innerHTML);
+      if (elem.tagName == "LOG-RIP") getIpInfo(elem.innerHTML,"log");
       if (elem.tagName == "LOG-PT") { var win = window.open("https://www.speedguide.net/port.php?port="+elem.innerHTML, '_blank'); win.focus(); }
-      if (elem.tagName == "LOG-PTL") getProtoInfo(elem.getAttribute('value'));
+      if (elem.tagName == "LOG-PTL") getProtoInfo(elem.getAttribute('value'),"log");
+      if (elem.tagName == "STATS-RIP") getIpInfo(elem.innerHTML,"stats");
+      if (elem.tagName == "STATS-PTL") getProtoInfo(elem.getAttribute('value'),"stats");
+      if (elem.tagName == "STATS-PT") { var win = window.open("https://www.speedguide.net/port.php?port="+elem.innerHTML, '_blank'); win.focus(); }
    }
 }
 function ipTest(ip) { return (typeof(ip) === 'string') && (ip.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)) && (ip.split('.').filter(octet => octet >= 0 && octet <= 255).length === 4); }
