@@ -297,9 +297,10 @@ stats() {
   SR=false SL=false RG=false LG=false
   IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
   case $1 in
-    in)  DF='($7=="<"){next}';;
-    out) DF='($7==">"){next}';;
-    all) DF='';;
+    in)  DF='($7=="<"){next}' A_DIR='kdir=$7';;
+    out) DF='($7==">"){next}' A_DIR='kdir=$7';;
+    all) DF='' A_DIR='kdir=$7';;
+    no) DF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
     A_PROTO='kproto=$4;sproto=kproto'
@@ -312,9 +313,6 @@ stats() {
   fi
   if [ "$1" = 'rpt' ]; then shift
     A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre r[2])}else{krpt="";srpt=""}' SR=true RG=true
-  fi
-  if [ "$1" = 'dir' ]; then shift
-    A_DIR='kdir=$7'
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kloc=$8;sloc=kloc' LG=true
