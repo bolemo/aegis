@@ -342,9 +342,9 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="INCOMING " sproto " HIT(S) " ((rg)?("FROM " siface " " srip srpt):"") ((lg)?(" TO " sloc " " slip slpt):"")
+    str="<stats-dir class=\"in\">INCOMING</stats-dir> " sproto " HIT(S) " ((rg)?("FROM " siface " " srip srpt):"") ((lg)?(" TO " sloc " " slip slpt):"")
   } else if(kdir=="<") {
-    str="OUTGOING " sproto " HIT(S) " ((lg)?("FROM " sloc " " slip slpt):"") ((rg)?(" TO " siface " " srip srpt):"")
+    str="<stats-dir class=\"out\">OUTGOING</stats-dir> " sproto " HIT(S) " ((lg)?("FROM " sloc " " slip slpt):"") ((rg)?(" TO " siface " " srip srpt):"")
   } else if(rg && lg) {
     str=sproto" HIT(S) BETWEEN "siface" "srip srpt" AND "sloc" "slip slpt
   } else if(rg || lg) {
