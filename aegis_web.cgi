@@ -313,7 +313,8 @@ stats() {
     A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre r[2])}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'loc' ]; then shift
-    A_LOC='kloc=$8;sloc=kloc' LG=true
+    A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""tolower(kla[1])"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
+#    A_LOC='kloc=$8;sloc=kloc' LG=true
  #   A_LOC='kli=index($8,",")-1;kloc=((kli>0)?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
