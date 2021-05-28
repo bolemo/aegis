@@ -255,6 +255,7 @@ function stats() {
    displayFor('stats');
 }
 function doStats() {
+  document.getElementById("statsbox").innerHTML="Retrieving stats...";
   var sq=document.getElementById('stats-dir').value+"-"+document.getElementById('stats-iface').value;
   for (var cb of document.getElementsByName('statsKeys')) {
     if (cb.checked) sq+='-'+cb.value;
