@@ -300,7 +300,7 @@ stats() {
   case $1 in
     wan) IF='($5!="WAN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"wan\">WAN</stats-iface>"' RG=true;;
     vpn) IF='($5!="VPN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"vpn\">VPN</stats-iface>"' RG=true;;
-    all) IF='' A_IFACE='kiface=$5;siface="<stats-iface class=\"tolower($5)\">"$5"</stats-iface>"' RG=true;;
+    all) IF='' A_IFACE='kiface=$5;siface="<stats-iface class=\""(($5=="WAN")?"wan":"vpn")"\">"$5"</stats-iface>"' RG=true;;
     no) IF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
