@@ -300,7 +300,7 @@ stats() {
   case $1 in
     wan) IF='($5!="WAN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"wan\">WAN</stats-iface>"' RG=true;;
     vpn) IF='($5!="VPN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"vpn\">VPN</stats-iface>"' RG=true;;
-    all) IF='' A_IFACE='kiface=$5;siface="<stats-iface class=\""(($5=="WAN")?"wan":"vpn")"\">"$5"</stats-iface>"' RG=true;;
+    all) IF='' A_IFACE='kiface=$5;siface="<stats-iface class=\""itf[$5]"\">"$5"</stats-iface>"' RG=true;;
     no) IF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
@@ -313,7 +313,7 @@ stats() {
     A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre r[2])}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'loc' ]; then shift
-    A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""tolower(kla[1])"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
+    A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""adt[kla[1]]"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
 #    A_LOC='kloc=$8;sloc=kloc' LG=true
  #   A_LOC='kli=index($8,",")-1;kloc=((kli>0)?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
@@ -326,7 +326,10 @@ stats() {
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
   /usr/bin/awk '
-BEGIN {st=(systime()-86400)}
+BEGIN {st=(systime()-86400)
+  itf["WAN"]="wan";itf["VPN"]="vpn"
+  adt["ROUTER"]="rtr";adt["BROADCAST"]="bdc";adt["LAN"]="lan"
+}
 ($2<st){next}
 (!st){st=$2}
 {tnr++}
@@ -343,9 +346,9 @@ BEGIN {st=(systime()-86400)}
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="<stats-dir class=\"in\">INCOMING</stats-dir> " sproto " HIT(S) " ((rg)?("FROM " siface " " srip srpt):"") ((lg)?(" TO " sloc " " slip slpt):"")
+    str="<stats-dir class=\"incoming\">INCOMING</stats-dir> " sproto " HIT(S) " ((rg)?("<stats-ext>FROM</stats-ext> " siface " " srip srpt):"") ((lg)?(" <stats-int>TO</stats-int> " sloc " " slip slpt):"")
   } else if(kdir=="<") {
-    str="<stats-dir class=\"out\">OUTGOING</stats-dir> " sproto " HIT(S) " ((lg)?("FROM " sloc " " slip slpt):"") ((rg)?(" TO " siface " " srip srpt):"")
+    str="<stats-dir class=\"outgoing\">OUTGOING</stats-dir> " sproto " HIT(S) " ((lg)?("<stats-int>FROM</stats-int> " sloc " " slip slpt):"") ((rg)?(" <stats-ext>TO</stats-ext> " siface " " srip srpt):"")
   } else if(rg && lg) {
     str=sproto" HIT(S) BETWEEN "siface" "srip srpt" AND "sloc" "slip slpt
   } else if(rg || lg) {
