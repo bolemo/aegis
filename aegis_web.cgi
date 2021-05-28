@@ -302,11 +302,14 @@ stats() {
     all) DF='' A_DIR='kdir=$7';;
     no) DF='';;
   esac; shift
+  case $1 in
+    wan) IF='($5!="WAN"){next}' A_IFACE='kiface=$5;siface=kiface' RG=true;;
+    vpn) IF='($5!="VPN"){next}' A_IFACE='kiface=$5;siface=kiface' RG=true;;
+    all) IF='' A_IFACE='kiface=$5;siface=kiface' RG=true;;
+    no) IF='';;
+  esac; shift
   if [ "$1" = 'proto' ]; then shift
     A_PROTO='kproto=$4;sproto=kproto'
-  fi
-  if [ "$1" = 'iface' ]; then shift
-    A_IFACE='kiface=$5;siface=kiface' RG=true
   fi
   if [ "$1" = 'rip' ]; then shift
     A_RIP='krip=r[1];srip=krip' SR=true RG=true
@@ -331,7 +334,7 @@ BEGIN {st=(systime()-86400)}
 ($2<st){next}
 (!st){st=$2}
 {tnr++}
-'$DF'
+'$DF$IF'
 {
   '"$PK1"'
   '"$PK2"'
