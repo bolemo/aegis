@@ -350,13 +350,13 @@ BEGIN {
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="<stats-dir class=\"incoming\">INCOMING</stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext>FROM</stats-ext>" siface " " srip srpt):"") ((lg)?("<stats-int>TO</stats-int>" sloc " " slip slpt):"")
+    str="<stats-dir class=\"incoming\"> INCOMING </stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext> FROM </stats-ext>" siface " " srip srpt):"") ((lg)?("<stats-int>TO</stats-int>" sloc " " slip slpt):"")
   } else if(kdir=="<") {
-    str="<stats-dir class=\"outgoing\">OUTGOING</stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int>FROM</stats-int>" sloc " " slip slpt):"") ((rg)?("<stats-ext>TO</stats-ext>" siface " " srip srpt):"")
+    str="<stats-dir class=\"outgoing\"> OUTGOING </stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int> FROM </stats-int>" sloc " " slip slpt):"") ((rg)?("<stats-ext>TO</stats-ext>" siface " " srip srpt):"")
   } else if(rg && lg) {
-    str=sproto" HIT(S) <stats-ntl>BETWEEN</stats-ntl>" siface " " srip srpt "<stats-ntl>AND</stats-ntl>" sloc " " slip slpt
+    str=sproto" HIT(S) <stats-ntl> BETWEEN </stats-ntl>" siface " " srip srpt "<stats-ntl> AND </stats-ntl>" sloc " " slip slpt
   } else if(rg || lg) {
-    str=sproto" HIT(S) <stats-ntl>INVOLVING</stats-ntl>" siface " " srip srpt " " sloc " " slip slpt
+    str=sproto" HIT(S) <stats-ntl> INVOLVING </stats-ntl>" siface " " srip srpt " " sloc " " slip slpt
   } else {
     str=sproto" HIT(S)"
   }
