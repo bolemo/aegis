@@ -367,8 +367,8 @@ BEGIN {
 }
 END {
   print "<stats-head>Highest hits from selection between " strftime("%F %T",st) " and " strftime("%F %T",now) ":</stats-head><br />"|"cat >&3"
-  for(i in act){print act[i] " " ast[i] "<br />"}
-}' "$_LF" | /usr/bin/sort -rnk1 | /usr/bin/head -n100; } 3>&1
+  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
+}' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
 
 refreshDev() {
