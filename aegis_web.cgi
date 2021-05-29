@@ -320,7 +320,8 @@ stats() {
     A_LIP='klip=l[1];slip="<stats-lip>"klip"</stats-lip>"' SL=true LG=true
   fi
   if [ "$1" = 'lpt' ]; then shift
-    A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre"<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
+ #   A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre"<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
+    A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
   fi
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
@@ -349,13 +350,13 @@ BEGIN {
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="<stats-dir class=\"incoming\">INCOMING</stats-dir> " sproto " HIT(S) " ((rg)?("<stats-ext>FROM</stats-ext> " siface " " srip srpt):"") ((lg)?(" <stats-int>TO</stats-int> " sloc " " slip slpt):"")
+    str="<stats-dir class=\"incoming\">INCOMING</stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext>FROM</stats-ext>" siface " " srip srpt):"") ((lg)?("<stats-int>TO</stats-int>" sloc " " slip slpt):"")
   } else if(kdir=="<") {
-    str="<stats-dir class=\"outgoing\">OUTGOING</stats-dir> " sproto " HIT(S) " ((lg)?("<stats-int>FROM</stats-int> " sloc " " slip slpt):"") ((rg)?(" <stats-ext>TO</stats-ext> " siface " " srip srpt):"")
+    str="<stats-dir class=\"outgoing\">OUTGOING</stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int>FROM</stats-int>" sloc " " slip slpt):"") ((rg)?("<stats-ext>TO</stats-ext>" siface " " srip srpt):"")
   } else if(rg && lg) {
-    str=sproto" HIT(S) <stats-ntl>BETWEEN</stats-ntl> "siface" "srip srpt" <stats-ntl>AND</stats-ntl> "sloc" "slip slpt
+    str=sproto" HIT(S) <stats-ntl>BETWEEN</stats-ntl>" siface " " srip srpt "<stats-ntl>AND</stats-ntl>" sloc " " slip slpt
   } else if(rg || lg) {
-    str=sproto" HIT(S) <stats-ntl>INVOLVING</stats-ntl> "siface" "srip srpt" "sloc" "slip slpt
+    str=sproto" HIT(S) <stats-ntl>INVOLVING</stats-ntl>" siface " " srip srpt " " sloc " " slip slpt
   } else {
     str=sproto" HIT(S)"
   }
