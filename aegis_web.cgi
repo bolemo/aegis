@@ -307,7 +307,7 @@ stats() {
     A_PROTO='kproto=$4;sproto="<stats-ptl>"kproto"</stats-ptl>"'
   fi
   if [ "$1" = 'rip' ]; then shift
-    A_RIP='krip=r[1];srip=krip' SR=true RG=true
+    A_RIP='krip=r[1];srip="<stats-rip>"krip"</stats-rip>"' SR=true RG=true
   fi
   if [ "$1" = 'rpt' ]; then shift
     A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre"<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
