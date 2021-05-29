@@ -329,7 +329,8 @@ stats() {
 function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
 function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
 BEGIN {
-  st=(systime()-86400)
+  now=systime()
+  st=(now-86400)
   getProts()
   itf["WAN"]="wan";itf["VPN"]="vpn"
   adt["ROUTER"]="rtr";adt["BROADCAST"]="bdc";adt["LAN"]="lan"
@@ -365,8 +366,9 @@ BEGIN {
   nfr++
 }
 END {
+  print "Top 100 hits between " st " and " now ":"|"cat >&2"
   for(i in act){print act[i] " " ast[i] "<br />"}
-}' "$_LF" | /usr/bin/sort -rnk1 | /usr/bin/head -n100
+}' "$_LF" | /usr/bin/sort -rnk1 | /usr/bin/head -n100 2>&1
 }
 
 refreshDev() {
