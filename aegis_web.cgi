@@ -316,7 +316,7 @@ stats() {
     A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""adt[kla[1]]"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
-    A_LIP='klip=l[1];slip=klip' SL=true LG=true
+    A_LIP='klip=l[1];slip="<stats-lip>"klip"</stats-lip>"' SL=true LG=true
   fi
   if [ "$1" = 'lpt' ]; then shift
     A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre"<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
