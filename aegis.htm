@@ -123,8 +123,8 @@ log-pt::before { display:inline-block; color: darkgrey; content: ':'; }
 #statsbox stats-ptl { text-decoration: underline; font-weight: bold; color: green; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-rip { text-decoration: underline; font-weight: bold; color: red; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
 #statsbox stats-lip { font-weight: bold; color: blue; padding-right: 0px; }
-#statsbox stats-pt { text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-#statsbox stats-pt::before { display:inline-block; color: darkgrey; content: ' PORT\A0'; text-decoration: none; }
+#statsbox stats-pt { font-weight: bold; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
+#statsbox stats-pt::before { display:inline-block; font-weight: normal; color: darkgrey; content: ' PORT\A0'; text-decoration: none; }
 #statsbox stats-rip + stats-pt::before { font-weight: bold; content: ':'; }
 #statsbox stats-lip + stats-pt::before { font-weight: bold; content: ':'; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
