@@ -115,11 +115,14 @@ log-pt::before { color: darkgrey; content: ':'; }
 }
 #logbox p.incoming.new { animation: highlight-red 1s; }
 #logbox p.outgoing.new { animation: highlight-blue 1s; }
-#main-log > .overlay { display: none; box-sizing: border-box; position: fixed; z-index: 9999; top: 50%; left: 50%; transform: translate(-50%, -50%); width: fit-content; background-color: rgba(0,0,0,0.8); border: 0.5em solid black; border-radius: 0.5em; color: white; }
-#main-log > .overlay > .title { width: inherited; background: black; padding-bottom: 0.25em; text-align: center; font-weight: bold; font-size: 1em; }
-#main-log > .overlay > .message { padding: 0.25em 0.5em; overflow: auto; }
-#main-log > .overlay > .message p { width: max-content; margin: 0 1em 0 0; }
-#main-log > .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: #718787; border: 0.2em solid #bfc9c9; border-radius: 0.4em; text-shadow: none; cursor: pointer; }
+.overlay { display: none; box-sizing: border-box; position: fixed; z-index: 9999; top: 50%; left: 50%; transform: translate(-50%, -50%); width: fit-content; background-color: rgba(0,0,0,0.8); border: 0.5em solid black; border-radius: 0.5em; color: white; }
+.overlay > .title { width: inherited; background: black; padding-bottom: 0.25em; text-align: center; font-weight: bold; font-size: 1em; }
+.overlay > .message { padding: 0.25em 0.5em; overflow: auto; }
+.overlay > .message p { width: max-content; margin: 0 1em 0 0; }
+.overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: #718787; border: 0.2em solid #bfc9c9; border-radius: 0.4em; text-shadow: none; cursor: pointer; }
+#statsbox stats-ptl { text-decoration: underline; color: green; text-decoration-style: dotted; cursor: pointer; }
+#statsbox stats-rip { font-weight: bold; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
+#statsbox stats-pt { text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
 #statsbox stats-dir.outgoing { font-weight: bold; color: blue; }
 #statsbox stats-ext { color: red; }
