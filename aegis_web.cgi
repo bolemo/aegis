@@ -310,7 +310,8 @@ stats() {
     A_RIP='krip=r[1];srip="<stats-rip>"krip"</stats-rip>"' SR=true RG=true
   fi
   if [ "$1" = 'rpt' ]; then shift
-    A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre"<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
+ #   A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre"<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
+    A_RPT='if(rn==2){krpt=r[2];srpt=("<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""adt[kla[1]]"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
