@@ -304,24 +304,22 @@ stats() {
     no) IF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
-    A_PROTO='kproto=$4;sproto=kproto'
+    A_PROTO='kproto=$4;sproto="<stats-ptl>"kproto"</stats-ptl>"'
   fi
   if [ "$1" = 'rip' ]; then shift
     A_RIP='krip=r[1];srip=krip' SR=true RG=true
   fi
   if [ "$1" = 'rpt' ]; then shift
-    A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre r[2])}else{krpt="";srpt=""}' SR=true RG=true
+    A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre"<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""adt[kla[1]]"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
-#    A_LOC='kloc=$8;sloc=kloc' LG=true
- #   A_LOC='kli=index($8,",")-1;kloc=((kli>0)?(substr($8,0,kli)):($8));sloc=kloc' LG=true
   fi
   if [ "$1" = 'lip' ]; then shift
     A_LIP='klip=l[1];slip=klip' SL=true LG=true
   fi
   if [ "$1" = 'lpt' ]; then shift
-    A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre l[2])}else{klpt="";slpt=""}' SL=true LG=true
+    A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre"<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
   fi
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
