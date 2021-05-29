@@ -366,7 +366,7 @@ BEGIN {
   nfr++
 }
 END {
-  print "Top 100 hitlist between " strftime("%F %T",st) " and " strftime("%F %T",now) ":<br />"|"cat >&3"
+  print "<stats-head>Highest hits from selection between " strftime("%F %T",st) " and " strftime("%F %T",now) ":</stats-head><br />"|"cat >&3"
   for(i in act){print act[i] " " ast[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk1 | /usr/bin/head -n100; } 3>&1
 }
