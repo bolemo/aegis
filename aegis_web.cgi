@@ -304,7 +304,7 @@ stats() {
     no) IF='';;
   esac; shift
   if [ "$1" = 'proto' ]; then shift
-    A_PROTO='kproto=$4;sproto="<stats-ptl>"kproto"</stats-ptl>"'
+    A_PROTO='kproto=$4;sproto=protoname(kproto)'
   fi
   if [ "$1" = 'rip' ]; then shift
     A_RIP='krip=r[1];srip="<stats-rip>"krip"</stats-rip>"' SR=true RG=true
@@ -324,7 +324,11 @@ stats() {
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
   /usr/bin/awk '
-BEGIN {st=(systime()-86400)
+function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
+function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
+BEGIN {
+  st=(systime()-86400)
+  getProts()
   itf["WAN"]="wan";itf["VPN"]="vpn"
   adt["ROUTER"]="rtr";adt["BROADCAST"]="bdc";adt["LAN"]="lan"
 }
