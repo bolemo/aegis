@@ -102,7 +102,7 @@ p.bdc log-lnm { font-weight: bold; color: #E238EC; }
 log-if::after, log-lnm::after { content: ':'; color: darkgrey; }
 log-if, log-lnm { text-align: right; }
 #logbox p log-lip { font-weight: bold; color: blue; padding-right: 0px; }
-log-pt::before { color: darkgrey; content: ':'; }
+log-pt::before { display:inline-block; color: darkgrey; content: ':'; }
 #logbox p log-rip + log-pt { color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #logbox p log-lip + log-pt { color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 @keyframes highlight-red {
@@ -124,7 +124,7 @@ log-pt::before { color: darkgrey; content: ':'; }
 #statsbox stats-rip { text-decoration: underline; font-weight: bold; color: red; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
 #statsbox stats-lip { font-weight: bold; color: blue; padding-right: 0px; }
 #statsbox stats-pt { font-weight: bold; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-#statsbox stats-pt::before { display:inline-block; color: darkgrey; content: ' PORT '; text-decoration: none; }
+#statsbox stats-pt::before { display:inline-block; color: darkgrey; content: ' PORT\A0'; text-decoration: none; }
 #statsbox stats-rip + stats-pt::before { content: ':'; }
 #statsbox stats-lip + stats-pt::before { content: ':'; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
