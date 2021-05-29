@@ -123,10 +123,11 @@ log-pt::before { color: darkgrey; content: ':'; }
 #statsbox stats-ptl { text-decoration: underline; color: green; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-rip { text-decoration: underline; font-weight: bold; color: red; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-lip { font-weight: bold; color: blue; }
-#statsbox stats-pt { font-weight: bold; color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
+#statsbox stats-pt::before { color: darkgrey; content: ' PORT '; }
+#statsbox stats-rip + stats-pt::before { content: ':'; }
+#statsbox stats-lip + stats-pt::before { content: ':'; }
 #statsbox stats-rip + stats-pt { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
-    #statsbox stats-pt::before { content: ' PORT '; }
-    #statsbox stats-rip + stats-pt::before { content: ':'; }
+#statsbox stats-lip + stats-pt { font-weight: bold; color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
 #statsbox stats-dir.outgoing { font-weight: bold; color: blue; }
 #statsbox stats-ext { color: red; }
