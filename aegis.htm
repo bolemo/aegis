@@ -121,8 +121,10 @@ log-pt::before { color: darkgrey; content: ':'; }
 .overlay > .message p { width: max-content; margin: 0 1em 0 0; }
 .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: #718787; border: 0.2em solid #bfc9c9; border-radius: 0.4em; text-shadow: none; cursor: pointer; }
 #statsbox stats-ptl { text-decoration: underline; color: green; text-decoration-style: dotted; cursor: pointer; }
-#statsbox stats-rip { font-weight: bold; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
-#statsbox stats-pt { text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
+#statsbox stats-rip { text-decoration: underline; font-weight: bold; color: red; text-decoration-style: dotted; cursor: pointer; }
+#statsbox stats-lip { font-weight: bold; color: blue; }
+#statsbox stats-pt.ext { font-weight: bold; color: red; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
+#statsbox stats-pt.int { font-weight: bold; color: blue; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
 #statsbox stats-dir.outgoing { font-weight: bold; color: blue; }
 #statsbox stats-ext { color: red; }
