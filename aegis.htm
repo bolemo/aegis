@@ -507,17 +507,17 @@ function ready() {
       <option value="out">OUTGOING</option>
       <option value="no">IGNORE WAY</option>
     </select>
-    REMOTE:
-    <input type="checkbox" name="statsKeys" id="stats-keys-proto" value="proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
     <select id="stats-iface" name="statsIface" onchange="doStats();">
       <option value="all" selected>ALL INTERFACES</option>
       <option value="wan">WAN</option>
       <option value="vpn">VPN</option>
       <option value="no">IGNORE INTERFACE</option>
     </select>
+    <input type="checkbox" name="statsKeys" id="stats-keys-proto" value="proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
+    /<b> <u>REMOTE</u>:</b>
     <input type="checkbox" name="statsKeys" id="stats-keys-rip" value="rip" onclick="doStats();" checked /><label for="stats-keys-rip">IP</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-rpt" value="rpt" onclick="doStats();" /><label for="stats-keys-rpt">PORT</label>
-    LOCAL:
+    /<b> <u>LOCAL</u>:</b>
     <input type="checkbox" name="statsKeys" id="stats-keys-loc" value="loc" onclick="doStats();" /><label for="stats-keys-loc">DEVICE</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-lip" value="lip" onclick="doStats();" /><label for="stats-keys-lip">IP</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-lpt" value="lpt" onclick="doStats();" /><label for="stats-keys-lpt">PORT</label>
