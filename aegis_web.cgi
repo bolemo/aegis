@@ -310,7 +310,6 @@ stats() {
     A_RIP='krip=r[1];srip="<stats-rip>"krip"</stats-rip>"' SR=true RG=true
   fi
   if [ "$1" = 'rpt' ]; then shift
- #   A_RPT='pre=((krip)?":":" PORT ");if(rn==2){krpt=r[2];srpt=(pre"<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
     A_RPT='if(rn==2){krpt=r[2];srpt=("<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
   fi
   if [ "$1" = 'loc' ]; then shift
@@ -320,7 +319,6 @@ stats() {
     A_LIP='klip=l[1];slip="<stats-lip>"klip"</stats-lip>"' SL=true LG=true
   fi
   if [ "$1" = 'lpt' ]; then shift
- #   A_LPT='pre=((klip)?":":" PORT ");if(ln==2){klpt=l[2];slpt=(pre"<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
     A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
   fi
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
@@ -336,7 +334,7 @@ BEGIN {
   adt["ROUTER"]="rtr";adt["BROADCAST"]="bdc";adt["LAN"]="lan"
 }
 ($2<st){next}
-(!st){st=$2}
+(!fts){fts=$2}
 {tnr++}
 '$DF$IF'
 {
@@ -366,7 +364,7 @@ BEGIN {
   nfr++
 }
 END {
-  print "<stats-head>Highest hits from selection between " strftime("%F %T",st) " and " strftime("%F %T",now) ":</stats-head><br />"|"cat >&3"
+  print "<stats-head>Highest hits from selection between " strftime("%F %T",fts) " and " strftime("%F %T",now) ":</stats-head><br />"|"cat >&3"
   for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
