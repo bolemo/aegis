@@ -349,13 +349,13 @@ BEGIN {
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="<stats-dir class=\"incoming\"> INCOMING </stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext> FROM " siface " " srip srpt "</stats-ext>"):"") ((lg)?("<stats-int> TO " sloc " " slip slpt "</stats-int>"):"")
+    str="<stats-dir class=\"incoming\">INCOMING </stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext> FROM " siface " " srip srpt "</stats-ext>"):"") ((lg)?("<stats-int> TO " sloc " " slip slpt "</stats-int>"):"")
   } else if(kdir=="<") {
-    str="<stats-dir class=\"outgoing\"> OUTGOING </stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int> FROM " sloc " " slip slpt "</stats-int>"):"") ((rg)?("<stats-ext> TO " siface " " srip srpt "</stats-ext>"):"")
+    str="<stats-dir class=\"outgoing\">OUTGOING </stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int> FROM " sloc " " slip slpt "</stats-int>"):"") ((rg)?("<stats-ext> TO " siface " " srip srpt "</stats-ext>"):"")
   } else if(rg && lg) {
-    str=sproto" HIT(S) <stats-ntl> BETWEEN </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-ntl> AND </stats-ntl><stats-int>" sloc " " slip slpt "</stats-int>"
+    str=sproto" HIT(S) <stats-ntl>BETWEEN </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-ntl> AND </stats-ntl><stats-int>" sloc " " slip slpt "</stats-int>"
   } else if(rg || lg) {
-    str=sproto" HIT(S) <stats-ntl> INVOLVING </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-int>" sloc " " slip slpt "</stats-int>"
+    str=sproto" HIT(S) <stats-ntl>INVOLVING </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-int>" sloc " " slip slpt "</stats-int>"
   } else {
     str=sproto" HIT(S)"
   }
@@ -365,7 +365,7 @@ BEGIN {
   nfr++
 }
 END {
-  print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits> RECORDED HIT(S)<br /><stats-hits> " nfr " </stats-hits> HIT(S) MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
+  print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT(S)<br /><stats-hits> " nfr " </stats-hits>HIT(S) MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
   for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
