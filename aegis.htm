@@ -507,18 +507,20 @@ function ready() {
       <option value="out">OUTGOING</option>
       <option value="no">IGNORE WAY</option>
     </select>
+    REMOTE:
+    <input type="checkbox" name="statsKeys" id="stats-keys-proto" value="proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
     <select id="stats-iface" name="statsIface" onchange="doStats();">
       <option value="all" selected>ALL INTERFACES</option>
       <option value="wan">WAN</option>
       <option value="vpn">VPN</option>
       <option value="no">IGNORE INTERFACE</option>
     </select>
-    <input type="checkbox" name="statsKeys" id="stats-keys-proto" value="proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-rip" value="rip" onclick="doStats();" checked /><label for="stats-keys-rip">REMOTE IP</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-rpt" value="rpt" onclick="doStats();" /><label for="stats-keys-rpt">REMOTE PORT</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-loc" value="loc" onclick="doStats();" /><label for="stats-keys-loc">LOCAL DEVICE</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-lip" value="lip" onclick="doStats();" /><label for="stats-keys-lip">LOCAL IP</label>
-    <input type="checkbox" name="statsKeys" id="stats-keys-lpt" value="lpt" onclick="doStats();" /><label for="stats-keys-lpt">LOCAL PORT</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-rip" value="rip" onclick="doStats();" checked /><label for="stats-keys-rip">IP</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-rpt" value="rpt" onclick="doStats();" /><label for="stats-keys-rpt">PORT</label>
+    LOCAL:
+    <input type="checkbox" name="statsKeys" id="stats-keys-loc" value="loc" onclick="doStats();" /><label for="stats-keys-loc">DEVICE</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-lip" value="lip" onclick="doStats();" /><label for="stats-keys-lip">IP</label>
+    <input type="checkbox" name="statsKeys" id="stats-keys-lpt" value="lpt" onclick="doStats();" /><label for="stats-keys-lpt">PORT</label>
   </div>
   <div id="ctrl-lists" class="show list">
     <select id="lists-list" name="listList" onchange="doList(document.getElementById('lists-list').value);">
