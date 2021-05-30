@@ -359,12 +359,13 @@ BEGIN {
   } else {
     str=sproto" HIT(S)"
   }
+  if(!act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]){nk++}
   act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
   ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str
   nfr++
 }
 END {
-  print "<stats-head>Between " strftime("%F %T",fts) " and " strftime("%F %T",now) ":</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT(S)<br /><stats-hits> " nfr " </stats-hits>HIT(S) MATCHING SELECTION<br />Highest hits for selection for that period:<br />"|"cat >&3"
+  print "<stats-head>Between " strftime("%F %T",fts) " and " strftime("%F %T",now) ":</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT(S)<br /><stats-hits> " nfr " </stats-hits>HIT(S) MATCHING SELECTION<br />" ((nk<=100)?(nk " grouped hits"):("Top 100 grouped hits (out of " nk ")")) " from selection for that period:<br />"|"cat >&3"
   for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
