@@ -364,7 +364,7 @@ BEGIN {
   nfr++
 }
 END {
-  print "<stats-head>Highest hits from selection between " strftime("%F %T",fts) " and " strftime("%F %T",now) ":</stats-head><br />"|"cat >&3"
+  print "<stats-head>Between " strftime("%F %T",fts) " and " strftime("%F %T",now) ":</stats-head><br /><stats-hits> " tnr "</stats-hits>RECORDED HIT(S)<br /><stats-hits> " nfr "</stats-hits>HIT(S) MATCHING SELECTION<br /><stats-head>Highest hits for selection for that period:</stats-head><br />"|"cat >&3"
   for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
