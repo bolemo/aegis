@@ -22,6 +22,9 @@ section > * { box-sizing: border-box; }
 #ctrl > .show { padding: 0.5em 0 0.5em 1em; font-size: 0.8em; margin-bottom: 0; border-bottom: 1px dotted darkSlateGrey; }
 #vers-message { font-size: 1.5em; font-weight: bold; color: red; margin-bottom: 0.2em; }
 #ctrl-log input { margin-left: 1em; }
+#ctrl-stats span, #ctrl-stats input, #ctrl-stats label { vertical-align: middle; }
+#ctrl-stats .ext { font-style: oblique; font-weight: bold; color: #FF3333; }
+#ctrl-stats .int { font-style: oblique; font-weight: bold; color: #3333FF; }
 #ctrl-tools > #check-ip { font-family: monospace; font-size: 1.1em; border: 1px solid black; outline: none; box-shadow: none; resize: none; }
 #ctrl > .list > * { display: inline; margin-right: 1em; }
 #log-filter-incoming + label { color: red; border-top: 2px solid lightgrey; }
@@ -514,10 +517,10 @@ function ready() {
       <option value="no">IGNORE INTERFACE</option>
     </select>
     <input type="checkbox" name="statsKeys" id="stats-keys-proto" value="proto" onclick="doStats();" /><label for="stats-keys-proto">PROTOCOL</label>
-    /<b> <u>REMOTE</u>:</b>
+    <span class="ext">REMOTE:</span>
     <input type="checkbox" name="statsKeys" id="stats-keys-rip" value="rip" onclick="doStats();" checked /><label for="stats-keys-rip">IP</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-rpt" value="rpt" onclick="doStats();" /><label for="stats-keys-rpt">PORT</label>
-    /<b> <u>LOCAL</u>:</b>
+    <span class="int">LOCAL:</span>
     <input type="checkbox" name="statsKeys" id="stats-keys-loc" value="loc" onclick="doStats();" /><label for="stats-keys-loc">DEVICE</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-lip" value="lip" onclick="doStats();" /><label for="stats-keys-lip">IP</label>
     <input type="checkbox" name="statsKeys" id="stats-keys-lpt" value="lpt" onclick="doStats();" /><label for="stats-keys-lpt">PORT</label>
