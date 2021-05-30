@@ -6,6 +6,7 @@
 - Rewrote code for `log -show` and `log -live` (simplified code and output).
 - Web Companion: updated protocols database to latest IANA entry.
 - Web Companion: simplified and improved log output.
+- Web Companion: new STATS tab allowing to get some stats from the log using a selection of associative keys and filters.
 ---
 ### 1.7.9
 - calling net-scan daemon directly to get LAN devices names, instead of using the NG web page net-cgi trick.
