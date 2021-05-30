@@ -25,6 +25,28 @@ Tab to watch the live log, when enabled.
 It can be filtered by interface (WAN, VPN), and direction (incoming, outgoing).
 
 ---
+#### STATS
+Tab to generate stats from the log, when enabled.
+It works on the period of the last sliding 24 hours (or from when router was restarted if it was less than 24 hours ago).
+The stats are generated from the association of selected keys:
+- **DIRECTION**: select how the direction is taken into account for the statistics):
+  - ***BOTH WAYS***: incoming and outgoing are taken into account and differentiated,
+  - ***INCOMING***: incoming only (ignore outgoing),
+  - ***OUTGOING***: outgoing only (ignore incoming),
+  - ***IGNORE WAY***: the direction information is not taking into account (differentiated) for the statistics.
+- **INTERFACE**: select how the interface is taken into account for the statistics:
+  - ***ALL INTERFACES***: WAN and VPN are taken into account and differentiated,
+  - ***WAN***: take only WAN interface into account and ignore VPN interface,
+  - ***VPN***: take only VPN interface into account and ignore WAN interface,
+  - ***IGNORE INTERFACE***: the interface information is not taking into account (differentiated) for the statistics.
+- **PROTOCOL**: if checked, the protocol is taken into account for the statistics (and each one in the log is differentiated), if unchecked, the protocol is ignored.
+- **REMOTE IP**: if checked, the remote IP adress is taken into account for the statistics (each different IP in the log is differentiated), if unchecked, the remote IP is ignored.
+- **REMOTE PORT**: if checked, the remote port is taken into account for the statistics (each different port in the log is differentiated), if unchecked, the remote port is ignored.
+- **LOCAL DEVICE**: if checked, the local device denomination is taken into account for the statistics (each different device in the log is differentiated), if unchecked, the local device denomination is ignored. The denomination can be the router itself, a device on then LAN, or the broadcast.
+- **LOCAL IP**: if checked, the local IP adress is taken into account for the statistics (each different IP in the log is differentiated), if unchecked, the local IP is ignored.
+- **LOCAL PORT**: if checked, the local port is taken into account for the statistics (each different port in the log is differentiated), if unchecked, the local port is ignored.
+
+---
 #### TOOLS
 For now, it only allows to check an IP address. It will tells if the address is in any loaded directive, and if it is blocked by the router or not.
 
