@@ -23,8 +23,8 @@ section > * { box-sizing: border-box; }
 #vers-message { font-size: 1.5em; font-weight: bold; color: red; margin-bottom: 0.2em; }
 #ctrl-log input { margin-left: 1em; }
 #ctrl-stats span, #ctrl-stats input, #ctrl-stats label { vertical-align: middle; }
-#ctrl-stats .ext { font-style: oblique; font-weight: bold; color: #FF3333; }
-#ctrl-stats .int { font-style: oblique; font-weight: bold; color: #3333FF; }
+#ctrl-stats .ext { display: inline-block; margin-left: 1em; font-weight: bold; color: #FF8888; }
+#ctrl-stats .int { display: inline-block; margin-left: 1em; font-weight: bold; color: #8888FF; }
 #ctrl-tools > #check-ip { font-family: monospace; font-size: 1.1em; border: 1px solid black; outline: none; box-shadow: none; resize: none; }
 #ctrl > .list > * { display: inline; margin-right: 1em; }
 #log-filter-incoming + label { color: red; border-top: 2px solid lightgrey; }
@@ -124,7 +124,7 @@ log-pt::before { display:inline-block; color: darkgrey; content: ':'; }
 .overlay > .message p { width: max-content; margin: 0 1em 0 0; }
 .overlay input { float: right; margin: 0.25em 0.5em 0.5em 0; color: white; font-size: 1em; font-weight: bold; background: #718787; border: 0.2em solid #bfc9c9; border-radius: 0.4em; text-shadow: none; cursor: pointer; }
 #statsbox stats-head { font-size: 1.1em; font-weight: bold; }
-#statsbox stats-hits { display: inline-block; font-weight: bold; font-family: Courier New, monospace; width: 3em; text-align: right; }
+#statsbox stats-hits { display: inline-block; font-weight: 1000; font-family: Courier New, monospace; width: 4em; text-align: right; }
 #statsbox stats-ptl { text-decoration: underline; font-weight: bold; color: green; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-rip { text-decoration: underline; font-weight: bold; color: red; text-decoration-style: dotted; cursor: pointer; padding-right: 0px; }
 #statsbox stats-lip { font-weight: bold; color: blue; padding-right: 0px; }
