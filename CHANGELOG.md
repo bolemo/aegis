@@ -1,5 +1,9 @@
 ## Change Log
 
+
+### 1.7.11
+- 
+---
 ### 1.7.10
 - Changed the logging daemon process, optimizations, clearer log file, and determination of local device name upstream. Also the length of the aegis log file is now based on a minimum TTL in seconds instead of a minimum number of lines. Default is 86400 (24 sliding hours).
 - Replaced `log -get-history` and `log -set-history` by `log -get-ttl` and `log -set-ttl`.
