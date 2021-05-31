@@ -1,9 +1,10 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
-wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
-wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
+wcGIT_REPO="$($wcUCI get aegis.repo)"
+wcGIT_DIR="https://raw.githubusercontent.com/bolemo/aegis/$wcGIT_REPO"
+wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcLHTTPD_CONF='/etc/lighttpd/conf.d'
 wcLHTTPD_WC_CONF="$wcLHTTPD_CONF/31-aegis.conf"
 
