@@ -705,6 +705,7 @@ do_upgrade() { $DEBUG && debug "do_upgrade"
   /bin/mv "$DL_PATH" "$SC_NICEPATH"
   /bin/chmod +x "$SC_NICEPATH"
   /bin/rm -rf "/tmp/$SC_NAME.dl"
+  sc_conf set repo="${REPO##*/}"
   echo -e "\033[0m- Script installed to $SC_NICEPATH"
   check_web && install_web
   _exit 0
