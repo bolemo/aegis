@@ -134,7 +134,9 @@ log-pt::before { display:inline-block; color: darkgrey; content: ':'; }
 #statsbox stats-pt::before { display:inline-block; font-weight: normal; color: darkgrey; content: ' PORT\A0'; text-decoration: none; }
 #statsbox stats-pt.empty::before { content: ' PORTLESS'; }
 #statsbox stats-rip + stats-pt::before { font-weight: bold; content: ':'; }
+#statsbox stats-rip + stats-pt.empty::before { content: ':\2205'; }
 #statsbox stats-lip + stats-pt::before { font-weight: bold; content: ':'; }
+#statsbox stats-lip + stats-pt.empty::before { content: ':\2205'; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
 #statsbox stats-dir.outgoing { font-weight: bold; color: blue; }
 #statsbox stats-ext { color: red; }
