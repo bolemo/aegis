@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.9"
+SC_VERS="1.7.10"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -137,6 +137,7 @@ _warn() { $DEBUG && debug "warning: $1"; >&2 echo -e "\033[31m! $1\033[0m"; [ "$
 LOGD_NAME=${SC_ABR}-logd
 LOGD_PID="/var/run/${LOGD_NAME}.pid"
 LOGD_TMP="/tmp/$LOGD_NAME"
+LOGD_AWK="$LOGD_TMP.awk"
 _logd_logmsg() { $DEBUG && debug "_logd_logmsg"
   if   test -e /var/log/log-message; then echo '/var/log/log-message'; return 0
   elif test -e /var/log/log_message; then echo '/var/log/log_message'; return 0
@@ -148,52 +149,106 @@ if [ -e $LOGD_PID ] && /bin/kill -0 $(cat $LOGD_PID); then # logd is already run
   if _logd_logmsg >/dev/null; then return $INFO_LOGD_KEEP_ON
   else _logd_stop; return $INFO_LOGD_STOPPED; fi
 fi
-if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
-local LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
+#if ! sc_conf get log.len >/dev/null; then sc_conf set log.len=5000; sc_conf commit; fi;
+if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf commit; fi;
+LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
+KEY_LEN=$((${#SC_ABR}+2))
+# awk file
+_BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
+_BCFUNC='RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr show dev '$WAN_IF'";bc["WAN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["WAN",al[(i+1)]]=""}}};close(cmd)'
+[ "$TUN_IF" ] && _BCFUNC=$_BCFUNC';cmd="/usr/sbin/ip -4 addr show dev '$TUN_IF'";bc["VPN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["VPN",al[(i+1)]]=""}}};close(cmd)'
+if [ "$(cat /module_name)" = "RBR50" ]
+  then _ADFUNC='RS="-----device:[[:digit:]]+-----";while((getline l<fn)>0){if(l){split(l,f,"\n");dn[f[2]]=f[8]}};close(fn)'
+  else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
+fi
+cat >"$LOGD_AWK" <<EOF
+function getBroadcasts(){$_BCFUNC}
+function getAttDev(fn){$_ADFUNC}
+function getHostsNames(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
+function genDev(){getHostsNames("/tmp/hosts");getHostsNames("/tmp/dhcpd_hostlist");getAttDev("/tmp/netscan/attach_device")}
+function dev(ip){return (dn[ip])?("LAN,"dn[ip]" "ip):("LAN "ip)}
+function self(it,ip){return (bc[it,ip])?("BROADCAST "ip):("ROUTER,$(/bin/config get Device_name) "ip)}
+function val(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
+BEGIN {getBroadcasts();genDev();RS="\n"}
+(\$1<sts1){next}
+(substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
+  if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1==sts1 && c<=sts2) next
+  epoch=($_BT+\$1)
+  iface=val("IF"); proto=val("PROTO")
+  if (val("DIR")=="IN") {
+    dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?(dev(lip)):(self(iface,lip))
+  } else {
+    dir="<"; rip=val("DST"); rpt=val("DPT"); lip=val("SRC"); lpt=val("SPT"); loc=(val("IN"))?(dev(lip)):(self(iface,lip))
+  }
+  rem=(rpt)?(rip":"rpt):rip; loc=(lpt)?(loc":"lpt):loc
+  printf("%d:%.3d: %d IPv4 %s %s %s %s %s\n",\$1,c,epoch,proto,iface,rem,dir,loc)
+  fflush()
+}
+EOF
+# (\$1<sts1){next}
+# (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
+#   if (\$1==pts) {c++} else {c=0;pts=\$1}
+#   if (\$1==sts1 && c<=sts2) {next}
+#   printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
+#   fflush()}
+# EOF
 cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
 /bin/rm -f $LOGD_TMP 2>/dev/null
-trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") [ -e $LOGD_PID ] && /bin/rm -f $LOGD_PID; [ -e $LOGD_TMP ] && /bin/rm -f $LOGD_TMP; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
+trapf() { $($DEBUG && echo "debug \"trap signal: \$1\";") /bin/rm -f $LOGD_PID $LOGD_TMP $LOGD_AWK; [ "\$AWK_PID" ] && { /bin/kill -9 \$AWK_PID; unset AWK_PID; }; $($DEBUG && echo 'debug "log daemon exiting";') exit; } 2>>$STDERR
 trap "trapf TERM" TERM; trap "trapf INT" INT; trap "trapf QUIT" QUIT; trap "trapf EXIT" EXIT
 touch $LOG_FILE
+EXT_TTL=\$(uci -qc $CONF_DIR get $SC_ABR.log.ttl); [ "\$EXT_TTL" -eq "\$EXT_TTL" ] || EXT_TTL=86400
 inode() { set -- \$(/bin/ls -i $LOG_MSG); echo \$1; }
 lc() { set -- \$(/usr/bin/wc -l \$1); echo \$1; }
 while :; do
-  local INODE=\$(inode)
+
+  # Refreshing device list
+  /usr/bin/killall -10 net-scan
+  if [ ! -e "/tmp/netscan/attach_device" ]; then sleep 2; mkdir "/tmp/netscan"; touch "/tmp/netscan/attach_device"; fi
+
+  INODE=\$(inode)
   $($DEBUG && echo "debug \"working with log-message inode: \$INODE\"")
-  local NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
+  NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
+  START_EXT_TS="\$(( \$(/usr/bin/cut -d. -f1 /proc/uptime) - \$EXT_TTL ))"
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-    local FIRST_MSG_LINE="\$(/usr/bin/awk '/\[$SC_ABR\]/{print; exit}' $LOG_MSG)" # first line in rotated message log
-    if [ "\$FIRST_MSG_LINE" ]; then
-      local FIRST_EXT_TS="\$(/usr/bin/awk -F':' 'NR==1{print \$1; exit}' $LOG_FILE)" # first timestamp in our log
-      if [ 0\${FIRST_MSG_LINE%%:*} -gt 0\$FIRST_EXT_TS ]; then :>$LOGD_TMP
-        /usr/bin/awk '\$0=="'"\$FIRST_MSG_LINE"'"{exit} {print}' $LOG_FILE >>$LOGD_TMP
-        if [ 0\$NUMLINES -lt 0\$(lc $LOGD_TMP) ]
-          then /usr/bin/tail -n \$NUMLINES $LOGD_TMP >$LOG_FILE
-          else /bin/cat $LOGD_TMP >$LOG_FILE
-        fi
-        $($DEBUG && echo "debug \"log-message 1st aegis record is more recent than log-aegis 1st record: kept older records from log-aegis up to \$NUMLINES\"")
-      else :>$LOG_FILE $($DEBUG && echo "; debug 'log-message 1st aegis record is older than log-aegis 1st record: emptying log-aegis'")
-      fi
-    elif [ 0\$NUMLINES -lt 0\$(lc $LOG_FILE) ]
-       then /usr/bin/tail -n \$NUMLINES $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-          $($DEBUG && echo "debug \"no aegis log record in log-message; kept only \$NUMLINES records\"")
-    fi
-  else :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
+    if [ "\$(/usr/bin/awk -F: '{print \$1;exit}' $LOG_FILE)" -lt "\$START_EXT_TS" ]; then
+      /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+      $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$EXT_TTL seconds were kept\"")
+    fi 
+    LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
+    START_TSE="\${LAST_EXT_LINE%%: *}"
+    START_TS1="\${START_TSE%:*}"
+    START_TS2="\${START_TSE#*:}"
+    {
+      [ "\$START_TS1" ] && [ "\$START_TS1" -eq "\$START_TS1" ] || START_TS1=0
+      [ "\$START_TS2" ] && [ "\$START_TS2" -eq "\$START_TS2" ] || START_TS2=0
+    } 2>/dev/null
+    $($DEBUG && echo "debug \"aegis-log last record has timestamp \$START_TS1:\$START_TS2\"")
+  else
+    :>$LOG_FILE $($DEBUG && echo "; debug 'aegis-log was empty or inexistant, making sure file exists'")
+    START_TS1=0 START_TS2=0
   fi
   /bin/rm -f $LOGD_TMP
   # using LOG_FILE to LOGD_TMP to LOG_FILE allow to keep same inode for LOG_FILE
-  # now LOG_FILE ends just before LOG_MSG starts and is no longer than NUMLINES
-  local C=1 D=1 FC=false
-  while /usr/bin/awk -F: '/\[$SC_ABR\]/{st=index(\$0," ");if (\$1==pts) {c++} else {c=0;pts=\$1}; printf("%s:%.3d:%s\n",\$1,c,substr(\$0,st)); fflush()}'; do
+  # LOG_FILE ends where previous LOG_MSG ended and is no longer than NUMLINES
+  # Logging loop:
+  /usr/bin/mkfifo $LOGD_TMP
+  /usr/bin/tail -f -n+1 $LOG_MSG >$LOGD_TMP & AWK_PID=\$!
+  /usr/bin/awk -F: -v sts1="\$START_TS1" -v sts2="\$START_TS2" -f $LOGD_AWK $LOGD_TMP >>$LOG_FILE &
+  $($DEBUG && echo "debug \"Logging loop has PID: \$AWK_PID\"")
+  # Control loop:
+  C=1 D=1 FC=false
+  while [ "\$INODE" = "\$(inode)" ]
+  do
     sleep 2 & wait \$!
-    [ "\$INODE" != "\$(inode)" ] && break
     if [ \$C -eq 10 ]; then
       # check every 20 seconds
       if [ -e $LOGD_PID ]; then [ "\$(/bin/cat $LOGD_PID)" != "\$PID" ] && { $($DEBUG && echo "debug \"$LOGD_PID (\$(/bin/cat $LOGD_PID)) is different than PID (\$PID): killing daemon\";") /bin/kill \$PID; }
       else $($DEBUG && echo "debug \"$LOGD_PID is missing: killing daemon\";") /bin/kill \$PID; fi
+      [ "\$AWK_PID" ] && /bin/kill -0 "\$AWK_PID" || { $($DEBUG && echo "debug 'logging loop is not running: killing daemon';") /bin/kill \$PID; }
       if ! $IPT_BIN -w -S 2>/dev/null |/bin/grep -qF -- "-j LOG --log-prefix \"[$SC_ABR] "; then
         $($DEBUG && echo "debug \"checking iptables logging rules returned: \$?\"")
         if [ -e "$SHIELD_LOCK" ]; then $($DEBUG && echo "debug 'shield is locked, waiting for next check'" || echo ":")
@@ -204,7 +259,9 @@ while :; do
     else C=\$((C+1)); fi
     if [ \$D -eq 300 ]; then $($DEBUG && echo "debug '10 minutes in the loop; breaking it.';") break
     else D=\$((D+1)); fi
-  done <$LOG_MSG >>$LOG_FILE
+  done
+  /bin/kill -9 \$AWK_PID; unset AWK_PID;
+  /bin/rm -f $LOGD_TMP
 done 2>>"$STDERR"
 EOF
 cd /tmp; /bin/sh $LOGD_NAME & echo $! >$LOGD_PID
@@ -648,6 +705,7 @@ do_upgrade() { $DEBUG && debug "do_upgrade"
   /bin/mv "$DL_PATH" "$SC_NICEPATH"
   /bin/chmod +x "$SC_NICEPATH"
   /bin/rm -rf "/tmp/$SC_NAME.dl"
+  sc_conf set repo="${REPO##*/}"
   echo -e "\033[0m- Script installed to $SC_NICEPATH"
   check_web && install_web
   _exit 0
@@ -814,48 +872,17 @@ shield_init() { $DEBUG && debug "shield_init"
 ###############################################
 
 print_log() { $DEBUG && debug "print_log $*"
-  /usr/bin/killall -10 net-scan # Refreshing device list
-  _UPT=$(/usr/bin/cut -d. -f1 /proc/uptime)
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
-  echo -e "\033[1;36mLog:\033[0m"
-  case "$1" in '') _TAIL=100; _LSCI=0 ;; 0) _TAIL=100; _LSCI="${_UPT}000" ;; *) _TAIL=$1 _LSCI=0 ;; esac
-  _LSC=/tmp/aegis_lsc; echo "$_LSCI">"$_LSC"; trap "/bin/rm -f '$_LSC' >/dev/null 2>&1; exit" INT TERM
-  _BT=$(( $(/bin/date +%s) - _UPT ))
-  _RSIZE=$(wc -l <$LOG_FILE)
-  $DEBUG && debug "UPT:$_UPT BT:$_BT TAIL:$_TAIL LSCI:$_LSCI LSC(I):$(/bin/cat "$_LSC") RSIZE:$_RSIZE"  
-  if [ "$(cat /module_name)" = "RBR50" ] ; then
-    _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
-  else
-    _NSDEVCMD='$1==\""ip"\"{print $3;exit}'
-  fi
-while :; do while /usr/bin/awk -F: '
-function namefromip(ip){
-  nm="";cmd="/usr/bin/awk '"'$_NSDEVCMD'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
-  if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
-  if (nm) {nm=nm"("ip")"} else {nm=ip}
-  return nm}
-function protoname(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
-function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-function floored(a){return (a<0)?0:a}
-$1$2>0'$(/bin/cat "$_LSC")'{ts[++b]=$1;l[b]=$0} END
-{c=floored(b-'$_TAIL');while (c++<b){
-  PT=strftime("%F %T", ('$_BT'+ts[c]));
-  IFACE=getval("IF"); WAY=getval("DIR"); IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
-  if (WAY=="IN"){REM=SRC;RPT=SPT;LPT=DPT;DIR="\033[1;35mincoming\033[0m";DIR1="from";DIR2="to";
-     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
-     else {LOC=namefromip(DST); LNM="LAN"}
-  } else if (WAY=="OUT"){REM=DST;RPT=DPT;LPT=SPT;DIR="\033[1;33moutgoing\033[0m";DIR1="to";DIR2="from";
-     if (IN=="") {LOC=SRC; LNM="router"}
-     else {LOC=namefromip(SRC); LNM="LAN"}
-  }
-  if (RPT) {RPT=":"RPT}; if (LPT) {LPT=":"LPT}
-  printf("%s: Blocked %s %s packet %s %s:\033[1;35m%s%s\033[0m %s %s:\033[1;33m%s%s\033[0m\n",PT,DIR,PROTO,DIR1,IFACE,REM,RPT,DIR2,LNM,LOC,LPT)
-} print $1$2 >"'$_LSC'"}'; do
-  [ 0$_LSCI -eq 0 ] && break 2;
-  _ASIZE=$(wc -l <$LOG_FILE); if [ 0$_ASIZE -ge 0$_RSIZE ]; then _RSIZE=$_ASIZE; else _RSIZE=$_ASIZE; break; fi
-  sleep 1
-done <$LOG_FILE; done
-/bin/rm -f $_LSC >/dev/null 2>&1
+  echo -e "\033[1;36mLog of packets blocked:\033[0m"
+  [ "$1" -gt 0 ] && _LIVE='' || _LIVE='-f -s1'
+  $DEBUG && debug "BT:$_BT TAIL:$1 _LIVE:$_LIVE"  
+  /usr/bin/tail $_LIVE -n $1 $LOG_FILE | /usr/bin/awk '
+function proto(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
+{
+  if($7==">") printf("%s: \033[1;35mINCOMING\033[0m %s \033[1;35mFROM\033[0;35m %s: %s \033[1;33mTO\033[0;33m %s: %s\033[0m\n",strftime("%F %T", $2),proto($4),$5,$6,$8,$9)
+  else printf("%s: \033[1;33mOUTGOING\033[0m %s \033[1;33mFROM\033[0;33m %s: %s \033[1;35mTO\033[0;35m %s: %s\033[0m\n",strftime("%F %T", $2),proto($4),$8,$9,$5,$6)
+  fflush()
+}'
 }
 
 shield_up() { $DEBUG && debug "shield_up"
@@ -1407,39 +1434,39 @@ print_help() { $DEBUG && debug "print_help"
 echo -e "\033[1;36m$SC_NAME $SC_VERS\033[0m"'
 '"Usage: \033[1m$SC_NAME \033[35mCOMMAND \033[36m[OPTION(S)]\033[0m"'
 '"\033[7mCOMMANDS (only one) and their specific options:\033[0m"'
-'"\033[1;35mup\033[0m                  - (re)starts $SC_NAME shield protection"'
-'"   \033[1;36m-net-wall\033[0m          + by restarting the internal firewall"'
-'"   \033[1;36m-refresh\033[0m           + with updated shield directives"'
-'"   \033[1;36m-log-enable\033[0m        + with logging enabled"'
-'"   \033[1;36m-log-disable\033[0m       + with logging disabled"'
-'"   \033[1;36m-wan-no-bypass\033[0m     + without WAN network range bypass"'
-'"   \033[1;36m-vpn-no-bypass\033[0m     + without VPN network range bypass"'
-'" \033[1;35mdown\033[0m               - stops $SC_NAME shield protection"'
-'" \033[1;35mrefresh\033[0m            - updates shield directives from sources and custom lists\033[0m"'
-'"   \033[1;36m-custom-only\033[0m       + will refresh directives only from custom lists (using offline cache for sources)"'
-'" \033[1;35mlog -enable\033[0m        - enables logging"'
-'" \033[1;35mlog -disable\033[0m       - disables logging"'
-'" \033[1;35mlog -show\033[0m          - displays the log report"'
-'"   \033[1;36m-lines=\033[0mN           + will display N last lines (N being the number of lines to show)"'
-'" \033[1;35mlog -live\033[0m          - displays the log report live (CTRL-C to exit)"'
-'" \033[1;35mlog -get-history\033[0m   - show the history size for the log file $LOG_FILE"'
-'" \033[1;35mlog -set-history=\033[0mN - sets the history size to N records for the log file $LOG_FILE"'
-'" \033[1;35munset\033[0m              - stops and unsets $SC_NAME shield"'
-'"   \033[1;36m-rm-config\033[0m         + and removes $SC_NAME configuration file"'
-'"   \033[1;36m-rm-symlink\033[0m        + and removes the symlink /usr/bin/$SC_NAME"'
-'"   \033[1;36m-rm-web\033[0m            + and removes $WEB_NAME"'
-'"   \033[1;36m-rm-log\033[0m            + and removes log file"'
-'" \033[1;35mhelp\033[0m               - displays help (this)"'
-'" \033[1;35minfo\033[0m               - displays info on this script"'
-'" \033[1;35mstatus\033[0m             - displays status"'
-'" \033[1;35mupgrade\033[0m            - downloads and installs latest version"'
-'" \033[1;35mweb -install\033[0m       - downloads and installs $WEB_NAME"'
-'" \033[1;35mweb -remove\033[0m        - removes $WEB_NAME"'
-'" \033[1;35mtest -ip=\033[0mIP        - test if IP is blocked or not by $SC_NAME"'
+'"\033[1;35mup\033[0m                - (re)starts $SC_NAME shield protection"'
+'"   \033[1;36m-net-wall\033[0m        + by restarting the internal firewall"'
+'"   \033[1;36m-refresh\033[0m         + with updated shield directives"'
+'"   \033[1;36m-log-enable\033[0m      + with logging enabled"'
+'"   \033[1;36m-log-disable\033[0m     + with logging disabled"'
+'"   \033[1;36m-wan-no-bypass\033[0m   + without WAN network range bypass"'
+'"   \033[1;36m-vpn-no-bypass\033[0m   + without VPN network range bypass"'
+'" \033[1;35mdown\033[0m             - stops $SC_NAME shield protection"'
+'" \033[1;35mrefresh\033[0m          - updates shield directives from sources and custom lists\033[0m"'
+'"   \033[1;36m-custom-only\033[0m     + will refresh directives only from custom lists (using offline cache for sources)"'
+'" \033[1;35mlog -enable\033[0m      - enables logging"'
+'" \033[1;35mlog -disable\033[0m     - disables logging"'
+'" \033[1;35mlog -show\033[0m        - displays the log report"'
+'"   \033[1;36m-lines=\033[0mN         + will display N last lines (N being the number of lines to show)"'
+'" \033[1;35mlog -live\033[0m        - displays the log report live (CTRL-C to exit)"'
+'" \033[1;35mlog -get-ttl\033[0m     - show the time-to-live (in seconds) for the records in the log file $LOG_FILE"'
+'" \033[1;35mlog -set-ttl=\033[0mN   - sets the time-to-live to N seconds for the records in the log file $LOG_FILE"'
+'" \033[1;35munset\033[0m            - stops and unsets $SC_NAME shield"'
+'"   \033[1;36m-rm-config\033[0m       + and removes $SC_NAME configuration file"'
+'"   \033[1;36m-rm-symlink\033[0m      + and removes the symlink /usr/bin/$SC_NAME"'
+'"   \033[1;36m-rm-web\033[0m          + and removes $WEB_NAME"'
+'"   \033[1;36m-rm-log\033[0m          + and removes log file"'
+'" \033[1;35mhelp\033[0m             - displays help (this)"'
+'" \033[1;35minfo\033[0m             - displays info on this script"'
+'" \033[1;35mstatus\033[0m           - displays status"'
+'" \033[1;35mupgrade\033[0m          - downloads and installs latest version"'
+'" \033[1;35mweb -install\033[0m     - downloads and installs $WEB_NAME"'
+'" \033[1;35mweb -remove\033[0m      - removes $WEB_NAME"'
+'" \033[1;35mtest -ip=\033[0mIP      - test if IP is blocked or not by $SC_NAME"'
 '"\033[7mGENERAL OPTIONS (none, one or more, can be used with any command):\033[0m"'
-'" \033[1;36m-v\033[0m                 + verbose mode (level 1)"'
-'" \033[1;36m-vv\033[0m                + verbose mode (level 2)"'
-'" \033[1;36m-q\033[0m                 + quiet mode (no output)"
+'" \033[1;36m-v\033[0m               + verbose mode (level 1)"'
+'" \033[1;36m-vv\033[0m              + verbose mode (level 2)"'
+'" \033[1;36m-q\033[0m               + quiet mode (no output)"
 }
 
 ###############################################
@@ -1484,12 +1511,12 @@ _shield_args() {
   sc_conf commit
 }
 _log_args() { case $ARGS in
-  *' -enable '*)           sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
-  *' -disable '*)          sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
-  *' -show '*)             [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=''; print_log $_PL ;;
-  *' -live '*)             print_log 0 ;;
-  *' -get-history '*)      sc_conf get log.len ;;
-  *' -set-history='[0-9]*) sc_conf set log.len=$(echo "$ARGS"|/bin/sed 's/.* -set-history=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
+  *' -enable '*)       sc_conf set log.enabled=1; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
+  *' -disable '*)      sc_conf delete log.enabled; sc_conf commit; sc_conf get up >/dev/null && { shield_up; status_term; } ;;
+  *' -show '*)         [ -z "${ARGS##* -lines=[0-9]*}" ] && _PL=$(echo "$ARGS"|/bin/sed 's/.* -lines=\([[:digit:]]\+\) .*/\1/') || _PL=100; print_log $_PL ;;
+  *' -live '*)         print_log 0 ;;
+  *' -get-ttl '*)      sc_conf get log.ttl ;;
+  *' -set-ttl='[0-9]*) sc_conf set log.ttl=$(echo "$ARGS"|/bin/sed 's/.* -set-ttl=\([[:digit:]]\+\) .*/\1/'); sc_conf commit ;;
 esac; }
 _clean_args() {
   [ -z "${ARGS##* -rm-config *}" ]     && RM_CONF=1    || RM_CONF=

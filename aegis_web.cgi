@@ -1,9 +1,11 @@
 #!/bin/sh
 wcAEGIS_BIN='/opt/bolemo/scripts/aegis'
-wcGIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
-wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcDAT_DIR='/www/bolemo/aegis_data'; wcPRT_PTH="$wcDAT_DIR/net-protocols.csv"
 wcUCI='/sbin/uci -qc /opt/bolemo/etc/config'
+#wcGIT_REPO="$($wcUCI get aegis.repo)"
+wcGIT_REPO='stable'
+wcGIT_DIR="https://raw.githubusercontent.com/bolemo/aegis/$wcGIT_REPO"
+wcPRT_URL="$wcGIT_DIR/data/net-protocols.csv"
 wcLHTTPD_CONF='/etc/lighttpd/conf.d'
 wcLHTTPD_WC_CONF="$wcLHTTPD_CONF/31-aegis.conf"
 
@@ -244,50 +246,29 @@ command() {
 
 # LOG
 _LF=/var/log/log-aegis
-#_SF=/tmp/aegis_status
 
 _getLog() {
-#  _RNM="$(/bin/nvram get Device_name)"
   _MAX=$($wcUCI get aegis_web.log.len)
-  _BT=$($wcUCI get aegis_web.log.basetime)
   _ST=$($wcUCI get aegis_web.log.pos)
-#  _WIF=$(/usr/bin/cut -d' ' -f2 $_SF)
-#  _TIF=$(/usr/bin/cut -d' ' -f3 $_SF)
-  # attach_device depends on router model
-  if [ "$(cat /module_name)" = "RBR50" ] ; then
-    _NSDEVCMD='BEGIN{RS=\"-----device:[[:digit:]]+-----\";FS=\"\\n\"}NR==1{next}$2==\""ip"\"{print $8;exit}'
-  else
-    _NSDEVCMD='$1==\""ip"\"{print $3;exit}'
-  fi
-  /usr/bin/awk -F: '
-function namefromip(ip){
-  nm="";cmd="/usr/bin/awk '"'$_NSDEVCMD'"' /tmp/netscan/attach_device";cmd|getline nm;close(cmd);
-  if (!nm) {cmd="/usr/bin/awk '"'"'$1==\""ip"\"{print $NF;exit}'"'"' /tmp/dhcpd_hostlist /tmp/hosts";cmd|getline nm;close(cmd)}
-  if (nm) {nm=nm"<q>"ip"</q>"} else {nm=ip}
-  return nm}
-function protoname(proto){
-  if (proto~/^[0-9]+$/){
-     cmd="sed \""proto+2"q;d\" '"$wcPRT_PTH"'|cut -d, -f3";cmd|getline nm;close(cmd);
-     nm="<log-ptl value=\""proto"\">"nm"</log-ptl>"
-  } else {nm="<log-ptl value=\""proto"\">"proto"</log-ptl>"}
-  return nm}
-function getval(n){i=index(l[c]," "n"=");if(i==0)return;str=substr(l[c],i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-{ts[++c]=$1;uts[c]=$1$2;l[c]=$0} END
-{if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
- min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
-   PT=strftime("%F %T", ('$_BT'+ts[c]));
-   IFACE=getval("IF"); WAY=getval("DIR"); IN=getval("IN"); OUT=getval("OUT"); SRC=getval("SRC"); DST=getval("DST"); PROTO=protoname(getval("PROTO")); SPT=getval("SPT"); DPT=getval("DPT");
-   if (IFACE=="WAN") {ATTR2=" wan"} else if (IFACE=="VPN") {ATTR2=" vpn"}
-   if (WAY=="IN"){REM=SRC;RPT=SPT;LPT=DPT;ATTR="incoming";
-     if (OUT=="") {LOC=DST; LNM=(DST=="255.255.255.255")?"broadcast":"router"}
-     else {LOC=namefromip(DST); LNM="LAN"}
-   } else if (WAY=="OUT"){REM=DST;RPT=DPT;LPT=SPT;ATTR="outgoing";
-     if (IN=="") {LOC=SRC; LNM="router"}
-     else {LOC=namefromip(SRC); LNM="LAN"}
-   }
-   if (RPT) {RPT="<log-pt>"RPT"</log-pt>"}; if (LPT) {LPT="<log-pt>"LPT"</log-pt>"}
-   print "<p class=\"new "ATTR ATTR2"\">"PT"<log-lbl></log-lbl><log-dir></log-dir>"PROTO"<log-rll><log-if></log-if></log-rll><log-rem><log-rip>"REM"</log-rip>"RPT"</log-rem><log-lll><log-lnm>"LNM"</log-lnm></log-lll><log-loc><log-lip>"LOC"</log-lip>"LPT"</log-loc></p>"
-}}' $_LF
+
+/usr/bin/awk -F: '
+function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
+function protoname(ptl){return "<log-ptl value=\""ptl"\">"prots[ptl]"</log-ptl>"}
+BEGIN {getProts()}
+{ts[++c]=$1;uts[c]=($1$2);l[c]=$0}
+END {
+  if (uts[c]) {system("'"$wcUCI"' set aegis_web.log.pos="uts[c++])}
+  dir[">"]="incoming";dir["<"]="outgoing"
+  itf["WAN"]=" wan";itf["VPN"]=" vpn"
+  adt["ROUTER"]=" rtr";adt["BROADCAST"]=" bdc";adt["LAN"]=" lan"
+  min=(NR>'$_MAX')?NR-'$_MAX':0;while(--c>min && uts[c]>'$_ST'){
+    split(l[c],f," ")
+    n=split(f[6],rem,":");rpt=(n==2)?("<log-pt>"rem[2]"</log-pt>"):""
+    n=split(f[9],loc,":");lpt=(n==2)?("<log-pt>"loc[2]"</log-pt>"):""
+    n=split(f[8],dst,",");lnm=(n==2)?dst[2]:dst[1]
+    print "<p class=\"new "dir[f[7]] itf[f[5]] adt[dst[1]]"\"><log-ts>"strftime("%F %T",f[2])"</log-ts>"protoname(f[4])"<log-if></log-if><log-rem><log-rip>"rem[1]"</log-rip>"rpt"</log-rem><log-dir></log-dir><log-lnm>"lnm"</log-lnm><log-loc><log-lip>"loc[1]"</log-lip>"lpt"</log-loc></p>"
+  }
+}' $_LF
 }
 
 log() {
@@ -301,13 +282,94 @@ log() {
        fi ;;
   esac
   $wcUCI set aegis_web.log.len=$LEN
-  $wcUCI set aegis_web.log.basetime=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $wcUCI set aegis_web.log.pos=0
   _getLog
 }
 
 refreshLog() {
   _getLog
+}
+
+stats() {
+  SR=false SL=false RG=false LG=false
+  IFS='-' set -- $ARG ; set -- $(unset IFS; echo $1); unset IFS
+  case $1 in
+    in)  DF='($7=="<"){next}' A_DIR='kdir=$7';;
+    out) DF='($7==">"){next}' A_DIR='kdir=$7';;
+    all) DF='' A_DIR='kdir=$7';;
+    no) DF='';;
+  esac; shift
+  case $1 in
+    wan) IF='($5!="WAN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"wan\">WAN</stats-iface>"' RG=true;;
+    vpn) IF='($5!="VPN"){next}' A_IFACE='kiface=$5;siface="<stats-iface class=\"vpn\">VPN</stats-iface>"' RG=true;;
+    all) IF='' A_IFACE='kiface=$5;siface="<stats-iface class=\""itf[$5]"\">"$5"</stats-iface>"' RG=true;;
+    no) IF='';;
+  esac; shift
+  if [ "$1" = 'proto' ]; then shift
+    A_PROTO='kproto=$4;sproto=protoname(kproto)'
+  fi
+  if [ "$1" = 'rip' ]; then shift
+    A_RIP='krip=r[1];srip="<stats-rip>"krip"</stats-rip>"' SR=true RG=true
+  fi
+  if [ "$1" = 'rpt' ]; then shift
+    A_RPT='if(rn==2){krpt=r[2];srpt=("<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
+  fi
+  if [ "$1" = 'loc' ]; then shift
+    A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""adt[kla[1]]"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
+  fi
+  if [ "$1" = 'lip' ]; then shift
+    A_LIP='klip=l[1];slip="<stats-lip>"klip"</stats-lip>"' SL=true LG=true
+  fi
+  if [ "$1" = 'lpt' ]; then shift
+    A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
+  fi
+  $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
+  $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
+  { /usr/bin/awk '
+function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
+function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
+BEGIN {
+  now=systime()
+  st=(now-86400)
+  getProts()
+  itf["WAN"]="wan";itf["VPN"]="vpn"
+  adt["ROUTER"]="rtr";adt["BROADCAST"]="bdc";adt["LAN"]="lan"
+}
+($2<st){next}
+(!fts){fts=$2}
+{tnr++}
+'$DF$IF'
+{
+  '"$PK1"'
+  '"$PK2"'
+  '"$A_PROTO"'
+  '"$A_IFACE"'
+  '"$A_RIP"'
+  '"$A_RPT"'
+  '"$A_DIR"'
+  '"$A_LOC"'
+  '"$A_LIP"'
+  '"$A_LPT"'
+  if (kdir==">") {
+    str="<stats-dir class=\"incoming\">INCOMING </stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext> FROM " siface " " srip srpt "</stats-ext>"):"") ((lg)?("<stats-int> TO " sloc " " slip slpt "</stats-int>"):"")
+  } else if(kdir=="<") {
+    str="<stats-dir class=\"outgoing\">OUTGOING </stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int> FROM " sloc " " slip slpt "</stats-int>"):"") ((rg)?("<stats-ext> TO " siface " " srip srpt "</stats-ext>"):"")
+  } else if(rg && lg) {
+    str=sproto" HIT(S) <stats-ntl>BETWEEN </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-ntl> AND </stats-ntl><stats-int>" sloc " " slip slpt "</stats-int>"
+  } else if(rg || lg) {
+    str=sproto" HIT(S) <stats-ntl>INVOLVING </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-int>" sloc " " slip slpt "</stats-int>"
+  } else {
+    str=sproto" HIT(S)"
+  }
+  if(!act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]){nk++}
+  act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
+  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str
+  nfr++
+}
+END {
+  print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT(S)<br /><stats-hits> " nfr " </stats-hits>HIT(S) MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
+  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
+}' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
 
 refreshDev() {
@@ -396,6 +458,7 @@ case $CMD in
   command) command;;
   log) log;;
   refresh_log) refreshLog;;
+  stats) stats;;
   refresh_dev) refreshDev;;
   check) checkIp;;
   print_list) printList; exit;;
