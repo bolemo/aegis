@@ -1,5 +1,7 @@
 #!/bin/sh
-GIT_DIR='https://raw.githubusercontent.com/bolemo/aegis/stable'
+REPO="$(/sbin/uci -qc /opt/bolemo/etc/config set aegis.repo)"
+[ -z "$REPO" ] && REPO='stable'
+GIT_DIR="https://raw.githubusercontent.com/bolemo/aegis/$REPO"
 DAT_DIR='/opt/bolemo/www/aegis_data'
 _getMDFile() {
   /bin/rm -f "$DAT_DIR/$1.htm"
