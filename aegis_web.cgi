@@ -321,7 +321,7 @@ stats() {
     A_LIP='klip=l[1];slip="<stats-lip>"klip"</stats-lip>"' SL=true LG=true
   fi
   if [ "$1" = 'lpt' ]; then shift
-    A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
+    A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt="<stats-pt class=\"empty\"></stats-pt>"}' SL=true LG=true
   fi
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
