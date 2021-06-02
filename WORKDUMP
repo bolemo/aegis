@@ -1,0 +1,2 @@
+date -r /tmp/netscan/attach_device +%s
+grep -F ' LAN ' /var/log/log-aegis
