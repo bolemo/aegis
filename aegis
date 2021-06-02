@@ -216,7 +216,7 @@ while :; do
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
     if [ "\$(/usr/bin/awk -F: '{print \$1;exit}' $LOG_FILE)" -lt "\$START_EXT_TS" ]; then
       /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-      $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$EXT_TTL seconds were kept\"")
+      $($DEBUG && echo "debug \"aegis-log was trimmed: records up to \$EXT_TTL seconds old were kept\"")
     fi 
     LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
     START_TSE="\${LAST_EXT_LINE%%: *}"
