@@ -3,7 +3,7 @@
 
 ### 1.7.11
 - Web Companion: in STATS, fixed the display when no port is involved (all traffic involving portless protocols). Instead of an empty string, it mentions NO PORT.
-- The log daemon at each loop now checks records treated during previous log to make sure device names were not missed if known,
+- The log daemon at each loop now checks records treated during previous loop to make sure device names were not missed if known.
 ---
 ### 1.7.10
 - Changed the logging daemon process, optimizations, clearer log file, and determination of local device name upstream. Also the length of the aegis log file is now based on a minimum TTL in seconds instead of a minimum number of lines. Default is 86400 (24 sliding hours).
