@@ -185,13 +185,6 @@ BEGIN {getBroadcasts();genDev();RS="\n"}
   fflush()
 }
 EOF
-# (\$1<sts1){next}
-# (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
-#   if (\$1==pts) {c++} else {c=0;pts=\$1}
-#   if (\$1==sts1 && c<=sts2) {next}
-#   printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-#   fflush()}
-# EOF
 cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
@@ -221,7 +214,7 @@ while :; do
       BEGIN{getAttDev("/tmp/netscan/attach_device");RS="\n";stts=(systime()-'\$EXT_TTL');adts=(systime()-1210)}
       (\$2<stts){next}
       (\$2<adts){print;next}
-      (\$8=="LAN"){split(\$9,loc,":");\$8=dev(loc[1])}
+      (\$8=="LAN"||\$8=="LAN,&lt;unknown&gt;"){split(\$9,loc,":");\$8=dev(loc[1])}
       {print}
     ' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
     
