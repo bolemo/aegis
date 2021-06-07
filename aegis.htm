@@ -250,6 +250,7 @@ function logPost() {
    }
    logFilter();
    setTimeout(function() { document.querySelectorAll("#logbox > p.new").forEach(elem => elem.classList.remove("new")); }, 1200);
+   clearTimeout(logTimer);
    logTimer = setTimeout(function() { if (activeMenu == 'log') { aegis('refresh_log', 'logbox', logMaxLen, 'afterbegin', logPost); } else { clearTimeout(logTimer); } }, 10000);
 }
 var firstLog = true;
@@ -295,6 +296,7 @@ function getStats() {
     if (cb.checked) sq+='-'+cb.value;
   }
   aegis('stats', 'statsbox', sq);
+  clearTimeout(statsTimer);
   statsTimer = setTimeout(function() { if (activeMenu == 'stats') { getStats(); } else { clearTimeout(statsTimer); } }, 60000);
 }
 function getProtoInfo(ptl,e) {
