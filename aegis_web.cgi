@@ -329,7 +329,10 @@ stats() {
 function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
 function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
 function ago(time){diff=now-time;ds=diff%60;dm=(diff-ds)%3600/60;dh=int(diff/3600)
-return (dh>0)?((dm>0)?("over " dh "h ago"):(dh "h ago")):((dm>0)?((ds>0)?("over " dm "m ago"):(dm "m ago")):(ds "s ago"))}
+if (dm>55) return "about " (dh+1) " hr ago"
+if (dh>0) return ((dm<5)?("about " dh " hr ago"):("over " dh " hr ago"))
+if (dm==0 && ds<50) return "less than 1 min ago"
+return ((ds<50)?("about " dm " min ago"):("about " (dm+1) " min ago"))}
 BEGIN {
   now=systime()
   st=(now-86400)
