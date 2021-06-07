@@ -284,15 +284,18 @@ function stats() {
    hideIpInfo('stats');
    displayFor('stats');
 }
-var statsTimer;
 function doStats() {
   document.getElementById("statsbox").innerHTML="Retrieving stats...";
+  getStats();
+}
+var statsTimer;
+function getStats() {
   var sq=document.getElementById('stats-dir').value+"-"+document.getElementById('stats-iface').value;
   for (var cb of document.getElementsByName('statsKeys')) {
     if (cb.checked) sq+='-'+cb.value;
   }
   aegis('stats', 'statsbox', sq);
-  statsTimer = setTimeout(function() { if (activeMenu == 'stats') { doStats(); } else { clearTimeout(statsTimer); } }, 60000);
+  statsTimer = setTimeout(function() { if (activeMenu == 'stats') { getStats(); } else { clearTimeout(statsTimer); } }, 60000);
 }
 function getProtoInfo(ptl,e) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
