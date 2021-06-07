@@ -284,6 +284,7 @@ function stats() {
    hideIpInfo('stats');
    displayFor('stats');
 }
+var statsTimer;
 function doStats() {
   document.getElementById("statsbox").innerHTML="Retrieving stats...";
   var sq=document.getElementById('stats-dir').value+"-"+document.getElementById('stats-iface').value;
@@ -291,6 +292,7 @@ function doStats() {
     if (cb.checked) sq+='-'+cb.value;
   }
   aegis('stats', 'statsbox', sq);
+  statsTimer = setTimeout(function() { if (activeMenu == 'stats') { doStats(); } else { clearTimeout(statsTimer); } }, 60000);
 }
 function getProtoInfo(ptl,e) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;
