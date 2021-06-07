@@ -367,15 +367,17 @@ BEGIN {
     str1=sproto
     str2=""
   }
-  if(!act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]){nk++}
-  act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
-  ast1[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str1
-  ast2[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str2
+  key=kproto kiface krip krpt kdir kloc klip klpt
+  if(!act[key]){nk++}
+  act[key]++
+  ast1[key]=str1
+  ast2[key]=str2
+  alt[key]=$2
   nfr++
 }
 END {
   print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT" ((tnr>1)?"S":"") "<br /><stats-hits> " nfr " </stats-hits>HIT" ((nfr>1)?"S":"") " MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
-  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast1[i] ((act[i]>1)?" HITS ":" HIT ") ast2[i] "<br />"}
+  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast1[i] ((act[i]>1)?" HITS ":" HIT ") ast2[i] " LAST " alt[i] "<br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
 
