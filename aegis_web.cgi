@@ -328,7 +328,8 @@ stats() {
   { /usr/bin/awk '
 function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
 function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
-function ago(time){diff=now-time;sec=diff%60;min=(diff-sec)%3600/60;hrs=int(diff/3600);return hrs":"min":"sec}
+function ago(time){diff=now-time;ds=diff%60;dm=(diff-ds)%3600/60;dh=int(diff/3600)
+return (dh>0)?((dm>0)?("over " dh "h ago"):(dh "h ago")):((dm>0)?((ds>0)?("over " dm "m ago"):(dm "m ago")):(ds "s ago"))}
 BEGIN {
   now=systime()
   st=(now-86400)
