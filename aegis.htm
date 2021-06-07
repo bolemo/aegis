@@ -250,7 +250,7 @@ function logPost() {
    }
    logFilter();
    setTimeout(function() { document.querySelectorAll("#logbox > p.new").forEach(elem => elem.classList.remove("new")); }, 1200);
-   logTimer = setTimeout(function() { if (activeMenu == 'log') { aegis('refresh_log', 'logbox', logMaxLen, 'afterbegin', logPost); } }, 10000);
+   logTimer = setTimeout(function() { if (activeMenu == 'log') { aegis('refresh_log', 'logbox', logMaxLen, 'afterbegin', logPost); } else { clearTimeout(logTimer); } }, 10000);
 }
 var firstLog = true;
 function log() {
