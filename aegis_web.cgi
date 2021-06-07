@@ -328,6 +328,7 @@ stats() {
   { /usr/bin/awk '
 function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
 function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
+function ago(time){diff=now-time;sec=diff%60;min=(diff-sec)%3600/60;hrs=int(diff/3600);return hrs":"min":"sec}
 BEGIN {
   now=systime()
   st=(now-86400)
@@ -377,7 +378,7 @@ BEGIN {
 }
 END {
   print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT" ((tnr>1)?"S":"") "<br /><stats-hits> " nfr " </stats-hits>HIT" ((nfr>1)?"S":"") " MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
-  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast1[i] ((act[i]>1)?" HITS ":" HIT ") ast2[i] "<stats-lt>" strftime("%F %T",alt[i]) "</stats-lt><br />"}
+  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast1[i] ((act[i]>1)?" HITS ":" HIT ") ast2[i] "<stats-lt>" ago(alt[i]) "</stats-lt><br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
 
