@@ -132,8 +132,11 @@ log-pt::before { display:inline-block; color: darkgrey; content: ':'; }
 #statsbox stats-lip { font-weight: bold; color: blue; padding-right: 0px; }
 #statsbox stats-pt { font-weight: bold; text-decoration: underline; text-decoration-style: dotted; cursor: pointer; }
 #statsbox stats-pt::before { display:inline-block; font-weight: normal; color: darkgrey; content: ' PORT\A0'; text-decoration: none; }
+#statsbox stats-pt.empty::before { content: ' NO PORT'; }
 #statsbox stats-rip + stats-pt::before { font-weight: bold; content: ':'; }
+#statsbox stats-rip + stats-pt.empty::before { content: ':\2205'; }
 #statsbox stats-lip + stats-pt::before { font-weight: bold; content: ':'; }
+#statsbox stats-lip + stats-pt.empty::before { content: ':\2205'; }
 #statsbox stats-dir.incoming { font-weight: bold; color: red; }
 #statsbox stats-dir.outgoing { font-weight: bold; color: blue; }
 #statsbox stats-ext { color: red; }
@@ -144,6 +147,9 @@ log-pt::before { display:inline-block; color: darkgrey; content: ':'; }
 #statsbox stats-loc.lan { font-weight: bold; color: #2B65EC; }
 #statsbox stats-loc.rtr { font-weight: bold; color: #43BFC7; }
 #statsbox stats-loc.bdc { font-weight: bold; color: #E238EC; }
+#statsbox stats-lt { color: darkgrey; font-style: oblique; }
+#statsbox stats-lt::before { content: ' (latest hit: '; }
+#statsbox stats-lt::after { content: ')'; }
 textarea.list { font-family: monospace; font-size: 1em; border: none; overflow: auto; outline: none; box-shadow: none; resize: none; }
 #main-doc code { display: inline-block; background: lightgrey; color: darkgreen; }
 </style>
@@ -244,7 +250,8 @@ function logPost() {
    }
    logFilter();
    setTimeout(function() { document.querySelectorAll("#logbox > p.new").forEach(elem => elem.classList.remove("new")); }, 1200);
-   logTimer = setTimeout(function() { if (activeMenu == 'log') { aegis('refresh_log', 'logbox', logMaxLen, 'afterbegin', logPost); } }, 10000);
+   clearTimeout(logTimer);
+   logTimer = setTimeout(function() { if (activeMenu == 'log') { aegis('refresh_log', 'logbox', logMaxLen, 'afterbegin', logPost); } else { clearTimeout(logTimer); } }, 10000);
 }
 var firstLog = true;
 function log() {
@@ -280,11 +287,17 @@ function stats() {
 }
 function doStats() {
   document.getElementById("statsbox").innerHTML="Retrieving stats...";
+  getStats();
+}
+var statsTimer;
+function getStats() {
   var sq=document.getElementById('stats-dir').value+"-"+document.getElementById('stats-iface').value;
   for (var cb of document.getElementsByName('statsKeys')) {
     if (cb.checked) sq+='-'+cb.value;
   }
   aegis('stats', 'statsbox', sq);
+  clearTimeout(statsTimer);
+  statsTimer = setTimeout(function() { if (activeMenu == 'stats') { getStats(); } else { clearTimeout(statsTimer); } }, 60000);
 }
 function getProtoInfo(ptl,e) {
    var url='/bolemo/cgi-bin/aegis_web.cgi?cmd=proto_info&arg='+ptl;

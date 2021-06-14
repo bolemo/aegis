@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.10"
+SC_VERS="1.7.11"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -185,13 +185,6 @@ BEGIN {getBroadcasts();genDev();RS="\n"}
   fflush()
 }
 EOF
-# (\$1<sts1){next}
-# (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
-#   if (\$1==pts) {c++} else {c=0;pts=\$1}
-#   if (\$1==sts1 && c<=sts2) {next}
-#   printf("%s:%.3d:%s\n",\$1,c,substr(\$0,length(\$1)+$KEY_LEN+2))
-#   fflush()}
-# EOF
 cat >"$LOGD_TMP" <<EOF
 export PID=\$\$
 $($DEBUG && echo -e "debug() { touch $STDERR; echo \"\$(/bin/date +%s) logd: \$1\"; } >>$STDERR\ndebug \"log daemon starting with PID: \$PID\"")
@@ -205,19 +198,30 @@ lc() { set -- \$(/usr/bin/wc -l \$1); echo \$1; }
 while :; do
 
   # Refreshing device list
-  /usr/bin/killall -10 net-scan
-  if [ ! -e "/tmp/netscan/attach_device" ]; then sleep 2; mkdir "/tmp/netscan"; touch "/tmp/netscan/attach_device"; fi
-
+  /usr/bin/killall -10 net-scan && sleep 2
+  if [ ! -e "/tmp/netscan/attach_device" ]; then mkdir "/tmp/netscan"; touch "/tmp/netscan/attach_device"; fi
+  
   INODE=\$(inode)
   $($DEBUG && echo "debug \"working with log-message inode: \$INODE\"")
   NUMLINES=\$(uci -qc $CONF_DIR get $SC_ABR.log.len)
   START_EXT_TS="\$(( \$(/usr/bin/cut -d. -f1 /proc/uptime) - \$EXT_TTL ))"
   if [ -s $LOG_FILE ]; then
     $($DEBUG && echo "debug 'log-aegis exists and is not empty'")
-    if [ "\$(/usr/bin/awk -F: '{print \$1;exit}' $LOG_FILE)" -lt "\$START_EXT_TS" ]; then
-      /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
-      $($DEBUG && echo "debug \"aegis-log was trimmed: records older than \$EXT_TTL seconds were kept\"")
-    fi 
+    
+    /usr/bin/awk '
+      function getAttDev(fn){$_ADFUNC}
+      function dev(ip){return (dn[ip])?("LAN,"dn[ip]" "ip):("LAN "ip)}
+      BEGIN{getAttDev("/tmp/netscan/attach_device");RS="\n";stts=(systime()-'\$EXT_TTL');adts=(systime()-1210)}
+      (\$2<stts){next}
+      (\$2<adts){print;next}
+      (\$8=="LAN"||\$8=="LAN,&lt;unknown&gt;"){split(\$9,loc,":");\$8=dev(loc[1])}
+      {print}
+    ' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+    
+  #  if [ "\$(/usr/bin/awk -F: '{print \$1;exit}' $LOG_FILE)" -lt "\$START_EXT_TS" ]; then
+  #    /usr/bin/awk -F: '\$1>'\$START_EXT_TS'{print}' $LOG_FILE >$LOGD_TMP; cat $LOGD_TMP >$LOG_FILE
+  #    $($DEBUG && echo "debug \"aegis-log was trimmed: records up to \$EXT_TTL seconds old were kept\"")
+  #  fi 
     LAST_EXT_LINE="\$(/usr/bin/tail -n1 $LOG_FILE)"
     START_TSE="\${LAST_EXT_LINE%%: *}"
     START_TS1="\${START_TSE%:*}"

@@ -1,0 +1,3 @@
+ADTS="$(date -r /tmp/netscan/attach_device +%s)"
+grep -F ' LAN ' /var/log/log-aegis
+/usr/bin/awk '($2<'$ADTS'){print;next} ($8=="LAN"){$8="REPLACE"} {print}' /var/log/log-aegis

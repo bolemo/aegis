@@ -312,7 +312,7 @@ stats() {
     A_RIP='krip=r[1];srip="<stats-rip>"krip"</stats-rip>"' SR=true RG=true
   fi
   if [ "$1" = 'rpt' ]; then shift
-    A_RPT='if(rn==2){krpt=r[2];srpt=("<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt=""}' SR=true RG=true
+    A_RPT='if(rn==2){krpt=r[2];srpt=("<stats-pt>"r[2]"</stats-pt>")}else{krpt="";srpt="<stats-pt class=\"empty\"></stats-pt>"}' SR=true RG=true
   fi
   if [ "$1" = 'loc' ]; then shift
     A_LOC='kln=split($8,kla,",");kloc=$8;sloc="<stats-loc class=\""adt[kla[1]]"\">"((kln>1)?(kla[2]):($8))"</stats-loc>"' LG=true
@@ -321,19 +321,25 @@ stats() {
     A_LIP='klip=l[1];slip="<stats-lip>"klip"</stats-lip>"' SL=true LG=true
   fi
   if [ "$1" = 'lpt' ]; then shift
-    A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt=""}' SL=true LG=true
+    A_LPT='if(ln==2){klpt=l[2];slpt=("<stats-pt>"l[2]"</stats-pt>")}else{klpt="";slpt="<stats-pt class=\"empty\"></stats-pt>"}' SL=true LG=true
   fi
   $SR && PK1='rn=split($6,r,":")'; $RG && PK1=$PK1';rg=1'
   $SL && PK2='ln=split($9,l,":")'; $LG && PK2=$PK2';lg=1'
   { /usr/bin/awk '
 function getProts(){fn="'"$wcPRT_PTH"'";while((getline l<fn)>0){split(l,f,",");prots[f[1]]=f[3];prots[f[2]]=f[3]};close(fn)}
 function protoname(ptl){return "<stats-ptl value=\""ptl"\">"prots[ptl]"</stats-ptl>"}
+function ago(time){diff=now-time;ds=diff%60;dm=(diff-ds)%3600/60;dh=int(diff/3600)
+if (dm>55) return "about " (dh+1) " hr ago"
+if (dh>0) return ((dm<5)?("about " dh " hr ago"):("over " dh " hr ago"))
+if (dm==0 && ds<50) return "less than 1 min ago"
+return ((ds<50)?("about " dm " min ago"):("about " (dm+1) " min ago"))}
 BEGIN {
   now=systime()
   st=(now-86400)
   getProts()
   itf["WAN"]="wan";itf["VPN"]="vpn"
   adt["ROUTER"]="rtr";adt["BROADCAST"]="bdc";adt["LAN"]="lan"
+  tnr=0; nfr=0
 }
 ($2<st){next}
 (!fts){fts=$2}
@@ -351,24 +357,32 @@ BEGIN {
   '"$A_LIP"'
   '"$A_LPT"'
   if (kdir==">") {
-    str="<stats-dir class=\"incoming\">INCOMING </stats-dir>" sproto " HIT(S) " ((rg)?("<stats-ext> FROM " siface " " srip srpt "</stats-ext>"):"") ((lg)?("<stats-int> TO " sloc " " slip slpt "</stats-int>"):"")
+    str1="<stats-dir class=\"incoming\">INCOMING </stats-dir>" sproto
+    str2=((rg)?("<stats-ext> FROM " siface " " srip srpt "</stats-ext>"):"") ((lg)?("<stats-int> TO " sloc " " slip slpt "</stats-int>"):"")
   } else if(kdir=="<") {
-    str="<stats-dir class=\"outgoing\">OUTGOING </stats-dir>" sproto " HIT(S) " ((lg)?("<stats-int> FROM " sloc " " slip slpt "</stats-int>"):"") ((rg)?("<stats-ext> TO " siface " " srip srpt "</stats-ext>"):"")
+    str1="<stats-dir class=\"outgoing\">OUTGOING </stats-dir>" sproto
+    str2=((lg)?("<stats-int> FROM " sloc " " slip slpt "</stats-int>"):"") ((rg)?("<stats-ext> TO " siface " " srip srpt "</stats-ext>"):"")
   } else if(rg && lg) {
-    str=sproto" HIT(S) <stats-ntl>BETWEEN </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-ntl> AND </stats-ntl><stats-int>" sloc " " slip slpt "</stats-int>"
+    str1=sproto
+    str2="<stats-ntl>BETWEEN </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-ntl> AND </stats-ntl><stats-int>" sloc " " slip slpt "</stats-int>"
   } else if(rg || lg) {
-    str=sproto" HIT(S) <stats-ntl>INVOLVING </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-int>" sloc " " slip slpt "</stats-int>"
+    str1=sproto
+    str2="<stats-ntl>INVOLVING </stats-ntl><stats-ext>" siface " " srip srpt "</stats-ext><stats-int>" sloc " " slip slpt "</stats-int>"
   } else {
-    str=sproto" HIT(S)"
+    str1=sproto
+    str2=""
   }
-  if(!act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]){nk++}
-  act[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]++
-  ast[kproto,kiface,krip,krpt,kdir,kloc,klip,klpt]=str
+  key=kproto kiface krip krpt kdir kloc klip klpt
+  if(!act[key]){nk++}
+  act[key]++
+  ast1[key]=str1
+  ast2[key]=str2
+  alt[key]=$2
   nfr++
 }
 END {
-  print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT(S)<br /><stats-hits> " nfr " </stats-hits>HIT(S) MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
-  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast[i] "<br />"}
+  print "<stats-head>Between <strong>" strftime("%F %T",fts) "</strong> and <strong>" strftime("%F %T",now) "</strong>:</stats-head><br /><stats-hits> " tnr " </stats-hits>RECORDED HIT" ((tnr>1)?"S":"") "<br /><stats-hits> " nfr " </stats-hits>HIT" ((nfr>1)?"S":"") " MATCHING SELECTION<br /><stats-head2>" ((nk<=100)?(nk " groups of hits"):("Top 100 groups of hits (out of " nk ")")) " from selection for that period:</stats-head2><br />"|"cat >&3"
+  for(i in act){print "<stats-hits> " act[i] " </stats-hits>" ast1[i] ((act[i]>1)?" HITS ":" HIT ") ast2[i] "<stats-lt>" ago(alt[i]) "</stats-lt><br />"}
 }' "$_LF" | /usr/bin/sort -rnk2 | /usr/bin/head -n100; } 3>&1
 }
 

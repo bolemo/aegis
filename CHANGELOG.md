@@ -1,5 +1,10 @@
 ## Change Log
 
+
+### 1.7.11
+- Web Companion: in STATS, fixed the display when no port is involved (all traffic involving portless protocols). Instead of an empty string, it mentions NO PORT. Also, HIT(S) now shows as HIT for 0 or 1, and HITS if more than one. Shows latest HIT time. Reloads every minute.
+- The log daemon at each loop now checks records treated during previous loop to make sure device names were not missed if known.
+---
 ### 1.7.10
 - Changed the logging daemon process, optimizations, clearer log file, and determination of local device name upstream. Also the length of the aegis log file is now based on a minimum TTL in seconds instead of a minimum number of lines. Default is 86400 (24 sliding hours).
 - Replaced `log -get-history` and `log -set-history` by `log -get-ttl` and `log -set-ttl`.
