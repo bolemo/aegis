@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.11"
+SC_VERS="1.7.12"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
