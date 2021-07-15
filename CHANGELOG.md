@@ -3,6 +3,7 @@
 
 ### 1.7.12
 - Changed when the boot time is calculated. With recent Voxel firmwares, aegis was calculating its base time (for logs) before date or uptime was properly set.
+- Changed the Web Companion post install script, as it was not checking if a directory was present before installing DOC files.
 ---
 ### 1.7.11
 - Web Companion: in STATS, fixed the display when no port is involved (all traffic involving portless protocols). Instead of an empty string, it mentions NO PORT. Also, HIT(S) now shows as HIT for 0 or 1, and HITS if more than one. Shows latest HIT time. Reloads every minute.
