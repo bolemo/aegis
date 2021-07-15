@@ -154,7 +154,6 @@ if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf com
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
 # awk file
-_BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
 _BCFUNC='RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr show dev '$WAN_IF'";bc["WAN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["WAN",al[(i+1)]]=""}}};close(cmd)'
 [ "$TUN_IF" ] && _BCFUNC=$_BCFUNC';cmd="/usr/sbin/ip -4 addr show dev '$TUN_IF'";bc["VPN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["VPN",al[(i+1)]]=""}}};close(cmd)'
 if [ "$(cat /module_name)" = "RBR50" ]
@@ -880,6 +879,7 @@ print_log() { $DEBUG && debug "print_log $*"
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog of packets blocked:\033[0m"
   [ "$1" -gt 0 ] && _LIVE='' || _LIVE='-f -s1'
+  _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $DEBUG && debug "BT:$_BT TAIL:$1 _LIVE:$_LIVE"  
   /usr/bin/tail $_LIVE -n $1 $LOG_FILE | /usr/bin/awk '
 function proto(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
