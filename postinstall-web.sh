@@ -3,6 +3,7 @@ REPO="$(/sbin/uci -qc /opt/bolemo/etc/config get aegis.repo)"
 [ -z "$REPO" ] && REPO='stable'
 GIT_DIR="https://raw.githubusercontent.com/bolemo/aegis/$REPO"
 DAT_DIR='/opt/bolemo/www/aegis_data'
+[ -d $DAT_DIR ] || /bin/mkdir $DAT_DIR
 _getMDFile() {
   /bin/rm -f "$DAT_DIR/$1.htm"
   /usr/bin/wget -qO- --no-check-certificate "$GIT_DIR/$1.md" | /usr/bin/curl -sS -X POST --data-binary @- https://api.github.com/markdown/raw --header "Content-Type:text/x-markdown" >"$DAT_DIR/$1.htm"
