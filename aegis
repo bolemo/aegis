@@ -9,7 +9,7 @@ if [ "$1" = '_env' ]; then /usr/bin/awk '$0==": ENV EOF"{exit} $0==": ENV STOP"{
 {
 ! command -v iptables && export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 ! command -v iprange && [ -e /root/.profile ] && source /root/.profile
-SC_VERS="1.7.11"
+SC_VERS="1.7.12"
 SC_NAME="aegis"
 SC_ABR="aegis"
 #RT_MOD="$(cat /module_name)" # Orbi=RBR50 R7800=R7800 R9000=R9000
@@ -154,7 +154,6 @@ if ! sc_conf get log.ttl >/dev/null; then sc_conf set log.ttl=86400; sc_conf com
 LOG_MSG=$(_logd_logmsg); [ $? -ne 0 ] && return $INFO_LOGD_KEEP_OFF
 KEY_LEN=$((${#SC_ABR}+2))
 # awk file
-_BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
 _BCFUNC='RS="\n[[:digit:]]+";cmd="/usr/sbin/ip -4 addr show dev '$WAN_IF'";bc["WAN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["WAN",al[(i+1)]]=""}}};close(cmd)'
 [ "$TUN_IF" ] && _BCFUNC=$_BCFUNC';cmd="/usr/sbin/ip -4 addr show dev '$TUN_IF'";bc["VPN","255.255.255.255"]="";while((cmd | getline l)>0){m=split(l,al," ");for(i=1;i<=m;i++){if(al[i]=="brd"){bc["VPN",al[(i+1)]]=""}}};close(cmd)'
 if [ "$(cat /module_name)" = "RBR50" ]
@@ -162,6 +161,7 @@ if [ "$(cat /module_name)" = "RBR50" ]
   else _ADFUNC='RS="\n";while((getline l<fn)>0){split(l,f," ");dn[f[1]]=f[3]};close(fn)'
 fi
 cat >"$LOGD_AWK" <<EOF
+function getBaseTime(){getline ln<"/proc/uptime";split(ln,ut,".");bt=(systime()-ut[1])}
 function getBroadcasts(){$_BCFUNC}
 function getAttDev(fn){$_ADFUNC}
 function getHostsNames(fn){RS="\n";while((getline l<fn)>0){nf=split(l,f," ");dn[f[1]]=f[nf]};close(fn)}
@@ -169,11 +169,11 @@ function genDev(){getHostsNames("/tmp/hosts");getHostsNames("/tmp/dhcpd_hostlist
 function dev(ip){return (dn[ip])?("LAN,"dn[ip]" "ip):("LAN "ip)}
 function self(it,ip){return (bc[it,ip])?("BROADCAST "ip):("ROUTER,$(/bin/config get Device_name) "ip)}
 function val(n){i=index(\$0," "n"=");if(i==0)return;str=substr(\$0,i+length(n)+2);i=index(str," ");str=substr(str,0,i-1);return str}
-BEGIN {getBroadcasts();genDev();RS="\n"}
+BEGIN {getBaseTime();getBroadcasts();genDev();RS="\n"}
 (\$1<sts1){next}
 (substr(\$2,0,$KEY_LEN)=="\[$SC_ABR\]"){
   if (\$1==pts) {c++} else {c=0;pts=\$1}; if (\$1==sts1 && c<=sts2) next
-  epoch=($_BT+\$1)
+  epoch=(bt+\$1)
   iface=val("IF"); proto=val("PROTO")
   if (val("DIR")=="IN") {
     dir=">"; rip=val("SRC"); rpt=val("SPT"); lip=val("DST"); lpt=val("DPT"); loc=(val("OUT"))?(dev(lip)):(self(iface,lip))
@@ -879,6 +879,7 @@ print_log() { $DEBUG && debug "print_log $*"
   _logd_status || echo -e "\033[35mLogging is disabled!\033[0m"
   echo -e "\033[1;36mLog of packets blocked:\033[0m"
   [ "$1" -gt 0 ] && _LIVE='' || _LIVE='-f -s1'
+  _BT=$(( $(/bin/date +%s) - $(/usr/bin/cut -d. -f1 /proc/uptime) ))
   $DEBUG && debug "BT:$_BT TAIL:$1 _LIVE:$_LIVE"  
   /usr/bin/tail $_LIVE -n $1 $LOG_FILE | /usr/bin/awk '
 function proto(proto){return (proto~/^[0-9]+$/)?"[protocol "proto"]":proto}
